@@ -7,6 +7,7 @@
         <title>Sign In</title>
     </head>
     <?php
+        require_once("Utente.php");
         session_start();
         if (isset($_SESSION["user"])){
             ?>
@@ -20,8 +21,14 @@
         $resultText = "";
         $resultClass = "hidden";
         if(isset($_GET["nome"])){
-            $insert = $conn->query("insert into utenti (nome, email, password) values(".$_GET["nome"].", ".$_GET["email"]. ", ". $_GET["password"].")");
-            $select = 
+            $insert = $conn->query("insert into utenti (nome, email, password) values('".$_GET["nome"]."', '".$_GET["email"]. "', '". $_GET["password"]."')");
+            echo "".$insert->num_rows."";
+            $select = $conn->query("select * from utenti where nome = '".$_GET["nome"]."' and email = '".$_GET["email"]."'");
+            $user = $select->fetch_assoc();
+            $_SESSION["user"] = serialize(new Utente($user["nome"], $user["id"], $user["email"], $user["password"]));
+            ?>
+            <meta http-equiv="refresh" content="3; url=./login">
+            <?php
         }
     ?>
     <body>
