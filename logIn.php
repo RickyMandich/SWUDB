@@ -55,7 +55,7 @@
                     </form>
                     <div class="alternate-action">
                         <span>or </span>
-                        <a href="signIn">Sign up</a>
+                        <a href="signIn">Sign In</a>
                     </div>
                 </div>
             </div>
