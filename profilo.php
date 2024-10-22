@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profilo Utente</title>
     <link rel="stylesheet" href="./css/profilo.css">
+    <script src="./js/profilo.js"></script>
 </head>
 <?php
     require_once("Utente.php");
@@ -19,6 +20,22 @@
             die("Connection failed: " . $conn->connect_error);
         }
         $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID());
+        $deck = [];
+        $precedente;
+        while($line = $resultSet->fetch_assoc()){
+            $row = [];
+            foreach($line as $key => $value){
+                $row[$key] = $value;
+            }
+            if(!isset($precedente) or $precedente != $line["mazzo"]){
+                $header = $row;
+                foreach($header as $key => $i){
+                    if($key !== "mazzo") $header[$key] = null;
+                }
+                array_push($deck, $header);
+            }
+            array_push($deck, $row);
+        }
 ?>
 <body>
     <div class="container">
@@ -47,8 +64,20 @@
                 <h2>I Tuoi Mazzi</h2>
                 <div class="decks-container">
                     <table>
-                        <tr th:each="mazzo:${mazzi}" class="deck-header" th:utext="${mazzo}">
-                        </tr>
+                        <tbody>
+                            <?php 
+                            $precedente;
+                            foreach($deck as $row): ?>
+                                <tr class="<?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
+                                    <?php foreach($row as $cell): ?>
+                                        <td>
+                                            <?php echo $cell; ?>
+                                        </td>
+                                    <?php endforeach;
+                                    $precedente = $row["mazzo"];?>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
                     </table>
                 </div>
             </div>

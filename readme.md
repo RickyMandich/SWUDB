@@ -7,6 +7,6 @@
 - [ ] uploadJsonDeck
 - [x] logIn
 - [ ] signIn
-- [ ] logOut
+- [x] logOut
 - [ ] rimuoviCarta
-- [ ] profilo
+- [x] profilo
