@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="logIn.css">
+        <link rel="stylesheet" href="css/logIn.css">
         <title>Log In</title>
     </head>
     <?php
@@ -27,7 +27,7 @@
                 $resultClass = "success";
                 $_SESSION["user"] = serialize(new Utente($resultSet["nome"], $resultSet["id"], $resultSet["email"], $resultSet["password"]));
             ?>
-            <meta http-equiv="refresh" content="5; url=./profilo">
+            <meta http-equiv="refresh" content="2; url=./profilo">
             <?php
             else:
                 $resultClass = "failed";
@@ -57,28 +57,6 @@
                         <span>or </span>
                         <a href="signIn">Sign up</a>
                     </div>
-                    <?php if(isset($_SESSION["user"])): ?>
-                        <div class="form-group">
-                            <span>
-                                <?php echo unserialize($_SESSION["user"])->getNome() ?>
-                            </span>
-                        </div>
-                        <div class="form-group">
-                            <span>
-                                <?php echo unserialize($_SESSION["user"])->getEmail() ?>
-                            </span>
-                        </div>
-                        <div class="form-group">
-                            <span>
-                                <?php echo unserialize($_SESSION["user"])->getID() ?>
-                            </span>
-                        </div>
-                        <div class="form-group">
-                            <span>
-                                <?php echo unserialize($_SESSION["user"])->getPassword() ?>
-                            </span>
-                        </div>
-                    <?php endif; ?>
                 </div>
             </div>
         </body>

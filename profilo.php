@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="it">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profilo Utente</title>
-    <link rel="stylesheet" href="/css/profilo.css">
+    <link rel="stylesheet" href="./css/profilo.css">
 </head>
+<?php
+    session_start();
+    if (!isset($_SESSION["user"])){
+        ?>
+        <meta http-equiv="refresh" content="0; url=./logIn">
+        <?php
+    }
+
+?>
 <body>
     <div class="container">
         <div class="profile-container">
@@ -35,7 +44,7 @@
                 </div>
             </div>
 
-            <form action="/logout" class="logout-form">
+            <form action="./logout" class="logout-form">
                 <button type="submit" class="submit-btn">logout</button>
             </form>
         </div>
