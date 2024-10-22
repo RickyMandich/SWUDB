@@ -7,13 +7,18 @@
     <link rel="stylesheet" href="./css/profilo.css">
 </head>
 <?php
+    require_once("Utente.php");
     session_start();
     if (!isset($_SESSION["user"])){
         ?>
         <meta http-equiv="refresh" content="0; url=./logIn">
         <?php
     }
-
+    $conn = new mysqli("localhost","root","Minecraft35?", "starwarsunlimited", 3306);
+        if ($conn->connect_error) {
+            die("Connection failed: " . $conn->connect_error);
+        }
+        $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID());
 ?>
 <body>
     <div class="container">
@@ -22,14 +27,18 @@
             <div class="user-info">
                 <div class="info-group">
                     <label>Nome Utente:</label>
-                    <span th:text="${nome}"></span>                                     <!--
+                    <span>
+                        <?php echo unserialize($_SESSION["user"])->getNome(); ?>
+                    </span>                                     <!--
                                                                                             todo:
                                                                                             - sostituire tutti gli usi di thymaleaf con l'uso di php
                                                                                         -->
                 </div>
                 <div class="info-group">
                     <label>Email:</label>
-                    <span th:text="${email}"></span>
+                    <span>
+                        <?php echo unserialize($_SESSION["user"])->getEmail(); ?>
+                    </span>
                 </div>
             </div>
 

@@ -15,7 +15,7 @@
         public function getNome(): string{
             return $this->nome;
         }
-        public function getId(): int{
+        public function getID(): int{
             return $this->id;
         }
         public function getEmail(): string{
