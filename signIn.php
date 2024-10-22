@@ -21,13 +21,16 @@
         $resultText = "";
         $resultClass = "hidden";
         if(isset($_GET["nome"])){
-            $insert = $conn->query("insert into utenti (nome, email, password) values('".$_GET["nome"]."', '".$_GET["email"]. "', '". $_GET["password"]."')");
-            echo "".$insert->num_rows."";
-            $select = $conn->query("select * from utenti where nome = '".$_GET["nome"]."' and email = '".$_GET["email"]."'");
-            $user = $select->fetch_assoc();
-            $_SESSION["user"] = serialize(new Utente($user["nome"], $user["id"], $user["email"], $user["password"]));
+            try{
+                $insert = $conn->query("insert into utenti (nome, email, password) values('".$_GET["nome"]."', '".$_GET["email"]. "', '". $_GET["password"]."')");
+                $resultText = "registrazione avvenuta con successo, ora accedi";
+                $resultClass = "success";
+                ?><meta http-equiv="refresh" content="3; url=./login"><?php
+            }catch(mysqli_sql_exception $e){
+                $resultText = $e->getMessage();
+                $resultClass = "failed";
+            }
             ?>
-            <meta http-equiv="refresh" content="3; url=./login">
             <?php
         }
     ?>
@@ -54,7 +57,7 @@
                 </form>
                 <div class="alternate-action">
                     <span>or </span>
-                    <a href="/login">Log in</a>
+                    <a href="./login">Log in</a>
                 </div>
             </div>
         </div>

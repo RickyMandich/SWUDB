@@ -34,6 +34,7 @@
             }
             array_push($deck, $header);
         }
+        $precedente = $line["mazzo"];
         array_push($deck, $row);
     }
 ?>
@@ -68,7 +69,14 @@
                                 <tr class="<?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
                                     <?php foreach($row as $cell): ?>
                                         <td>
-                                            <?php echo $cell; ?>
+                                            <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                            <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%03d", $row["numero"])?>" target="_blank">
+                                            <?php 
+                                            endif;
+                                            echo $cell;
+                                            if(!(!isset($precedente) or $row["mazzo"] !== $precedente)):?>
+                                            </a>
+                                            <?php endif; ?>
                                         </td>
                                     <?php endforeach;
                                     $precedente = $row["mazzo"];?>
