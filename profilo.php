@@ -46,10 +46,7 @@
                     <label>Nome Utente:</label>
                     <span>
                         <?php echo unserialize($_SESSION["user"])->getNome(); ?>
-                    </span>                                     <!--
-                                                                                            todo:
-                                                                                            - sostituire tutti gli usi di thymaleaf con l'uso di php
-                                                                                        -->
+                    </span>
                 </div>
                 <div class="info-group">
                     <label>Email:</label>
