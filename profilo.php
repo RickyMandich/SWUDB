@@ -16,26 +16,26 @@
         <?php
     }
     $conn = new mysqli("localhost","root","Minecraft35?", "starwarsunlimited", 3306);
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+    $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID());
+    $deck = [];
+    $precedente;
+    while($line = $resultSet->fetch_assoc()){
+        $row = [];
+        foreach($line as $key => $value){
+            $row[$key] = $value;
         }
-        $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID());
-        $deck = [];
-        $precedente;
-        while($line = $resultSet->fetch_assoc()){
-            $row = [];
-            foreach($line as $key => $value){
-                $row[$key] = $value;
+        if(!isset($precedente) or $precedente != $line["mazzo"]){
+            $header = $row;
+            foreach($header as $key => $i){
+                if($key !== "mazzo") $header[$key] = null;
             }
-            if(!isset($precedente) or $precedente != $line["mazzo"]){
-                $header = $row;
-                foreach($header as $key => $i){
-                    if($key !== "mazzo") $header[$key] = null;
-                }
-                array_push($deck, $header);
-            }
-            array_push($deck, $row);
+            array_push($deck, $header);
         }
+        array_push($deck, $row);
+    }
 ?>
 <body>
     <div class="container">
