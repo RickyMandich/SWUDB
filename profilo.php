@@ -19,7 +19,7 @@
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
-    $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID());
+    $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID()." order by mazzo, numero, espansione");
     $deck = [];
     $precedente;
     while($line = $resultSet->fetch_assoc()){
@@ -67,6 +67,17 @@
                             $precedente;
                             foreach($deck as $row): ?>
                                 <tr class="<?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
+                                    <td>
+                                        <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                            <form action="./remove">
+                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                <input type="hidden" name="from" value="<?php echo "profilo"?>">
+                                                <input type='image' src='img/rimuovi.png' width='25px' height='auto' alt='Invia il form'>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
                                     <?php foreach($row as $cell): ?>
                                         <td>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>

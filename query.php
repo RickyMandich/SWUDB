@@ -6,7 +6,15 @@ $conn = new mysqli("localhost","root","Minecraft35?", "starwarsunlimited", 3306)
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
-$resultSet = $conn->query("".$_GET["query"]);
+$resultSet = $conn->query($_GET["query"]);
+try{
+    $resultSet->fetch_assoc();
+    $select=true;
+}catch(Error $e){
+    $select=false;
+}
+if($select):
+    $resultSet = $conn->query($_GET["query"]);
 ?>
 <table border="">
     <thead>
@@ -37,3 +45,7 @@ $resultSet = $conn->query("".$_GET["query"]);
         <?php endwhile; ?>
     </tbody>
 </table>
+<?php else:
+    echo "ho fatto ".$resultSet." modifiche";
+    endif;
+?>
