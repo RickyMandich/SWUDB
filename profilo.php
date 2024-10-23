@@ -15,7 +15,7 @@
         <meta http-equiv="refresh" content="0; url=./logIn">
         <?php
     }
-    $conn = new mysqli("localhost","root","Minecraft35?", "starwarsunlimited", 3306);
+    $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
@@ -62,6 +62,16 @@
                 <h2>I Tuoi Mazzi</h2>
                 <div class="decks-container">
                     <table>
+                        <thead>
+                            <tr class="deck-header">
+                                <td></td>
+                                <?php foreach($deck[0] as $key => $value):?>
+                                <td>
+                                    <?php echo $key; ?>
+                                </td>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
                         <tbody>
                             <?php 
                             $precedente;

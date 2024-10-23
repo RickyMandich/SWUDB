@@ -1,9 +1,9 @@
 <?php
     class Utente{
-        private string $nome;
-        private int $id;
-        private string $email;
-        private string $password;
+        private $nome;
+        private $id;
+        private $email;
+        private $password;
 
         function __construct(string $nome, int $id, string $email, string $password){
             $this->nome = $nome;
