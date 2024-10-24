@@ -66,7 +66,7 @@
                                                 <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                 <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                 <input type="hidden" name="from" value="<?php echo "profilo"?>">
-                                                <input type='image' src='img/rimuovi.png' width='25px' height='auto' alt='Invia il form'>
+                                                <input type='image' src='img/rimuovi.png' width='100vw' height='auto' alt='Invia il form'>
                                             </form>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"])."-portrait.png";?>" width="100vw">
