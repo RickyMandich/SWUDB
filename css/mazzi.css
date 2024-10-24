@@ -1,0 +1,167 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 100vw;
+    height: 100%;
+    max-height: 100vh;
+    padding: 20px;
+}
+
+.profile-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+h2 {
+    color: #444;
+    margin: 20px 0;
+}
+
+.user-info {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.info-group {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+}
+
+.info-group label {
+    font-weight: bold;
+    width: 120px;
+    color: #666;
+}
+
+.info-group span {
+    color: #333;
+}
+
+.decks-container {
+    margin-top: 20px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.deck-name {
+    padding: 12px 15px;
+    color: white;
+    font-weight: bold;
+}
+
+.deck-card td {
+    height: 100px;
+    background-color: #c3c3c3;
+    padding: 8px 15px;
+    color: #333;
+    white-space: nowrap;
+}
+
+.card-name {
+    padding: 8px 15px;
+    color: #333;
+}
+
+.logout-form {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.submit-btn {
+    width: 200px;
+    padding: 12px;
+    background-color: #6b98c1;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    text-transform: uppercase;
+}
+
+.submit-btn:hover {
+    background-color: #5a82a7;
+}
+
+/* Stile per la scrollbar della tabella */
+.decks-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.decks-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.decks-container::-webkit-scrollbar-thumb {
+    background: #6b98c1;
+    border-radius: 4px;
+}
+
+.decks-container::-webkit-scrollbar-thumb:hover {
+    background: #5a82a7;
+}
+
+/* Stile base per l'header del deck */
+.deck-header {
+    background-color: #6b98c1;
+    cursor: pointer;
+    height: 75px;
+}
+
+/* Nascondi il radio button */
+.deck-header input[type="radio"] {
+    display: none;
+}
+
+/* Stile quando l'header è selezionato */
+.deck-header:has(input:checked) {
+    background-color: #5a82a7;
+}
+
+/* Nascondi tutte le carte di default */
+.deck-card {
+    max-height: 100px;
+    background-color: #c3c3c3;
+    display: none;
+}
+
+a{
+    color: black;
+    text-decoration: none;
+}
+
+.deck-header>td{
+    padding-left: 5px;
+    padding-right: 5px;
+}
