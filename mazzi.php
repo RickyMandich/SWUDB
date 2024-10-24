@@ -69,7 +69,7 @@
                                                 <input type='image' src='img/rimuovi.png' width='25px' height='auto' alt='Invia il form'>
                                             </form>
                                         <?php else: ?>
-                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"]).".png";?>" width="100vw">
+                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"])."-portrait.png";?>" width="100vw">
                                         <?php endif; ?>
                                     </td>
                                     <?php foreach($row as $cell): ?>
