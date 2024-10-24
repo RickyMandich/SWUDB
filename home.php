@@ -39,7 +39,6 @@
         <span class="logo logo3">
             <img src="https://starwarsunlimited.com/_next/image?url=%2Fsplash%2Flogo%403x.png&w=96&q=75">
         </span>
-        <img src="https://swudb.com/cards/SHD/034.png" alt="test">
     </body>
 
     <style>
