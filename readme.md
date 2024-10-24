@@ -1,12 +1,14 @@
 # todo list
 - [x] home
 - [x] carte
-- [ ] mazzi
+- [x] mazzi
 - [ ] insertToDeck
 - [ ] insertToCollezione
 - [ ] uploadJsonDeck
 - [x] logIn
-- [ ] signIn
+- [x] signIn
 - [x] logOut
-- [ ] rimuoviCarta
+- [x] remove
 - [x] profilo
+- [x] query
+- [x] utente
