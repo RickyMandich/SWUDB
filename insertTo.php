@@ -83,7 +83,7 @@
     </body>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("finish").click();
+            //document.getElementById("finish").click();
         });
     </script>
 </html>

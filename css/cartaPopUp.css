@@ -1,4 +1,4 @@
-.card-in-deck-row a:hover img.card-hover {
+.card-in-deck-row:hover a img.card-hover {
     display: block;
     position: absolute;
     left: 400px;
