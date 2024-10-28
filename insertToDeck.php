@@ -24,8 +24,8 @@
             <input type="hidden" name="from" values="Deck">
             <input type="submit" value="aggiungi carta">
         </form>
-        <span id="result" class="<?php echo $resultClass?>">
-            <?php echo $resultText?>
+        <span id="result" class="<?php echo $_GET["resultClass"]?>">
+            <?php echo $_GET["resultText"]?>
         </span>
     </body>
 </html>

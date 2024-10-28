@@ -50,10 +50,10 @@
         if(isset($_GET["mazzo"])){
             $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
             if ($conn->connect_error) {
-                //die("Connection failed: " . $conn->connect_error);
+                die("Connection failed: " . $conn->connect_error);
             }
             echo "prima di exist";
-            /*if(exist($_GET["espansione"], $_GET["numero"])){
+            if(exist($_GET["espansione"], $_GET["numero"])){
                 if(quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
                     $result = $conn->query("insert into mazzi values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().");");
                     if($result === true){
@@ -70,18 +70,20 @@
             }else{
                 $resultClass = "failed";
                 $resultText = "questa carta non esiste";
-            }*/
+            }
         }
+        if(!isset($_GET["from"])) $_GET["from"] = "Deck";
     ?>
     <body>
-        <form action="insertTo<?php echo $_GET["from"]?>">
+        <form action="insertTo<?php echo $_GET["from"];?>">
             <input type="hidden" name="resultClass" value="<?php echo $resultClass;?>">
             <input type="hidden" name="resultText" value="<?php echo $resultText;?>">
+            <input type="submit" id="finish">
         </form>
     </body>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            console.log("DOM fully loaded and parsed.");
+            document.getElementById("finish").click();
         });
     </script>
 </html>
