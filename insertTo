@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Insert To</title>
+    </head>
+    <?php
+        function exist($espansione, $numero){
+            $connected = false;
+            while(!$connected){
+                $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
+                $connected = true;
+                if ($conn->connect_error) {
+                    $connected = false;
+                }
+            }
+            $resultSet = $conn->query("select * from carte where espansione = '".$espansione."' and numero = ".$numero);
+            if($resultSet->fetch_assoc()){
+                return true;
+            }
+            return false;
+        };
+        function quante($mazzo, $espansione, $numero){
+            $connected = false;
+            while(!$connected){
+                $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
+                $connected = true;
+                if ($conn->connect_error) {
+                    $connected = false;
+                }
+            }
+            $query = "select * from mazzi where mazzo = '".$mazzo."' and espansione = '".$espansione."' and numero = ".$numero." and codUtente = ".unserialize($_SESSION["user"])->getID();
+            echo $query;
+            $resultSet = $conn->query($query);
+            $quante = 0;
+            while($resultSet->fetch_assoc()){
+                $quante++;
+            }
+            echo "<br>".$quante;
+            return $quante;
+        };
+        require_once("Utente.php");
+        session_start();
+        if(!isset($_SESSION["user"])){
+            ?><meta http-equiv="" content="0; url=./logIn"><?php
+        }
+        $resultClass = "hidden";
+        $resultText = "";
+        if(isset($_GET["mazzo"])){
+            $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
+            if ($conn->connect_error) {
+                //die("Connection failed: " . $conn->connect_error);
+            }
+            echo "prima di exist";
+            /*if(exist($_GET["espansione"], $_GET["numero"])){
+                if(quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
+                    $result = $conn->query("insert into mazzi values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().");");
+                    if($result === true){
+                        $resultClass = "success";
+                        $resultText = "carta aggiunta";
+                    }else{
+                        $resultClass = "failed";
+                        $resultText = $conn->error;
+                    }
+                }else{
+                    $resultClass = "failed";
+                    $resultText = "hai già tre copie di questa carta";
+                }
+            }else{
+                $resultClass = "failed";
+                $resultText = "questa carta non esiste";
+            }*/
+        }
+    ?>
+    <body>
+        <form action="insertTo<?php echo $_GET["from"]?>">
+            <input type="hidden" name="resultClass" value="<?php echo $resultClass;?>">
+            <input type="hidden" name="resultText" value="<?php echo $resultText;?>">
+        </form>
+    </body>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("DOM fully loaded and parsed.");
+        });
+    </script>
+</html>
