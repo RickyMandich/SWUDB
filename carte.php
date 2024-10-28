@@ -4,7 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Carte</title>
-        <link rel="stylesheet" href="profilo.css">
+        <link rel="stylesheet" href="./css/cartaPopUp.css">
     </head>
     <?php
         $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
@@ -18,16 +18,18 @@
             $primo = true;
             while($row = $resultSet->fetch_assoc()){
                 $line = [];
+                $header = [];
                 if($primo){
                     $primo = false;
                     foreach($row as $key => $value){
-                        array_push($line, $key);
+                        $line[$key] = $value;
+                        array_push( $header, $key);
                     }
-                    $rs[0] = $line;
+                    $rs[0] = $header;
                     $line = [];
                 }
-                $numeri[$row["espansione"]] = strlen((string) $row["numero"]);
-                foreach($row as $key => $value) array_push($line, $value);
+                $numeri[$row["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $row["espansione"]) ? 3 : strlen((string) $row["numero"]);
+                foreach($row as $key => $value) $line[$key]=$value;
                 array_push($rs, $line);
             }
         }
@@ -50,15 +52,18 @@
             </thead>
             <tbody>
                 <?php for($i = 1;$i < count($rs); $i++): ?>
-                    <tr>
+                    <tr class="card-in-deck-row">
                         <?php foreach($rs[$i] as $value): ?>
                             <td>
-                                <a href="<?php echo "https://www.swudb.com/card/" . $rs[$i][0] . "/" . sprintf("%0" . $numeri[$rs[$i][0]] . "d", $rs[$i][1]);?>" target="_blank">
-                                <?php echo $value; ?>
+                                <a href="<?php echo "https://www.swudb.com/card/" . $rs[$i]["espansione"] . "/" . sprintf("%0" . $numeri[$rs[$i]["espansione"]] . "d", $rs[$i]["numero"]);?>" target="_blank">
+                                    <?php echo $value; ?>
+                                    <?php if($value === $rs[$i]["nome"]){
+                                        ?><img class="card-hover" src="https://www.swudb.com/cards/<?php echo $rs[$i]["espansione"] . "/" . sprintf("%0" . $numeri[$rs[$i]["espansione"]] . "d", $rs[$i]["numero"]);?>.png"><?php
+                                    }; ?>
                                 </a>
                             </td>
-                        <?php endforeach; ?>
-                    </tr>
+                            <?php endforeach; ?>
+                        </tr>
                 <?php endfor; ?>
             </tbody>
         </table>

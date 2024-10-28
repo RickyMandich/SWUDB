@@ -1,0 +1,22 @@
+#result{
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    text-align: center;
+}
+
+#result.success{
+    background-color: lime;
+    display: inline-block;
+}
+
+#result.failed{
+    background-color: red;
+    display: inline-block;
+}
+
+#result.hidden{
+    display: none;
+}

@@ -21,7 +21,6 @@
         }
         $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID()." order by mazzo, numero, espansione");
         $deck = [];
-        $precedente;
         while($line = $resultSet->fetch_assoc()){
             $row = [];
             foreach($line as $key => $value){
@@ -44,6 +43,7 @@
                 <h2>I Tuoi Mazzi</h2>
                 <div class="decks-container">
                     <table>
+                        <?php if (count($deck) > 0): ?>
                         <thead>
                             <tr class="deck-header">
                                 <td></td>
@@ -54,9 +54,10 @@
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
+                        <?php endif; ?>
                         <tbody>
                             <?php 
-                            $precedente;
+                            unset($precedente);
                             foreach($deck as $row): ?>
                                 <tr class="<?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
                                     <td>

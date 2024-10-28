@@ -30,7 +30,7 @@
         if(!isset($precedente) or $precedente != $line["mazzo"]){
             $header = $row;
             foreach($header as $key => $i){
-                if($key !== "mazzo") $header[$key] = null;
+                if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
             }
             array_push($deck, $header);
         }
@@ -62,6 +62,7 @@
                 <h2>I Tuoi Mazzi</h2>
                 <div class="decks-container">
                     <table>
+                        <?php if (count($deck) > 0): ?>
                         <thead>
                             <tr class="deck-header">
                                 <td></td>
@@ -72,9 +73,10 @@
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
+                        <?php endif; ?>
                         <tbody>
-                            <?php 
-                            $precedente;
+                            <?php
+                            unset($precedente);
                             foreach($deck as $row): ?>
                                 <tr class="<?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
                                     <td>
@@ -84,8 +86,10 @@
                                                 <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                 <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                 <input type="hidden" name="from" value="<?php echo "profilo"?>">
-                                                <input type='image' src='img/rimuovi.png' width='25px' height='auto' alt='Invia il form'>
+                                                <input type='image' src='img/rimuovi.png' width='100vw' height='auto' alt='Invia il form'>
                                             </form>
+                                        <?php else: ?>
+                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"])."-portrait.png";?>" alt="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"])."-portrait.png";?>" width="100vw">
                                         <?php endif; ?>
                                     </td>
                                     <?php foreach($row as $cell): ?>

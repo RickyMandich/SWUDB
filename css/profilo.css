@@ -164,3 +164,8 @@ a{
     padding-left: 5px;
     padding-right: 5px;
 }
+
+thead{
+    position: sticky;
+    top: 0;
+}
