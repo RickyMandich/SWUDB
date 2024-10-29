@@ -2,8 +2,8 @@
 - [x] home
 - [x] carte
 - [x] mazzi
-- [ ] insertToDeck
-- [ ] insertToCollezione
+- [x] insertToDeck
+- [x] insertToCollezione
 - [ ] uploadJsonDeck
 - [x] logIn
 - [x] signIn
