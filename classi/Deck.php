@@ -62,11 +62,6 @@
     class Card{
         public $espansione;
         public $numero;
-/*
-        public function __construct($espansione, $numero){
-            $this->espansione = $espansione;
-            $this->numero = $numero;
-        }/**/
 
         public function __construct($id){
             $this->espansione = explode("_", $id)[0];
