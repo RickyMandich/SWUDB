@@ -60,8 +60,8 @@
         }
     }
     class Card{
-        public $espansione;
-        public $numero;
+        public string $espansione;
+        public int $numero;
 /*
         public function __construct($espansione, $numero){
             $this->espansione = $espansione;
