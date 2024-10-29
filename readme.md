@@ -4,7 +4,7 @@
 - [x] mazzi
 - [x] insertToDeck
 - [x] insertToCollezione
-- [ ] uploadJsonDeck
+- [x] uploadJsonDeck
 - [x] logIn
 - [x] signIn
 - [x] logOut
