@@ -7,7 +7,7 @@
         <link rel="stylesheet" href="./css/insertTo.css">
     </head>
     <?php
-        require_once("Utente.php");
+        require_once("classi/Utente.php");
         session_start();
         if(!isset($_SESSION["user"])){
             echo "<meta http-equiv=\"refresh\" content=\"0; url=./logIn\">";

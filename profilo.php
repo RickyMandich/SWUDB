@@ -8,7 +8,7 @@
     <script src="./js/profilo.js"></script>
 </head>
 <?php
-    require_once("Utente.php");
+    require_once("classi/Utente.php");
     session_start();
     if (!isset($_SESSION["user"])){
         ?>

@@ -8,7 +8,7 @@
     </head>
     <?php
         session_start();
-        require_once("Utente.php");
+        require_once("classi/Utente.php");
         if (isset($_SESSION["user"])):
     ?>
     <meta http-equiv="refresh" content="0; ./profilo">

@@ -46,6 +46,6 @@ if($select):
     </tbody>
 </table>
 <?php else:
-    echo "ho fatto ".$resultSet." modifiche";
+    echo "ho fatto ".$conn->affected_rows." modifiche";
     endif;
 ?>
