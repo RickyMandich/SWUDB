@@ -18,13 +18,14 @@
                 
                 // Verifica che sia un JSON valido
                 if($jsonData = json_decode($jsonContent, true)) {
-                    //elaborazione json==>magic==>Card[]
-                    
+                    require_once("classi/Deck.php");
+                    require_once("classi/Utente.php");
+                    $deck = new Deck($jsonData);
                     $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
                     if ($conn->connect_error) {
                         die("Connection failed: " . $conn->connect_error);
                     }
-                    //$conn->query("");
+                    $conn->query($deck->getInsertSql());
                     echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
                     ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
                 } else {
