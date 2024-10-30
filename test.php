@@ -18,49 +18,82 @@
                 
                 // Verifica che sia un JSON valido
                 if($jsonData = json_decode($jsonContent, true)) {
-                    require_once("classi/Deck.php");
-                    require_once("classi/Utente.php");
-                    $deck = new Deck($jsonData);
+                    //elaborazione json==>magic==>Card[]
+                    require_once("./classi/Card.php");
+                    require_once("./classi/Cards.php");
+                    $collezione = new Cards();
+                    foreach($jsonData as $key=> $value){
+                        $collezione->add(new Card($value));
+                    }
                     $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
                     if ($conn->connect_error) {
                         die("Connection failed: " . $conn->connect_error);
                     }
-                    $conn->query($deck->getInsertSql());
+                    foreach($collezione->collezione as $value){
+                        $conn->query($value->getInsertSql());
+                    }
                     echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
-                    ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
+                    ?><!--<meta http-equiv="refresh" content="3; url=test">--><?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
-                    ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
+                    ?><meta http-equiv="refresh" content="3; url=test"><?php
                 }
             } else {
                 echo "Errore nel caricamento del file: " . $_FILES["fileJson"]["error"];
-                ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
+                ?><meta http-equiv="refresh" content="3; url=test"><?php
             }
-        }else if(isset($_POST["textJson"])){
-            if($jsonData = json_decode($_POST["textJson"], true)) {
-                require_once("classi/Deck.php");
-                require_once("classi/Utente.php");
-                $deck = new Deck($jsonData);
-                $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
-                if ($conn->connect_error) {
-                    die("Connection failed: " . $conn->connect_error);
-                }
-                $conn->query($deck->getInsertSql());
-                echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
-                ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
-            } else {
-                echo "Errore: Il file non contiene un JSON valido";
-                ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
-            }
-        } else {
+        }else {
             // Form per il caricamento del file
             ?>
-            <form action="inputJsonDeck" method="post" enctype="multipart/form-data">
+            <form action="test" method="post" enctype="multipart/form-data">
                 <input type="file" name="fileJson" id="fileJson" accept=".json">
-                <input type="text" name="textJson" id="textJson">
+                <input type="textarea" name="textJson" id="textJson">
                 <input type="submit" value="Carica">
             </form>
             <?php
         }
     ?>
 </html>
+
+
+<?php
+/*$local = new mysqli("192.168.1.29", "swudb", "", "my_swudb", 3306);
+if ($local->connect_error) {
+    die("Connection failed: " . $local->connect_error);
+}
+$query = [];
+$carte = $local->query("SHOW CREATE TABLE carte");
+//printTableStructure($carte, "carte");
+while($line=$carte->fetch_assoc()){
+    echo $line["Create Table"];
+    array_push($query, $line["Create Table"]);
+    echo "<hr>";
+}
+$mazzi = $local->query("SHOW CREATE TABLE mazzi");
+//printTableStructure($mazzi, "mazzi");
+while($line=$mazzi->fetch_assoc()){
+    echo $line["Create Table"];
+    array_push($query, $line["Create Table"]);
+    echo "<hr>";
+}
+
+$utenti = $local->query("SHOW CREATE TABLE utenti");
+//printTableStructure($utenti, "utenti");
+while($line=$utenti->fetch_assoc()){
+    echo $line["Create Table"];
+    array_push($query, $line["Create Table"]);
+    echo "<hr>";
+}
+?><hr><hr><hr><?php
+foreach($query as $key => $value){
+    echo "$key=>$value<hr>";
+}
+
+$server = new mysqli("localhost", "swudb", "", "my_swudb", 3306);
+if ($server->connect_error) {
+    die("Connection failed: " . $server->connect_error);
+}
+$server->query("DROP table carte");
+foreach($query as $key => $value){
+    $server->query($value);
+}*/
