@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>input deck from json</title>
+        <title>input DB from json</title>
     </head>
     <?php
         session_start();
@@ -30,22 +30,23 @@
                         die("Connection failed: " . $conn->connect_error);
                     }
                     foreach($collezione->collezione as $value){
+                        $conn->query("delete from carte where espansione = '".$value->espansione."' and numero = ".$value->numero);
                         $conn->query($value->getInsertSql());
                     }
                     echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
-                    ?><!--<meta http-equiv="refresh" content="3; url=test">--><?php
+                    ?><!--<meta http-equiv="refresh" content="3; url=inputJsonDB">--><?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
-                    ?><meta http-equiv="refresh" content="3; url=test"><?php
+                    ?><meta http-equiv="refresh" content="3; url=inputJsonDB"><?php
                 }
             } else {
                 echo "Errore nel caricamento del file: " . $_FILES["fileJson"]["error"];
-                ?><meta http-equiv="refresh" content="3; url=test"><?php
+                ?><meta http-equiv="refresh" content="3; url=inputJsonDB"><?php
             }
         }else {
             // Form per il caricamento del file
             ?>
-            <form action="test" method="post" enctype="multipart/form-data">
+            <form action="inputJsonDB" method="post" enctype="multipart/form-data">
                 <input type="file" name="fileJson" id="fileJson" accept=".json">
                 <input type="textarea" name="textJson" id="textJson">
                 <input type="submit" value="Carica">
