@@ -34,6 +34,7 @@
             }
             $precedente = $line["mazzo"];
             array_push($deck, $row);
+            $numeri[$line["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $line["espansione"]) ? 3 : strlen((string) $line["numero"]);
         }
         $resultSet = $conn->query("select distinct mazzo from mazzi");
         $mazzi = [];
@@ -65,7 +66,7 @@
                             <?php 
                             unset($precedente);
                             foreach($deck as $row): ?>
-                                <tr class="<?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
+                                <tr class="card-in-deck-row <?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
                                     <td>
                                         <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
                                             <form action="./remove">
@@ -87,7 +88,7 @@
                                                 <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                 <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                 <input type='image' src='img/collezione.png' width='auto' height='100vh' alt='Invia il form'>
-                                                <?php if($row["mazzo"] === "Collezione"):?>
+                                                <?php if($row["mazzo"] === "Collezione" && (!isset($precedente) or $row["mazzo"] !== $precedente)):?>
                                                     <select name="into" id="into">
                                                         <option>---seleziona il mazzo in cui spostare questa carta</option>
                                                         <?php foreach($mazzi as $mazzo): ?>
@@ -100,13 +101,16 @@
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"]).".png";?>" height="100vh">
                                         <?php endif; ?>
                                     </td>
-                                    <?php foreach($row as $cell): ?>
+                                    <?php foreach($row as $key=>$cell): ?>
                                         <td>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
                                             <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%03d", $row["numero"])?>" target="_blank">
                                             <?php 
                                             endif;
                                             echo $cell;
+                                            if($key === "nome"){
+                                                ?><img class="card-hover" src="https://www.swudb.com/cards/<?php echo $row["espansione"] . "/" . sprintf("%0" . $numeri[$row["espansione"]] . "d", $row["numero"]);?>.png"><?php
+                                            }
                                             if(!(!isset($precedente) or $row["mazzo"] !== $precedente)):?>
                                             </a>
                                             <?php endif; ?>

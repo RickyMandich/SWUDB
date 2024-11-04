@@ -32,16 +32,10 @@
                         <?php echo unserialize($_SESSION["user"])->getEmail(); ?>
                     </span>
                 </div>
-                <div class="info-group">
-                    <label>ID:</label>
-                    <span>
-                        <?php echo unserialize($_SESSION["user"])->getID(); ?>
-                    </span>
-                </div>
             </div>
 
             <!-- Sezione mazzi -->
-            <?php require("Mazzi.php"); ?>
+            <?php require("mazzi.php"); ?>
 
             <form action="./logout" class="logout-form">
                 <button type="submit" class="submit-btn">logout</button>
