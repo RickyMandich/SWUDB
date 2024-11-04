@@ -56,7 +56,7 @@
                         </thead>
                         <tbody>
                             <?php for($i = 1;$i < count($rs); $i++): ?>
-                            <tr class="deck-card">
+                            <tr class="card-in-deck-row deck-card">
                                 <?php foreach($rs[$i] as $value): ?>
                                 <td>
                                     <a href="<?php echo "https://www.swudb.com/card/" . $rs[$i]["espansione"] . "/" . sprintf("%0" . $numeri[$rs[$i]["espansione"]] . "d", $rs[$i]["numero"]);?>" target="_blank">
