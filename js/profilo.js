@@ -49,4 +49,8 @@ document.addEventListener('DOMContentLoaded', function() {
             else row.style.display = "none";
         }
     });
+    let cards = document.getElementsByClassName("deck-card");
+    cards.forEach(card =>{
+        card.style.display = "none";
+    });
 });

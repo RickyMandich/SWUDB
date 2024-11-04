@@ -153,7 +153,6 @@ table {
 .deck-card {
     max-height: 100px;
     background-color: #c3c3c3;
-    display: none;
 }
 
 a{
@@ -169,4 +168,8 @@ a{
 thead{
     position: sticky;
     top: 0;
+}
+
+input[name="nome"]{
+    max-width: 25vw;
 }
