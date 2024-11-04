@@ -35,6 +35,13 @@
             $precedente = $line["mazzo"];
             array_push($deck, $row);
         }
+        $resultSet = $conn->query("select distinct mazzo from mazzi");
+        $mazzi = [];
+        while($line = $resultSet->fetch_assoc()){
+            if($line["mazzo"] !== "Collezione"){
+                array_push($mazzi, $line["mazzo"]);
+            }
+        }
     ?>
     <body>
         <div class="container">
@@ -70,6 +77,27 @@
                                             </form>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"])."-portrait.png";?>" width="100vw">
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                            <form action="./moveTo">
+                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                <input type="hidden" name="from" value="<?php echo "mazzi"?>">
+                                                <input type='image' src='img/collezione.png' width='auto' height='100vh' alt='Invia il form'>
+                                                <?php if($row["mazzo"] === "Collezione"):?>
+                                                    <select name="into" id="into">
+                                                        <option>---seleziona il mazzo in cui spostare questa carta</option>
+                                                        <?php foreach($mazzi as $mazzo): ?>
+                                                            <option><?php echo $mazzo; ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                <?php endif; ?>
+                                            </form>
+                                        <?php else: ?>
+                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"]).".png";?>" height="100vh">
                                         <?php endif; ?>
                                     </td>
                                     <?php foreach($row as $cell): ?>

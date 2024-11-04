@@ -74,11 +74,7 @@
         if(!isset($_GET["from"])) $_GET["from"] = "Deck";
     ?>
     <body>
-        <form action="insertTo<?php echo $_GET["from"];?>">
-            <input type="hidden" name="resultClass" value="<?php echo $resultClass;?>">
-            <input type="hidden" name="resultText" value="<?php echo $resultText;?>">
-            <input type="submit" id="finish">
-        </form>
+        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText));?>">
     </body>
     <script>
         document.addEventListener("DOMContentLoaded", () => {

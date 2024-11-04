@@ -32,7 +32,7 @@
                         $conn->query($value->getInsertSql());
                     }
                     echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
-                    ?><!--<meta http-equiv="refresh" content="3; url=inputJsonDB">--><?php
+                    ?><meta http-equiv="refresh" content="3; url=inputJsonDB"><?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
                     ?><meta http-equiv="refresh" content="3; url=inputJsonDB"><?php
