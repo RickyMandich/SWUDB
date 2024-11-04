@@ -8,20 +8,12 @@
         <link rel="stylesheet" href="css/mazzi.css">
     </head>
     <?php
-        $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
-        $resultSet = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' order by uscita, espansione, numero");
-        $numeri = [];
-        $rs = [];
+    function f($resultSet, &$numeri, &$rs){
         if( $resultSet->num_rows > 0) {
-            $primo = true;
             while($row = $resultSet->fetch_assoc()){
                 $line = [];
                 $header = [];
-                if($primo){
-                    $primo = false;
+                if($rs===[]){
                     foreach($row as $key => $value){
                         $line[$key] = $value;
                         array_push( $header, $key);
@@ -34,6 +26,19 @@
                 array_push($rs, $line);
             }
         }
+    }
+        $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
+        if ($conn->connect_error) {
+            die("Connection failed: " . $conn->connect_error);
+        }
+        $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo = 'leader' order by uscita, espansione, numero");
+        $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo = 'base' order by uscita, espansione, numero");
+        $altro = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo <> 'leader' and tipo <> 'base' order by uscita, espansione, numero");
+        $numeri = [];
+        $rs = [];
+        f($leader, $numeri, $rs);
+        f($basi, $numeri, $rs);
+        f($altro, $numeri, $rs);
         $conn->close();
     ?>
     <body>
@@ -46,7 +51,7 @@
                 <div class="decks-container">
                     <table>
                         <thead>
-                        <tr class="deck-header">
+                            <tr class="deck-header">
                             <?php foreach($rs[0] as $column): ?>
                                 <td>
                                     <?php echo $column; ?>

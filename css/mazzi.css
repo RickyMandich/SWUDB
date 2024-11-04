@@ -63,6 +63,7 @@ h2 {
 }
 
 .decks-container {
+    height: calc(100vh - 100px);
     margin-top: 20px;
     overflow-y: auto;
     border: 1px solid #ddd;
