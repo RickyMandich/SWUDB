@@ -40,8 +40,7 @@
             echo "<br>".$quante;
             return $quante;
         };
-        require_once("classi/Utente.php");
-        session_start();
+        require_once("header.php");
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="" content="0; url=./logIn"><?php
         }

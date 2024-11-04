@@ -1,6 +1,4 @@
 <?php
-    require_once("classi/Utente.php");
-    session_start();
     if(!isset($_SESSION["user"])){
         ?><meta http-equiv="refresh" content="0; url=./login"><?php
     }

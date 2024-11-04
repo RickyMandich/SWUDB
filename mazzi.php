@@ -8,8 +8,7 @@
         <script src="js/profilo.js"></script>
     </head>
     <?php
-        require_once("classi/Utente.php");
-        session_start();
+        require_once("header.php");
         if (!isset($_SESSION["user"])){
             ?>
             <meta http-equiv="refresh" content="0; url=./logIn">

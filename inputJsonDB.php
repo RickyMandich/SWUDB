@@ -6,7 +6,7 @@
         <title>input DB from json</title>
     </head>
     <?php
-        session_start();
+        require_once("header.php");
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="refresh" content="0; url=./login"><?php
         }
@@ -19,8 +19,6 @@
                 // Verifica che sia un JSON valido
                 if($jsonData = json_decode($jsonContent, true)) {
                     //elaborazione json==>magic==>Card[]
-                    require_once("./classi/Card.php");
-                    require_once("./classi/Cards.php");
                     $collezione = new Cards();
                     foreach($jsonData as $key=> $value){
                         $collezione->add(new Card($value));

@@ -6,7 +6,7 @@
         <title>input deck from json</title>
     </head>
     <?php
-        session_start();
+        require_once("header.php");
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="refresh" content="0; url=./login"><?php
         }
@@ -18,8 +18,6 @@
                 
                 // Verifica che sia un JSON valido
                 if($jsonData = json_decode($jsonContent, true)) {
-                    require_once("classi/Deck.php");
-                    require_once("classi/Utente.php");
                     $deck = new Deck($jsonData);
                     $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
                     if ($conn->connect_error) {
@@ -38,8 +36,6 @@
             }
         }else if(isset($_POST["textJson"])){
             if($jsonData = json_decode($_POST["textJson"], true)) {
-                require_once("classi/Deck.php");
-                require_once("classi/Utente.php");
                 $deck = new Deck($jsonData);
                 $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
                 if ($conn->connect_error) {
