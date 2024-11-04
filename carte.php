@@ -8,25 +8,26 @@
         <link rel="stylesheet" href="css/mazzi.css">
     </head>
     <?php
-    function f($resultSet, &$numeri, &$rs){
-        if( $resultSet->num_rows > 0) {
-            while($row = $resultSet->fetch_assoc()){
-                $line = [];
-                $header = [];
-                if($rs===[]){
-                    foreach($row as $key => $value){
-                        $line[$key] = $value;
-                        array_push( $header, $key);
-                    }
-                    $rs[0] = $header;
+        function f($resultSet, &$numeri, &$rs){
+            if( $resultSet->num_rows > 0) {
+                while($row = $resultSet->fetch_assoc()){
                     $line = [];
+                    $header = [];
+                    if($rs===[]){
+                        foreach($row as $key => $value){
+                            $line[$key] = $value;
+                            array_push( $header, $key);
+                        }
+                        $rs[0] = $header;
+                        $line = [];
+                    }
+                    $numeri[$row["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $row["espansione"]) ? 3 : strlen((string) $row["numero"]);
+                    foreach($row as $key => $value) $line[$key]=$value;
+                    array_push($rs, $line);
                 }
-                $numeri[$row["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $row["espansione"]) ? 3 : strlen((string) $row["numero"]);
-                foreach($row as $key => $value) $line[$key]=$value;
-                array_push($rs, $line);
             }
         }
-    }
+        if(!isset($_GET["nome"]) || $_GET["nome"] === "") ?><meta http-equiv="refresh" content="0; url=carte"><?php
         $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
@@ -44,7 +45,7 @@
     <body>
         <div class="container">
             <form action="carte.php" method="get">
-                <input type="text" name="nome">
+                <input type="text" name="nome" value="<?php echo $_GET["nome"]?>">
                 <input type="submit" value="cerca">
             </form>
             <div class="decks-section">
