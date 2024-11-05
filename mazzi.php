@@ -82,21 +82,29 @@
                                     </td>
                                     <td style="max-width: 100vw">
                                         <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
-                                            <form action="./moveTo">
+                                            <form action="./moveTo" method="get">
                                                 <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
                                                 <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                 <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                 <input type="hidden" name="from" value="<?php echo "mazzi"?>">
-                                                <input type='image' src='img/collezione.png' width='100px' height='auto' alt='Invia il form'>
                                                 <?php if($row["mazzo"] === "Collezione"):?>
-                                                    <input type="text" placeholder="nome nuovo mazzo" id="newDeckName" oninput="updateSelectValue()">
-                                                    <select name="into" id="into" onchange="checkSelection()">
-                                                        <option selected>nuovo mazzo</option>
-                                                        <?php foreach($mazzi as $mazzo): ?>
-                                                            <option><?php echo $mazzo; ?></option>
+                                                    <img src='img/collezione.png' width='100px' height='auto' onclick="showMenuCollezione(this)">
+                                                    <div class="menuCollezione">
+                                                        <span class="closeMenu" onclick="hideMenuCollezione(this)">
+                                                            &times
+                                                        </span>
+                                                        <?php foreach($mazzi as $mazzo):?>
+                                                            <span class="mazzo">
+                                                                <label for="into">
+                                                                    <input type="submit" name="into" value="<?php echo $mazzo;?>">
+                                                                </label>
+                                                            </span>
                                                         <?php endforeach; ?>
-                                                    </select>
-                                                    <input type="text" name="show" id="show">
+                                                        nome nuovo mazzo <input type="text" name="into" id="newInto">
+                                                        <input type="submit" value="crea nuovo mazzo">
+                                                    </div>
+                                                <?php else: ?>
+                                                    <input type="image" src='img/collezione.png' width='100px' height='auto' alt="Invia il form">
                                                 <?php endif; ?>
                                             </form>
                                         <?php else: ?>

@@ -180,3 +180,31 @@ form[action="./moveTo"] input{
     display: block;
     width: 100%;
 }
+
+.menuCollezione{
+    display: none;
+    position: absolute;
+    width: 75vw;
+    height: 75vh;
+    background-color: rgba(0, 0, 0, 0.875);
+    top: 50vh;
+    left: 50vw;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+}
+
+.menuCollezione .mazzo{
+    display: block;
+}
+
+.menuCollezione .mazzo *{
+    display: inline-block;
+}
+
+.closeMenu{
+    color: white;
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: xx-large;
+}

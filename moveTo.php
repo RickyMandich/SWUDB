@@ -6,4 +6,5 @@
         }else{
             $conn-> query("insert into mazzi values('".$_GET["into"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().")");
         }
+        ?><meta http-equiv="refresh" content="0; url=<?php echo "remove?".http_build_query($_GET);?>"><?php
     }

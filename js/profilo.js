@@ -51,27 +51,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function checkSelection() {
-    let value = document.getElementById("into").value;
-    const inputDiv = document.getElementById('newDeckName');
-    if (value === 'nuovo mazzo') {
-        inputDiv.style.display = 'inline-block';
-        // Se c'era un valore precedente nell'input, lo ripristiniamo
-        const savedValue = document.getElementById('newDeckName').value;
-        if (savedValue) {
-            document.getElementById('deckSelect').value = savedValue;
-        }
-    } else {
-        inputDiv.style.display = 'none';
+function showMenuCollezione(imgElement) {
+    // Mostro solo il menu relativo all'immagine cliccata
+    // Risalgo al form parent e cerco il menu collezione al suo interno
+    let parentForm = imgElement.closest('form');
+    let menu = parentForm.querySelector('.menuCollezione');
+    if (menu) {
+        menu.style.display = 'block';
     }
 }
 
-function updateSelectValue() {
-    let value = document.getElementById("newDeckName").value;
-    // Aggiorna il valore della select con il contenuto dell'input
-    document.getElementById('into').value = value;
-    document.getElementById('show').value = value;
+function hideMenuCollezione(spanElement) {
+    // Mostro solo il menu relativo all'immagine cliccata
+    // Risalgo al form parent e cerco il menu collezione al suo interno
+    let parentForm = spanElement.closest('form');
+    let menu = parentForm.querySelector('.menuCollezione');
+    if (menu) {
+        menu.style.display = 'none';
+    }
 }
-
-// Controlla lo stato iniziale al caricamento della pagina
-window.onload = checkSelection()
