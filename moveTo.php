@@ -1,5 +1,5 @@
 <?php
-    require_once("remove.php");
+    require_once "header.php";
     if(isset($_GET["from"])){
         if($_GET["mazzo"] !== "Collezione"){
             $conn-> query("insert into mazzi values('Collezione', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().")");

@@ -9,17 +9,17 @@
 
         function __construct(array $json){
             $this->nome = $json["metadata"]["name"];
-            $this->leader = new Card($json["leader"]["id"]);
-            $this->base = new Card($json["base"]["id"]);
+            $this->leader = new DeckCard($json["leader"]["id"]);
+            $this->base = new DeckCard($json["base"]["id"]);
             $this->deck = [];
             foreach($json["deck"] as $card){
                 for($i=0;$i<$card["count"];$i++){
-                    array_push( $this->deck, new Card($card["id"]));
+                    array_push( $this->deck, new DeckCard($card["id"]));
                 }
             }
             $this->sideboard = [];
             foreach($json["sideboard"] as $card){
-                array_push( $this->sideboard, new Card($card["id"]));
+                array_push( $this->sideboard, new DeckCard($card["id"]));
             }
             $this->carte = [];
             array_push($this->carte, $this->leader);
@@ -59,7 +59,7 @@
             return $insert.";";
         }
     }
-    class Card{
+    class DeckCard{
         public $espansione;
         public $numero;
 

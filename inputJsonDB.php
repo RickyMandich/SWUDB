@@ -6,7 +6,7 @@
         <title>input DB from json</title>
     </head>
     <?php
-        require_once("header.php");
+        require_once "header.php" ;
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="refresh" content="0; url=./login"><?php
         }
@@ -21,6 +21,7 @@
                     //elaborazione json==>magic==>Card[]
                     $collezione = new Cards();
                     foreach($jsonData as $key=> $value){
+                        //echo var_dump($value);
                         $collezione->add(new Card($value));
                     }
                     $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
