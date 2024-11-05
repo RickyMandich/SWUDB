@@ -5,7 +5,7 @@
 - [x] insertToDeck
 - [x] insertToCollezione
 - [x] uploadJsonDeck
-- [x] logIn
+- [x] login
 - [x] signIn
 - [x] logOut
 - [x] remove

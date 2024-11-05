@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="css/mazzi.css">
     </head>
     <?php
-        function f($resultSet, &$numeri, &$rs){
+        function f($resultSet, &$rs){
             if( $resultSet->num_rows > 0) {
                 while($row = $resultSet->fetch_assoc()){
                     $line = [];
@@ -21,25 +21,20 @@
                         $rs[0] = $header;
                         $line = [];
                     }
-                    $numeri[$row["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $row["espansione"]) ? 3 : strlen((string) $row["numero"]);
                     foreach($row as $key => $value) $line[$key]=$value;
                     array_push($rs, $line);
                 }
             }
         }
         if(!isset($_GET["nome"]) || $_GET["nome"] === "") ?><meta http-equiv="refresh" content="0; url=carte"><?php
-        $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
         $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo = 'leader' order by uscita, espansione, numero");
         $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo = 'base' order by uscita, espansione, numero");
         $altro = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo <> 'leader' and tipo <> 'base' order by uscita, espansione, numero");
         $numeri = [];
         $rs = [];
-        f($leader, $numeri, $rs);
-        f($basi, $numeri, $rs);
-        f($altro, $numeri, $rs);
+        f($leader, $rs);
+        f($basi, $rs);
+        f($altro, $rs);
         $conn->close();
     ?>
     <body>

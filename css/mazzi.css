@@ -154,6 +154,7 @@ table {
 .deck-card {
     max-height: 100px;
     background-color: #c3c3c3;
+    display: none;
 }
 
 a{
@@ -173,4 +174,9 @@ thead{
 
 input[name="nome"]{
     max-width: 25vw;
+}
+
+form[action="./moveTo"] input{
+    display: block;
+    width: 100%;
 }

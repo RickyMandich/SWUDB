@@ -12,7 +12,7 @@
         require_once("header.php");
         if (!isset($_SESSION["user"])){
             ?>
-            <meta http-equiv="refresh" content="0; url=./logIn">
+            <meta http-equiv="refresh" content="0; url=./login">
             <?php
         }
         $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
@@ -35,7 +35,6 @@
             }
             $precedente = $line["mazzo"];
             array_push($deck, $row);
-            $numeri[$line["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $line["espansione"]) ? 3 : strlen((string) $line["numero"]);
         }
         $resultSet = $conn->query("select distinct mazzo from mazzi");
         $mazzi = [];
@@ -53,7 +52,7 @@
                     <table>
                         <?php if (count($deck) > 0): ?>
                         <thead>
-                            <tr class="">
+                            <tr class="deck-header">
                                 <td></td>
                                 <?php foreach($deck[0] as $key => $value):?>
                                 <td>
@@ -81,21 +80,23 @@
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"])."-portrait.png";?>" width="100vw">
                                         <?php endif; ?>
                                     </td>
-                                    <td>
+                                    <td style="max-width: 100vw">
                                         <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
                                             <form action="./moveTo">
                                                 <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
                                                 <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                 <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                 <input type="hidden" name="from" value="<?php echo "mazzi"?>">
-                                                <input type='image' src='img/collezione.png' width='auto' height='100vh' alt='Invia il form'>
+                                                <input type='image' src='img/collezione.png' width='100px' height='auto' alt='Invia il form'>
                                                 <?php if($row["mazzo"] === "Collezione"):?>
-                                                    <select name="into" id="into">
-                                                        <option disabled selected>---mazzo---</option>
+                                                    <input type="text" placeholder="nome nuovo mazzo" id="newDeckName" oninput="updateSelectValue()">
+                                                    <select name="into" id="into" onchange="checkSelection()">
+                                                        <option selected>nuovo mazzo</option>
                                                         <?php foreach($mazzi as $mazzo): ?>
                                                             <option><?php echo $mazzo; ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
+                                                    <input type="text" name="show" id="show">
                                                 <?php endif; ?>
                                             </form>
                                         <?php else: ?>

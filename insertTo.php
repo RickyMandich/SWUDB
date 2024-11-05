@@ -42,7 +42,7 @@
         };
         require_once("header.php");
         if(!isset($_SESSION["user"])){
-            ?><meta http-equiv="" content="0; url=./logIn"><?php
+            ?><meta http-equiv="" content="0; url=./login"><?php
         }
         $resultClass = "hidden";
         $resultText = "";
@@ -74,11 +74,6 @@
         if(!isset($_GET["from"])) $_GET["from"] = "Deck";
     ?>
     <body>
-        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText));?>">
+        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"]));?>">
     </body>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            //document.getElementById("finish").click();
-        });
-    </script>
 </html>
