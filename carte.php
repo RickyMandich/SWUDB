@@ -26,6 +26,7 @@
                 }
             }
         }
+        require_once "header.php";
         if(!isset($_GET["nome"]) || $_GET["nome"] === "") ?><meta http-equiv="refresh" content="0; url=carte"><?php
         $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo = 'leader' order by uscita, espansione, numero");
         $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and tipo = 'base' order by uscita, espansione, numero");
@@ -40,7 +41,7 @@
     <body>
         <div class="container">
             <form action="carte.php" method="get">
-                <input type="text" name="nome" value="<?php echo $_GET["nome"]?>">
+                <input type="text" name="nome" value="<?php echo $_GET["nome"] ?? ""?>">
                 <input type="submit" value="cerca">
             </form>
             <div class="decks-section">
