@@ -53,7 +53,7 @@
                     <table>
                         <?php if (count($deck) > 0): ?>
                         <thead>
-                            <tr class="deck-header">
+                            <tr class="">
                                 <td></td>
                                 <?php foreach($deck[0] as $key => $value):?>
                                 <td>
@@ -89,9 +89,9 @@
                                                 <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                 <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                 <input type='image' src='img/collezione.png' width='auto' height='100vh' alt='Invia il form'>
-                                                <?php if($row["mazzo"] === "Collezione" && (!isset($precedente) or $row["mazzo"] !== $precedente)):?>
+                                                <?php if($row["mazzo"] === "Collezione"):?>
                                                     <select name="into" id="into">
-                                                        <option>---seleziona il mazzo in cui spostare questa carta</option>
+                                                        <option disabled selected>---mazzo---</option>
                                                         <?php foreach($mazzi as $mazzo): ?>
                                                             <option><?php echo $mazzo; ?></option>
                                                         <?php endforeach; ?>
