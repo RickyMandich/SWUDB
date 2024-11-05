@@ -109,10 +109,10 @@
                                             <?php 
                                             endif;
                                             echo $cell;
-                                            if($key === "nome"){
-                                                ?><img class="card-hover" src="https://www.swudb.com/cards/<?php echo $row["espansione"] . "/" . sprintf("%0" . $numeri[$row["espansione"]] . "d", $row["numero"]);?>.png"><?php
-                                            }
-                                            if(!(!isset($precedente) or $row["mazzo"] !== $precedente)):?>
+                                            if(!(!isset($precedente) or $row["mazzo"] !== $precedente)):
+                                                if($key === "nome"){
+                                                    ?><img class="card-hover" src="https://www.swudb.com/cards/<?php echo $row["espansione"] . "/" . sprintf("%0" . $numeri[$row["espansione"]] . "d", $row["numero"]);?>.png"><?php
+                                                }?>
                                             </a>
                                             <?php endif; ?>
                                         </td>
