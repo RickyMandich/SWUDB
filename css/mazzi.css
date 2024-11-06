@@ -157,6 +157,10 @@ table {
     display: none;
 }
 
+.carte .deck-card{
+    display: table-row;
+}
+
 a{
     color: black;
     text-decoration: none;
