@@ -49,16 +49,30 @@
                     <table>
                         <thead>
                             <tr class="deck-header">
-                            <?php foreach($rs[0] as $column): ?>
-                                <td>
-                                    <?php echo $column; ?>
-                                </td>
+                            <?php if(isset($_SESSION["user"])): ?>
+                                <td>aggiungi alla collezione</td>
+                            <?php endif; ?>
+                                <?php foreach($rs[0] as $column): ?>
+                                    <td>
+                                        <?php echo $column; ?>
+                                    </td>
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <?php for($i = 1;$i < count($rs); $i++): ?>
                             <tr class="card-in-deck-row deck-card">
+                                <?php if(isset($_SESSION["user"])): ?>
+                                    <td style="max-width: 100vw">
+                                        <form action="./insertTo" method="get">
+                                            <input type="hidden" name="mazzo" value="Collezione">
+                                            <input type="hidden" name="espansione" value="<?php echo $rs[$i]["espansione"]?>">
+                                            <input type="hidden" name="numero" value="<?php echo $rs[$i]["numero"]?>">
+                                            <input type="hidden" name="from" value="<?php echo ".".$_SERVER['REQUEST_URI'];?>">
+                                            <input type="image" src='img/collezione.png' width='100px' height='auto' alt="Invia il form">
+                                        </form>
+                                    </td>
+                                <?php endif; ?>
                                 <?php foreach($rs[$i] as $value): ?>
                                 <td>
                                     <a href="<?php echo "https://swudb.com/card/" . $rs[$i]["espansione"] . "/" . sprintf("%0" . $numeri[$rs[$i]["espansione"]] . "d", $rs[$i]["numero"]);?>" target="_blank">

@@ -41,6 +41,7 @@
             return $quante;
         };
         require_once("header.php");
+        var_dump($_GET);
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="" content="0; url=./login"><?php
         }
@@ -74,6 +75,11 @@
         if(!isset($_GET["from"])) $_GET["from"] = "Deck";
     ?>
     <body>
-        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"]));?>">
+        <?php
+        echo $_GET["from"];
+        if(str_starts_with($_GET["from"], "./carte")): ?>
+            <meta http-equiv="refresh" content="0; url=<?php echo $_GET["from"];?>">
+        <?php endif; ?>
+        <meta http-equiv="resh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"]));?>">
     </body>
 </html>
