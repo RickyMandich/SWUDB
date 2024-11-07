@@ -8,7 +8,7 @@ git status
 nomeCommit=$(date "+%Y %m %d %H:%M")
 nomeCommit="aggiornamento $nomeCommit"
 git commit -m "$nomeCommit"
-clear
+#clear
 
 # Esegui il push sul repository remoto
 git push
@@ -25,4 +25,4 @@ quit
 EOF
 
 sleep 5
-clear
+#clear
