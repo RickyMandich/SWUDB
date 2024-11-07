@@ -39,14 +39,12 @@
                 </div>
             </div>
             <table border="">
-                <thead>
+                <tbody>
                     <tr class="deck-header">
                         <td>
                             nome mazzo
                         </td>
                     </tr>
-                </thead>
-                <tbody>
                     <?php foreach($mazzi as $value): ?>
                         <tr class="deck-card">
                             <td>
