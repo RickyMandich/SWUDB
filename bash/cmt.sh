@@ -22,7 +22,7 @@ function uploadFiles() {
         if [ -f "$file" ]; then
             $ftpRequest = "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file"
             echo $ftpRequest
-            curl -T "$file" $ftpRequest --ftp-pasv
+            curl -T "$file" "$ftpRequest" --ftp-pasv
         fi
     done
 }
