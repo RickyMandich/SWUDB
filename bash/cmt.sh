@@ -1,24 +1,27 @@
 #!/bin/bash
 
-# Funzione ricorsiva per caricare i file su FTP
+# Funzione ricorsiva per caricare i file su FTP mantenendo il percorso relativo
 function uploadFiles() {
     local dir="$1"
+    local relativePath="$2"
     
     # Entra nella directory corrente
     cd "$dir"
-
+    
     # Cerca le sottocartelle
     for subdir in $(find . -mindepth 1 -maxdepth 1 -type d | grep -v ".git"); do
-        uploadFiles "$subdir"
+        # Calcola il nuovo percorso relativo per la sottocartella
+        local newRelativePath="$relativePath/${subdir#./}"
+        uploadFiles "$subdir" "$newRelativePath"
         # Torna alla directory precedente dopo aver processato la sottocartella
         cd ..
     done
     
-    # Carica i file nella directory corrente
+    # Carica i file nella directory corrente mantenendo il percorso relativo
     for file in *; do
         if [ -f "$file" ]; then
-            echo "$file"
-            curl -T "$file" "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$file" --ftp-pasv
+            echo "Caricamento di $relativePath/$file"
+            curl -T "$file" "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$relativePath/$file" --ftp-pasv
         fi
     done
 }
@@ -36,8 +39,8 @@ git commit -m "$nomeCommit"
 # Esegui il push sul repository remoto
 git push
 
-# Carica i file in modo ricorsivo
-uploadFiles "."
+# Carica i file in modo ricorsivo a partire dalla radice con percorso relativo vuoto
+uploadFiles "." ""
 
 # sleep 5
 # clear
