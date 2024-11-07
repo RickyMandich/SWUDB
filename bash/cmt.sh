@@ -6,20 +6,20 @@ function uploadFiles() {
     
     # Entra nella directory corrente
     cd "$dir"
-    
-    # Carica i file nella directory corrente
-    for file in *; do
-        if [ -f "$file" ]; then
-            echo "$file"
-            curl -T "$file" "ftp://swudb:Minecraft35%40@ftp.swudb.altervista.org/$file"
-        fi
-    done
 
     # Cerca le sottocartelle
     for subdir in $(find . -mindepth 1 -maxdepth 1 -type d | grep -v ".git"); do
         uploadFiles "$subdir"
         # Torna alla directory precedente dopo aver processato la sottocartella
         cd ..
+    done
+    
+    # Carica i file nella directory corrente
+    for file in *; do
+        if [ -f "$file" ]; then
+            echo "$file"
+            curl -T "$file" "ftp://swudb:Minecraft35%40@ftp.swudb.altervista.org:21/$file"
+        fi
     done
 }
 
