@@ -41,7 +41,6 @@
             return $quante;
         };
         require_once("header.php");
-        var_dump($_GET);
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="" content="0; url=./login"><?php
         }
@@ -52,9 +51,8 @@
             if ($conn->connect_error) {
                 die("Connection failed: " . $conn->connect_error);
             }
-            echo "prima di exist";
             if(exist($_GET["espansione"], $_GET["numero"])){
-                if(quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
+                if($_GET["mazzo"] === "Collezione" or quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
                     $result = $conn->query("insert into mazzi values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().");");
                     if($result === true){
                         $resultClass = "success";
@@ -76,10 +74,10 @@
     ?>
     <body>
         <?php
-        echo $_GET["from"];
         if(str_starts_with($_GET["from"], "./carte")): ?>
             <meta http-equiv="refresh" content="0; url=<?php echo $_GET["from"];?>">
+        <?php else: ?>
+        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"]));?>">
         <?php endif; ?>
-        <meta http-equiv="resh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"]));?>">
     </body>
 </html>

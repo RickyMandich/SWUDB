@@ -14,6 +14,11 @@
         <meta http-equiv="refresh" content="0; url=./login">
         <?php
     }
+    $result = $conn->query("select distinct mazzo from mazzi");
+    $mazzi = [];
+    while( $row = $result->fetch_assoc() ){
+        array_push($mazzi, $row["mazzo"]);
+    }
 ?>
 <body>
     <div class="container">
@@ -33,10 +38,24 @@
                     </span>
                 </div>
             </div>
-
-            <!-- Sezione mazzi -->
-            <?php require("mazzi.php"); ?>
-
+            <table border="">
+                <thead>
+                    <tr class="deck-header">
+                        <td>
+                            nome mazzo
+                        </td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($mazzi as $value): ?>
+                        <tr class="deck-card">
+                            <td>
+                                <?php echo $value; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
             <form action="./logout" class="logout-form">
                 <button type="submit" class="submit-btn">logout</button>
             </form>
