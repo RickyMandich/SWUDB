@@ -20,8 +20,9 @@ function uploadFiles() {
     # Carica i file nella directory corrente mantenendo il percorso relativo
     for file in *; do
         if [ -f "$file" ]; then
-            echo "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$relativePath/$file"
-            curl -T "$file" "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$relativePath/$file" --ftp-pasv
+            $ftpRequest = "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file"
+            echo $ftpRequest
+            curl -T "$file" $ftpRequest --ftp-pasv
         fi
     done
 }
