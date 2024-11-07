@@ -7,8 +7,12 @@ function uploadFiles() {
     # Entra nella directory corrente
     cd "$dir"
     
-    filezilla -s "swudb" "Minecraft35?" -c "sync remote ."
-EOF
+    # Carica i file nella directory corrente
+    for file in *; do
+        if [ -f "$file" ]; then
+            curl -T "$file" "ftp://swudb:Minecraft35?@ftp.swudb.altervista.org/$file"
+        fi
+    done
 
     # Cerca le sottocartelle
     for subdir in $(find . -mindepth 1 -maxdepth 1 -type d | grep -v ".git"); do
