@@ -7,9 +7,7 @@ function uploadFiles() {
     # Entra nella directory corrente
     cd "$dir"
     
-    lftp -u swudb,Minecraft35? ftp.swudb.altervista.org <<EOF
-    set ftp:ssl-allow no
-    mirror -R --delete --exclude '.git' . /
+    filezilla -s "swudb" "Minecraft35?" -c "sync remote ."
 EOF
 
     # Cerca le sottocartelle
