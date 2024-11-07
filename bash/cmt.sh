@@ -12,6 +12,7 @@ function uploadFiles() {
     for subdir in $(find . -mindepth 1 -maxdepth 1 -type d | grep -v ".git"); do
         # Calcola il nuovo percorso relativo per la sottocartella
         local newRelativePath="$relativePath/${subdir#./}"
+        createRemoteDir "$newRelativePath"
         uploadFiles "$subdir" "$newRelativePath"
         # Torna alla directory precedente dopo aver processato la sottocartella
         cd ..
