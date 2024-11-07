@@ -7,15 +7,14 @@ function uploadFiles() {
     # Entra nella directory corrente
     cd "$dir"
     
-    # Carica i file diversi dal server
     ftp -n ftp.swudb.altervista.org <<EOF
-user swudb "Minecraft35?"
-binary
-mput -R --diff *
+    user swudb "Minecraft35?"
+    binary
+    mput -R --diff *
 EOF
-    
+
     # Cerca le sottocartelle
-    for subdir in $(find . -mindepth 1 -maxdepth 1 -type d); do
+    for subdir in $(find . -mindepth 1 -maxdepth 1 -type d | grep -v ".git"); do
         uploadFiles "$subdir"
         # Torna alla directory precedente dopo aver processato la sottocartella
         cd ..
@@ -30,7 +29,7 @@ git status
 nomeCommit=$(date "+%Y %m %d %H:%M")
 nomeCommit="aggiornamento $nomeCommit"
 git commit -m "$nomeCommit"
-#clear
+# clear
 
 # Esegui il push sul repository remoto
 git push
@@ -38,5 +37,5 @@ git push
 # Carica i file in modo ricorsivo
 uploadFiles "."
 
-sleep 5
-#clear
+# sleep 5
+# clear
