@@ -18,7 +18,7 @@ function uploadFiles() {
     for file in *; do
         if [ -f "$file" ]; then
             echo "$file"
-            curl -T "$file" "ftp://swudb:Minecraft35%40@ftp.swudb.altervista.org:21/$file"
+            curl -T "$file" "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$file" --ftp-pasv
         fi
     done
 }
