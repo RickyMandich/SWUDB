@@ -7,15 +7,9 @@ function uploadFiles() {
     # Entra nella directory corrente
     cd "$dir"
     
-    ftp -n ftp.swudb.altervista.org <<EOF
-    user swudb "Minecraft35?"
-    binary
-    # Carica i singoli file
-    for file in *; do
-        if [ -f "$file" ]; then
-            put "$file"
-        fi
-    done
+    lftp -u swudb,Minecraft35? ftp.swudb.altervista.org <<EOF
+    set ftp:ssl-allow no
+    mirror -R --delete --exclude '.git' . /
 EOF
 
     # Cerca le sottocartelle
