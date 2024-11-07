@@ -10,7 +10,7 @@ function uploadFiles() {
     # Carica i file nella directory corrente
     for file in *; do
         if [ -f "$file" ]; then
-            curl -T "$file" "ftp://swudb:Minecraft35?@ftp.swudb.altervista.org/$file"
+            curl -T "$file" "ftp://swudb:Minecraft35%40@ftp.swudb.altervista.org/$file"
         fi
     done
 
