@@ -10,7 +10,12 @@ function uploadFiles() {
     ftp -n ftp.swudb.altervista.org <<EOF
     user swudb "Minecraft35?"
     binary
-    mput -R --diff *
+    # Carica i singoli file
+    for file in *; do
+        if [ -f "$file" ]; then
+            put "$file"
+        fi
+    done
 EOF
 
     # Cerca le sottocartelle
