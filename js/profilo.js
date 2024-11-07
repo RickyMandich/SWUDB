@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
         row.addEventListener('click', function() {
             //let tr = 
             tr.forEach(riga => {
-                let header = riga.className === "card-in-deck-row deck-header";
+                let header = riga.className === "deck-header";
                 if(header){
                     mostra = riga.getElementsByTagName("input")[0].checked;
                 }else{
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-        let header = row.className === "card-in-deck-row deck-header";
+        let header = row.className === "deck-header";
         if(header){
             mostra = row.getElementsByTagName("input")[0].checked;
         }else{
