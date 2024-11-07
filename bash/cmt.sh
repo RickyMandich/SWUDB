@@ -12,7 +12,7 @@ function uploadFiles() {
     for subdir in $(find . -mindepth 1 -maxdepth 1 -type d | grep -v ".git"); do
         # Calcola il nuovo percorso relativo per la sottocartella
         local newRelativePath="$relativePath/${subdir#./}"
-        uploadFiles "$subdir" "$newRelativePath/"
+        uploadFiles "$subdir" "$newRelativePath"
         # Torna alla directory precedente dopo aver processato la sottocartella
         cd ..
     done
@@ -20,8 +20,8 @@ function uploadFiles() {
     # Carica i file nella directory corrente mantenendo il percorso relativo
     for file in *; do
         if [ -f "$file" ]; then
-            echo "Caricamento di $relativePath/$file"
-            curl -T "$file" "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file" --ftp-pasv
+            echo "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$relativePath/$file"
+            curl -T "$file" "ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$relativePath/$file" --ftp-pasv
         fi
     done
 }
