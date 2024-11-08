@@ -32,7 +32,7 @@ git commit -m "$nomeCommit"
 # clear
 
 # Esegui il push sul repository remoto
-git push
+git push -f
 
 # Carica i file presenti nell'ultimo commit
 uploadFilesFromCommit
