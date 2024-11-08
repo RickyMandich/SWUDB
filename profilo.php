@@ -52,6 +52,12 @@
                             </td>
                         </tr>
                     <?php endforeach; ?>
+                    <?php if(count($mazzi) === 0): ?>
+                        <tr>
+                            <td>
+                                non hai nessun mazzo
+                            </td>
+                        </tr>
                 </tbody>
             </table>
             <form action="./logout" class="logout-form">
