@@ -42,7 +42,7 @@
                     }
                     if($_GET["espansione"][$i] !== "all"){
                         echo "$i != all<br>";
-                        $queryEspansione = $queryEspansione."espansione = '".$_GET["espansione"]."' ";
+                        $queryEspansione = $queryEspansione."espansione = '".$_GET["espansione"][$i]."' ";
                     }else{
                         $queryEspansione = "";
                         echo "all<br>";
