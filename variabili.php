@@ -12,6 +12,17 @@
     while ($line = $resultSet -> fetch_assoc()){
         array_push($espansioni, $line["espansione"]);
     }
-
+    $tratti = [];
+    $resultSet = $conn ->query("select distinct tratti from carte");
+    while ($line = $resultSet -> fetch_assoc()){
+        $card = explode(" * ", $line);
+        foreach ($card as $value) {
+            if(!in_array($value, $tratti)) array_push($tratti, $value);
+        }
+    }
+    foreach($tratti as $t){
+        echo $t;
+        ?> <br> <?php
+    }
     unset($resultSet);
 ?>
