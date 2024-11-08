@@ -31,7 +31,7 @@ function uploadFiles() {
             else
                 echo "$relativePath/$file non è stato caricato perché non è stato modificato."
             fi
-            echo "\n\n"
+            echo -e "\n\n"
         fi
     done
 }
