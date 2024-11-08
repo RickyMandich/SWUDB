@@ -4,7 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <?php preg_match("/[\/]([.*?]*[^\/]*)$/", $_SERVER['HTTP_REFERER'], $match); ?>
-        <title><?php echo $match[1][0] /* $_SERVER['HTTP_REFERER'];*/ ?></title>
+        <title><?php echo $match[1] /* $_SERVER['HTTP_REFERER'];*/ ?></title>
         <link rel="stylesheet" href="./css/cartaPopUp.css">
         <link rel="stylesheet" href="css/mazzi.css">
     </head>
