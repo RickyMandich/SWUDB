@@ -170,7 +170,7 @@ thead{
     top: 0;
 }
 
-.deck-card img{
-    width: 100%;
-    height: auto;
+.deck-card img {
+    height: 20vh;
+    width: auto;
 }
