@@ -63,7 +63,8 @@
 
                                 <img src="https://swudb.com/cards/<?php echo $leader["espansione"]."/".sprintf("%0". $numeri[$leader["numero"]]."d", $leader["numero"]).".png"?>" alt="<?php echo $leader["nome"];?>">
                             </td>
-                            <?php $base = $conn->query("select c.espansione from carte c, mazzi m where c.tipo='base' and m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'")->fetch_assoc();?>
+                            <?php $base = $conn->query("select c.espansione from carte c, mazzi m where c.tipo='base' and m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'")->fetch_assoc();
+                            var_dump($base)?>
                             <td>
                             <img src="https://swudb.com/cards/<?php echo $base["espansione"]."/".sprintf("%0". $numeri[$base["numero"]]."d", $base["numero"]).".png"?>" alt="<?php echo $base["nome"];?>">
                             </td>
