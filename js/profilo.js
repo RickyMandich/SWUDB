@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function showMenuCollezione(imgElement) {
     // Mostro solo il menu relativo all'immagine cliccata
     // Risalgo al form parent e cerco il menu collezione al suo interno
-    let parentForm = imgElement.closest('form');
-    let menu = parentForm.querySelector('.menuCollezione');
+    let parentTd = imgElement.closest('td');
+    let menu = parentTd.querySelector('.menuCollezione');
     if (menu) {
         menu.style.display = 'block';
     }
@@ -64,8 +64,8 @@ function showMenuCollezione(imgElement) {
 function hideMenuCollezione(spanElement) {
     // Mostro solo il menu relativo all'immagine cliccata
     // Risalgo al form parent e cerco il menu collezione al suo interno
-    let parentForm = spanElement.closest('form');
-    let menu = parentForm.querySelector('.menuCollezione');
+    let parentTd = spanElement.closest('td');
+    let menu = parentTd.querySelector('.menuCollezione');
     if (menu) {
         menu.style.display = 'none';
     }
