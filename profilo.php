@@ -44,11 +44,20 @@
                         <td>
                             nome mazzo
                         </td>
+                        <td>
+                            leader
+                        </td>
+                        <td>
+                            base
+                        </td>
                     </tr>
                     <?php foreach($mazzi as $value): ?>
                         <tr class="deck-card">
                             <td>
                                 <?php echo $value; ?>
+                            </td>
+                            <td>
+                                <img  src="https://swudb.com/cards/<?php echo $conn->query("select c.espansione from carte c, mazzi m where m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".$_SESSION["user"]->getID()." and m.mazzo = '".$value."'")->fetch_assoc()["espansione"]."/".sprintf("%0". $numeri[$conn->query("select c.espansione from carte c, mazzi m where m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".$_SESSION["user"]->getID()." and m.mazzo = '".$value."'")->fetch_assoc()["espansione"]]."d", $conn->query("select c.numero from carte c, mazzi m where m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".$_SESSION["user"]->getID()." and m.mazzo = '".$value."'")->fetch_assoc()["numero"]).".png"?>" alt="<?php echo $conn->query("select c.nome from carte c, mazzi m where c.tipo='leader' m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".$_SESSION["user"]->getID()." and m.mazzo = '".$value."'")->fetch_assoc()["nome"];?>">
                             </td>
                         </tr>
                     <?php endforeach; ?>
