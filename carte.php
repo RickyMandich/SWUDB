@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <?php $file = basename($_SERVER['PHP_SELF']) ?>
-<?php //$file = preg_replace('/[.php]\?.*/', '', $file) ?>
+<?php $file = preg_replace('/\?.*/', '', $file) ?>
+<?php $file = preg_replace('/\.php$/', '', $file) ?>
 <?php var_dump($file); ?>
 <html lang="it" class="<?php echo $file;?>">
     <head>
