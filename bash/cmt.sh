@@ -24,6 +24,7 @@ function uploadFiles() {
             # Ottieni la data di modifica del file locale
             local_modified=$(date -r "$file" +"%Y%m%d %H:%M:%S")
 
+
             # Verifica la data di modifica del file remoto
             remote_modified=$(curl -I "$ftpRequest" 2>/dev/null | grep -i "last-modified" | sed 's/Last-Modified: //g' | tr -d '\r')
             if [ -z "$remote_modified" ]; then
