@@ -57,7 +57,7 @@
                                 <?php echo $value; ?>
                             </td>
                             <td>
-                                <?php $leaderQuery = "select c.nome, c.espansione, c.numero from carte c, mazzi m where c.tipo='leader' and m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'"; ?>
+                                <?php $leaderQuery = "select c.nome, c.espansione, c.numero from carte c, mazzi m where c.tipo='leader' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'"; ?>
                                 <?php $leader = $conn->query($leaderQuery)->fetch_assoc();?>
                                 <?php echo $leaderQuery; ?>
 
