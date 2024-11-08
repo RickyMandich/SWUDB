@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-    <html lang="it" class="<?php echo $match[1];?>">
+    <html lang="it" class="<?php echo $file;?>">
     <head>
         <meta charset="UTF-8">
         <title>Home</title>
