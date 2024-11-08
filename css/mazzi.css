@@ -214,5 +214,5 @@ form[action="./moveTo"] input{
 }
 
 label[for="into"]{
-    color: white;
+    color: rgba(255, 255, 255, 1);
 }
