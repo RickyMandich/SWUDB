@@ -63,7 +63,7 @@
                     <?php endforeach; ?>
                     <?php if(count($mazzi) === 0): ?>
                         <tr class="deck-card">
-                            <td>
+                            <td colspan="3">
                                 non hai nessun mazzo
                             </td>
                         </tr>
