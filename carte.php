@@ -50,7 +50,7 @@
         <div class="container">
             <form action="carte">
                 <input type="text" name="nome" value="<?php echo $_GET["nome"] ?? ""?>">
-                <select multiple name="espansione" id="espansione">
+                <select multiple name="espansione[]" id="espansione">
                     <option selected>all</option>
                     <?php foreach($espansioni as $set) : ?>
                         <option>
