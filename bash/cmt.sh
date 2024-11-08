@@ -22,8 +22,8 @@ function uploadFiles() {
         if [ -f "$file" ]; then
             ftpRequest="ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file"
             # Ottieni la data di modifica del file locale
-            local_modified=$(date -r "$file" +"%Y%m%d%H%M%S")
-            
+            local_modified=$(date -r "$file" +"%Y%m%d %H:%M:%S")
+
             # Esegui il comando curl con l'opzione -z per confrontare le date di modifica
             if curl -T "$file" "$ftprequest" --ftp-pasv --ftp-create-dirs -z "$local_modified"; then
                 echo "$relativePath/$file caricato con successo."
