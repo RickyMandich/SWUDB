@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Funzione per caricare i file su FTP a partire dal commit
 function uploadFilesFromCommit() {
     # Ottieni l'elenco dei file modificati nell'ultimo commit
@@ -29,7 +27,7 @@ git status
 nomeCommit=$(date "+%Y %m %d %H:%M")
 nomeCommit="aggiornamento $nomeCommit"
 git commit -m "$nomeCommit"
-# clear
+clear
 
 # Esegui il push sul repository remoto
 git push -f
@@ -37,5 +35,5 @@ git push -f
 # Carica i file presenti nell'ultimo commit
 uploadFilesFromCommit
 
-# sleep 5
-# clear
+sleep 5
+clear
