@@ -75,6 +75,7 @@
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <input type="submit" value="cerca">
             </form>
             <div class="decks-section">
                 <div class="decks-container">
