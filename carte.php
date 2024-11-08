@@ -33,9 +33,22 @@
         if(count($_GET)>0 and $_GET["nome"] === 0 and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
             $queryEspansione = "";
             if(isset($_GET["espansione"])){
-                if($_GET["espansione"] !== "all"){
-                    $queryEspansione = "and espansione = '".$_GET["espansione"]."' ";
-                }
+                for($i = 0;$i<count($_GET["espansione"]);$i++):
+                    if($i===0){
+                        $queryEspansione .= "and (";
+                    }
+                    if($_GET["espansione"][$i] !== "all"){
+                        $queryEspansione = $queryEspansione."espansione = '".$_GET["espansione"]."' ";
+                    }else{
+                        $queryEspansione = "";
+                        break;
+                    }
+                    if($i != count($_GET["espansione"])-1){
+                        $queryEspansione = $queryEspansione."or ";
+                    }else{
+                        $queryEspansione = ") ";
+                    }
+                endfor;
             }
             $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'leader' order by uscita, espansione, numero");
             $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'base' order by uscita, espansione, numero");
