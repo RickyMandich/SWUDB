@@ -15,7 +15,7 @@
     $tratti = [];
     $resultSet = $conn ->query("select distinct tratti from carte");
     while ($line = $resultSet -> fetch_assoc()){
-        $card = explode(" * ", $line);
+        $card = explode(" * ", $line["tratti"]);
         foreach ($card as $value) {
             if(!in_array($value, $tratti)) array_push($tratti, $value);
         }
