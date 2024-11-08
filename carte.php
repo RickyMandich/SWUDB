@@ -35,6 +35,7 @@
             if(isset($_GET["espansione"])){
                 echo true;
                 for($i = 0;$i<count($_GET["espansione"]);$i++):
+                    echo $_GET["espansione"][$i];
                     if($i===0){
                         $queryEspansione .= "and (";
                     }
