@@ -58,6 +58,7 @@
                                 non hai nessun mazzo
                             </td>
                         </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
             <form action="./logout" class="logout-form">
