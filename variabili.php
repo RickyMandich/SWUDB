@@ -10,7 +10,7 @@
     $resultSet = $conn -> query("select distinct espansione from carte order by uscita");
     $espansioni = [];
     while ($line = $resultSet -> fetch_assoc()){
-        array_push($espansioni, $line);
+        array_push($espansioni, $line["espansione"]);
     }
 
     unset($resultSet);
