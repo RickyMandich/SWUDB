@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <?php preg_match("/[\/]([.*?]*[^\/]*)$/", $_SERVER['HTTP_REFERER'], $match); ?>
-<html lang="it" class="<?php echo "carte";?>">
+<html lang="it" class="<?php echo $match[1];?>">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
