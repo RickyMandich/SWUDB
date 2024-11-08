@@ -10,7 +10,7 @@
     require_once("header.php");
         if (isset($_SESSION["user"])):
     ?>
-    <meta http-equiv="refresh" content="0; ./profilo">
+    <meta http-equiv="refresh" content="0; ./<?php echo $_GET["from"] ?? "profilo"?>">
     <?php else:
         $resultClass = "hidden";
         $resultText = "";
@@ -26,7 +26,7 @@
                 $resultClass = "success";
                 $_SESSION["user"] = serialize(new Utente($resultSet["nome"], $resultSet["id"], $resultSet["email"], $resultSet["password"]));
             ?>
-            <meta http-equiv="refresh" content="2; url=./profilo">
+            <meta http-equiv="refresh" content="2; url=./<?php echo $_GET["from"] ?? "profilo"?>">
             <?php
             else:
                 $resultClass = "failed";
