@@ -82,31 +82,37 @@
                                     </td>
                                     <td style="max-width: 100vw">
                                         <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
-                                            <form action="./moveTo" method="get">
-                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
-                                                <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
-                                                <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
-                                                <input type="hidden" name="from" value="<?php echo "mazzi"?>">
-                                                <?php if($row["mazzo"] === "Collezione"):?>
-                                                    <img src='img/collezione.png' width='100px' height='auto' onclick="showMenuCollezione(this)">
-                                                    <div class="menuCollezione">
-                                                        <span class="closeMenu" onclick="hideMenuCollezione(this)">
-                                                            &times
-                                                        </span>
-                                                        <?php foreach($mazzi as $mazzo):?>
+                                            <?php if($row["mazzo"] === "Collezione"):?>
+                                                <img src='img/collezione.png' width='100px' height='auto' onclick="showMenuCollezione(this)">
+                                                <div class="menuCollezione">
+                                                    <span class="closeMenu" onclick="hideMenuCollezione(this)">
+                                                        &times
+                                                    </span>
+                                                    <?php foreach($mazzi as $mazzo):?>
+                                                        <form action="./moveTo" method="get">
+                                                            <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                            <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                            <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                            <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                             <span class="mazzo">
                                                                 <label for="into">
                                                                     <input type="submit" name="into" value="<?php echo $mazzo;?>">
                                                                 </label>
                                                             </span>
-                                                        <?php endforeach; ?>
+                                                        </form>
+                                                    <?php endforeach; ?>
+                                                    <form action="./moveTo" method="get">
+                                                        <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                        <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                        <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                        <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                         <label for="into">nome nuovo mazzo <input type="text" name="into" id="newInto"></label>
                                                         <input type="submit" value="crea nuovo mazzo">
-                                                    </div>
-                                                <?php else: ?>
-                                                    <input type="image" src='img/collezione.png' width='100px' height='auto' alt="Invia il form">
-                                                <?php endif; ?>
-                                            </form>
+                                                    </form>
+                                                </div>
+                                            <?php else: ?>
+                                                <input type="image" src='img/collezione.png' width='100px' height='auto' alt="Invia il form">
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"]).".png";?>" height="100vh">
                                         <?php endif; ?>
