@@ -111,7 +111,13 @@
                                                     </form>
                                                 </div>
                                             <?php else: ?>
-                                                <input type="image" src='img/collezione.png' width='100px' height='auto' alt="Invia il form">
+                                                <form action="./moveTo" method="get">
+                                                    <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                    <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                    <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                    <input type="hidden" name="from" value="<?php echo "mazzi"?>">
+                                                    <input type="image" src='img/collezione.png' width='100px' height='auto' alt="Invia il form">
+                                                </form>
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%03d", $row["numero"]).".png";?>" height="100vh">
