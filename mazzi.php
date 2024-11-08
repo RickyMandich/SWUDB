@@ -12,9 +12,9 @@
         require_once("header.php");
         if (!isset($_SESSION["user"])){
             ?>
-            <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
+            <meta http-equiv="refresh" content="3; url=./logIn?from=<?php echo $file; ?>">
             <?php
-        }
+        }else{
         $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
@@ -147,4 +147,5 @@
             </div>
         </div>
     </body>
+    <?php } ?>
 </html>
