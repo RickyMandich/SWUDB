@@ -33,26 +33,19 @@
         if(count($_GET)>0 and $_GET["nome"] === 0 and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
             $queryEspansione = "";
             if(isset($_GET["espansione"])){
-                echo true."<br>";
                 for($i = 0;$i<count($_GET["espansione"]);$i++):
-                    echo $_GET["espansione"][$i]."<br>";
                     if($i===0){
-                        echo "$i = 0<br>";
                         $queryEspansione .= "and (";
                     }
                     if($_GET["espansione"][$i] !== "all"){
-                        echo "$i != all<br>";
                         $queryEspansione = $queryEspansione."espansione = '".$_GET["espansione"][$i]."' ";
                     }else{
                         $queryEspansione = "";
-                        echo "all<br>";
                         break;
                     }
                     if($i != count($_GET["espansione"])-1){
-                        "$i non ultimo<br>";
                         $queryEspansione = $queryEspansione."or ";
                     }else{
-                        echo "$i ultimo<br>";
                         $queryEspansione .= ") ";
                     }
                 endfor;
