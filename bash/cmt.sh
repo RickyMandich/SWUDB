@@ -24,12 +24,14 @@ function uploadFiles() {
             # Ottieni la data di modifica del file locale
             local_modified=$(date -r "$file" +"%Y%m%d %H:%M:%S")
 
+            echo "curl -T \"$file\" \"$ftprequest\" --ftp-pasv --ftp-create-dirs -z \"$local_modified\""
             # Esegui il comando curl con l'opzione -z per confrontare le date di modifica
             if curl -T "$file" "$ftprequest" --ftp-pasv --ftp-create-dirs -z "$local_modified"; then
                 echo "$relativePath/$file caricato con successo."
             else
                 echo "$relativePath/$file non è stato caricato perché non è stato modificato."
             fi
+            echo "\n\n"
         fi
     done
 }
