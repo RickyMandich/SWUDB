@@ -11,6 +11,7 @@
     <?php
         require_once("header.php");
         if (!isset($_SESSION["user"])){
+            echo $file;
             ?>
             <meta http-equiv="refresh" content="3; url=./logIn?from=<?php echo $file; ?>">
             <?php
