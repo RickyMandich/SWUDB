@@ -20,13 +20,21 @@ function uploadFiles() {
     # Carica i file nella directory corrente mantenendo il percorso relativo
     for file in *; do
         if [ -f "$file" ]; then
-            ftpRequest="ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file"
+            local ftpRequest="ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file"
             # Ottieni la data di modifica del file locale
-            local_modified=$(date -r "$file" +"%Y%m%d%H%M%S")
+            local_modified=$(date -r "$file" +"%Y%m%d %H:%M:%S")
 
-            echo -e "curl -T \"$file\" \"$ftpRequest\" --ftp-pasv --ftp-create-dirs -z \"$local_modified\""
-            # Esegui il comando curl con l'opzione -z per confrontare le date di modifica
-            if curl -T "$file" "$ftpRequest" --ftp-pasv --ftp-create-dirs -z "$local_modified"; then
+            # Verifica la data di modifica del file remoto
+            remote_modified=$(curl -I "$ftpRequest" 2>/dev/null | grep -i "last-modified" | sed 's/Last-Modified: //g' | tr -d '\r')
+            if [ -z "$remote_modified" ]; then
+                # Il file non esiste sul server, quindi lo carica
+                echo -e "curl -T \"$file\" \"$ftpRequest\" --ftp-pasv --ftp-create-dirs"
+                curl -T "$file" "$ftpRequest" --ftp-pasv --ftp-create-dirs
+                echo "$relativePath/$file caricato con successo."
+            elif [ "$local_modified" \> "$remote_modified" ]; then
+                # Il file locale è più recente, quindi lo carica
+                echo -e "curl -T \"$file\" \"$ftpRequest\" --ftp-pasv --ftp-create-dirs"
+                curl -T "$file" "$ftpRequest" --ftp-pasv --ftp-create-dirs
                 echo "$relativePath/$file caricato con successo."
             else
                 echo "$relativePath/$file non è stato caricato perché non è stato modificato."
