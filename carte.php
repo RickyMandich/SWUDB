@@ -30,7 +30,7 @@
             }
         }
         require_once "header.php";
-        if(count($_GET)>0 and $_GET["nome"] === 0 and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
+        if(count($_GET)>0 and $_GET["nome"] === "" and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
             $queryEspansione = "";
             if(isset($_GET["espansione"])){
                 for($i = 0;$i<count($_GET["espansione"]);$i++):
