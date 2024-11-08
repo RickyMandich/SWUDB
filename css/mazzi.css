@@ -212,3 +212,7 @@ form[action="./moveTo"] input{
     right: 0;
     font-size: xx-large;
 }
+
+label[for="into"]{
+    color: white;
+}

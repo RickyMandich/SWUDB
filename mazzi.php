@@ -100,7 +100,7 @@
                                                                 </label>
                                                             </span>
                                                         <?php endforeach; ?>
-                                                        nome nuovo mazzo <input type="text" name="into" id="newInto">
+                                                        <label for="into">nome nuovo mazzo <input type="text" name="into" id="newInto"></label>
                                                         <input type="submit" value="crea nuovo mazzo">
                                                     </div>
                                                 <?php else: ?>
