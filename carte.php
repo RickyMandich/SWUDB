@@ -86,7 +86,7 @@
             </form>
             <div class="decks-section">
                 <div class="decks-container">
-                    <?php if(true) : ?>
+                    <?php if(false) : ?>
                         <?php echo "$queryEspansione<br>"?>
                         <?php echo "select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'leader' order by uscita, espansione, numero<br>"?>
                     <?php elseif(count($rs)> 0): ?>
