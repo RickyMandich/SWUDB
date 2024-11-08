@@ -38,7 +38,7 @@
             <div class="container">
                 <div class="form-container">
                     <h1>Log in</h1>
-                    <form action="login">
+                    <form action="logIn?from=<?php echo $file; ?>">
                         <div class="form-group">
                             <input type="text" name="userID" placeholder="Email/Username" required>
                         </div>

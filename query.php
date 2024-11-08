@@ -54,5 +54,5 @@ if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->getID() === 0):?>
 <?php elseif(isset($_SESSION["user"])):?>
     <meta http-equiv="refresh" content="0; url=./home">
     <?php else: ?>
-    <meta http-equiv="refresh" content="0; url=./login">
+    <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
     <?php endif;?>

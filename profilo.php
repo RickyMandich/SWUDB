@@ -11,7 +11,7 @@
     require_once("header.php");
     if (!isset($_SESSION["user"])){
         ?>
-        <meta http-equiv="refresh" content="0; url=./login">
+        <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
         <?php
     }
     $result = $conn->query("select distinct mazzo from mazzi");

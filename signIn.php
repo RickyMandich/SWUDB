@@ -23,7 +23,7 @@
                 $insert = $conn->query("insert into utenti (nome, email, password) values('".$_GET["nome"]."', '".$_GET["email"]. "', '". $_GET["password"]."')");
                 $resultText = "registrazione avvenuta con successo, ora accedi";
                 $resultClass = "success";
-                ?><meta http-equiv="refresh" content="3; url=./login"><?php
+                ?><meta http-equiv="refresh" content="3; url=./logIn?from=<?php echo $_GET["from"] ?? "home"; ?>"><?php
             }catch(mysqli_sql_exception $e){
                 $resultText = $e->getMessage();
                 $resultClass = "failed";

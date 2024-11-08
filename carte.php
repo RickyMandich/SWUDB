@@ -6,7 +6,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><?php echo $file; unset($file) ?></title>
+        <title><?php echo $file?></title>
         <link rel="stylesheet" href="./css/cartaPopUp.css">
         <link rel="stylesheet" href="css/mazzi.css">
     </head>
