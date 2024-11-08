@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <?php preg_match("/[\/]([.*?]*[^\/]*)$/", $_SERVER['HTTP_REFERER'], $match); ?>
-<?php $match[1] = preg_replace("/\?.*$/", "",$match[1]) ?>
+<?php $match[1] = preg_replace("/\?.*$/", "",$match[1]); ?>
 <?php var_dump($match); ?>
 <html lang="it" class="<?php echo $match[1];?>">
     <head>
