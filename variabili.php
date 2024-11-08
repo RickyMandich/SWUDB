@@ -20,7 +20,7 @@
             if(!in_array($value, $tratti)) array_push($tratti, $value);
         }
     }
-    sort($tratti);
+    //sort($tratti);
     foreach($tratti as $t){
         echo $t;
         ?> <br> <?php
