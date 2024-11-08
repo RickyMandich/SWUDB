@@ -43,6 +43,7 @@
                         $queryEspansione = $queryEspansione."espansione = '".$_GET["espansione"]."' ";
                     }else{
                         $queryEspansione = "";
+                        echo "all<br>";
                         break;
                     }
                     if($i != count($_GET["espansione"])-1){
