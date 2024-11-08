@@ -52,8 +52,8 @@
             <form action="carte">
                 <input type="text" name="nome" value="<?php echo $_GET["nome"] ?? ""?>">
                 <select name="espansione" id="espansione">
+                    <option selected>all</option>
                     <?php foreach($espansioni as $set) : ?>
-                        <option selected>all</option>
                         <option>
                             <?php echo $set ?>
                         </option>
