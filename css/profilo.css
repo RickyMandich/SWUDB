@@ -169,3 +169,8 @@ thead{
     position: sticky;
     top: 0;
 }
+
+.deck-card img{
+    width: 10vw;
+    height: auto;
+}
