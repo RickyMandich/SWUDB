@@ -15,7 +15,6 @@ function uploadFilesFromCommit() {
         echo -e "$curlCommand"
         eval "$curlCommand"
         echo "$relativePath/$fileName caricato con successo."
-        echo -e "\n\n"
     done
 }
 
@@ -27,10 +26,12 @@ git status
 nomeCommit=$(date "+%Y %m %d %H:%M")
 nomeCommit="aggiornamento $nomeCommit"
 git commit -m "$nomeCommit"
-clear
 
 # Esegui il push sul repository remoto
 git push -f
+
+sleep 5
+clear
 
 # Carica i file presenti nell'ultimo commit
 uploadFilesFromCommit
