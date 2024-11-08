@@ -57,14 +57,11 @@
                                 <?php echo $value; ?>
                             </td>
                             <td>
-                                <?php $leaderQuery = "select c.nome, c.espansione, c.numero from carte c, mazzi m where c.tipo='leader' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'"; ?>
-                                <?php $leader = $conn->query($leaderQuery)->fetch_assoc();?>
-                                <?php echo $leaderQuery; ?>
+                                <?php $leader = $conn->query("select c.nome, c.espansione, c.numero from carte c, mazzi m where c.tipo='leader' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'")->fetch_assoc();?>
 
                                 <img src="https://swudb.com/cards/<?php echo $leader["espansione"]."/".sprintf("%0". $numeri[$leader["numero"]]."d", $leader["numero"]).".png"?>" alt="<?php echo $leader["nome"];?>">
                             </td>
-                            <?php $base = $conn->query("select c.espansione from carte c, mazzi m where c.tipo='base' and m.espansione = c.espansione and m.numero = m.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'")->fetch_assoc();
-                            var_dump($base)?>
+                            <?php $base = $conn->query("select c.nome, c.espansione, c.numero from carte c, mazzi m where c.tipo='base' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'")->fetch_assoc();?>
                             <td>
                             <img src="https://swudb.com/cards/<?php echo $base["espansione"]."/".sprintf("%0". $numeri[$base["numero"]]."d", $base["numero"]).".png"?>" alt="<?php echo $base["nome"];?>">
                             </td>
