@@ -53,7 +53,7 @@
                         $queryEspansione = $queryEspansione."or ";
                     }else{
                         echo "$i ultimo<br>";
-                        $queryEspansione = ") ";
+                        $queryEspansione .= ") ";
                     }
                 endfor;
             }
