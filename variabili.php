@@ -22,4 +22,7 @@
     }
     sort($tratti);
     unset($resultSet);
+    $file = basename($_SERVER['PHP_SELF']);
+    $file = preg_replace('/\?.*/', '', $file);
+    $file = preg_replace('/\.php$/', '', $file);
 ?>

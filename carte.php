@@ -1,7 +1,5 @@
+<?php require_once "header.php";?>
 <!DOCTYPE html>
-<?php $file = basename($_SERVER['PHP_SELF']) ?>
-<?php $file = preg_replace('/\?.*/', '', $file) ?>
-<?php $file = preg_replace('/\.php$/', '', $file) ?>
 <html lang="it" class="<?php echo $file;?>">
     <head>
         <meta charset="UTF-8">
@@ -29,7 +27,6 @@
                 }
             }
         }
-        require_once "header.php";
         if(count($_GET)>0 and $_GET["nome"] === "" and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
             $queryEspansione = "";
             if(isset($_GET["espansione"])){
