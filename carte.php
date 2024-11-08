@@ -33,9 +33,9 @@
         if(count($_GET)>0 and $_GET["nome"] === 0 and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
             $queryEspansione = "";
             if(isset($_GET["espansione"])){
-                echo true;
+                echo true."<br>";
                 for($i = 0;$i<count($_GET["espansione"]);$i++):
-                    echo $_GET["espansione"][$i];
+                    echo $_GET["espansione"][$i]."<br>";
                     if($i===0){
                         $queryEspansione .= "and (";
                     }
