@@ -76,7 +76,6 @@
                     <?php endif; ?>
                 </tbody>
             </table>
-            <?php var_dump($numeri); ?>
             <form action="./logout" class="logout-form">
                 <button type="submit" class="submit-btn">logout</button>
             </form>
