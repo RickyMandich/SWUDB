@@ -20,7 +20,7 @@ function uploadFiles() {
     # Carica i file nella directory corrente mantenendo il percorso relativo
     for file in *; do
         if [ -f "$file" ]; then
-            ftpRequest="ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file"
+            ftpRequest=$("ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21$relativePath/$file")
             # Ottieni la data di modifica del file locale
             local_modified=$(date -r "$file" +"%Y%m%d %H:%M:%S")
 
