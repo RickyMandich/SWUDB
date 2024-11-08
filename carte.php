@@ -32,9 +32,9 @@
         require_once "header.php";
         var_dump($_GET);
         if(count($_GET)>0 and $_GET["nome"] === 0 and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
-        $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and espansione = '".$_GET["espansione"]."' tipo = 'leader' order by uscita, espansione, numero");
-        $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and espansione = '".$_GET["espansione"]."' tipo = 'base' order by uscita, espansione, numero");
-        $altro = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and espansione = '".$_GET["espansione"]."' tipo <> 'leader' and tipo <> 'base' order by uscita, espansione, numero");
+        $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and espansione = '".$_GET["espansione"]."' and tipo = 'leader' order by uscita, espansione, numero");
+        $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and espansione = '".$_GET["espansione"]."' and tipo = 'base' order by uscita, espansione, numero");
+        $altro = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' and espansione = '".$_GET["espansione"]."' and tipo <> 'leader' and tipo <> 'base' order by uscita, espansione, numero");
         $rs = [];
         f($leader, $rs);
         f($basi, $rs);
