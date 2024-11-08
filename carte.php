@@ -90,7 +90,7 @@
                     </table>
                     <?php else: ?>
                         nessuna carta trovata
-                    <?php endif; ?>
+                    <?php var_dump($match); endif; ?>
                 </div>
             </div>
         </div>
