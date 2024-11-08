@@ -44,6 +44,11 @@
         <div class="container">
             <form action="carte">
                 <input type="text" name="nome" value="<?php echo $_GET["nome"] ?? ""?>">
+                <select name="espansione" id="espansione">
+                    <?php foreach($espansioni as $set) : ?>
+                        
+                    <?php endforeach; ?>
+                </select>
                 <input type="submit" value="cerca">
             </form>
             <div class="decks-section">
