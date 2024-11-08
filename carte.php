@@ -50,14 +50,18 @@
                     }
                 endfor;
             }
-            $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'leader' order by uscita, espansione, numero");
-            $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'base' order by uscita, espansione, numero");
-            $altro = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo <> 'leader' and tipo <> 'base' order by uscita, espansione, numero");
-            $rs = [];
-            f($leader, $rs);
-            f($basi, $rs);
-            f($altro, $rs);
-            $conn->close();
+            try{
+                $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'leader' order by uscita, espansione, numero");
+                $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'base' order by uscita, espansione, numero");
+                $altro = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo <> 'leader' and tipo <> 'base' order by uscita, espansione, numero");
+                $rs = [];
+                f($leader, $rs);
+                f($basi, $rs);
+                f($altro, $rs);
+                $conn->close();
+            }catch(mysqli_sql_exception $e){
+
+            }
             ?>
     <body>
         <div class="container">
@@ -76,7 +80,7 @@
             <div class="decks-section">
                 <div class="decks-container">
                     <?php if(true) : ?>
-                        <?php var_dump($_GET);?>
+                        <?php echo $queryEspansione?>
                     <?php elseif(count($rs)> 0): ?>
                         <table>
                             <thead>
