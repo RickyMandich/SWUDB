@@ -68,14 +68,22 @@
             <form action="carte">
                 <input type="text" name="nome" value="<?php echo $_GET["nome"] ?? ""?>">
                 <select multiple name="espansione[]" id="espansione">
-                    <option selected>all</option>
+                    <option <?php if(isset($_GET["espansione"]) and in_array("all", $_GET["espansione"])) echo "selected" ?>>all</option>
                     <?php foreach($espansioni as $set) : ?>
-                        <option>
+                        <option <?php if(isset($_GET["espansione"]) and in_array($set, $_GET["espansione"])) echo "selected" ?>>
                             <?php echo $set ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
                 <input type="submit" value="cerca">
+                select multiple name="espansione[]" id="espansione">
+                    option <?php if(isset($_GET["espansione"]) and in_array("all", $_GET["espansione"])) echo "selected" ?>>all/option>
+                    <?php foreach($espansioni as $set) : ?>
+                        option <?php if(isset($_GET["espansione"]) and in_array($set, $_GET["espansione"])) echo "selected" ?>>
+                            <?php echo $set ?>
+                        /option>
+                    <?php endforeach; ?>
+                /select>
             </form>
             <div class="decks-section">
                 <div class="decks-container">
