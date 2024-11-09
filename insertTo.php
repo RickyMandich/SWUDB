@@ -47,6 +47,7 @@
         $resultClass = "hidden";
         $resultText = "";
         if(isset($_GET["mazzo"])){
+            $_GET["espansione"] = strtoupper($_GET["espansione"]);
             $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
             if ($conn->connect_error) {
                 die("Connection failed: " . $conn->connect_error);
