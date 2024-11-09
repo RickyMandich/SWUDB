@@ -22,11 +22,19 @@ require_once("header.php");?>
                     echo "ora divido leader base e resto<br>";
                     if(str_contains($_GET["query"], "order by")){
                         $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
+                        $queryBasi = str_replace("order by", "and tipo='base' order by", $_GET["query"]);
+                        $queryAltro = str_replace("order by", "and tipo='altro' order by", $_GET["query"]);
                     }else{
                         $queryLeader = $_GET["query"]." and tipo='leader'";
+                        $queryBasi = $_GET["query"]." and tipo='base'";
+                        $queryAltro = $_GET["query"]." and tipo<>'leader' and tipo<>'base'";
                     }
                     echo "\$queryLeader=>$queryLeader<br>";
                     $leader = $conn -> query($queryLeader);
+                    echo "\$queryBasi=>$queryBasi<br>";
+                    $leader = $conn -> query($queryLeader);
+                    echo "\$queryAltro=>$queryAltro<br>";
+                    $altro = $conn -> query($queryAltro);
                 }
                 $rs = $conn->query($_GET["query"]);
                 if($resultSet = $rs->fetch_assoc()):?>
