@@ -29,14 +29,12 @@ require_once("header.php");?>
                         $queryBasi = $_GET["query"]." and tipo='base'";
                         $queryAltro = $_GET["query"]." and tipo<>'leader' and tipo<>'base'";
                     }
-                    echo "\$queryLeader=>$queryLeader<br>";
                     $leader = $conn -> query($queryLeader);
-                    echo "\$queryBasi=>$queryBasi<br>";
                     $basi = $conn -> query($queryBasi);
-                    echo "\$queryAltro=>$queryAltro<br>";
                     $altro = $conn -> query($queryAltro);
                 }
                 $rs = $conn->query($_GET["query"]);
+                echo $resultSet;
                 if($resultSet->num_rows>0):?>
                     <form action="./query" method="get">
                         <input type="text" name="query" id="query" value="<?php if(isset($_GET["query"])) echo $_GET["query"]; else echo "select * from "; ?>">
