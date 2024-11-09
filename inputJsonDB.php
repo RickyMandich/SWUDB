@@ -22,6 +22,7 @@
                     $collezione = new Cards();
                     foreach($jsonData as $key=> $value){
                         var_dump($value);
+                        require_once "classi/Card.php";
                         $collezione->add(new Card($value));
                     }
                     $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
