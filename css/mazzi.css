@@ -154,11 +154,10 @@ table {
 .deck-card {
     max-height: 100px;
     background-color: #c3c3c3;
-    display: none;
 }
 
-.carte .deck-card{
-    display: table-row;
+.mazzi .deck-card{
+    display: none;
 }
 
 a{
