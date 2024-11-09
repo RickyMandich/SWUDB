@@ -32,7 +32,7 @@ require_once("header.php");?>
                     echo "\$queryLeader=>$queryLeader<br>";
                     $leader = $conn -> query($queryLeader);
                     echo "\$queryBasi=>$queryBasi<br>";
-                    $leader = $conn -> query($queryLeader);
+                    $basi = $conn -> query($queryBasi);
                     echo "\$queryAltro=>$queryAltro<br>";
                     $altro = $conn -> query($queryAltro);
                 }
@@ -54,20 +54,50 @@ require_once("header.php");?>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while($resultSet = $leader->fetch_assoc()): ?>
-                                        <tr class="card-in-deck-row deck-card">
-                                            <?php foreach($resultSet as $value): ?>
-                                            <td>
-                                                <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
-                                                    <?php echo $value;
-                                                        if($value === $resultSet["nome"]){
-                                                            ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
-                                                        }; ?>
-                                                </a>
-                                            </td>
-                                            <?php endforeach; ?>
-                                        </tr>
-                                    <?php endwhile; ?>
+                                    <?php if($carte):?>
+                                        <?php while($resultSet = $leader->fetch_assoc()): ?>
+                                            <tr class="card-in-deck-row deck-card">
+                                                <?php foreach($resultSet as $value): ?>
+                                                <td>
+                                                    <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
+                                                        <?php echo $value;
+                                                            if($value === $resultSet["nome"]){
+                                                                ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
+                                                            }; ?>
+                                                    </a>
+                                                </td>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        <?php endwhile; ?>
+                                        <?php while($resultSet = $basi->fetch_assoc()): ?>
+                                            <tr class="card-in-deck-row deck-card">
+                                                <?php foreach($resultSet as $value): ?>
+                                                <td>
+                                                    <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
+                                                        <?php echo $value;
+                                                            if($value === $resultSet["nome"]){
+                                                                ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
+                                                            }; ?>
+                                                    </a>
+                                                </td>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        <?php endwhile; ?>
+                                        <?php while($resultSet = $altro->fetch_assoc()): ?>
+                                            <tr class="card-in-deck-row deck-card">
+                                                <?php foreach($resultSet as $value): ?>
+                                                <td>
+                                                    <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
+                                                        <?php echo $value;
+                                                            if($value === $resultSet["nome"]){
+                                                                ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
+                                                            }; ?>
+                                                    </a>
+                                                </td>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        <?php endwhile; ?>
+                                    <?php endif;?>
                                 </tbody>
                             </table>
                         </div>
