@@ -18,9 +18,14 @@ require_once("header.php");?>
             }
             if(str_contains($_GET["query"], "carte") and (!str_contains($_GET["query"], "leader") and !str_contains($_GET["query"], "base"))){
                 $carte = true;
-                echo "ora divido leader basei e resto<br>";
-                echo $_GET["query"]."=>".str_replace("order by", "and tipo='leader' order by", $_GET["query"])."<br>";
-                //$leader = $conn -> query(str_replace("order by", "and tipo='leader' order by", $_GET["query"]));
+                echo "ora divido leader base e resto<br>";
+                if(str_contains($_GET["query"], "order by")){
+                    $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
+                }else{
+                    $queryLeader = $_GET["query"]."and tipo='leader'";
+                }
+                echo "\$queryLeader=>$queryLeader<br>";
+                //$leader = $conn -> query($queryLeader);
             }
             $rs = $conn->query($_GET["query"]);
             if($resultSet = $rs->fetch_assoc()):?>
