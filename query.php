@@ -26,7 +26,7 @@ require_once("header.php");?>
                         $queryLeader = $_GET["query"]." and tipo='leader'";
                     }
                     echo "\$queryLeader=>$queryLeader<br>";
-                    //$leader = $conn -> query($queryLeader);
+                    $leader = $conn -> query($queryLeader);
                 }
                 $rs = $conn->query($_GET["query"]);
                 if($resultSet = $rs->fetch_assoc()):?>
