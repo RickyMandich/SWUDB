@@ -1,4 +1,5 @@
 <?php
+echo "Cards";
 require_once "header.php";
 class Cards{
     public $collezione;
