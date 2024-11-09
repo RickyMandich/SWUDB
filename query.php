@@ -36,7 +36,8 @@ require_once("header.php");?>
                     $altro = $conn -> query($queryAltro);
                 }
                 $rs = $conn->query($_GET["query"]);
-                if($resultSet = $rs->fetch_assoc()):?>
+                if($rs):
+                    $resultSet = $rs->fetch_assoc()?>
                     <div class="decks-section">
                         <div class="decks-container">
                             <table>
