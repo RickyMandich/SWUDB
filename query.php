@@ -34,7 +34,7 @@ require_once("header.php");?>
                     $altro = $conn -> query($queryAltro);
                 }
                 $rs = $conn->query($_GET["query"]);
-                if($rs->num_rows>0):?>
+                if($resultSet = $rs->fetch_assoc()):?>
                     <form action="./query" method="get">
                         <input type="text" name="query" id="query" value="<?php if(isset($_GET["query"])) echo $_GET["query"]; else echo "select * from "; ?>">
                     </form>
@@ -49,6 +49,7 @@ require_once("header.php");?>
                                             </td>
                                         <?php endforeach; ?>
                                     </tr>
+                                    <?php $rs->$conn->query($_GET["query"]); ?>
                                 </thead>
                                 <tbody>
                                     <?php if($carte):?>
