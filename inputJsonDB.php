@@ -21,7 +21,7 @@
                     //elaborazione json==>magic==>Card[]
                     $collezione = new Cards();
                     foreach($jsonData as $key=> $value){
-                        var_dump($value);
+                        //var_dump($value);
                         require_once "./classi/Card.php";
                         $collezione->add(new Card($value));
                     }
