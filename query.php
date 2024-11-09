@@ -22,7 +22,7 @@ require_once("header.php");?>
                 if(str_contains($_GET["query"], "order by")){
                     $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
                 }else{
-                    $queryLeader = $_GET["query"]."and tipo='leader'";
+                    $queryLeader = $_GET["query"]." and tipo='leader'";
                 }
                 echo "\$queryLeader=>$queryLeader<br>";
                 //$leader = $conn -> query($queryLeader);
