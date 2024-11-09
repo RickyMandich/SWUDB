@@ -37,7 +37,7 @@ require_once("header.php");?>
                     $altro = $conn -> query($queryAltro);
                 }
                 $rs = $conn->query($_GET["query"]);
-                if($resultSet = $rs->fetch_assoc()):?>
+                if($resultSet->num_rows>0):?>
                     <form action="./query" method="get">
                         <input type="text" name="query" id="query" value="<?php if(isset($_GET["query"])) echo $_GET["query"]; else echo "select * from "; ?>">
                     </form>
