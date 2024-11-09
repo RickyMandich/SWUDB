@@ -17,6 +17,7 @@ require_once("header.php");?>
                 die("Connection failed: " . $conn->connect_error);
             }
             $rs = $conn->query($_GET["query"]);
+            var_dump($rs);
             if($resultSet = $rs->fetch_assoc()):
             ?>
                 <div class="container">
