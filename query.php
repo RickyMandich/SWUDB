@@ -25,7 +25,7 @@ require_once("header.php");?>
                             <table>
                                 <thead>
                                     <tr class="deck-header">
-                                        <?php foreach($rs as $column=>$value): ?>
+                                        <?php foreach($resultSet as $column=>$value): ?>
                                             <td>
                                                 <?php echo $column; ?>
                                             </td>
