@@ -34,7 +34,7 @@ require_once("header.php");?>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php do: ?>
+                                    <?php do{ ?>
                                         <tr class="card-in-deck-row deck-card">
                                             <?php foreach($resultSet as $value): ?>
                                             <td>
@@ -47,7 +47,7 @@ require_once("header.php");?>
                                             </td>
                                             <?php endforeach; ?>
                                         </tr>
-                                    <?php endwhile($resultSet = $rs->fetch_assoc()); ?>
+                                    <?php }while($resultSet = $rs->fetch_assoc()); ?>
                                 </tbody>
                             </table>
                         </div>
