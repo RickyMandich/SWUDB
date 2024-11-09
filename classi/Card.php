@@ -1,5 +1,4 @@
 <?php
-echo "Card";
 class Card {
     public $unica;
     public $nome;
