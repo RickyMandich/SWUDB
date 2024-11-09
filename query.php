@@ -25,7 +25,7 @@ require_once("header.php");?>
                     if(str_contains($_GET["query"], "order by")){
                         $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
                         $queryBasi = str_replace("order by", "and tipo='base' order by", $_GET["query"]);
-                        $queryAltro = str_replace("order by", "and tipo='altro' order by", $_GET["query"]);
+                        $queryAltro = str_replace("order by", "and tipo<>'leader' and tipo<>'base' order by", $_GET["query"]);
                     }else{
                         $queryLeader = $_GET["query"]." and tipo='leader'";
                         $queryBasi = $_GET["query"]." and tipo='base'";
