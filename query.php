@@ -11,9 +11,7 @@ require_once("header.php");?>
     </head>
     <body>
         <?php if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->getID() === 0):?>
-            <form action="./query" method="get">
-                <input type="text" name="query" id="query" value="<?php if(isset($_GET["query"])) echo $_GET["query"]; else echo "select * from "; ?>">
-            </form><?php
+            <?php
             $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
             if ($conn->connect_error) {
                 die("Connection failed: " . $conn->connect_error);
@@ -21,6 +19,9 @@ require_once("header.php");?>
             $rs = $conn->query($_GET["query"]);
             if($resultSet = $rs->fetch_assoc()):?>
                 <div class="container">
+                    <form action="./query" method="get">
+                        <input type="text" name="query" id="query" value="<?php if(isset($_GET["query"])) echo $_GET["query"]; else echo "select * from "; ?>">
+                    </form>
                     <div class="decks-section">
                         <div class="decks-container">
                             <table>
