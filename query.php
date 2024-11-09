@@ -11,25 +11,25 @@ require_once("header.php");?>
     </head>
     <body>
         <?php if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->getID() === 0):?>
-            <?php
-            $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
-            if ($conn->connect_error) {
-                die("Connection failed: " . $conn->connect_error);
-            }
-            if(str_contains($_GET["query"], "carte") and (!str_contains($_GET["query"], "leader") and !str_contains($_GET["query"], "base"))){
-                $carte = true;
-                echo "ora divido leader base e resto<br>";
-                if(str_contains($_GET["query"], "order by")){
-                    $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
-                }else{
-                    $queryLeader = $_GET["query"]." and tipo='leader'";
+            <div class="container">
+                <?php
+                $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
+                if ($conn->connect_error) {
+                    die("Connection failed: " . $conn->connect_error);
                 }
-                echo "\$queryLeader=>$queryLeader<br>";
-                //$leader = $conn -> query($queryLeader);
-            }
-            $rs = $conn->query($_GET["query"]);
-            if($resultSet = $rs->fetch_assoc()):?>
-                <div class="container">
+                if(str_contains($_GET["query"], "carte") and (!str_contains($_GET["query"], "leader") and !str_contains($_GET["query"], "base"))){
+                    $carte = true;
+                    echo "ora divido leader base e resto<br>";
+                    if(str_contains($_GET["query"], "order by")){
+                        $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
+                    }else{
+                        $queryLeader = $_GET["query"]." and tipo='leader'";
+                    }
+                    echo "\$queryLeader=>$queryLeader<br>";
+                    //$leader = $conn -> query($queryLeader);
+                }
+                $rs = $conn->query($_GET["query"]);
+                if($resultSet = $rs->fetch_assoc()):?>
                     <form action="./query" method="get">
                         <input type="text" name="query" id="query" value="<?php if(isset($_GET["query"])) echo $_GET["query"]; else echo "select * from "; ?>">
                     </form>
