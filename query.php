@@ -19,7 +19,6 @@ require_once("header.php");?>
                 }
                 if(str_contains($_GET["query"], "carte") and (!str_contains($_GET["query"], "leader") and !str_contains($_GET["query"], "base"))){
                     $carte = true;
-                    echo "ora divido leader base e resto<br>";
                     if(str_contains($_GET["query"], "order by")){
                         $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
                         $queryBasi = str_replace("order by", "and tipo='base' order by", $_GET["query"]);
