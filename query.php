@@ -16,6 +16,12 @@ require_once("header.php");?>
             if ($conn->connect_error) {
                 die("Connection failed: " . $conn->connect_error);
             }
+            if(str_contains($_GET["query"], "carte") and (!str_contains($_GET["query"], "leader") and !str_contains($_GET["query"], "base"))){
+                $carte = true;
+                echo "ora divido leader basei e resto<br>";
+                echo $_GET["query"]."=>".str_replace("order by", "and tipo='leader' order by", $_GET["query"])."<br>";
+                //$leader = $conn -> query(str_replace("order by", "and tipo='leader' order by", $_GET["query"]));
+            }
             $rs = $conn->query($_GET["query"]);
             if($resultSet = $rs->fetch_assoc()):?>
                 <div class="container">
@@ -35,7 +41,7 @@ require_once("header.php");?>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php do{ ?>
+                                    <?php while($resultSet = $leader->fetch_assoc()): ?>
                                         <tr class="card-in-deck-row deck-card">
                                             <?php foreach($resultSet as $value): ?>
                                             <td>
@@ -48,7 +54,7 @@ require_once("header.php");?>
                                             </td>
                                             <?php endforeach; ?>
                                         </tr>
-                                    <?php }while($resultSet = $rs->fetch_assoc()); ?>
+                                    <?php endwhile; ?>
                                 </tbody>
                             </table>
                         </div>
