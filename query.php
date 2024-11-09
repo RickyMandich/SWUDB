@@ -5,6 +5,8 @@ require_once("header.php");?>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="css/cartaPopUp.css">
+        <link rel="stylesheet" href="css/mazzi.css">
         <title>query</title>
     </head>
     <body>
@@ -17,9 +19,7 @@ require_once("header.php");?>
                 die("Connection failed: " . $conn->connect_error);
             }
             $rs = $conn->query($_GET["query"]);
-            var_dump($rs);
-            if($resultSet = $rs->fetch_assoc()):
-            ?>
+            if($resultSet = $rs->fetch_assoc()):?>
                 <div class="container">
                     <div class="decks-section">
                         <div class="decks-container">
