@@ -97,6 +97,16 @@ require_once("header.php");?>
                                                 <?php endforeach; ?>
                                             </tr>
                                         <?php endwhile; ?>
+                                    <?php else:?>
+                                        <?php while($resultSet = $rs->fetch_assoc()): ?>
+                                            <tr class="card-in-deck-row deck-card">
+                                                <?php foreach($resultSet as $value): ?>
+                                                <td>
+                                                    <?php echo $value; ?>
+                                                </td>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        <?php endwhile; ?>
                                     <?php endif;?>
                                 </tbody>
                             </table>
