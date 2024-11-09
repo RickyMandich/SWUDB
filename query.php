@@ -49,7 +49,7 @@ require_once("header.php");?>
                                             </td>
                                         <?php endforeach; ?>
                                     </tr>
-                                    <?php $rs->$conn->query($_GET["query"]); ?>
+                                    <?php $rs = $conn->query($_GET["query"]); ?>
                                 </thead>
                                 <tbody>
                                     <?php if($carte):?>
