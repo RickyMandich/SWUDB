@@ -1,7 +1,7 @@
 <?php
 require_once("header.php");?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" class="<?php echo $file;?>">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
