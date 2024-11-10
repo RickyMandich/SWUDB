@@ -27,7 +27,7 @@
                 }
             }
         }
-        if(count($_GET)>0 and $_GET["nome"] === "" and $_GET["espansione"] === "tutte"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
+        if(count($_GET)>0 and $_GET["nome"] === "" and $_GET["espansione"] === "all"): ?><meta http-equiv="refresh" content="0; url=carte"><?php endif;
             $queryEspansione = "";
             if(isset($_GET["espansione"])){
                 for($i = 0;$i<count($_GET["espansione"]);$i++):
@@ -47,6 +47,7 @@
                     }
                 endfor;
             }
+            $_GET["nome"] = str_replace("'", "\'", $_GET["nome"]);
             try{
                 $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'leader' order by uscita, espansione, numero");
                 $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'base' order by uscita, espansione, numero");
@@ -76,7 +77,7 @@
             </form>
             <div class="decks-section">
                 <div class="decks-container">
-                    <?php if(count($rs)> 0): ?>
+                    <?php var_dump($rs); if(count($rs)> 0): ?>
                         <table>
                             <thead>
                                 <tr class="deck-header">
