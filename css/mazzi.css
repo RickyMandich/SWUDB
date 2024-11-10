@@ -176,7 +176,7 @@ thead{
 }
 
 input[name="nome"]{
-    width: 10%;
+    width: 100%;
 }
 
 form[action="./moveTo"] input{
