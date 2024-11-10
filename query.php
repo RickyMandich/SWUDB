@@ -55,6 +55,9 @@ require_once("header.php");?>
                                     <?php if($carte):?>
                                         <?php while($resultSet = $leader->fetch_assoc()): ?>
                                             <tr class="card-in-deck-row deck-card">
+                                                <td>
+                                                    leader
+                                                </td>
                                                 <?php foreach($resultSet as $value): ?>
                                                 <td>
                                                     <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
@@ -69,6 +72,9 @@ require_once("header.php");?>
                                         <?php endwhile; ?>
                                         <?php while($resultSet = $basi->fetch_assoc()): ?>
                                             <tr class="card-in-deck-row deck-card">
+                                                <td>
+                                                    basi
+                                                </td>
                                                 <?php foreach($resultSet as $value): ?>
                                                 <td>
                                                     <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
@@ -83,6 +89,9 @@ require_once("header.php");?>
                                         <?php endwhile; ?>
                                         <?php while($resultSet = $altro->fetch_assoc()): ?>
                                             <tr class="card-in-deck-row deck-card">
+                                                <td>
+                                                    altro
+                                                </td>
                                                 <?php foreach($resultSet as $value): ?>
                                                 <td>
                                                     <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
