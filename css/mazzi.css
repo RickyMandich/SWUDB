@@ -175,7 +175,7 @@ thead{
     top: 0;
 }
 
-input[name="nome"]{
+input[type="text"]{
     width: 100%;
 }
 
