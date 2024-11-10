@@ -107,6 +107,9 @@ require_once("header.php");?>
                                     <?php else:?>
                                         <?php while($resultSet = $rs->fetch_assoc()): ?>
                                             <tr class="card-in-deck-row deck-card">
+                                                <td>
+                                                    rs
+                                                </td>
                                                 <?php foreach($resultSet as $value): ?>
                                                 <td>
                                                     <?php echo $value; ?>
