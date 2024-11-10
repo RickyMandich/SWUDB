@@ -77,7 +77,7 @@
             </form>
             <div class="decks-section">
                 <div class="decks-container">
-                    <?php var_dump($rs); if(count($rs)> 0): ?>
+                    <?php if(count($rs)> 0): ?>
                         <table>
                             <thead>
                                 <tr class="deck-header">
