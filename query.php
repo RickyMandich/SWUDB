@@ -20,6 +20,7 @@ require_once("header.php");?>
                 if ($conn->connect_error) {
                     die("Connection failed: " . $conn->connect_error);
                 }
+                var_dump($_GET["query"]);
                 if(str_contains($_GET["query"], "carte") and (!str_contains($_GET["query"], "leader") and !str_contains($_GET["query"], "base"))){
                     $carte = true;
                     if(str_contains($_GET["query"], "order by")){
