@@ -44,6 +44,9 @@ require_once("header.php");?>
                             <table>
                                 <thead>
                                     <tr class="deck-header">
+                                        <td>
+                                            tipo tabella
+                                        </td>
                                         <?php foreach($resultSet as $column=>$value): ?>
                                             <td>
                                                 <?php echo $column; ?>
