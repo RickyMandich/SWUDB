@@ -127,7 +127,7 @@
                                     <?php foreach($row as $key=>$cell): ?>
                                         <td>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
-                                            <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%03d", $row["numero"])?>" target="_blank">
+                                            <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%0".$numeri[$leader["espansione"]]."d", $row["numero"])?>" target="_blank">
                                             <?php 
                                             endif;
                                             echo $cell;

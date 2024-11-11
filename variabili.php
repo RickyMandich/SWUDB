@@ -7,7 +7,6 @@
     while ($line = $resultSet -> fetch_assoc()){
         $numeri[$line["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $line["espansione"]) ? 3 : strlen((string) $line["numero"]);
     }
-    var_dump($numeri);
     $resultSet = $conn -> query("select distinct espansione from carte order by uscita");
     $espansioni = [];
     while ($line = $resultSet -> fetch_assoc()){
