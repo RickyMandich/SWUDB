@@ -14,4 +14,8 @@ gestisce:
 #### *ATTENZIONE:* contenuti che si prevede di implementare in futuro
 - la gestione della collezione in una pagina specifica
 - possibilità di importare i mazzi tramite un link dal sito https://swudb.com (ATTENZIONE: nel caso in cui vengano inseriti due mazzi con lo stesso nome verranno considerati come lo stesso mazzo)
+#### dettagli
+- quasi tutte se non tutte le volte in cui si visualizza un'elenco di carte sono previste le seguenti funzioni:
+    - passando con il mause sopra una riga dell'elenco si potrà vedere nell'angolo in alto a destra un'anteprima della carta
+    - premento su un qualsiasi dato di una carta si verrà rimandati alla relativa pagina del sito di riferimento (https://swudb.com)
 # todo list
