@@ -79,6 +79,7 @@
                                             </form>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$leader["espansione"]]."d", $row["numero"])."-portrait.png";?>" width="100vw">
+                                            <?php echo "https://swudb.com/cards/".$row["espansione"]."/".sprintf("%0".$numeri[$leader["espansione"]]."d", $row["numero"])."-portrait.png"?>
                                         <?php endif; ?>
                                     </td>
                                     <td style="max-width: 100vw">
