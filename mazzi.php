@@ -124,6 +124,8 @@
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$leader["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
+                                            <?php var_dump($numeri);
+                                            echo $leader["espansione"];?>
                                         <?php endif; ?>
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
