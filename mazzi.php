@@ -78,9 +78,9 @@
                                                 <input type='image' src='img/rimuovi.png' width='100vw' height='auto' alt='Invia il form'>
                                             </form>
                                         <?php else: ?>
-                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$leader["espansione"]]."d", $row["numero"])."-portrait.png";?>" width="100vw">
+                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])."-portrait.png";?>" width="100vw">
                                             <?php var_dump($numeri);
-                                            echo $leader["espansione"];?>
+                                            echo $row["espansione"];?>
                                         <?php endif; ?>
                                     </td>
                                     <td style="max-width: 100vw">
@@ -123,15 +123,15 @@
                                                 </form>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$leader["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
+                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
                                             <?php //var_dump($numeri);
-                                            echo $leader["espansione"];?>
+                                            echo $row["espansione"];?>
                                         <?php endif; ?>
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
                                         <td>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
-                                            <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%0".$numeri[$leader["espansione"]]."d", $row["numero"])?>" target="_blank">
+                                            <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])?>" target="_blank">
                                             <?php 
                                             endif;
                                             echo $cell;
