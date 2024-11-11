@@ -79,8 +79,6 @@
                                             </form>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])."-portrait.png";?>" width="100vw">
-                                            <?php var_dump($numeri);
-                                            echo $row["espansione"];?>
                                         <?php endif; ?>
                                     </td>
                                     <td style="max-width: 100vw">
@@ -124,8 +122,6 @@
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
-                                            <?php //var_dump($numeri);
-                                            echo $row["espansione"];?>
                                         <?php endif; ?>
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
