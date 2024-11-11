@@ -52,7 +52,7 @@
                         </td>
                     </tr>
                     <?php foreach($mazzi as $value):
-                        if($value!=="Collezione"):?>
+                        if($value==="Collezione"):?>
                             <tr class="deck-card">
                                 <td>
                                     <?php echo $value; ?>
