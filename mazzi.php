@@ -20,7 +20,7 @@
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
-        $resultSet = $conn->query("select m.mazzo, m.foil, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID()." order by mazzo, numero, espansione");
+        $resultSet = $conn->query("select m.mazzo, c.* from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ". unserialize($_SESSION["user"])->getID()." order by mazzo, numero, espansione");
         $deck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
