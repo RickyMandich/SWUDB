@@ -20,6 +20,8 @@
             <br>
             <label for="numero">inserisci il numero della carta da inserire </label><input type="number" name="numero" placeholder="numero">
             <br>
+            <label for="foil">inserisci se la carta è foil <input type="checkbox" name="foil" id="foil"></label>
+            <br>
             <input type="hidden" name="from" values="Deck">
             <input type="submit" value="aggiungi carta">
         </form>

@@ -19,6 +19,8 @@
             <br>
             <label for="numero">inserisci il numero della carta da inserire <input type="number" name="numero" placeholder="numero"></label>
             <br>
+            <label for="foil">inserisci se la carta è foil <input type="checkbox" name="foil" id="foil"></label>
+            <br>
             <input type="hidden" name="from" value="Collezione">
             <input type="submit" value="aggiungi carta">
         </form>
