@@ -54,7 +54,8 @@
                         <?php if (count($deck) > 0): ?>
                         <thead>
                             <tr class="deck-header">
-                                <td></td>
+                                <td>rimuovi carta</td>
+                                <td>sposta carta</td>
                                 <?php foreach($deck[0] as $key => $value):?>
                                 <td>
                                     <?php echo $key; ?>
