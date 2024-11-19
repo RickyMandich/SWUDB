@@ -15,7 +15,7 @@
         //var_dump($jsonContent);
         // Verifica che sia un JSON valido
         if($jsonData = json_decode($jsonContent, true)) {
-            var_dump($jsonData);
+            //var_dump($jsonData);
             //elaborazione json==>magic==>Card[]
             $collezione = new Cards();
             foreach($jsonData as $key=> $value){
