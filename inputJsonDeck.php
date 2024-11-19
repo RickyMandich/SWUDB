@@ -23,7 +23,6 @@
                     if ($conn->connect_error) {
                         die("Connection failed: " . $conn->connect_error);
                     }
-                    echo $deck->getInsertSql();
                     $conn->query($deck->getInsertSql());
                     echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
                     ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
