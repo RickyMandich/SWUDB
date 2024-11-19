@@ -53,7 +53,7 @@
         function getInsertSql(){
             $insert = "insert into mazzi\nvalues";
             foreach( $this->carte as $card){
-                $insert = $insert."('".$this->nome."','". $card->espansione."',". $card->numero .",". unserialize($_SESSION["user"])->getID()."),";
+                $insert = $insert."('".$this->nome."','". $card->espansione."',". $card->numero .",". unserialize($_SESSION["user"])->getID().", 0),";
             }
             $insert = substr($insert,0,-1);
             return $insert.";";
