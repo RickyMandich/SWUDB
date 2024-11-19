@@ -27,10 +27,14 @@ require_once("header.php");?>
                         $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
                         $queryBasi = str_replace("order by", "and tipo='base' order by", $_GET["query"]);
                         $queryAltro = str_replace("order by", "and tipo<>'leader' and tipo<>'base' order by", $_GET["query"]);
-                    }else{
+                    }elseif(str_contains($_GET["query"], "where")){
                         $queryLeader = $_GET["query"]." and tipo='leader'";
                         $queryBasi = $_GET["query"]." and tipo='base'";
                         $queryAltro = $_GET["query"]." and tipo<>'leader' and tipo<>'base'";
+                    }else{
+                        $queryLeader = $_GET["query"]." where tipo='leader'";
+                        $queryBasi = $_GET["query"]." where tipo='base'";
+                        $queryAltro = $_GET["query"]." where tipo<>'leader' and tipo<>'base'";
                     }
                     echo "\$queryLeader:<br>$queryLeader<br>";
                     $leader = $conn -> query($queryLeader);
