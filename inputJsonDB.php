@@ -12,7 +12,6 @@
         }
         // Legge il contenuto del file JSON
         $jsonContent = file_get_contents("collezione.json");
-        var_dump($jsonContent);
         // Verifica che sia un JSON valido
         if($jsonData = json_decode($jsonContent, true)) {
             var_dump($jsonData);
