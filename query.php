@@ -32,8 +32,11 @@ require_once("header.php");?>
                         $queryBasi = $_GET["query"]." and tipo='base'";
                         $queryAltro = $_GET["query"]." and tipo<>'leader' and tipo<>'base'";
                     }
+                    echo "\$queryLeader:<br>$queryLeader";
                     $leader = $conn -> query($queryLeader);
+                    echo "\$queryBasi:<br>$queryBasi";
                     $basi = $conn -> query($queryBasi);
+                    echo "\$queryAltro:<br>$queryAltro";
                     $altro = $conn -> query($queryAltro);
                 }
                 $rs = $conn->query($_GET["query"]);
