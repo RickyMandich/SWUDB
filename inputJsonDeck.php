@@ -53,7 +53,7 @@
             ?>
             <form action="inputJsonDeck" method="post" enctype="multipart/form-data">
                 <input type="file" name="fileJson" id="fileJson" accept=".json">
-                <input type="text" name="textJson" id="textJson">
+                <textarea name="textJson" id="textJson"></textarea>
                 <input type="submit" value="Carica">
             </form>
             <?php
