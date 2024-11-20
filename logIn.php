@@ -24,7 +24,7 @@
             if($resultSet["password"] === $_GET["password"]):
                 $resultText = "accesso eseguito con successo";
                 $resultClass = "success";
-                $_SESSION["user"] = serialize(new Utente($resultSet["nome"], $resultSet["id"], $resultSet["email"], $resultSet["password"]));
+                $_SESSION["user"] = serialize(new Utente($resultSet["nome"], $resultSet["id"], $resultSet["email"], $resultSet["password"], $resultSet["admin"]));
             ?>
             <meta http-equiv="refresh" content="2; url=./<?php echo $_GET["from"] ?? "profilo"?>">
             <?php
