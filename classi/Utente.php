@@ -11,7 +11,7 @@
             $this->id = $id;
             $this->email = $email;
             $this->password = $password;
-            $this->admin = $admin
+            $this->admin = $admin;
         }
 
         public function getNome(): string{
