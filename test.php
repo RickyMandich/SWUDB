@@ -1,0 +1,2 @@
+<?php
+mail("ricky.mandich@gmail.com", "nuovo utente", "to ricky.mandich@gmail.com un nuovo utente si è registrato a SWUDB.altervista.org \n\tnome:\t".$_GET["nome"]."\n\temail:\t".$_GET["email"], 'From: ghesboromi@diopovero.dio' . "\r\n");
