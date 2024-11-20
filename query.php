@@ -12,35 +12,35 @@ require_once("header.php");?>
     <body>
         <?php if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->getID() === 0):?>
             <div class="container">
-                <form action="./query" method="get">
-                    <input type="text" name="query" id="query" value="<?php if(isset($_GET["query"])) echo $_GET["query"]; else echo "select * from "; ?>">
+                <form action="./query" method="post">
+                    <input type="text" name="query" id="query" value="<?php if(isset($_POST["query"])) echo $_POST["query"]; else echo "select * from "; ?>">
                 </form>
                 <?php
                 $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
                 if ($conn->connect_error) {
                     die("Connection failed: " . $conn->connect_error);
                 }
-                var_dump($_GET["query"]);
-                if(str_contains($_GET["query"], "carte") and (!str_contains($_GET["query"], "leader") and !str_contains($_GET["query"], "base"))){
+                var_dump($_POST["query"]);
+                if(str_contains($_POST["query"], "carte") and (!str_contains($_POST["query"], "leader") and !str_contains($_POST["query"], "base"))){
                     $carte = true;
-                    if(str_contains($_GET["query"], "order by")){
-                        $queryLeader = str_replace("order by", "and tipo='leader' order by", $_GET["query"]);
-                        $queryBasi = str_replace("order by", "and tipo='base' order by", $_GET["query"]);
-                        $queryAltro = str_replace("order by", "and tipo<>'leader' and tipo<>'base' order by", $_GET["query"]);
-                    }elseif(str_contains($_GET["query"], "where")){
-                        $queryLeader = $_GET["query"]." and tipo='leader'";
-                        $queryBasi = $_GET["query"]." and tipo='base'";
-                        $queryAltro = $_GET["query"]." and tipo<>'leader' and tipo<>'base'";
+                    if(str_contains($_POST["query"], "order by")){
+                        $queryLeader = str_replace("order by", "and tipo='leader' order by", $_POST["query"]);
+                        $queryBasi = str_replace("order by", "and tipo='base' order by", $_POST["query"]);
+                        $queryAltro = str_replace("order by", "and tipo<>'leader' and tipo<>'base' order by", $_POST["query"]);
+                    }elseif(str_contains($_POST["query"], "where")){
+                        $queryLeader = $_POST["query"]." and tipo='leader'";
+                        $queryBasi = $_POST["query"]." and tipo='base'";
+                        $queryAltro = $_POST["query"]." and tipo<>'leader' and tipo<>'base'";
                     }else{
-                        $queryLeader = $_GET["query"]." where tipo='leader'";
-                        $queryBasi = $_GET["query"]." where tipo='base'";
-                        $queryAltro = $_GET["query"]." where tipo<>'leader' and tipo<>'base'";
+                        $queryLeader = $_POST["query"]." where tipo='leader'";
+                        $queryBasi = $_POST["query"]." where tipo='base'";
+                        $queryAltro = $_POST["query"]." where tipo<>'leader' and tipo<>'base'";
                     }
                     $leader = $conn -> query($queryLeader);
                     $basi = $conn -> query($queryBasi);
                     $altro = $conn -> query($queryAltro);
                 }
-                $rs = $conn->query($_GET["query"]);
+                $rs = $conn->query($_POST["query"]);
                 if($rs):
                     $resultSet = $rs->fetch_assoc()?>
                     <div class="decks-section">
@@ -57,7 +57,7 @@ require_once("header.php");?>
                                             </td>
                                         <?php endforeach; ?>
                                     </tr>
-                                    <?php $rs = $conn->query($_GET["query"]); ?>
+                                    <?php $rs = $conn->query($_POST["query"]); ?>
                                 </thead>
                                 <tbody>
                                     <?php if($carte):?>
