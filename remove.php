@@ -13,7 +13,7 @@
         echo $modifiche;
         echo "<br>";
         while($modifiche>1){
-            $conn-> query("insert into mazzi values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().")");
+            $conn-> query("insert into mazzi values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().", ".$_GET["foil"].")");
             $modifiche--;
         }
         echo $modifiche
