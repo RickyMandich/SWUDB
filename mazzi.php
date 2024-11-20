@@ -95,6 +95,7 @@
                                                             <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
                                                             <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                             <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                            <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
                                                             <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                             <span class="mazzo">
                                                                 <label for="into">
@@ -107,6 +108,7 @@
                                                         <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
                                                         <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                         <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                        <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
                                                         <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                         <label for="into">nome nuovo mazzo <input type="text" name="into" id="newInto"></label>
                                                         <input type="submit" value="crea nuovo mazzo">
@@ -117,6 +119,7 @@
                                                     <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
                                                     <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                     <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                    <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
                                                     <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                     <input type="image" src='img/collezione.png' width='100px' height='auto' alt="Invia il form">
                                                 </form>

@@ -4,12 +4,14 @@
         private $id;
         private $email;
         private $password;
+        private $admin;
 
-        function __construct(string $nome, int $id, string $email, string $password){
+        function __construct(string $nome, int $id, string $email, string $password, bool $admin){
             $this->nome = $nome;
             $this->id = $id;
             $this->email = $email;
             $this->password = $password;
+            $this->admin = $admin
         }
 
         public function getNome(): string{
@@ -23,5 +25,8 @@
         }
         public function getPassword(): string{
             return $this->password;
+        }
+        public function isAdmin(): bool{
+            return $this->admin;
         }
     }

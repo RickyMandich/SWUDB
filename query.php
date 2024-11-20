@@ -10,7 +10,7 @@ require_once("header.php");?>
         <title>query</title>
     </head>
     <body>
-        <?php if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->getID() === 0):?>
+        <?php if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->isAdmin()):?>
             <div class="container">
                 <form action="./query" method="post">
                     <input type="text" name="query" id="query" value="<?php if(isset($_POST["query"])) echo $_POST["query"]; else echo "select * from "; ?>">
