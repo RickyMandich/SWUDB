@@ -23,6 +23,7 @@
                 $insert = $conn->query("insert into utenti (nome, email, password) values('".$_GET["nome"]."', '".$_GET["email"]. "', '". $_GET["password"]."')");
                 $resultText = "registrazione avvenuta con successo, ora accedi";
                 $resultClass = "success";
+                mail("swudb@altervista.org", "nuovo utente", "un nuovo utente si è registrato a SWUDB.altervista.org \n\tnome:\t".$_GET["nome"]."\n\temail:\t".$_GET["email"]);
                 ?><meta http-equiv="refresh" content="3; url=./logIn?from=<?php echo $_GET["from"] ?? "home"; ?>"><?php
             }catch(mysqli_sql_exception $e){
                 $resultText = $e->getMessage();
