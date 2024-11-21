@@ -55,7 +55,7 @@
             if(exist($_GET["espansione"], $_GET["numero"])){
                 var_dump($_GET);
                 if($_GET["mazzo"] === "Collezione" or quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
-                    $result = $conn->query("insert into mazzi (mazzo, espansione, numero, foil, codUtente) values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 1 ? "true" : "false").", ".unserialize($_SESSION["user"])->getID().");");
+                    $result = $conn->query("insert into mazzi (mazzo, espansione, numero, foil, codUtente) values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").", ".unserialize($_SESSION["user"])->getID().");");
                     if($result === true){
                         $resultClass = "success";
                         $resultText = "carta aggiunta";
