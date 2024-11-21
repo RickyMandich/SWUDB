@@ -4,7 +4,6 @@ echo "variabili<br>";
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
-    var_dump($conn);
     $resultSet = $conn-> query("select * from carte");
     while ($line = $resultSet -> fetch_assoc()){
         $numeri[$line["espansione"]] = preg_match("/.*?[p;P][R;r]$/", $line["espansione"]) ? 3 : strlen((string) $line["numero"]);

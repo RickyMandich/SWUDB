@@ -46,6 +46,7 @@
         }
         $resultClass = "hidden";
         $resultText = "";
+        echo "--------------------";
         if(isset($_GET["mazzo"])){
             $_GET["espansione"] = strtoupper($_GET["espansione"]);
             if(exist($_GET["espansione"], $_GET["numero"])){
