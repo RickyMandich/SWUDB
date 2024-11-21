@@ -31,13 +31,11 @@
                 }
             }
             $query = "select * from mazzi where mazzo = '".$mazzo."' and espansione = '".$espansione."' and numero = ".$numero." and codUtente = ".unserialize($_SESSION["user"])->getID();
-            echo $query;
             $resultSet = $conn->query($query);
             $quante = 0;
             while($resultSet->fetch_assoc()){
                 $quante++;
             }
-            echo "<br>".$quante;
             return $quante;
         };
         require_once("header.php");
