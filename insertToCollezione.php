@@ -15,7 +15,7 @@
     <body>
         <form action="insertTo">
             <input type="hidden" name="mazzo" value="Collezione">
-            <label for="espansione">inserisci il set della carta da inserire <input type="text" name="espansione" placeholder="set"></label>
+            <label for="espansione">inserisci il set della carta da inserire <input type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>"></label>
             <br>
             <label for="numero">inserisci il numero della carta da inserire <input type="number" name="numero" placeholder="numero"></label>
             <br>
