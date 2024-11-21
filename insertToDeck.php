@@ -22,7 +22,7 @@
             <br>
             <label for="foil">inserisci se la carta è foil <input type="checkbox" name="foil" id="foil"></label>
             <br>
-            <input type="hidden" name="from" values="Deck">
+            <input type="hidden" name="from" value="Deck">
             <input type="submit" value="aggiungi carta">
         </form>
         <span id="result" class="<?php echo isset($_GET["resultClass"]) ? $_GET["resultClass"] : "hidden"?>">
