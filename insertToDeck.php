@@ -14,7 +14,7 @@
     ?>
     <body>
         <form action="insertTo">
-            <label for="mazzo">inserisci il nome del mezzo in cui vuoi inserire la carta </label><input type="text" name="mazzo" placeholder="mazzo">
+            <label for="mazzo">inserisci il nome del mezzo in cui vuoi inserire la carta </label><input type="text" value="<?php if(isset($_GET["mazzo"])) echo $_GET["mazzo"];?>" name="mazzo" placeholder="mazzo">
             <br>
             <label for="espansione">inserisci il set della carta da inserire </label><input type="text" name="espansione" placeholder="set">
             <br>
@@ -28,5 +28,16 @@
         <span id="result" class="<?php echo isset($_GET["resultClass"]) ? $_GET["resultClass"] : "hidden"?>">
             <?php echo isset($_GET["resultText"]) ? $_GET["resultText"] : ""?>
         </span>
+        <img src="https://swudb.com/cards/<?php echo $_GET["espansione"]."/".sprintf("%0".$numeri[$_GET["espansione"]]."d",$_GET["numero"]);?>.png">
     </body>
+    <style>
+        body{
+            align-items: center;
+        }
+
+        body img{
+            max-width: 35vw;
+            max-height: 35vw;
+        }
+    </style>
 </html>
