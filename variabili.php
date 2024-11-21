@@ -1,4 +1,5 @@
 <?php
+echo "variabili<br>";
     $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
