@@ -16,7 +16,7 @@
         <form action="insertTo">
             <label for="mazzo">inserisci il nome del mezzo in cui vuoi inserire la carta </label><input type="text" value="<?php if(isset($_GET["mazzo"])) echo $_GET["mazzo"];?>" name="mazzo" placeholder="mazzo">
             <br>
-            <label for="espansione">inserisci il set della carta da inserire </label><input type="text" name="espansione" placeholder="set">
+            <label for="espansione">inserisci il set della carta da inserire </label><input type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>">
             <br>
             <label for="numero">inserisci il numero della carta da inserire </label><input type="number" name="numero" placeholder="numero">
             <br>
