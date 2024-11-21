@@ -7,7 +7,7 @@
     </head>
     <?php
         function exist($espansione, $numero){
-            require "header.php";
+            require "variabili.php";
             $connected = false;
             while(!$connected){
                 $connected = true;
@@ -22,7 +22,7 @@
             return false;
         };
         function quante($mazzo, $espansione, $numero){
-            require "header.php";
+            require "variabili.php";
             $connected = false;
             while(!$connected){
                 $connected = true;
