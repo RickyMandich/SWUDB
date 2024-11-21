@@ -7,9 +7,9 @@
     </head>
     <?php
         function exist($espansione, $numero){
+            require_once "header.php";
             $connected = false;
             while(!$connected){
-                $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
                 $connected = true;
                 if ($conn->connect_error) {
                     $connected = false;
@@ -22,9 +22,9 @@
             return false;
         };
         function quante($mazzo, $espansione, $numero){
+            require_once "header.php";
             $connected = false;
             while(!$connected){
-                $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
                 $connected = true;
                 if ($conn->connect_error) {
                     $connected = false;
@@ -48,10 +48,6 @@
         $resultText = "";
         if(isset($_GET["mazzo"])){
             $_GET["espansione"] = strtoupper($_GET["espansione"]);
-            $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
-            if ($conn->connect_error) {
-                die("Connection failed: " . $conn->connect_error);
-            }
             if(exist($_GET["espansione"], $_GET["numero"])){
                 var_dump($_GET);
                 if($_GET["mazzo"] === "Collezione" or quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
@@ -79,7 +75,7 @@
         if(str_starts_with($_GET["from"], "./carte")): ?>
             <meta http-equiv="refresh" content="0; url=<?php echo $_GET["from"];?>">
         <?php else: ?>
-        <meta http-equiv="refresh" content="15; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"], 'mazzo' => $_GET["mazzo"]));?>">
+        <!-- <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"], 'mazzo' => $_GET["mazzo"]));?>"> -->
         <?php endif; ?>
     </body>
 </html>
