@@ -23,15 +23,13 @@
                 require_once "./classi/Card.php";
                 $collezione->add(new Card($value));
             }
-            $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
-            if ($conn->connect_error) {
-                die("Connection failed: " . $conn->connect_error);
-            }
+            $i=0;
             foreach($collezione->collezione as $value){
                 $conn->query("delete from carte where espansione = '".$value->espansione."' and numero = ".$value->numero);
                 $conn->query($value->getInsertSql());
+                $i++;
             }
-            echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
+            echo "caricamento riuscito, ho inserito $i carte";
         } else {
             echo "Errore: Il file non contiene un JSON valido";
             ?><meta http-equiv="refresh" content="3; url=inputJsonDB"><?php
