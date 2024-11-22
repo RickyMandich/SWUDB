@@ -14,7 +14,7 @@
         </span>
         <span class="pageLink inputDeck">
             <a href="./insertToDeck" target="_blank">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsVHhetQPbrMnemkmUqGzjuDIrJ86qoYjLpbJ-Vf7m4sEwaCdD" alt="">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsVHhetQPbrMnemkmUqGzjuDIrJ86qoYjLpbJ-Vf7m4sEwaCdD" alt="insertToDeck">
                 <br>
                 INPUT DECK
             </a>
