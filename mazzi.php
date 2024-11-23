@@ -94,6 +94,7 @@
                                                         <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                         <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                         <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
+                                                        <input type="hidden" name="public" value="<?php echo $row["public"]?>">
                                                         <input type="hidden" name="from" value="<?php echo "mazzi"?>">
                                                         <span class="mazzo">
                                                             <label for="into">
