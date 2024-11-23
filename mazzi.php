@@ -121,6 +121,11 @@
                                             <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
                                         <?php endif; ?>
                                     </td>
+                                    <td>
+                                        <form action="exportDeck">
+                                            <input type="hidden" name="mazzo" value="<?php $row["mazzo"];?>">
+                                        </form>
+                                    </td>
                                     <?php foreach($row as $key=>$cell): ?>
                                         <td>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
