@@ -50,10 +50,10 @@
             }
         }
 
-        function getInsertSql(){
+        function getInsertSql($public){
             $insert = "insert into mazzi\nvalues";
             foreach( $this->carte as $card){
-                $insert = $insert."('".$this->nome."','". $card->espansione."',". $card->numero .",". unserialize($_SESSION["user"])->getID().", 0),";
+                $insert = $insert."('".$this->nome."','". $card->espansione."',". $card->numero .",". unserialize($_SESSION["user"])->getID().", 0, ".($public === 'on' ? "1": "0")."),";
             }
             $insert = substr($insert,0,-1);
             return $insert.";";
