@@ -18,10 +18,10 @@ echo "select c.espansione, c.numero, c.nome, c.titolo from carte c, mazzi m wher
 $resultSet = $conn -> query("select c.espansione, c.numero, c.nome, c.titolo from carte c, mazzi m where m.espansione = c.espansione and m.numero = c.numero and m.mazzo = '".$_GET["mazzo"]."'");
 $result = $_GET["mazzo"]."\n";
 while($line = $resultSet->fetch_assoc()){
-    $result = $result.$line["espansione"]."_".$line["numero"]."\t".strtoupper($line["nome"])." ".$line["titolo"]."\n";
+    $result = $result.$line["espansione"]."_".$line["numero"]."\t".strtoupper($line["nome"]).($line["titolo"]!=='0'?" ".$line["titolo"]:"")."\n";
 }
 echo "------------------------";
 var_dump($result);
 echo "------------------------";
 echo str_replace("\t", "    ", str_replace("\n", "<br>", $result));
-//download_file($result, $_GET["mazzo"].".txt");
+download_file($result, $_GET["mazzo"].".txt");
