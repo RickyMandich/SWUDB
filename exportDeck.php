@@ -14,8 +14,8 @@ if(!isset($_GET["mazzo"])){
     }
 }
 require_once "header.php";
-echo "select c.espansione, c.numero, c.nome, c.titolo from carte c, mazzi m where m.espansione = c.espansione and m.numero = c.numero and m.mazzo = ".$_GET["mazzo"];
-$resultSet = $conn -> query("select c.espansione, c.numero, c.nome, c.titolo from carte c, mazzi m where m.espansione = c.espansione and m.numero = c.numero and m.mazzo = ".$_GET["mazzo"]);
+echo "select c.espansione, c.numero, c.nome, c.titolo from carte c, mazzi m where m.espansione = c.espansione and m.numero = c.numero and m.mazzo = '".$_GET["mazzo"]."'";
+$resultSet = $conn -> query("select c.espansione, c.numero, c.nome, c.titolo from carte c, mazzi m where m.espansione = c.espansione and m.numero = c.numero and m.mazzo = '".$_GET["mazzo"]."'");
 $result = $_GET["mazzo"]."\n";
 while($line = $resultSet->fetch_assoc()){
     $result = $result.$line["espansione"]."_".$line["numero"]."\t".strtoupper($line["nome"])." ".$line["titolo"]."\n";
