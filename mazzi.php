@@ -40,9 +40,7 @@
         $resultSet = $conn->query("select distinct mazzo from mazzi");
         $mazzi = [];
         while($line = $resultSet->fetch_assoc()){
-            if($line["mazzo"] !== "Collezione"){
-                array_push($mazzi, $line["mazzo"]);
-            }
+            array_push($mazzi, $line["mazzo"]);
         }
     ?>
     <body>
