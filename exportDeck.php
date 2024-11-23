@@ -20,4 +20,4 @@ $result = $_GET["mazzo"]."\n";
 while($line = $resultSet->fetch_assoc()){
     $result = $result.$line["espansione"]."_".$line["numero"]."\t".strtoupper($line["nome"])." ".$line["titolo"]."\n";
 }
-download_file($result, $_GET["mazzo"]);
+download_file($result, $_GET["mazzo"].".txt");
