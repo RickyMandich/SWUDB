@@ -57,7 +57,7 @@
                             <tr class="deck-header">
                                 <td>rimuovi carta</td>
                                 <td>sposta carta</td>
-                                <td>esporta mazzo come<br>elenco di carte</td>
+                                <td>esporta mazzo come elenco di carte</td>
                                 <?php foreach($deck[0] as $key => $value):?>
                                 <td>
                                     <?php echo $key; ?>
