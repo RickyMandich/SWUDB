@@ -124,6 +124,7 @@
                                     <td>
                                         <form action="exportDeck">
                                             <input type="hidden" name="mazzo" value="<?php $row["mazzo"];?>">
+                                            <img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="export as text">
                                         </form>
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
