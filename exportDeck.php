@@ -22,4 +22,6 @@ while($line = $resultSet->fetch_assoc()){
 }
 echo "------------------------";
 var_dump($result);
+echo "------------------------";
+echo str_replace("\t", "    ", str_replace("\n", "<br>", $result));
 //download_file($result, $_GET["mazzo"].".txt");
