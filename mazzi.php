@@ -57,7 +57,7 @@
                             <tr class="deck-header">
                                 <td>rimuovi carta</td>
                                 <td>sposta carta</td>
-                                <td>esporta mazzo come elenco di carte</td>
+                                <td>esporta mazzo come elenco di carte o segna come mancante</td>
                                 <?php foreach($deck[0] as $key => $value):?>
                                 <td>
                                     <?php echo $key; ?>
@@ -122,11 +122,22 @@
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <form action="exportDeck">
-                                            <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"];?>">
-                                            <input type="image" src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="export as text">
-                                        </form>
-                                        <?php echo $row["mazzo"];?>
+                                        <?php if(!isset($precedente) or $row["mazzo"] !== $precedente){?>
+                                            <form action="exportDeck">
+                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"];?>">
+                                                <input type="image" src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="export as text">
+                                            </form>
+                                        <?php }else{?>
+                                            <form action="exportDeck">
+                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
+                                                <input type="hidden" name="public" value="1">
+                                                <input type="hidden" name="from" value="mazzi">
+                                                <input type="image" src="https://imgs.search.brave.com/tOlbrzqxPM8E8cIRWHPtdsVrBcMPZfG3NHK4TIWZJoc/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9hc3Nl/dHMuZHJ5aWNvbnMu/Y29tL3VwbG9hZHMv/aWNvbi9wcmV2aWV3/Lzc0MTQvc21hbGxf/MXhfbGlzdC5wbmc" alt="mancante">
+                                            </form>
+                                        <?php }?>
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
                                         <td>
