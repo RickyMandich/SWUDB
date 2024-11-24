@@ -166,8 +166,10 @@
     <?php } ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("entrato in listener DOMContentLoaded")
             Array.from(document.getElementsByClassName("exportDeck")).forEach(button => {
                 button.addEventListener('click', function(event) {
+                    console.log("click")
                     event.stopPropagation();
                 });
             });
