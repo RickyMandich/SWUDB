@@ -25,7 +25,7 @@
         while($line = $resultSet->fetch_assoc()){
             $row = [];
             foreach($line as $key => $value){
-                if($key === 'mazzo' && $line["codUtente"] !== unserialize($_SESSION["user"])->getID()){
+                if($key === 'mazzo' && $line["codUtente"] != unserialize($_SESSION["user"])->getID()){
                     //echo $line["codUtente"]." !== ".unserialize($_SESSION["user"])->getID()."=>",$line["codUtente"] !== unserialize($_SESSION["user"])->getID()."<br>";
                     $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
                 }
@@ -50,7 +50,7 @@
     <body>
         <div class="container">
             <div class="decks-section">
-                <h2>I Tuoi Mazzi <?php echo unserialize($_SESSION["user"])->getID()?>=><?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
+                <h2>I Tuoi Mazzi <?php echo unserialize($_SESSION["user"])->getID()?>=><?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?><br>!=</h2>
                 <div class="decks-container">
                     <table>
                         <?php if (count($deck) > 0): ?>
