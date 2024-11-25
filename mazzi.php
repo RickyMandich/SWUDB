@@ -205,11 +205,12 @@
         }
         $preDeck = mergeSort($preDeck);
         $deck = [];
+        unset($precedente);
         foreach($preDeck as $row){
             if(!isset($precedente) or $precedente != $line["mazzo"]){
                 $header = $row;
                 foreach($header as $key => $i){
-                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
+                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") unset($header[$key]);
                 }
                 array_push($deck, $header);
             }
