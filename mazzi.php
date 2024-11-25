@@ -210,7 +210,7 @@
             if(!isset($precedente) or $precedente != $line["mazzo"]){
                 $header = $row;
                 foreach($header as $key => $i){
-                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") unset($header[$key]);
+                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
                 }
                 array_push($deck, $header);
             }
