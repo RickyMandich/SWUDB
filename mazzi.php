@@ -205,7 +205,7 @@
         }
         $preDeck = mergeSort($preDeck);
         $deck = [];
-        unset($precedente);
+        $precedente = "";
         foreach($preDeck as $row){
             if(!isset($precedente) or $precedente != $line["mazzo"]){
                 $header = $row;
