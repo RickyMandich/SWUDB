@@ -25,9 +25,15 @@ require_once("header.php");?>
                 if(str_contains($_POST["query"], "carte") and (!str_contains($_POST["query"], "leader") and !str_contains($_POST["query"], "base"))){
                     $carte = true;
                     if(str_contains($_POST["query"], "order by")){
-                        $queryLeader = str_replace("order by", "and tipo='leader' order by", $_POST["query"]);
-                        $queryBasi = str_replace("order by", "and tipo='base' order by", $_POST["query"]);
-                        $queryAltro = str_replace("order by", "and tipo<>'leader' and tipo<>'base' order by", $_POST["query"]);
+                        if(str_contains($_POST["query"], "where")){
+                            $queryLeader = str_replace("order by", "and tipo='leader' order by", $_POST["query"]);
+                            $queryBasi = str_replace("order by", "and tipo='base' order by", $_POST["query"]);
+                            $queryAltro = str_replace("order by", "and tipo<>'leader' and tipo<>'base' order by", $_POST["query"]);
+                        }else{
+                            $queryLeader = str_replace("order by", "where tipo='leader' order by", $_POST["query"]);
+                            $queryBasi = str_replace("order by", "where tipo='base' order by", $_POST["query"]);
+                            $queryAltro = str_replace("order by", "where tipo<>'leader' and tipo<>'base' order by", $_POST["query"]);
+                        }
                     }elseif(str_contains($_POST["query"], "where")){
                         $queryLeader = $_POST["query"]." and tipo='leader'";
                         $queryBasi = $_POST["query"]." and tipo='base'";
