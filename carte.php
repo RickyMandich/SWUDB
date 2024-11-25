@@ -37,6 +37,7 @@
         while($line = $resultSet ->fetch_assoc()){
             array_push($rs, $line);
         }
+        $rs = mergeSort($rs);
     ?>
     <body>
         <div class="container">
