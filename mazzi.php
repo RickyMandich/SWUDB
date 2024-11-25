@@ -26,7 +26,7 @@
             $row = [];
             foreach($line as $key => $value){
                 if($key === 'mazzo' && $line["codUtente"] !== unserialize($_SESSION["user"])->getID()){
-                    echo $line["codUtente"]." !== ".unserialize($_SESSION["user"])->getID()."<br>";
+                    echo $line["codUtente"]." !== ".unserialize($_SESSION["user"])->getID()."T=>",$line["codUtente"] !== unserialize($_SESSION["user"])->getID()."<br>";
                     $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
                 }
                 $row[$key] = $value;
