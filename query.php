@@ -16,6 +16,7 @@ require_once("header.php");?>
                     <input type="text" name="query" id="query" value="<?php if(isset($_POST["query"])) echo $_POST["query"]; else echo "select * from "; ?>">
                 </form>
                 <?php
+                echo "$query<br>";
                 $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
                 if ($conn->connect_error) {
                     die("Connection failed: " . $conn->connect_error);
