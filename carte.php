@@ -9,24 +9,6 @@
         <link rel="stylesheet" href="css/mazzi.css">
     </head>
     <?php
-        function f($resultSet, &$rs){
-            if( $resultSet->num_rows > 0) {
-                while($row = $resultSet->fetch_assoc()){
-                    $line = [];
-                    $header = [];
-                    if($rs===[]){
-                        foreach($row as $key => $value){
-                            $line[$key] = $value;
-                            array_push( $header, $key);
-                        }
-                        $rs[0] = $header;
-                        $line = [];
-                    }
-                    foreach($row as $key => $value) $line[$key]=$value;
-                    array_push($rs, $line);
-                }
-            }
-        }
         if(count($_GET)>0 and $_GET["nome"] === "" and $_GET["espansione"] === "all"): ?>
             <meta http-equiv="refresh" content="0; url=carte">
         <?php endif;
@@ -49,6 +31,12 @@
                 }
             endfor;
         }
+        $resultSet = $conn->query("select * from carte where nome like '%".(isset($_GET["nome"])?$_GET["nome"]:"")."%'".$queryEspansione);
+        unset($rs);
+        $rs = [];
+        while($line = $resultSet ->fetch_assoc()){
+            array_push($rs, $line);
+        }
     ?>
     <body>
         <div class="container">
@@ -65,18 +53,6 @@
                 <input type="submit" value="cerca">
             </form><?php
             $_GET["nome"] = str_replace("'", "\'", $_GET["nome"]);
-            try{
-                $leader = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'leader' order by uscita, espansione, numero");
-                $basi = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo = 'base' order by uscita, espansione, numero");
-                $altro = $conn->query("select * from carte where nome like '%" . ($_GET["nome"] ?? "") . "%' ".$queryEspansione."and tipo <> 'leader' and tipo <> 'base' order by uscita, espansione, numero");
-                $rs = [];
-                f($leader, $rs);
-                f($basi, $rs);
-                f($altro, $rs);
-                $conn->close();
-            }catch(mysqli_sql_exception $e){
-                
-            }
             ?>
             <div class="decks-section">
                 <div class="decks-container">
