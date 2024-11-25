@@ -40,12 +40,12 @@
             }
             $precedente = $line["mazzo"];
             array_push($deck, $row);
-        }
+        }/*
         $resultSet = $conn->query("select distinct mazzo from mazzi");
         $mazzi = [];
         while($line = $resultSet->fetch_assoc()){
             array_push($mazzi, $line["mazzo"]);
-        }
+        }*/
     ?>
     <body>
         <div class="container">
