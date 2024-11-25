@@ -134,6 +134,7 @@
                                                 <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                 <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                 <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
+                                                <input type="hidden" name="into" value="mancanti di <?php echo $row["mazzo"];?>">
                                                 <input type="hidden" name="public" value="1">
                                                 <input type="hidden" name="from" value="mazzi">
                                                 <input type="image" src="https://imgs.search.brave.com/tOlbrzqxPM8E8cIRWHPtdsVrBcMPZfG3NHK4TIWZJoc/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9hc3Nl/dHMuZHJ5aWNvbnMu/Y29tL3VwbG9hZHMv/aWNvbi9wcmV2aWV3/Lzc0MTQvc21hbGxf/MXhfbGlzdC5wbmc" alt="mancante">

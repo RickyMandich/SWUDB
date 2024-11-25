@@ -8,6 +8,6 @@
         var_dump($_GET);
         $conn-> query($query);
         ?>
-            <!-- <meta http-equiv="refresh" content="0; url=<?php echo "remove?".http_build_query($_GET);?>"> -->
+            <meta http-equiv="refresh" content="0; url=<?php echo "remove?".http_build_query($_GET);?>">
         <?php
     }
