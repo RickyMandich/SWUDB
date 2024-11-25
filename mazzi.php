@@ -24,10 +24,10 @@
         $deck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
-            if($key === 'mazzo' and $line["codUtente"] !== unserialize($_SESSION["user"])->getID()){
-                $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"]);
-            }
             foreach($line as $key => $value){
+                if($key === 'mazzo' and $line["codUtente"] !== unserialize($_SESSION["user"])->getID()){
+                    $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"]);
+                }
                 $row[$key] = $value;
             }
             if(!isset($precedente) or $precedente != $line["mazzo"]){
