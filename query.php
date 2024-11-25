@@ -37,8 +37,11 @@ require_once("header.php");?>
                         $queryBasi = $_POST["query"]." where tipo='base'";
                         $queryAltro = $_POST["query"]." where tipo<>'leader' and tipo<>'base'";
                     }
+                    echo "$queryLeader<br>";
                     $leader = $conn -> query($queryLeader);
+                    echo "$queryBasi<br>";
                     $basi = $conn -> query($queryBasi);
+                    echo "$queryAltro<br>";
                     $altro = $conn -> query($queryAltro);
                 }
                 $rs = $conn->query($_POST["query"]);
