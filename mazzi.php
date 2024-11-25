@@ -11,11 +11,29 @@
     <?php
         require_once("header.php");
         function compareElements($el1, $el2) {
+            //definisco l'ordine dei mazzi
+            $mazzoOrder = [];
+            $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
+            if ($conn->connect_error) {
+                die("Connection failed: " . $conn->connect_error);
+            }
+            $result = $conn->query("select distinct mazzo from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." or public = '1' order by mazzo");
+            while($line = $result->fetch_assoc()){
+                array_push($mazzoOrder, $line["mazzo"]);
+            }
+
             // Definisco l'ordine dei tipi
             $tipoOrder = ['Leader', 'Base'];
             
             // Definisco l'ordine degli aspetti primari
             $primaryAspectOrder = ['Blue', 'Green', 'Red', 'Yellow'];
+            
+            // Funzione per ottenere il peso del mazzo
+            $getMazzoWeight = function($element) use ($mazzoOrder) {
+                $mazzo = $element['mazzo'];
+                $index = array_search($mazzo, $mazzoOrder);
+                return $index !== false ? $index : count($mazzoOrder);
+            };
             
             // Funzione per ottenere il peso del tipo
             $getTipoWeight = function($element) use ($tipoOrder) {
@@ -45,6 +63,18 @@
                 
                 return 2;
             };
+            
+            // Confronto per mazzo
+            $mazzoWeight1 = $getMazzoWeight($el1);
+            $mazzoWeight2 = $getMazzoWeight($el2);
+            
+            if ($mazzoWeight1 < $mazzoWeight2) {
+                return -1;
+            }
+            
+            if ($mazzoWeight1 > $mazzoWeight2) {
+                return 1;
+            }
             
             // Confronto per tipo
             $tipoWeight1 = $getTipoWeight($el1);
