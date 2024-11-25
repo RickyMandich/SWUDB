@@ -235,7 +235,7 @@
                                 <td>rimuovi carta</td>
                                 <td>sposta carta</td>
                                 <td>esporta mazzo come elenco di carte o segna come mancante</td>
-                                <?php foreach($deck[0] as $key => $value):?>
+                                <?php foreach($deck[1] as $key => $value):?>
                                 <td>
                                     <?php echo $key; ?>
                                 </td>
