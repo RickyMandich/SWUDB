@@ -29,7 +29,7 @@ git commit -m "$nomeCommit"
 
 # Esegui il push sul repository remoto
 git push -f
-read
+
 clear
 
 # Carica i file presenti nell'ultimo commit
