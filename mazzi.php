@@ -192,7 +192,7 @@
             die("Connection failed: " . $conn->connect_error);
         }
         $resultSet = $conn->query("select m.mazzo, m.foil, m.public, c.*, m.codUtente from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and (m.codUtente = ". unserialize($_SESSION["user"])->getID()." or m.public = '1') order by mazzo, numero, espansione");
-        $deck = [];
+        $preDeck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
             foreach($line as $key => $value){
@@ -201,6 +201,11 @@
                 }
                 $row[$key] = $value;
             }
+            array_push($preDeck, $row);
+        }
+        $preDeck = mergeSort($preDeck);
+        $deck = [];
+        foreach($preDeck as $row){
             if(!isset($precedente) or $precedente != $line["mazzo"]){
                 $header = $row;
                 foreach($header as $key => $i){
@@ -208,15 +213,14 @@
                 }
                 array_push($deck, $header);
             }
-            $precedente = $line["mazzo"];
             array_push($deck, $row);
+            $precedente = $line["mazzo"];
         }
         $resultSet = $conn->query("select distinct mazzo from mazzi");
         $mazzi = [];
         while($line = $resultSet->fetch_assoc()){
             array_push($mazzi, $line["mazzo"]);
         }
-        $deck = mergeSort($deck);
     ?>
     <body>
         <div class="container">
