@@ -205,15 +205,15 @@
                                 <?php if(isset($_SESSION["user"])): ?>
                                     <td>aggiungi alla collezione</td>
                                 <?php endif; ?>
-                                    <?php foreach($rs[0] as $column): ?>
+                                    <?php foreach($rs[0] as $key=>$column): ?>
                                         <td>
-                                            <?php echo $column; ?>
+                                            <?php echo $key; ?>
                                         </td>
                                     <?php endforeach; ?>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php for($i = 1;$i < count($rs); $i++): ?>
+                                <?php for($i = 0;$i < count($rs); $i++): ?>
                                 <tr class="card-in-deck-row deck-card">
                                     <?php if(isset($_SESSION["user"])): ?>
                                         <td style="max-width: 100vw">
