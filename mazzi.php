@@ -19,7 +19,11 @@
             }
             $result = $conn->query("SELECT DISTINCT mazzo, codUtente, public FROM mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." or public = '1' order by mazzo");
             while($line = $result->fetch_assoc()){
-                array_push($mazzoOrder, $line["mazzo"]);
+                if($line["codUtente"] === unserialize($_SESSION["user"])->getID()){
+                    array_push($mazzoOrder, $line["mazzo"]);
+                }else{
+                    array_push($mazzoOrder, $line["mazzo"]." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
+                }
             }
             require_once "printMazzoOrder.php";
             // Definisco l'ordine dei tipi
