@@ -67,6 +67,15 @@
                 return 2;
             };
             
+            // faccio un confronto per utente
+            if ($el1['codUtente'] < $el2['codUtente']) {
+                return -1;
+            }
+            
+            if ($el1['codUtente'] > $el2['codUtente']) {
+                return 1;
+            }
+            
             // Confronto per mazzo
             $mazzoWeight1 = $getMazzoWeight($el1);
             $mazzoWeight2 = $getMazzoWeight($el2);
