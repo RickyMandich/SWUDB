@@ -240,7 +240,7 @@
                 </thead>
                 <tbody>
                     <?php foreach($preDeck as $card):?>
-                        <tr>
+                        <tr style="display: table-row">
                             <td>
                                 carta
                             </td>
