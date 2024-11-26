@@ -25,7 +25,6 @@
                     array_push($mazzoOrder, $line["mazzo"]." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
                 }
             }
-            require_once "printMazzoOrder.php";
             // Definisco l'ordine dei tipi
             $tipoOrder = ['Leader', 'Base'];
             
@@ -229,34 +228,6 @@
     ?>
     <body>
         <div class="container">
-            <table border>
-                <thead>
-                    <tr>
-                        <td>
-                            exist
-                        </td>
-                        <?php foreach($preDeck[0] as $column=>$value):?>
-                            <td>
-                                <?php echo $column;?>
-                            </td>
-                        <?php endforeach;?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($preDeck as $card):?>
-                        <tr style="display: table-row">
-                            <td>
-                                carta
-                            </td>
-                            <?php foreach($card as $value):?>
-                                <td>
-                                    <?php echo $value;?>
-                                </td>
-                            <?php endforeach;?>
-                        </tr>
-                    <?php endforeach;?>
-                </tbody>
-            </table>
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
