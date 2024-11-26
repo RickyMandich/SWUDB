@@ -225,7 +225,7 @@
     ?>
     <body>
         <div class="container">
-            <table>
+            <table border>
                 <thead>
                     <tr>
                         <td>
