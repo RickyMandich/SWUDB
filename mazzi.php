@@ -25,6 +25,7 @@
                     array_push($mazzoOrder, $line["mazzo"]." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
                 }
             }
+            $_SESSION["tmp"] = $mazzoOrder;
             // Definisco l'ordine dei tipi
             $tipoOrder = ['Leader', 'Base'];
             
@@ -228,6 +229,7 @@
     ?>
     <body>
         <div class="container">
+            <?php echo $_SESSION["tmp"];?>
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
