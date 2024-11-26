@@ -252,7 +252,7 @@
                             foreach($deck as $row): ?>
                                 <tr class="card-in-deck-row <?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
                                     <td>
-                                        <?php if(unserialize($_SESSION["user"])->getID() === $row["codUtente"]):?>
+                                        <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
                                                 <form action="./remove">
                                                     <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
@@ -268,7 +268,7 @@
                                         <?php endif;?>
                                     </td>
                                     <td style="max-width: 100vw">
-                                        <?php if(unserialize($_SESSION["user"])->getID() === $row["codUtente"]):?>
+                                        <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
                                                 <img src='img/collezione.png' width='100px' height='auto' onclick="showMenuCollezione(this)">
                                                 <div class="menuCollezione">
@@ -306,7 +306,6 @@
                                         <?php endif;?>
                                     </td>
                                     <td>
-                                        <?php echo unserialize($_SESSION["user"])->getID()." == ".$row["codUtente"]?>
                                         <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
                                             <?php if(!isset($precedente) or $row["mazzo"] !== $precedente){?>
                                                 <form action="exportDeck">
