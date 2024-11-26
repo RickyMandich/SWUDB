@@ -252,73 +252,79 @@
                             foreach($deck as $row): ?>
                                 <tr class="card-in-deck-row <?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
                                     <td>
-                                        <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
-                                            <form action="./remove">
-                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
-                                                <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
-                                                <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
-                                                <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
-                                                <input type="hidden" name="from" value="<?php echo "mazzi"?>">
-                                                <input type='image' src='img/rimuovi.png' width='100vw' height='auto' alt='Invia il form'>
-                                            </form>
-                                        <?php else: ?>
-                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])."-portrait.png";?>" width="100vw">
-                                        <?php endif; ?>
-                                    </td>
-                                    <td style="max-width: 100vw">
-                                        <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
-                                            <img src='img/collezione.png' width='100px' height='auto' onclick="showMenuCollezione(this)">
-                                            <div class="menuCollezione">
-                                                <span class="closeMenu" onclick="hideMenuCollezione(this)">
-                                                    &times
-                                                </span>
-                                                <?php foreach($mazzi as $mazzo):?>
-                                                    <form action="./moveTo" method="get">
-                                                        <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
-                                                        <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
-                                                        <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
-                                                        <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
-                                                        <input type="hidden" name="public" value="<?php echo $row["public"]?>">
-                                                        <input type="hidden" name="from" value="<?php echo "mazzi"?>">
-                                                        <span class="mazzo">
-                                                            <label for="into">
-                                                                <input type="submit" name="into" value="<?php echo $mazzo;?>">
-                                                            </label>
-                                                        </span>
-                                                    </form>
-                                                <?php endforeach; ?>
-                                                <form action="./moveTo" method="get">
+                                        <?php if(unserialize($_SESSION["user"])->getID() === $row["codUtente"]):?>
+                                            <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                                <form action="./remove">
                                                     <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
                                                     <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                     <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                     <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
                                                     <input type="hidden" name="from" value="<?php echo "mazzi"?>">
-                                                    <label for="into">nome nuovo mazzo <input type="text" name="into" id="newInto"></label>
-                                                    <input type="submit" value="crea nuovo mazzo">
+                                                    <input type='image' src='img/rimuovi.png' width='100vw' height='auto' alt='Invia il form'>
                                                 </form>
-                                            </div>
-                                        <?php else: ?>
-                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
-                                        <?php endif; ?>
+                                            <?php else: ?>
+                                                <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])."-portrait.png";?>" width="100vw">
+                                            <?php endif; ?>
+                                        <?php endif;?>
+                                    </td>
+                                    <td style="max-width: 100vw">
+                                        <?php if(unserialize($_SESSION["user"])->getID() === $row["codUtente"]):?>
+                                            <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                                <img src='img/collezione.png' width='100px' height='auto' onclick="showMenuCollezione(this)">
+                                                <div class="menuCollezione">
+                                                    <span class="closeMenu" onclick="hideMenuCollezione(this)">
+                                                        &times
+                                                    </span>
+                                                    <?php foreach($mazzi as $mazzo):?>
+                                                        <form action="./moveTo" method="get">
+                                                            <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                            <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                            <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                            <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
+                                                            <input type="hidden" name="public" value="<?php echo $row["public"]?>">
+                                                            <input type="hidden" name="from" value="<?php echo "mazzi"?>">
+                                                            <span class="mazzo">
+                                                                <label for="into">
+                                                                    <input type="submit" name="into" value="<?php echo $mazzo;?>">
+                                                                </label>
+                                                            </span>
+                                                        </form>
+                                                    <?php endforeach; ?>
+                                                    <form action="./moveTo" method="get">
+                                                        <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                        <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                        <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                        <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
+                                                        <input type="hidden" name="from" value="<?php echo "mazzi"?>">
+                                                        <label for="into">nome nuovo mazzo <input type="text" name="into" id="newInto"></label>
+                                                        <input type="submit" value="crea nuovo mazzo">
+                                                    </form>
+                                                </div>
+                                            <?php else: ?>
+                                                <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
+                                            <?php endif; ?>
+                                        <?php endif;?>
                                     </td>
                                     <td>
-                                        <?php if(!isset($precedente) or $row["mazzo"] !== $precedente){?>
-                                            <form action="exportDeck">
-                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"];?>">
-                                                <input type="image" src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="export as text" class="exportDeck">
-                                            </form>
-                                        <?php }else{?>
-                                            <form action="moveTo">
-                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
-                                                <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
-                                                <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
-                                                <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
-                                                <input type="hidden" name="into" value="mancanti di <?php echo $row["mazzo"];?>">
-                                                <input type="hidden" name="public" value="1">
-                                                <input type="hidden" name="from" value="mazzi">
-                                                <input type="image" src="https://imgs.search.brave.com/tOlbrzqxPM8E8cIRWHPtdsVrBcMPZfG3NHK4TIWZJoc/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9hc3Nl/dHMuZHJ5aWNvbnMu/Y29tL3VwbG9hZHMv/aWNvbi9wcmV2aWV3/Lzc0MTQvc21hbGxf/MXhfbGlzdC5wbmc" alt="mancante">
-                                            </form>
-                                        <?php }?>
+                                        <?php if(unserialize($_SESSION["user"])->getID() === $row["codUtente"]):?>
+                                            <?php if(!isset($precedente) or $row["mazzo"] !== $precedente){?>
+                                                <form action="exportDeck">
+                                                    <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"];?>">
+                                                    <input type="image" src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="export as text" class="exportDeck">
+                                                </form>
+                                            <?php }else{?>
+                                                <form action="moveTo">
+                                                    <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                    <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
+                                                    <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
+                                                    <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
+                                                    <input type="hidden" name="into" value="mancanti di <?php echo $row["mazzo"];?>">
+                                                    <input type="hidden" name="public" value="1">
+                                                    <input type="hidden" name="from" value="mazzi">
+                                                    <input type="image" src="https://imgs.search.brave.com/tOlbrzqxPM8E8cIRWHPtdsVrBcMPZfG3NHK4TIWZJoc/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9hc3Nl/dHMuZHJ5aWNvbnMu/Y29tL3VwbG9hZHMv/aWNvbi9wcmV2aWV3/Lzc0MTQvc21hbGxf/MXhfbGlzdC5wbmc" alt="mancante">
+                                                </form>
+                                            <?php }?>
+                                        <?php endif;?>
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
                                         <td>
