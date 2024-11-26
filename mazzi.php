@@ -207,7 +207,7 @@
         $deck = [];
         $precedente = "";
         foreach($preDeck as $row){
-            if(!isset($precedente) or $precedente != $line["mazzo"]){
+            if(!isset($precedente) or $precedente !== $line["mazzo"]){
                 $header = $row;
                 foreach($header as $key => $i){
                     if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
