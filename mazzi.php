@@ -225,6 +225,28 @@
     ?>
     <body>
         <div class="container">
+            <table>
+                <thead>
+                    <tr>
+                        <?php foreach($deck[0] as $column=>$value):?>
+                            <td>
+                                <?php echo $column;?>
+                            </td>
+                        <?php endforeach;?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($deck as $card):?>
+                        <tr>
+                            <?php foreach($card as $value):?>
+                                <td>
+                                    <?php echo $value;?>
+                                </td>
+                            <?php endforeach;?>
+                        </tr>
+                    <?php endforeach;?>
+                </tbody>
+            </table>
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
