@@ -215,7 +215,7 @@
                 array_push($deck, $header);
             }
             array_push($deck, $row);
-            $precedente = $line["mazzo"];
+            $precedente = $row["mazzo"];
         }
         $resultSet = $conn->query("select distinct mazzo from mazzi");
         $mazzi = [];
