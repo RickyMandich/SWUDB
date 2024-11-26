@@ -21,7 +21,7 @@
             while($line = $result->fetch_assoc()){
                 array_push($mazzoOrder, $line["mazzo"]);
             }
-
+            require_once "printMazzoOrder.php";
             // Definisco l'ordine dei tipi
             $tipoOrder = ['Leader', 'Base'];
             
