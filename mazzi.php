@@ -228,6 +228,9 @@
             <table>
                 <thead>
                     <tr>
+                        <td>
+                            exist
+                        </td>
                         <?php foreach($deck[0] as $column=>$value):?>
                             <td>
                                 <?php echo $column;?>
@@ -238,6 +241,9 @@
                 <tbody>
                     <?php foreach($deck as $card):?>
                         <tr>
+                            <td>
+                                carta
+                            </td>
                             <?php foreach($card as $value):?>
                                 <td>
                                     <?php echo $value;?>
