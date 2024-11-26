@@ -231,7 +231,7 @@
                         <td>
                             exist
                         </td>
-                        <?php foreach($deck[0] as $column=>$value):?>
+                        <?php foreach($preDeck[0] as $column=>$value):?>
                             <td>
                                 <?php echo $column;?>
                             </td>
@@ -239,7 +239,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($deck as $card):?>
+                    <?php foreach($preDeck as $card):?>
                         <tr>
                             <td>
                                 carta
