@@ -306,8 +306,8 @@
                                         <?php endif;?>
                                     </td>
                                     <td>
-                                        <?php echo unserialize($_SESSION["user"])->getID()." === ".$row["codUtente"]?>
-                                        <?php if(unserialize($_SESSION["user"])->getID() === $row["codUtente"]):?>
+                                        <?php echo unserialize($_SESSION["user"])->getID()." == ".$row["codUtente"]?>
+                                        <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
                                             <?php if(!isset($precedente) or $row["mazzo"] !== $precedente){?>
                                                 <form action="exportDeck">
                                                     <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"];?>">
