@@ -17,7 +17,7 @@
             if ($conn->connect_error) {
                 die("Connection failed: " . $conn->connect_error);
             }
-            $result = $conn->query("select distinct mazzo from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." or public = '1' order by mazzo");
+            $result = $conn->query("sSELECT COUNT(*) FROM (SELECT DISTINCT mazzo, codUtente, public FROM mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()."0 or public = '1' order by mazzo) as m;");
             while($line = $result->fetch_assoc()){
                 array_push($mazzoOrder, $line["mazzo"]);
             }
