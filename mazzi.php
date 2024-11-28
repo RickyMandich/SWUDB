@@ -246,7 +246,7 @@
     ?>
     <body>
         <div class="container">
-            <table>
+            <!-- <table>
                 <thead>
                     <?php foreach($preDeck as $carta):?>
                         <tr>
@@ -256,7 +256,7 @@
                         </tr>
                     <?php endforeach;?>
                 </thead>
-            </table>
+            </table> -->
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
