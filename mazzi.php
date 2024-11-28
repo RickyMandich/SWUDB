@@ -16,8 +16,8 @@
             echo "$query<br>";
             $result = $conn->query($query)->fetch_assoc();
             var_dump($result);
-            $numero = $result["nome"];
-            echo "<br>numero originale:".$el["numero"]."    "."getNUmero:$numero<br>";
+            $numero = $result["numero"];
+            echo "<br>numero originale:".$el["numero"]."    "."getNumero:$numero<br>";
             return $numero ?? $el["numero"];
         };
 
