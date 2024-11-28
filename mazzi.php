@@ -249,7 +249,7 @@
                         <td>
                             getNumero
                         </td>
-                        <?php foreach($preDeck as $column=>$ignore):?>
+                        <?php foreach($preDeck[0] as $column=>$ignore):?>
                             <?php if($column != 'getNumero'):?>
                                 <td>
                                     <?php echo $column?>
