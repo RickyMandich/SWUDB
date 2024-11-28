@@ -12,6 +12,7 @@
         require_once("header.php");
 
         $getNumero = function($el) use ($conn){
+            echo "select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."'";
             $result = $conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."'")->fetch_assoc();
             var_dump($result);
             $numero = $result["nome"];
