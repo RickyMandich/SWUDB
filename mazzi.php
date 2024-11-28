@@ -27,6 +27,10 @@
             }
             // Definisco l'ordine dei tipi
             $tipoOrder = ['Leader', 'Base'];
+
+            $getNumero = function($el) use ($conn){
+                return $conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".$el["nome"]."' and titolo like ".$el["titolo"]."'")->fetch_assoc()["nome"];
+            };
             
             // Definisco l'ordine degli aspetti primari
             $primaryAspectOrder = ['Blue', 'Green', 'Red', 'Yellow'];
@@ -135,11 +139,11 @@
             }
             
             // Se uscita è uguale, confronto per numero (in ordine crescente)
-            if ($el1['numero'] < $el2['numero']) {
+            if ($getNumero($el1) < $getNumero($el2)) {
                 return -1;
             }
             
-            if ($el1['numero'] > $el2['numero']) {
+            if ($getNumero($el1) > $getNumero($el2)) {
                 return 1;
             }
             
