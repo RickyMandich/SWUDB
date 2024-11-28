@@ -245,33 +245,12 @@
     <body>
         <div class="container">
             <table>
-                <thead>
-                    <tr>
-                        <td>
-                            getNumero
-                        </td>
-                        <?php foreach($preDeck[0] as $column=>$ignore):?>
-                            <?php if($column != 'getNumero'):?>
-                                <td>
-                                    <?php echo $column?>
-                                </td>
-                            <?php endif;?>
-                        <?php endforeach;?>
-                    </tr>
-                </thead>
                 <tbody>
                     <?php foreach($preDeck as $carta):?>
                         <tr>
                             <td>
-                                <?php echo $carta["getNumero"];?>
+                                <?php var_dump($carta)?>
                             </td>
-                            <?php foreach($carta as $column=>$value):?>
-                                <?php if($column != 'getNumero'):?>
-                                    <td>
-                                        <?php echo $value?>
-                                    </td>
-                                <?php endif;?>
-                            <?php endforeach;?>
                         </tr>
                     <?php endforeach;?>
                 </tbody>
