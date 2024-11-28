@@ -29,9 +29,8 @@
             $tipoOrder = ['Leader', 'Base'];
 
             $getNumero = function($el) use ($conn){
-                echo "select numero from carte where espansione = '".$el["espansione"]."' and nome like '".$el["nome"]."' and titolo like ".$el["titolo"]."'";
-                echo "<br>".$conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".$el["nome"]."' and titolo like '".$el["titolo"]."'")->fetch_assoc()["nome"];
-                exit;
+                //echo "select numero from carte where espansione = '".$el["espansione"]."' and nome like '".$el["nome"]."' and titolo like ".$el["titolo"]."'";
+                return $conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".$el["nome"]."' and titolo like '".$el["titolo"]."'")->fetch_assoc()["nome"];
             };
             
             // Definisco l'ordine degli aspetti primari
