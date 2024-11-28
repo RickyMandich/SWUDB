@@ -220,7 +220,8 @@
             }
             array_push($preDeck, $row);
         }
-        $preDeck = mergeSort($preDeck);
+        mergeSort($preDeck);
+
         $deck = [];
         $precedente = "";
         foreach($preDeck as $row){
@@ -242,6 +243,38 @@
     ?>
     <body>
         <div class="container">
+            <table>
+                <thead>
+                    <tr>
+                        <td>
+                            getNumero
+                        </td>
+                        <?php foreach($preDeck as $column=>$ignore):?>
+                            <?php if($column != 'getNumero'):?>
+                                <td>
+                                    <?php echo $column?>
+                                </td>
+                            <?php endif;?>
+                        <?php endforeach;?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($preDeck as $carta):?>
+                        <tr>
+                            <td>
+                                <?php echo $carta["getNumero"];?>
+                            </td>
+                            <?php foreach($carta as $column=>$value):?>
+                                <?php if($column != 'getNumero'):?>
+                                    <td>
+                                        <?php echo $value?>
+                                    </td>
+                                <?php endif;?>
+                            <?php endforeach;?>
+                        </tr>
+                    <?php endforeach;?>
+                </tbody>
+            </table>
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
