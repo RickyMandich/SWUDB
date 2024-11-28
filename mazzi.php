@@ -13,11 +13,8 @@
 
         $getNumero = function($el) use ($conn){
             $query = "select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."'";
-            echo "$query<br>";
             $result = $conn->query($query)->fetch_assoc();
-            var_dump($result);
             $numero = $result["numero"];
-            echo "<br>numero originale:".$el["numero"]."    "."getNumero:$numero<br>";
             return $numero ?? $el["numero"];
         };
 
