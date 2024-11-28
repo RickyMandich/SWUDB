@@ -140,6 +140,15 @@
             return 1;
         }
         
+        // Se la carta è uguale, confronto per numero   
+        if ($el1["numero"] < $el2["numero"]) {
+            return -1;
+        }
+        
+        if ($el1["numero"] > $el2["numero"]) {
+            return 1;
+        }
+        
         // Se tutti i criteri sono uguali
         return 0;
     }
