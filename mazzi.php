@@ -10,7 +10,7 @@
     </head>
     <?php
         require_once "header.php";
-        require_once "orederCard";
+        require_once "orderCard";
         if (!isset($_SESSION["user"])){
             echo $file;
             ?>
