@@ -10,7 +10,7 @@
     </head>
     <?php
         require_once("header.php");
-        function compareElements($el1, $el2) {
+        function compareElements(&$el1, &$el2) {
             //definisco l'ordine dei mazzi
             $mazzoOrder = [];
             $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
