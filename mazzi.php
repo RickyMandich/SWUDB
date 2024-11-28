@@ -29,7 +29,6 @@
             $tipoOrder = ['Leader', 'Base'];
 
             $getNumero = function($el) use ($conn){
-                //echo "select numero from carte where espansione = '".$el["espansione"]."' and nome like '".$el["nome"]."' and titolo like ".$el["titolo"]."'";
                 return $conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."'")->fetch_assoc()["nome"];
             };
             
@@ -140,11 +139,13 @@
             }
             
             // Se uscita è uguale, confronto per numero (in ordine crescente)
-            if ($getNumero($el1) < $getNumero($el2)) {
+            $el1["getNumero"] = $getNumero($el1);
+            $el2["getNumero"] = $getNumero($el2);
+            if ($el1["getNumero"] < $el2["getNumero"]) {
                 return -1;
             }
             
-            if ($getNumero($el1) > $getNumero($el2)) {
+            if ($el1["getNumero"] > $el2["getNumero"]) {
                 return 1;
             }
             
