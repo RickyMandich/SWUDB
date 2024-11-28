@@ -223,8 +223,8 @@
                     $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
                 }
                 $row[$key] = $value;
-                $row["getNumero"] = $getNumero($row);
             }
+            $row["getNumero"] = $getNumero($row);
             array_push($preDeck, $row);
         }
         mergeSort($preDeck);
