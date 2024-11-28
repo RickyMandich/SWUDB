@@ -14,6 +14,7 @@
         $getNumero = function($el) use ($conn){
             $numero = $conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."'")->fetch_assoc()["nome"];
             echo "<br>numero originale:".$el["numero"]."    "."getNUmero:$numero<br>";
+            return $numero ?? $el["numero"];
         };
 
         function compareElements(&$el1, &$el2) {
