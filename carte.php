@@ -9,6 +9,7 @@
         <link rel="stylesheet" href="css/mazzi.css">
     </head>
     <?php
+        require_once "orderCard.php";
         if(count($_GET)>0 and $_GET["nome"] === "" and $_GET["espansione"] === "all"): ?>
             <meta http-equiv="refresh" content="0; url=carte">
         <?php endif;
