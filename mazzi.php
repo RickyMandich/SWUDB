@@ -10,6 +10,11 @@
     </head>
     <?php
         require_once("header.php");
+
+        $getNumero = function($el) use ($conn){
+            return $conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."'")->fetch_assoc()["nome"];
+        };
+
         function compareElements(&$el1, &$el2) {
             //definisco l'ordine dei mazzi
             $mazzoOrder = [];
@@ -27,10 +32,6 @@
             }
             // Definisco l'ordine dei tipi
             $tipoOrder = ['Leader', 'Base'];
-
-            $getNumero = function($el) use ($conn){
-                return $conn->query("select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."'")->fetch_assoc()["nome"];
-            };
             
             // Definisco l'ordine degli aspetti primari
             $primaryAspectOrder = ['Blue', 'Green', 'Red', 'Yellow'];
@@ -139,8 +140,6 @@
             }
             
             // Se uscita è uguale, confronto per numero (in ordine crescente)
-            $el1["getNumero"] = $getNumero($el1);
-            $el2["getNumero"] = $getNumero($el2);
             if ($el1["getNumero"] < $el2["getNumero"]) {
                 return -1;
             }
@@ -218,11 +217,11 @@
                     $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
                 }
                 $row[$key] = $value;
+                $row["getNumero"] = $getNumero($row);
             }
             array_push($preDeck, $row);
         }
         mergeSort($preDeck);
-
         $deck = [];
         $precedente = "";
         foreach($preDeck as $row){
