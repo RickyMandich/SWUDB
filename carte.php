@@ -36,6 +36,7 @@
         unset($rs);
         $rs = [];
         while($line = $resultSet ->fetch_assoc()){
+            $line["getNumero"] = $getNumero($line);
             array_push($rs, $line);
         }
         $rs = mergeSort($rs);
