@@ -78,6 +78,7 @@ class Card {
         $insert = substr($insert,0,-2);
         $insert = $insert."),\n";
         $insert = substr($insert,0,-2);
+        echo $insert.";";
         return $insert.";";
     }
 }
