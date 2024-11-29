@@ -16,7 +16,7 @@
         }
         $result = $conn->query("SELECT DISTINCT mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by mazzo");
         while($line = $result->fetch_assoc()){
-            if($line["codUtente"] == unserialize($_SESSION["user"])->getID()){
+            if($line["codUtente"] == (isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")){
                 array_push($mazzoOrder, $line["mazzo"]);
             }else{
                 array_push($mazzoOrder, $line["mazzo"]." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
