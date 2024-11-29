@@ -67,11 +67,11 @@ class Card {
             if (!$value) $value = 0;
             if ($key === 'tratti') $value = join(" * ", $value);
             if(gettype($value) === "string"){
-                $insert = $insert.'"';
+                $insert = $insert.'\'';
             }
-            $insert = $insert.$value;
+            $insert = $insert.str_replace("'", "\'", $value);
             if(gettype($value) === "string"){
-                $insert = $insert.'"';
+                $insert = $insert.'\'';
             }
             $insert = $insert.", ";
         }
