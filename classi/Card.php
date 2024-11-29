@@ -78,7 +78,7 @@ class Card {
         $insert = substr($insert,0,-2);
         $insert = $insert."),\n";
         $insert = substr($insert,0,-2);
-        echo $insert.";";
+        echo str_replace("\n", "<br>", $insert.";");
         return $insert.";";
     }
 }
