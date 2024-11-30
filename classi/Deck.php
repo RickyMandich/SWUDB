@@ -1,6 +1,8 @@
 <?php
+    require_once "header.php";
     class Deck{
-        private $nome;
+        public $nome;
+        public $id;
         private $leader;
         private $base;
         private $deck;
@@ -50,10 +52,25 @@
             }
         }
 
-        function getInsertSql($public){
-            $insert = "insert into mazzi\nvalues";
+        function createDeck($public){
+            $id = $conn->query("select id from mazzi where nome = '".$this->nome."'");
+            if(!$id->fetch_assoc()){
+                $conn->query("insert into mazzi (nome, public) values('".$this->nome."', ".$public.");");
+            }
+        }
+
+        function getInsertSql(){
+            $id = $conn->query("select id from mazzi where nome = '".$this->nome."'");
+            try{
+                $this->id = $id->fetch_assoc()["id"];
+            }catch(Error $e){
+                $this->createDeck("0");
+                $id = $conn->query("select id from mazzi where nome = '".$this->nome."'");
+                $this->id = $id->fetch_assoc()["id"];
+            }
+            $insert = "insert into composizione\nvalues";
             foreach( $this->carte as $card){
-                $insert = $insert."('".$this->nome."','". $card->espansione."',". $card->numero .",". unserialize($_SESSION["user"])->getID().", 0, ".($public === 'on' ? "1": "0")."),";
+                $insert = $insert."('".$this->id."','". $card->espansione."',". $card->numero .","."0"."),";
             }
             $insert = substr($insert,0,-1);
             return $insert.";";

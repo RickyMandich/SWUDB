@@ -21,12 +21,13 @@
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
-        $resultSet = $conn->query("select m.mazzo, m.foil, m.public, c.*, m.codUtente from mazzi m, carte c where m.espansione = c.espansione and m.numero = c.numero and (m.codUtente = ". unserialize($_SESSION["user"])->getID()." or m.public = '1') order by mazzo, numero, espansione");
+        //da sistemare le colonne prese
+        $resultSet = $conn->query("select m.nome, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and (m.public = 1 or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
         $preDeck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
             foreach($line as $key => $value){
-                if($key === 'mazzo' && $line["codUtente"] != unserialize($_SESSION["user"])->getID()){
+                if($key === 'nome' && $line["codUtente"] != unserialize($_SESSION["user"])->getID()){
                     $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
                 }
                 $row[$key] = $value;
@@ -38,20 +39,20 @@
         $deck = [];
         $precedente = "";
         foreach($preDeck as $row){
-            if(!isset($precedente) or $row["mazzo"] !== $precedente){
+            if(!isset($precedente) or $row["nome"] !== $precedente){
                 $header = $row;
                 foreach($header as $key => $i){
-                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
+                    if($key !== "nome" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
                 }
                 array_push($deck, $header);
             }
             array_push($deck, $row);
-            $precedente = $row["mazzo"];
+            $precedente = $row["nome"];
         }
-        $resultSet = $conn->query("select distinct mazzo from mazzi");
+        $resultSet = $conn->query("select distinct nome from mazzi");
         $mazzi = [];
         while($line = $resultSet->fetch_assoc()){
-            array_push($mazzi, $line["mazzo"]);
+            array_push($mazzi, $line["nome"]);
         }
     ?>
     <body>
@@ -89,12 +90,12 @@
                             <?php 
                             unset($precedente);
                             foreach($deck as $row): ?>
-                                <tr class="card-in-deck-row <?php if(!isset($precedente) or $row["mazzo"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
+                                <tr class="card-in-deck-row <?php if(!isset($precedente) or $row["nome"] !== $precedente) echo "deck-header"; else echo "deck-card";?>">
                                     <td>
                                         <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
-                                            <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                            <?php if(!(!isset($precedente) or $row["nome"] !== $precedente)): ?>
                                                 <form action="./remove">
-                                                    <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                    <input type="hidden" name="mazzo" value="<?php echo $row["nome"]?>">
                                                     <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                     <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                     <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
@@ -108,7 +109,7 @@
                                     </td>
                                     <td style="max-width: 100vw">
                                         <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
-                                            <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                            <?php if(!(!isset($precedente) or $row["nome"] !== $precedente)): ?>
                                                 <img src='img/collezione.png' width='100px' height='auto' onclick="showMenuCollezione(this)">
                                                 <div class="menuCollezione">
                                                     <span class="closeMenu" onclick="hideMenuCollezione(this)">
@@ -116,7 +117,7 @@
                                                     </span>
                                                     <?php foreach($mazzi as $mazzo):?>
                                                         <form action="./moveTo" method="get">
-                                                            <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                            <input type="hidden" name="mazzo" value="<?php echo $row["nome"]?>">
                                                             <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                             <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                             <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
@@ -130,7 +131,7 @@
                                                         </form>
                                                     <?php endforeach; ?>
                                                     <form action="./moveTo" method="get">
-                                                        <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                        <input type="hidden" name="mazzo" value="<?php echo $row["nome"]?>">
                                                         <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                         <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                         <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
@@ -146,18 +147,18 @@
                                     </td>
                                     <td>
                                         <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
-                                            <?php if(!isset($precedente) or $row["mazzo"] !== $precedente){?>
+                                            <?php if(!isset($precedente) or $row["nome"] !== $precedente){?>
                                                 <form action="exportDeck">
-                                                    <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"];?>">
+                                                    <input type="hidden" name="mazzo" value="<?php echo $row["nome"];?>">
                                                     <input type="image" src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="export as text" class="exportDeck">
                                                 </form>
                                             <?php }else{?>
                                                 <form action="moveTo">
-                                                    <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"]?>">
+                                                    <input type="hidden" name="mazzo" value="<?php echo $row["nome"]?>">
                                                     <input type="hidden" name="espansione" value="<?php echo $row["espansione"]?>">
                                                     <input type="hidden" name="numero" value="<?php echo $row["numero"]?>">
                                                     <input type="hidden" name="foil" value="<?php echo $row["foil"]?>">
-                                                    <input type="hidden" name="into" value="mancanti di <?php echo $row["mazzo"];?>">
+                                                    <input type="hidden" name="into" value="mancanti di <?php echo $row["nome"];?>">
                                                     <input type="hidden" name="public" value="1">
                                                     <input type="hidden" name="from" value="mazzi">
                                                     <input type="image" src="https://imgs.search.brave.com/tOlbrzqxPM8E8cIRWHPtdsVrBcMPZfG3NHK4TIWZJoc/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9hc3Nl/dHMuZHJ5aWNvbnMu/Y29tL3VwbG9hZHMv/aWNvbi9wcmV2aWV3/Lzc0MTQvc21hbGxf/MXhfbGlzdC5wbmc" alt="mancante">
@@ -167,12 +168,12 @@
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
                                         <td>
-                                            <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
+                                            <?php if(!(!isset($precedente) or $row["nome"] !== $precedente)): ?>
                                             <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])?>" target="_blank">
                                             <?php 
                                             endif;
                                             echo $cell;
-                                            if(!(!isset($precedente) or $row["mazzo"] !== $precedente)):
+                                            if(!(!isset($precedente) or $row["nome"] !== $precedente)):
                                                 if($key === "nome"){
                                                     ?><img class="card-hover" src="https://www.swudb.com/cards/<?php echo $row["espansione"] . "/" . sprintf("%0" . $numeri[$row["espansione"]] . "d", $row["numero"]);?>.png"><?php
                                                 }?>
@@ -180,7 +181,7 @@
                                             <?php endif; ?>
                                         </td>
                                     <?php endforeach;
-                                    $precedente = $row["mazzo"];?>
+                                    $precedente = $row["nome"];?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

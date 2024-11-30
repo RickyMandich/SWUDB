@@ -8,12 +8,15 @@
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
-        $conn->query("delete from mazzi where mazzo='".$_GET["mazzo"]."' and espansione = '".$_GET["espansione"]."' and numero = ".$_GET["numero"]);
+        $conn->query("DELETE FROM composizione 
+              WHERE idMazzo = (SELECT id FROM mazzi WHERE nome = '".$_GET["mazzo"]."')
+                AND espansione = '".$_GET["espansione"]."'
+                AND numero = ".$_GET["numero"].";");
         $modifiche = $conn->affected_rows;
         echo $modifiche;
         echo "<br>";
         while($modifiche>1){
-            $conn-> query("insert into mazzi values('".$_GET["mazzo"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().", ".$_GET["foil"].", ".$_GET["public"].")");
+            $conn-> query("insert into composizione values(SELECT id FROM mazzi WHERE nome = '".$_GET["mazzo"]."'), '".$_GET["espansione"]."', ".$_GET["numero"].", ".$_GET["foil"].")");
             $modifiche--;
         }
         echo $modifiche

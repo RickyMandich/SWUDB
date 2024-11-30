@@ -1,7 +1,14 @@
 <?php
     require_once "header.php";
     if(isset($_GET["from"])){
-        $query = "insert into mazzi\n values('".$_GET["into"]."', '".$_GET["espansione"]."', ".$_GET["numero"].", ".unserialize($_SESSION["user"])->getID().", ".$_GET["foil"].", ".(isset($_GET["public"])?$_GET["public"]:"0").")";
+        $exist = $conn->query("select id from mazzi where nome = '".$_GET["into"]."';");
+        if(!$exist = $exist->fetch_assoc()){
+            $conn->query("insert into mazzi (nome, public) values('".$_GET["into"]."', 0);");
+            $id = $conn->query("select id from mazzi where nome = '".$_GET["into"]."';")->fetch_assoc()["id"];
+        }else{
+            $id = $exist["id"];
+        }
+        $query = "insert into composizione\n values(".$id.", '".$_GET["espansione"]."', ".$_GET["numero"].", ".$_GET["foil"].")";
         echo "<br>query:";
         var_dump($query);
         echo "<br>get:";

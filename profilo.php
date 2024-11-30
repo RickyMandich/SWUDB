@@ -14,10 +14,10 @@
         <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
         <?php
     }
-    $result = $conn->query("select distinct mazzo from mazzi");
+    $result = $conn->query("select distinct nome from mazzi");
     $mazzi = [];
     while( $row = $result->fetch_assoc() ){
-        array_push($mazzi, $row["mazzo"]);
+        array_push($mazzi, $row["nome"]);
     }
 ?>
 <body>
@@ -58,11 +58,11 @@
                                     <?php echo $value; ?>
                                 </td>
                                 <td>
-                                    <?php $leader = $conn->query("select c.nome, c.espansione, c.numero from carte c, mazzi m where c.tipo='leader' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'")->fetch_assoc();?>
+                                    <?php $leader = $conn->query("select c.nome, c.espansione, c.numero from carte c, composizione m where c.tipo='leader' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'")->fetch_assoc();?>
 
                                     <img src="https://swudb.com/cards/<?php echo $leader["espansione"]."/".sprintf("%0". $numeri[$leader["espansione"]]."d", $leader["numero"]).".png"?>" alt="<?php echo $leader["nome"];?>">
                                 </td>
-                                <?php $base = $conn->query("select c.nome, c.espansione, c.numero from carte c, mazzi m where c.tipo='base' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.mazzo = '".$value."'")->fetch_assoc();?>
+                                <?php $base = $conn->query("select c.nome, c.espansione, c.numero from carte c, composizione m where c.tipo='base' and m.espansione = c.espansione and m.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'")->fetch_assoc();?>
                                 <td>
                                 <img src="https://swudb.com/cards/<?php echo $base["espansione"]."/".sprintf("%0". $numeri[$base["espansione"]]."d", $base["numero"]).".png"?>" alt="<?php echo $base["nome"];?>">
                                 </td>
