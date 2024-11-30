@@ -50,7 +50,7 @@
                 if($_GET["mazzo"] === "Collezione" or quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
                     $id = $conn->query("select id from mazzi where nome = '".$_GET["mazzo"]."';");
                     if(!$id = $id->fetch_assoc()){
-                        $conn->query("insert into mazzi (nome, public) values('".$_GET["mazzo"]."', 0);");
+                        $conn->query("insert into mazzi (nome, public, codUtente) values('".$_GET["mazzo"]."', 0, ".unserialize($_SESSION["user"])->getID().");");
                     }
                     $result = $conn->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");");
                     if($result === true){
