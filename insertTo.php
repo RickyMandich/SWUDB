@@ -52,6 +52,7 @@
                     if(!$id = $id->fetch_assoc()){
                         $conn->query("insert into mazzi (nome, public, codUtente) values('".$_GET["mazzo"]."', 0, ".unserialize($_SESSION["user"])->getID().");");
                     }
+                    echo "insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");";
                     $result = $conn->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");");
                     if($result === true){
                         $resultClass = "success";
