@@ -3,7 +3,7 @@
     if(isset($_GET["from"])){
         $exist = $conn->query("select id from mazzi where nome = '".$_GET["into"]."';");
         if(!$exist = $exist->fetch_assoc()){
-            $conn->query("insert into mazzi (nome, public) values('".$_GET["into"]."', 0);");
+            $conn->query("insert into mazzi (nome, public, codUtente) values('".$_GET["into"]."', 0, ".unserialize($_SESSION["user"])->getID().");");
             $id = $conn->query("select id from mazzi where nome = '".$_GET["into"]."';")->fetch_assoc()["id"];
         }else{
             $id = $exist["id"];
