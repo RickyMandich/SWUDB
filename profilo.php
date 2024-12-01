@@ -14,10 +14,10 @@
         <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
         <?php
     }
-    $result = $conn->query("select distinct nome from mazzi");
+    $result = $conn->query("select distinct nome as mazzo from mazzi");
     $mazzi = [];
     while( $row = $result->fetch_assoc() ){
-        array_push($mazzi, $row["nome"]);
+        array_push($mazzi, $row["mazzo"]);
     }
 ?>
 <body>

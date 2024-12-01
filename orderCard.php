@@ -14,12 +14,12 @@
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
-        $result = $conn->query("SELECT DISTINCT nome, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by nome");
+        $result = $conn->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by nome");
         while($line = $result->fetch_assoc()){
             if($line["codUtente"] == (isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")){
-                array_push($mazzoOrder, $line["nome"]);
+                array_push($mazzoOrder, $line["mazzo"]);
             }else{
-                array_push($mazzoOrder, $line["nome"]." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
+                array_push($mazzoOrder, $line["mazzo"]." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
             }
         }
         // Definisco l'ordine dei tipi
@@ -30,7 +30,7 @@
         
         // Funzione per ottenere il peso del mazzo
         $getMazzoWeight = function($element) use ($mazzoOrder) {
-            $mazzo = $element['nome'];
+            $mazzo = $element["mazzo"];
             $index = array_search($mazzo, $mazzoOrder);
             return $index !== false ? $index : count($mazzoOrder);
         };
