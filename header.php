@@ -9,11 +9,14 @@
         for($i = 0;$i<$deep;$i++){
             echo "--";
         }
+        echo ">";
         if(gettype($line) == 'array'){
+            echo "{<br>";
             foreach($line as $i => $value){
                 echo $i;
                 printlnd($value, $deep+1);
             }
+            echo "<br>}<br>"
         }else{
             echo $line;
             echo "<br>";
