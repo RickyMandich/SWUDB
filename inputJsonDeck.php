@@ -31,7 +31,7 @@
                 if($jsonData = json_decode($jsonContent, true)) {
                     elaborazioneJson($jsonData);
                     ?>
-                        <!-- <meta http-equiv="refresh" content="3; url=inputJsonDeck"> -->
+                        <meta http-equiv="refresh" content="3; url=inputJsonDeck">
                     <?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
@@ -45,7 +45,7 @@
             if($jsonData = json_decode($_POST["textJson"], true)) {
                 elaborazioneJson($jsonData);
                 ?>
-                    <!-- <meta http-equiv="refresh" content="3; url=inputJsonDeck"> -->
+                    <meta http-equiv="refresh" content="3; url=inputJsonDeck">
                 <?php
             } else {
                 echo "Errore: Il file non contiene un JSON valido";
