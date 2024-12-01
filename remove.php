@@ -12,6 +12,7 @@
         echo $modifiche;
         echo "<br>";
         while($modifiche>1){
+            echo "insert into composizione values(SELECT id FROM mazzi WHERE nome = '".$_GET["mazzo"]."'), '".$_GET["espansione"]."', ".$_GET["numero"].", ".$_GET["foil"].")";
             $GLOBALS["conn"]-> query("insert into composizione values(SELECT id FROM mazzi WHERE nome = '".$_GET["mazzo"]."'), '".$_GET["espansione"]."', ".$_GET["numero"].", ".$_GET["foil"].")");
             $modifiche--;
         }
