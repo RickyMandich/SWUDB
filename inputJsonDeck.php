@@ -7,6 +7,15 @@
     </head>
     <?php
         require_once("header.php");
+        function elaborazioneJson($jsonData){
+            $deck = new Deck($jsonData);
+            $deck->createDeck($_GET["public"]=="on"?"1":"0");
+            foreach($deck->carte as $c){
+                var_dump($c);
+                echo "<br><br>";
+                //moveTo($deck->nome, $c->espansione, $c->numero, 0);
+            }
+        }
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>"><?php
         }
@@ -18,10 +27,7 @@
                 
                 // Verifica che sia un JSON valido
                 if($jsonData = json_decode($jsonContent, true)) {
-                    $deck = new Deck($jsonData);
-                    $deck->createDeck($_GET["public"]=="on"?"1":"0");
-                    $GLOBALS["conn"]->query($deck->getInsertSql());
-                    echo "caricamento riuscito, ho inserito ".$GLOBALS["conn"]->affected_rows." carte";
+                    elaborazioneJson($jsonData);
                     ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
@@ -33,13 +39,7 @@
             }
         }else if(isset($_POST["textJson"])){
             if($jsonData = json_decode($_POST["textJson"], true)) {
-                $deck = new Deck($jsonData);
-                $deck->createDeck($_GET["public"]=="on"?"1":"0");
-                foreach($deck->carte as $c){
-                    var_dump($c);
-                    echo "<br><br>";
-                    //moveTo($deck->nome, $c->espansione, $c->numero, 0);
-                }
+                elaborazioneJson($jsonData);
                 ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
             } else {
                 echo "Errore: Il file non contiene un JSON valido";
