@@ -56,7 +56,7 @@
             require_once "header.php";
             $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$this->nome."'");
             if(!$id->fetch_assoc()){
-                $GLOBALS["conn"]->query("insert into mazzi (nome, public) values('".$this->nome."', ".$public.");");
+                $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$this->nome."', ".$public.",".unserialize($_SESSION["user"])->getID().");");
             }
         }
 
