@@ -8,7 +8,11 @@
     <?php
         require_once("header.php");
         function elaborazioneJson($jsonData){
-            var_dump($jsonData);//println($jsonData);
+            $carte = $jsonData["data"];
+            foreach($carte as $c){
+                var_dump($c);
+                echo "<br>";
+            }
         }
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>"><?php
