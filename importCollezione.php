@@ -10,7 +10,7 @@
         function elaborazioneJson($jsonData){
             $carte = $jsonData["data"];
             foreach($carte as $c){
-                var_dump($c);
+                println($c);
                 echo "<br>";
             }
         }
