@@ -53,3 +53,34 @@
         }
         return array("resultClass" => $resultClass, "resultText" => $resultText);
     }
+
+    function remove($numero, $mazzo, $espansione, $foil){
+        $GLOBALS["conn"]->query("DELETE FROM composizione 
+              WHERE idMazzo = (SELECT id FROM mazzi WHERE nome = '".$mazzo."')
+                AND espansione = '".$espansione."'
+                AND numero = ".$numero.";");
+        $modifiche = $GLOBALS["conn"]->affected_rows;
+        while($modifiche>1){
+            $GLOBALS["conn"]-> query("insert into composizione values((SELECT id FROM mazzi WHERE nome = '".$mazzo."'), '".$espansione."', ".$numero.", ".$foil.")");
+            $modifiche--;
+        }
+    }
+
+    function moveTo($into, $espansione, $numero, $foil, $mazzo = null){
+        $exist = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$into."';");
+        if(!$exist = $exist->fetch_assoc()){
+            $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$into."', 0, ".unserialize($_SESSION["user"])->getID().");");
+            $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$into."';")->fetch_assoc()["id"];
+        }else{
+            $id = $exist["id"];
+        }
+        $query = "insert into composizione\n values(".$id.", '".$espansione."', ".$numero.", ".$foil.")";
+        echo "<br>query:";
+        var_dump($query);
+        echo "<br>get:";
+        var_dump($_GET);
+        $GLOBALS["conn"]-> query($query);
+        if($mazzo != null){
+            remove($numero, $mazzo, $espansione, $foil);
+        }
+    }

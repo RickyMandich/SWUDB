@@ -3,11 +3,11 @@
     class Deck{
         public $nome;
         public $id;
-        private $leader;
-        private $base;
-        private $deck;
-        private $sideboard;
-        private $carte;
+        public $leader;
+        public $base;
+        public $deck;
+        public $sideboard;
+        public $carte;
 
         function __construct(array $json){
             $this->nome = $json["metadata"]["name"];

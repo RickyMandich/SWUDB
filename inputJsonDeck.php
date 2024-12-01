@@ -35,8 +35,11 @@
             if($jsonData = json_decode($_POST["textJson"], true)) {
                 $deck = new Deck($jsonData);
                 $deck->createDeck($_GET["public"]=="on"?"1":"0");
-                $GLOBALS["conn"]->query($deck->getInsertSql());
-                echo "caricamento riuscito, ho inserito ".$GLOBALS["conn"]->affected_rows." carte";
+                foreach($deck->carte as $c){
+                    var_dump($c);
+                    echo "<br><br>";
+                    //moveTo($deck->nome, $c->espansione, $c->numero, 0);
+                }
                 ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
             } else {
                 echo "Errore: Il file non contiene un JSON valido";
