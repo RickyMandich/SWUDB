@@ -28,7 +28,9 @@
                 // Verifica che sia un JSON valido
                 if($jsonData = json_decode($jsonContent, true)) {
                     elaborazioneJson($jsonData);
-                    ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
+                    ?>
+                        <!-- <meta http-equiv="refresh" content="3; url=inputJsonDeck"> -->
+                    <?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
                     ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
@@ -45,9 +47,7 @@
                 <?php
             } else {
                 echo "Errore: Il file non contiene un JSON valido";
-                ?>
-                    <!-- <meta http-equiv="refresh" content="3; url=inputJsonDeck"> -->
-                <?php
+                ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
             }
         } else {
             // Form per il caricamento del file
