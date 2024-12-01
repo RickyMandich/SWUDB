@@ -6,7 +6,7 @@
     require_once "classi/Cards.php";
     require_once "variabili.php";
     function println($line){
-        echo "$line-->".gettype($line);
+        echo "$line->".gettype($line);
         if(gettype($line) == 'array'){
             foreach($line as $i => $value){
                 echo "$i-->".println($line)."<br>";
