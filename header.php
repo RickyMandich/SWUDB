@@ -12,8 +12,8 @@
         }
         echo "$line->".gettype($line);
         if(gettype($line) == 'array'){
-            foreach($line as $i/* => $value*/){
-                println($line);
+            foreach($line as $i => $value){
+                println($value);
             }
         }else{
             echo $line;
