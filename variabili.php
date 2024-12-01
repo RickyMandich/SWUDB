@@ -51,7 +51,8 @@
                 if(!$id = $id->fetch_assoc()){
                     $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$mazzo."', 0, ".unserialize($_SESSION["user"])->getID().");");
                 }
-                $result = $GLOBALS["conn"]->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$espansione."', ".$numero.", ".($foil === 'on' ? "1" : "0").");");
+                echo "insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '$espansione', $numero, ".($foil === 'on' ? "1" : "0").");";
+                $result = $GLOBALS["conn"]->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '$espansione', $numero, ".($foil === 'on' ? "1" : "0").");");
                 if($result === true){
                     $resultClass = "success";
                     $resultText = "carta aggiunta";
