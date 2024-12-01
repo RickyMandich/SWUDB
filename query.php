@@ -23,8 +23,6 @@ require_once("header.php");?>
                 }
                 var_dump($_POST["query"]);
                 $rs = $conn->query($_POST["query"]);
-                echo "<br>---------------------<br>";
-                var_dump($rs);
                 if($rs):
                     $resultSet = $rs->fetch_assoc()?>
                     <div class="decks-section">
