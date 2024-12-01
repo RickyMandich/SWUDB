@@ -12,6 +12,7 @@
             $deck->createDeck($_GET["public"]=="on"?"1":"0");
             foreach($deck->carte as $c){
                 var_dump($c);
+                echo "<br>moveTo($deck->nome, $c->espansione, $c->numero, 0);";
                 echo "<br><br>";
                 //moveTo($deck->nome, $c->espansione, $c->numero, 0);
             }
