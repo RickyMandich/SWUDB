@@ -12,7 +12,7 @@
         if(gettype($line) == 'array'){
             foreach($line as $i => $value){
                 echo $i;
-                println($value);
+                printlnd($value, $deep+1);
             }
         }else{
             echo $line;
