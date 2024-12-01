@@ -10,6 +10,7 @@
             echo "{<br>";
             foreach($line as $i => $value){
                 echo $deep>0?"|":"";
+                unset($j);
                 for($j = 0;$j<$deep;$j++){
                     echo "--";
                 }
