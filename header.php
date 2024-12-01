@@ -9,10 +9,9 @@
         if(gettype($line) == 'array'){
             echo "{<br>";
             foreach($line as $i => $value){
-                echo $deep>-1?"|":"";
                 unset($j);
                 for($j = 0;$j<=$deep;$j++){
-                    echo "--";
+                    echo "  ";
                 }
                 echo "$i-->";
                 printlnd($value, $deep+1);
