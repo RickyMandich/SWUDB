@@ -24,7 +24,7 @@
         if(str_starts_with($_GET["from"], "./carte")): ?>
             <meta http-equiv="refresh" content="0; url=<?php echo $_GET["from"];?>">
         <?php else: ?>
-        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => $_GET["espansione"], 'numero' => $_GET["numero"], 'mazzo' => $_GET["mazzo"]));?>">
+        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => strtoupper($_GET["espansione"]), 'numero' => sprintf("%0".$numeri[strtoupper($_GET["espansione"])]."d", $_GET["numero"]), 'mazzo' => $_GET["mazzo"]));?>">
         <?php endif; ?>
     </body>
 </html>
