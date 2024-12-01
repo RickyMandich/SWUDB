@@ -22,7 +22,7 @@
             die("Connection failed: " . $GLOBALS["conn"]->connect_error);
         }
         //da sistemare le colonne prese
-        $resultSet = $GLOBALS["conn"]->query("select m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and (m.public = 1 or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
+        $resultSet = $GLOBALS["conn"]->query("select m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and (m.public = '1' or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
         $preDeck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
@@ -42,7 +42,7 @@
             if(!isset($precedente) or $row["mazzo"] !== $precedente){
                 $header = $row;
                 foreach($header as $key => $i){
-                    if($key !== "nome" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
+                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
                 }
                 array_push($deck, $header);
             }
