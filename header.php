@@ -16,7 +16,7 @@
                 echo $i;
                 printlnd($value, $deep+1);
             }
-            echo "<br>}<br>"
+            echo "<br>}<br>";
         }else{
             echo $line;
             echo "<br>";
