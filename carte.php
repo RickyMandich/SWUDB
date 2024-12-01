@@ -32,7 +32,7 @@
                 }
             endfor;
         }
-        $resultSet = $conn->query("select * from carte where nome like '%".(isset($_GET["nome"])?$_GET["nome"]:"")."%'".$queryEspansione);
+        $resultSet = $GLOBALS["conn"]->query("select * from carte where nome like '%".(isset($_GET["nome"])?$_GET["nome"]:"")."%'".$queryEspansione);
         unset($rs);
         $rs = [];
         while($line = $resultSet ->fetch_assoc()){

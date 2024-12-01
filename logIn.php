@@ -15,11 +15,7 @@
         $resultClass = "hidden";
         $resultText = "";
         if(isset($_GET["userID"])):
-            $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
-            if ($conn->connect_error) {
-                die("Connection failed: " . $conn->connect_error);
-            }
-            $resultSet = $conn->query("select * from utenti where nome='".$_GET["userID"]."' or email = '".$_GET["userID"]."'");
+            $resultSet = $GLOBALS["conn"]->query("select * from utenti where nome='".$_GET["userID"]."' or email = '".$_GET["userID"]."'");
             $resultSet = $resultSet->fetch_assoc();
             if($resultSet["password"] === $_GET["password"]):
                 $resultText = "accesso eseguito con successo";

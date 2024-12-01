@@ -20,8 +20,8 @@
                 if($jsonData = json_decode($jsonContent, true)) {
                     $deck = new Deck($jsonData);
                     $deck->createDeck($_GET["public"]=="on"?"1":"0");
-                    $conn->query($deck->getInsertSql());
-                    echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
+                    $GLOBALS["conn"]->query($deck->getInsertSql());
+                    echo "caricamento riuscito, ho inserito ".$GLOBALS["conn"]->affected_rows." carte";
                     ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
@@ -35,8 +35,8 @@
             if($jsonData = json_decode($_POST["textJson"], true)) {
                 $deck = new Deck($jsonData);
                 $deck->createDeck($_GET["public"]=="on"?"1":"0");
-                $conn->query($deck->getInsertSql());
-                echo "caricamento riuscito, ho inserito ".$conn->affected_rows." carte";
+                $GLOBALS["conn"]->query($deck->getInsertSql());
+                echo "caricamento riuscito, ho inserito ".$GLOBALS["conn"]->affected_rows." carte";
                 ?><meta http-equiv="refresh" content="3; url=inputJsonDeck"><?php
             } else {
                 echo "Errore: Il file non contiene un JSON valido";

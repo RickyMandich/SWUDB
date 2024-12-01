@@ -7,31 +7,15 @@
     </head>
     <?php
         function exist($espansione, $numero){
-            require "variabili.php";
-            $connected = false;
-            while(!$connected){
-                $connected = true;
-                if ($conn->connect_error) {
-                    $connected = false;
-                }
-            }
-            $resultSet = $conn->query("select * from carte where espansione = '".$espansione."' and numero = ".$numero);
+            $resultSet = $GLOBALS["conn"]->query("select * from carte where espansione = '".$espansione."' and numero = ".$numero);
             if($resultSet->fetch_assoc()){
                 return true;
             }
             return false;
         };
         function quante($mazzo, $espansione, $numero){
-            require "variabili.php";
-            $connected = false;
-            while(!$connected){
-                $connected = true;
-                if ($conn->connect_error) {
-                    $connected = false;
-                }
-            }
             $query = "select * from mazzi m, composizione c where m.id = c.idMazzo and c.espansione = '".$espansione."' and c.numero = ".$numero." and m.codUtente = ".unserialize($_SESSION["user"])->getID();
-            $resultSet = $conn->query($query);
+            $resultSet = $GLOBALS["conn"]->query($query);
             $quante = 0;
             while($resultSet->fetch_assoc()){
                 $quante++;
@@ -48,18 +32,18 @@
             $_GET["espansione"] = strtoupper($_GET["espansione"]);
             if(exist($_GET["espansione"], $_GET["numero"])){
                 if($_GET["mazzo"] === "Collezione" or quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
-                    $id = $conn->query("select id from mazzi where nome = '".$_GET["mazzo"]."';");
+                    $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$_GET["mazzo"]."';");
                     if(!$id = $id->fetch_assoc()){
-                        $conn->query("insert into mazzi (nome, public, codUtente) values('".$_GET["mazzo"]."', 0, ".unserialize($_SESSION["user"])->getID().");");
+                        $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$_GET["mazzo"]."', 0, ".unserialize($_SESSION["user"])->getID().");");
                     }
                     echo "insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");";
-                    $result = $conn->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");");
+                    $result = $GLOBALS["conn"]->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");");
                     if($result === true){
                         $resultClass = "success";
                         $resultText = "carta aggiunta";
                     }else{
                         $resultClass = "failed";
-                        $resultText = $conn->error;
+                        $resultText = $GLOBALS["conn"]->error;
                     }
                 }else{
                     $resultClass = "failed";

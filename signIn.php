@@ -12,15 +12,11 @@
             <meta http-equiv="refresh" content="0; url=./profilo">
             <?php
         }
-        $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
         $resultText = "";
         $resultClass = "hidden";
         if(isset($_GET["nome"])){
             try{
-                $insert = $conn->query("insert into utenti (nome, email, password) values('".$_GET["nome"]."', '".$_GET["email"]. "', '". $_GET["password"]."')");
+                $insert = $GLOBALS["conn"]->query("insert into utenti (nome, email, password) values('".$_GET["nome"]."', '".$_GET["email"]. "', '". $_GET["password"]."')");
                 $resultText = "registrazione avvenuta con successo, ora accedi";
                 $resultClass = "success";
                 mail("ricky.mandich@gmail.com", "nuovo utente", "to ricky.mandich@gmail.com un nuovo utente si è registrato a SWUDB.altervista.org \n\tnome:\t".$_GET["nome"]."\n\temail:\t".$_GET["email"], 'From: swudb@altervista.org' . "\r\n");

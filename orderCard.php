@@ -1,8 +1,8 @@
 <?php
     require_once "header.php";
-    $getNumero = function($el) use ($conn){
+    $getNumero = function($el){
         $query = "select numero from carte where espansione = '".$el["espansione"]."' and nome like '".str_replace("'", "\'", $el["nome"])."' and titolo like '".str_replace("'", "\'", $el["titolo"])."' order by numero";
-        $result = $conn->query($query)->fetch_assoc();
+        $result = $GLOBALS["conn"]->query($query)->fetch_assoc();
         $numero = $result["numero"];
         return $numero ?? $el["numero"];
     };
@@ -10,16 +10,12 @@
     function compareElements(&$el1, &$el2) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
-        $conn = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
-        $result = $conn->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by nome");
+        $result = $GLOBALS["conn"]->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by nome");
         while($line = $result->fetch_assoc()){
             if($line["codUtente"] == (isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")){
                 array_push($mazzoOrder, $line["mazzo"]);
             }else{
-                array_push($mazzoOrder, $line["mazzo"]." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
+                array_push($mazzoOrder, $line["mazzo"]." di ".$GLOBALS["conn"]->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
             }
         }
         // Definisco l'ordine dei tipi

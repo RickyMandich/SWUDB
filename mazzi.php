@@ -17,18 +17,18 @@
             <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
             <?php
         }else{
-        $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
+        $GLOBALS["conn"] = new mysqli("localhost","swudb","", "my_swudb", 3306);
+        if ($GLOBALS["conn"]->connect_error) {
+            die("Connection failed: " . $GLOBALS["conn"]->connect_error);
         }
         //da sistemare le colonne prese
-        $resultSet = $conn->query("select m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and (m.public = 1 or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
+        $resultSet = $GLOBALS["conn"]->query("select m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and (m.public = 1 or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
         $preDeck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
             foreach($line as $key => $value){
                 if($key === 'nome' && $line["codUtente"] != unserialize($_SESSION["user"])->getID()){
-                    $value = $value." di ".$conn->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
+                    $value = $value." di ".$GLOBALS["conn"]->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
                 }
                 $row[$key] = $value;
             }
@@ -49,7 +49,7 @@
             array_push($deck, $row);
             $precedente = $row["mazzo"];
         }
-        $resultSet = $conn->query("select distinct nome as mazzo from mazzi");
+        $resultSet = $GLOBALS["conn"]->query("select distinct nome as mazzo from mazzi");
         $mazzi = [];
         while($line = $resultSet->fetch_assoc()){
             array_push($mazzi, $line["mazzo"]);
@@ -64,7 +64,7 @@
                 println($deck);
             ?>
             <div class="decks-section">
-                <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
+                <h2>I Tuoi Mazzi <?php echo $GLOBALS["conn"]->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
                     <table>
                         <?php if (count($deck) > 0): ?>

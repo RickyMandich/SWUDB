@@ -25,8 +25,8 @@
             }
             $i=0;
             foreach($collezione->collezione as $value){
-                $conn->query("delete from carte where espansione = '".$value->espansione."' and numero = ".$value->numero);
-                $conn->query($value->getInsertSql());
+                $GLOBALS["conn"]->query("delete from carte where espansione = '".$value->espansione."' and numero = ".$value->numero);
+                $GLOBALS["conn"]->query($value->getInsertSql());
                 $i++;
             }
             echo "caricamento riuscito, ho inserito $i carte";

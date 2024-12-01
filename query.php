@@ -17,12 +17,8 @@ require_once("header.php");?>
                 </form>
                 <?php
                 echo $_POST["query"]."<br>";
-                $conn = new mysqli("localhost","swudb","", "my_swudb", 3306);
-                if ($conn->connect_error) {
-                    die("Connection failed: " . $conn->connect_error);
-                }
                 var_dump($_POST["query"]);
-                $rs = $conn->query($_POST["query"]);
+                $rs = $GLOBALS["conn"]->query($_POST["query"]);
                 if($rs):
                     $resultSet = $rs->fetch_assoc()?>
                     <div class="decks-section">
@@ -36,7 +32,7 @@ require_once("header.php");?>
                                             </td>
                                         <?php endforeach; ?>
                                     </tr>
-                                    <?php $rs = $conn->query($_POST["query"]); ?>
+                                    <?php $rs = $GLOBALS["conn"]->query($_POST["query"]); ?>
                                 </thead>
                                 <tbody>
                                     <?php while($resultSet = $rs->fetch_assoc()): ?>
@@ -58,7 +54,7 @@ require_once("header.php");?>
                         </div>
                     </div>
                 <?php else:
-                    echo "ho fatto ".$conn->affected_rows." modifiche";
+                    echo "ho fatto ".$GLOBALS["conn"]->affected_rows." modifiche";
                 endif;?>
             </div>
         <?php elseif(isset($_SESSION["user"])):?>

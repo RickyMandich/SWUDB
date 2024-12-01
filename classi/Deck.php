@@ -54,19 +54,19 @@
 
         function createDeck($public){
             require_once "header.php";
-            $id = $conn->query("select id from mazzi where nome = '".$this->nome."'");
+            $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$this->nome."'");
             if(!$id->fetch_assoc()){
-                $conn->query("insert into mazzi (nome, public) values('".$this->nome."', ".$public.");");
+                $GLOBALS["conn"]->query("insert into mazzi (nome, public) values('".$this->nome."', ".$public.");");
             }
         }
 
         function getInsertSql(){
-            $id = $conn->query("select id from mazzi where nome = '".$this->nome."'");
+            $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$this->nome."'");
             try{
                 $this->id = $id->fetch_assoc()["id"];
             }catch(Error $e){
                 $this->createDeck("0");
-                $id = $conn->query("select id from mazzi where nome = '".$this->nome."'");
+                $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$this->nome."'");
                 $this->id = $id->fetch_assoc()["id"];
             }
             $insert = "insert into composizione\nvalues";
