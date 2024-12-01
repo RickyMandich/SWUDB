@@ -8,7 +8,7 @@
     <?php
         require_once("header.php");
         function elaborazioneJson($jsonData){
-            println($jsonData);
+            var_dump($jsonData);//println($jsonData);
         }
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>"><?php
