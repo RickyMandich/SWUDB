@@ -57,6 +57,9 @@
     ?>
     <body>
         <div class="container">
+            println:
+            <br>
+            <?php println($deck);?>
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
@@ -175,9 +178,6 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                    println:
-                    <br>
-                    <?php println($deck);?>
                 </div>
             </div>
         </div>
