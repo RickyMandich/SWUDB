@@ -16,6 +16,10 @@
                 echo "$i-->";
                 printlnd($value, $deep+1);
             }
+            unset($j);
+            for($j = 0;$j<=$deep;$j++){
+                echo "&nbsp;&nbsp;";
+            }
             echo "}<br>";
         }else{
             echo $line;
