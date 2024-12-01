@@ -9,10 +9,17 @@
         require_once("header.php");
         function elaborazioneJson($jsonData){
             $carte = $jsonData["data"];
+            $i=0;
             foreach($carte as $c){
-                println($c);
-                echo "<br>";
+                $id = $GLOBALS["conn"]->query("select id from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." and nome = '".$c["mazzo"]."'");
+                if($id = !$id->fetch_assoc()){
+                    $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$c["mazzo"]."', ".$c["public"].", ".$c["codUtente"].");");
+                }
+                $id = $GLOBALS["conn"]->query("select id from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." and nome = '".$c["mazzo"]."'")->fetch_assoc()["id"];
+                insertTo($c["espansione"], $c["numero"], $c["mazzo"], $c["foil"]);
+                $i++;
             }
+            echo "ho fatto $i modifiche";
         }
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>"><?php
@@ -27,7 +34,7 @@
                 if($jsonData = json_decode($jsonContent, true)) {
                     elaborazioneJson($jsonData);
                     ?>
-                        <!-- <meta http-equiv="refresh" content="3; url=inputJsonDeck"> -->
+                        <meta http-equiv="refresh" content="3; url=inputJsonDeck">
                     <?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
