@@ -45,7 +45,7 @@
             }
         } else {
             ?>
-            <form action="inputJsonDeck" method="post" enctype="multipart/form-data">
+            <form action="importCollezione" method="post" enctype="multipart/form-data">
                 <input type="file" name="fileJson" id="fileJson" accept=".json">
                 <textarea name="textJson" id="textJson"></textarea>
                 <input type="submit" value="Carica">
