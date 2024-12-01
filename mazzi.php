@@ -57,17 +57,6 @@
     ?>
     <body>
         <div class="container">
-            <table>
-                <thead>
-                    <?php foreach($preDeck as $carta):?>
-                        <tr>
-                            <td>
-                                <?php var_dump($carta)?>
-                            </td>
-                        </tr>
-                    <?php endforeach;?>
-                </thead>
-            </table>
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $conn->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
