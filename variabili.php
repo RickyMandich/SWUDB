@@ -26,23 +26,24 @@
     $file = preg_replace('/\?.*/', '', $file);
     $file = preg_replace('/\.php$/', '', $file);
 
+    function exist($espansione, $numero){
+        $resultSet = $GLOBALS["conn"]->query("select * from carte where espansione = '".$espansione."' and numero = ".$numero);
+        if($resultSet->fetch_assoc()){
+            return true;
+        }
+        return false;
+    }
+    function quante($mazzo, $espansione, $numero){
+        $query = "select * from mazzi m, composizione c where m.id = c.idMazzo and c.espansione = '".$espansione."' and c.numero = ".$numero." and m.codUtente = ".unserialize($_SESSION["user"])->getID();
+        $resultSet = $GLOBALS["conn"]->query($query);
+        $quante = 0;
+        while($resultSet->fetch_assoc()){
+            $quante++;
+        }
+        return $quante;
+    }
+    
     function insertTo($espansione, $numero, $mazzo, $foil){
-        function exist($espansione, $numero){
-            $resultSet = $GLOBALS["conn"]->query("select * from carte where espansione = '".$espansione."' and numero = ".$numero);
-            if($resultSet->fetch_assoc()){
-                return true;
-            }
-            return false;
-        }
-        function quante($mazzo, $espansione, $numero){
-            $query = "select * from mazzi m, composizione c where m.id = c.idMazzo and c.espansione = '".$espansione."' and c.numero = ".$numero." and m.codUtente = ".unserialize($_SESSION["user"])->getID();
-            $resultSet = $GLOBALS["conn"]->query($query);
-            $quante = 0;
-            while($resultSet->fetch_assoc()){
-                $quante++;
-            }
-            return $quante;
-        }
         $espansione = strtoupper($espansione);
         if(exist($espansione, $numero)){
             if($mazzo === "Collezione" or quante($mazzo, $espansione, $numero)<3){
