@@ -22,34 +22,6 @@ require_once("header.php");?>
                     die("Connection failed: " . $conn->connect_error);
                 }
                 var_dump($_POST["query"]);
-                if(str_contains($_POST["query"], "carte") and (!str_contains($_POST["query"], "leader") and !str_contains($_POST["query"], "base"))){
-                    $carte = true;
-                    if(str_contains($_POST["query"], "order by")){
-                        if(str_contains($_POST["query"], "where")){
-                            $queryLeader = str_replace("order by", "and tipo='leader' order by", $_POST["query"]);
-                            $queryBasi = str_replace("order by", "and tipo='base' order by", $_POST["query"]);
-                            $queryAltro = str_replace("order by", "and tipo<>'leader' and tipo<>'base' order by", $_POST["query"]);
-                        }else{
-                            $queryLeader = str_replace("order by", "where tipo='leader' order by", $_POST["query"]);
-                            $queryBasi = str_replace("order by", "where tipo='base' order by", $_POST["query"]);
-                            $queryAltro = str_replace("order by", "where tipo<>'leader' and tipo<>'base' order by", $_POST["query"]);
-                        }
-                    }elseif(str_contains($_POST["query"], "where")){
-                        $queryLeader = $_POST["query"]." and tipo='leader'";
-                        $queryBasi = $_POST["query"]." and tipo='base'";
-                        $queryAltro = $_POST["query"]." and tipo<>'leader' and tipo<>'base'";
-                    }else{
-                        $queryLeader = $_POST["query"]." where tipo='leader'";
-                        $queryBasi = $_POST["query"]." where tipo='base'";
-                        $queryAltro = $_POST["query"]." where tipo<>'leader' and tipo<>'base'";
-                    }
-                    echo "$queryLeader<br>";
-                    $leader = $conn -> query($queryLeader);
-                    echo "$queryBasi<br>";
-                    $basi = $conn -> query($queryBasi);
-                    echo "$queryAltro<br>";
-                    $altro = $conn -> query($queryAltro);
-                }
                 $rs = $conn->query($_POST["query"]);
                 echo "<br>---------------------<br>";
                 var_dump($rs);
@@ -60,9 +32,6 @@ require_once("header.php");?>
                             <table>
                                 <thead>
                                     <tr class="deck-header">
-                                        <td>
-                                            tipo tabella
-                                        </td>
                                         <?php foreach($resultSet as $column=>$value): ?>
                                             <td>
                                                 <?php echo $column; ?>
@@ -72,13 +41,9 @@ require_once("header.php");?>
                                     <?php $rs = $conn->query($_POST["query"]); ?>
                                 </thead>
                                 <tbody>
-                                    <?php if($carte):?>
-                                        <?php while($resultSet = $leader->fetch_assoc()): ?>
-                                            <tr class="card-in-deck-row deck-card">
-                                                <td>
-                                                    leader
-                                                </td>
-                                                <?php foreach($resultSet as $value): ?>
+                                    <?php while($resultSet = $rs->fetch_assoc()): ?>
+                                        <tr class="card-in-deck-row deck-card">
+                                            <?php foreach($resultSet as $value): ?>
                                                 <td>
                                                     <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
                                                         <?php echo $value;
@@ -87,71 +52,17 @@ require_once("header.php");?>
                                                             }; ?>
                                                     </a>
                                                 </td>
-                                                <?php endforeach; ?>
-                                            </tr>
-                                        <?php endwhile; ?>
-                                        <?php while($resultSet = $basi->fetch_assoc()): ?>
-                                            <tr class="card-in-deck-row deck-card">
-                                                <td>
-                                                    basi
-                                                </td>
-                                                <?php foreach($resultSet as $value): ?>
-                                                <td>
-                                                    <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
-                                                        <?php echo $value;
-                                                            if($value === $resultSet["nome"]){
-                                                                ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
-                                                            }; ?>
-                                                    </a>
-                                                </td>
-                                                <?php endforeach; ?>
-                                            </tr>
-                                        <?php endwhile; ?>
-                                        <?php while($resultSet = $altro->fetch_assoc()): ?>
-                                            <tr class="card-in-deck-row deck-card">
-                                                <td>
-                                                    altro
-                                                </td>
-                                                <?php foreach($resultSet as $value): ?>
-                                                <td>
-                                                    <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
-                                                        <?php echo $value;
-                                                            if($value === $resultSet["nome"]){
-                                                                ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
-                                                            }; ?>
-                                                    </a>
-                                                </td>
-                                                <?php endforeach; ?>
-                                            </tr>
-                                        <?php endwhile; ?>
-                                    <?php else:?>
-                                        <?php while($resultSet = $rs->fetch_assoc()): ?>
-                                            <tr class="card-in-deck-row deck-card">
-                                                <td>
-                                                    rs
-                                                </td>
-                                                <?php foreach($resultSet as $value): ?>
-                                                <td>
-                                                <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
-                                                        <?php echo $value;
-                                                            if($value === $resultSet["nome"]){
-                                                                ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
-                                                            }; ?>
-                                                    </a>
-                                                </td>
-                                                <?php endforeach; ?>
-                                            </tr>
-                                        <?php endwhile; ?>
-                                    <?php endif;?>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endwhile; ?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </div>
-            <?php else:
-                echo "ho fatto ".$conn->affected_rows." modifiche";
-                endif;
-            ?>
+                <?php else:
+                    echo "ho fatto ".$conn->affected_rows." modifiche";
+                endif;?>
+            </div>
         <?php elseif(isset($_SESSION["user"])):?>
             <meta http-equiv="refresh" content="0; url=./home">
             <?php else: ?>
