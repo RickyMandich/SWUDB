@@ -186,7 +186,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <?php var_dump($deck);?>
+                    <?php print $deck;?>
                 </div>
             </div>
         </div>
