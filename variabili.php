@@ -50,8 +50,8 @@
                 $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$mazzo."';");
                 if(!$id = $id->fetch_assoc()){
                     $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$mazzo."', 0, ".unserialize($_SESSION["user"])->getID().");");
+                    $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$mazzo."';")->fetch_assoc();
                 }
-                echo "insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '$espansione', $numero, ".($foil === 'on' ? "1" : "0").");";
                 $result = $GLOBALS["conn"]->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '$espansione', $numero, ".($foil === 'on' ? "1" : "0").");");
                 if($result === true){
                     $resultClass = "success";
