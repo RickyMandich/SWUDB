@@ -8,7 +8,7 @@
     function println($line){
         if(gettype($line) == 'array'){
             foreach($line as $i => $value){
-                echo "$i-->".println($line);
+                echo "$i-->".println($line)."<br>";
             }
         }else{
             echo $line;

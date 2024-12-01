@@ -186,6 +186,8 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    println:
+                    <br>
                     <?php println($deck);?>
                 </div>
             </div>
