@@ -15,6 +15,7 @@ if(!isset($_GET["mazzo"])){
 }
 require_once "header.php";
 $query = "select ca.espansione, ca.numero, ca.nome, ca.titolo from composizione co carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.nome = '".$_GET["mazzo"]."' and m.id = co.idMazzo order by uscita, numero";
+echo $query;
 $resultSet = $GLOBALS["conn"] -> query($query);
 $result = $_GET["mazzo"]."\n";
 while($line = $resultSet->fetch_assoc()){
