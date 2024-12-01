@@ -10,14 +10,14 @@
             echo "{<br>";
             foreach($line as $i => $value){
                 echo $i;
+                for($i = 0;$i<$deep;$i++){
+                    echo "--";
+                }
+                echo $deep>0?">":"";
                 printlnd($value, $deep+1);
             }
             echo "}<br>";
         }else{
-            for($i = 0;$i<$deep;$i++){
-                echo "--";
-            }
-            echo $deep>0?">":"";
             echo $line;
             echo "<br>";
         }
