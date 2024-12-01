@@ -53,6 +53,7 @@
         }
 
         function createDeck($public){
+            require_once "header.php";
             $id = $conn->query("select id from mazzi where nome = '".$this->nome."'");
             if(!$id->fetch_assoc()){
                 $conn->query("insert into mazzi (nome, public) values('".$this->nome."', ".$public.");");
