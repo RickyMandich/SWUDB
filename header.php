@@ -11,7 +11,7 @@
             foreach($line as $i => $value){
                 unset($j);
                 for($j = 0;$j<=$deep;$j++){
-                    echo "\t";
+                    echo "&nbsp;";
                 }
                 echo "$i-->";
                 printlnd($value, $deep+1);
