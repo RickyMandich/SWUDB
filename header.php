@@ -14,8 +14,6 @@
                 for($j = 0;$j<=$deep;$j++){
                     echo "--";
                 }
-                echo "\$j==$j<br>";
-                echo "\$deep==$deep<br>";
                 echo "$i-->";
                 printlnd($value, $deep+1);
             }
