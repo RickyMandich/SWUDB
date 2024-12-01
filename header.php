@@ -16,6 +16,7 @@
             }
         }else{
             echo $line;
+            echo "<br>";
         }
     }
 
