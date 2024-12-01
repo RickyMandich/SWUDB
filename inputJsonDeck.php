@@ -11,7 +11,11 @@
             $deck = new Deck($jsonData);
             $deck->createDeck($_GET["public"]=="on"?"1":"0");
             foreach($deck->carte as $c){
-                moveTo($deck->nome, $c->espansione, $c->numero, 0);
+                if($GLOBALS["conn"]->query("select * from composizione c, mazzi m where c.idMazzo = (select id from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." and nome = 'collezione') and c.espansione = '".$c->espansione."' and c.numero = ".$c->numero."")->fetch_assoc()){
+                    moveTo($deck->nome, $c->espansione, $c->numero, 0, "collezione");
+                }else{
+                    insertTo($c->espansione, $c->numero, $deck->nome, 0);
+                }
             }
         }
         if(!isset($_SESSION["user"])){
