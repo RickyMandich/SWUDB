@@ -29,30 +29,9 @@
         $resultClass = "hidden";
         $resultText = "";
         if(isset($_GET["mazzo"])){
-            $_GET["espansione"] = strtoupper($_GET["espansione"]);
-            if(exist($_GET["espansione"], $_GET["numero"])){
-                if($_GET["mazzo"] === "Collezione" or quante($_GET["mazzo"], $_GET["espansione"], $_GET["numero"])<3){
-                    $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$_GET["mazzo"]."';");
-                    if(!$id = $id->fetch_assoc()){
-                        $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$_GET["mazzo"]."', 0, ".unserialize($_SESSION["user"])->getID().");");
-                    }
-                    echo "insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");";
-                    $result = $GLOBALS["conn"]->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$_GET["espansione"]."', ".$_GET["numero"].", ".($_GET["foil"] === 'on' ? "true" : "false").");");
-                    if($result === true){
-                        $resultClass = "success";
-                        $resultText = "carta aggiunta";
-                    }else{
-                        $resultClass = "failed";
-                        $resultText = $GLOBALS["conn"]->error;
-                    }
-                }else{
-                    $resultClass = "failed";
-                    $resultText = "hai già tre copie di questa carta";
-                }
-            }else{
-                $resultClass = "failed";
-                $resultText = "questa carta non esiste";
-            }
+            $result = insertTo($_GET["espansione"], $_GET["numero"], $_GET["mazzo"], $_GET["foil"]);
+            $_GET["resultText"] = $result["resultText"];
+            $_GET["resultClass"] = $result["resultClass"];
         }
         if(!isset($_GET["from"])) $_GET["from"] = "Deck";
     ?>

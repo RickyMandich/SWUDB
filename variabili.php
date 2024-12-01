@@ -25,4 +25,31 @@
     $file = basename($_SERVER['PHP_SELF']);
     $file = preg_replace('/\?.*/', '', $file);
     $file = preg_replace('/\.php$/', '', $file);
-?>
+
+    function insertTo($espansione, $numero, $mazzo, $foil){
+        $espansione = strtoupper($espansione);
+        if(exist($espansione, $numero)){
+            if($mazzo === "Collezione" or quante($mazzo, $espansione, $numero)<3){
+                $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$mazzo."';");
+                if(!$id = $id->fetch_assoc()){
+                    $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$mazzo."', 0, ".unserialize($_SESSION["user"])->getID().");");
+                }
+                echo "insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$espansione."', ".$numero.", ".($foil === 'on' ? "true" : "false").");";
+                $result = $GLOBALS["conn"]->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '".$espansione."', ".$numero.", ".($foil === 'on' ? "true" : "false").");");
+                if($result === true){
+                    $resultClass = "success";
+                    $resultText = "carta aggiunta";
+                }else{
+                    $resultClass = "failed";
+                    $resultText = $GLOBALS["conn"]->error;
+                }
+            }else{
+                $resultClass = "failed";
+                $resultText = "hai già tre copie di questa carta";
+            }
+        }else{
+            $resultClass = "failed";
+            $resultText = "questa carta non esiste";
+        }
+        return array("resultClass" => $resultClass, "resultText" => $resultText);
+    }
