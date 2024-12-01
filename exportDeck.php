@@ -14,7 +14,8 @@ if(!isset($_GET["mazzo"])){
     }
 }
 require_once "header.php";
-$resultSet = $GLOBALS["conn"] -> query("select ca.espansione, ca.numero, ca.nome, ca.titolo from composizione co carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.nome = '".$_GET["mazzo"]."' and m.id = co.idMazzo order by uscita, numero");
+$query = "select ca.espansione, ca.numero, ca.nome, ca.titolo from composizione co carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.nome = '".$_GET["mazzo"]."' and m.id = co.idMazzo order by uscita, numero";
+$resultSet = $GLOBALS["conn"] -> query($query);
 $result = $_GET["mazzo"]."\n";
 while($line = $resultSet->fetch_assoc()){
     $result = $result.$line["espansione"]."_".$line["numero"]."\t\t".strtoupper($line["nome"]).($line["titolo"]!=='0'?" ".$line["titolo"]:"")."\n";
