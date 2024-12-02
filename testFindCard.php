@@ -38,7 +38,8 @@ require_once "header.php";
                     and m.id = c.idMazzo) 
                 and ca.numero = $c->numero 
                 and ca.espansione = '$c->espansione'
-                limit 1);
+                limit 1)
+            and m.id = c.idMazzo;
             ";
     }
 
