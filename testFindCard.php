@@ -54,8 +54,10 @@ require_once "header.php";
             ?>
                 <table>
                     <?php
+                    $first = true;
                         while($rs = $result->fetch_assoc()){
-                            if(!$first){
+                            if($first){
+                                $first = false;
                                 ?>
                                 <thead>
                                     <tr>
