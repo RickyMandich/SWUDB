@@ -10,6 +10,11 @@ require_once("header.php");?>
         <title>query</title>
     </head>
     <body>
+        <?php
+            foreach($_GET as $column => $value){
+                if(!isset($_POST[$column])) $_POST[$column] = $value;
+            }
+        ?>
         <?php if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->isAdmin()):?>
             <div class="container">
                 <form action="./query" method="post">
