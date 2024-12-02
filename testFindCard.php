@@ -45,7 +45,7 @@ require_once "header.php";
     if($file == 'testFindCard'){
         if(!isset($_SESSION["user"])){
             ?>
-                <meta http-equiv="refresh" content="0; url=login?from=testFindCard">
+                <meta http-equiv="refresh" content="0; url=logIn?from=testFindCard">
             <?php
         }
         if(isset($_GET["espansione"]) and isset($_GET["numero"])){
@@ -92,8 +92,12 @@ require_once "header.php";
         }
         ?>
         <form action="testFindCard">
-            <input type="text" name="espansione" id="espansione">
-            <input type="number" name="numero" id="numero">
+            espansione
+            <input type="text" name="espansione" id="espansione" placeholder="espansione">
+            <br>
+            numero
+            <input type="number" name="numero" id="numero" placeholder="numero">
+            <br>
             <input type="submit" value="cerca carta">
         </form>
         <?php
