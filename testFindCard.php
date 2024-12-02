@@ -49,7 +49,7 @@ require_once "header.php";
             <?php
         }
         if(isset($_GET["espansione"]) and isset($_GET["numero"])){
-            echo getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".numeri[$_GET["espansione"]]."3d", $_GET["numero"])));
+            echo getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."3d", $_GET["numero"])));
             $result = $GLOBALS["conn"]->query(getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."3d", $_GET["numero"]))));
             ?>
                 <table>
