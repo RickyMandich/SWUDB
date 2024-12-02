@@ -8,7 +8,7 @@
     <?php
         require_once "header.php";
         if(!isset($_SESSION["user"])){
-            ?><meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>"><?php
+            ?><meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file; ?>"><?php
         }
         // Legge il contenuto del file JSON
         $jsonContent = file_get_contents("collezione.json");

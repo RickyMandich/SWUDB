@@ -21,7 +21,7 @@
             }
         }
         if(!isset($_SESSION["user"])){
-            ?><meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>"><?php
+            ?><meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file; ?>"><?php
         }
         if(!empty($_FILES["fileJson"]["tmp_name"])) {
             // Verifica che il file sia stato caricato correttamente

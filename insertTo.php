@@ -8,7 +8,7 @@
     <?php
         require_once("header.php");
         if(!isset($_SESSION["user"])){
-            ?><meta http-equiv="" content="0; url=./logIn?from=<?php echo $file;?>"><?php
+            ?><meta http-equiv="" content="0; url=./login?from=<?php echo $file;?>"><?php
         }
         $resultClass = "hidden";
         $resultText = "";

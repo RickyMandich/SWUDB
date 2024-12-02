@@ -34,7 +34,7 @@
             <div class="container">
                 <div class="form-container">
                     <h1>Log in</h1>
-                    <form action="logIn?from=<?php echo $file; ?>">
+                    <form action="login?from=<?php echo $file; ?>">
                         <?php if(isset($_GET["from"])) ?><input type="hidden" name="from" value="<?php echo $_GET["from"]?>">
                         <div class="form-group">
                             <input type="text" name="userID" placeholder="Email/Username" required>

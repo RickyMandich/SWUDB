@@ -22,7 +22,7 @@
                 mail("ricky.mandich@gmail.com", "nuovo utente", "to ricky.mandich@gmail.com un nuovo utente si è registrato a SWUDB.altervista.org \n\tnome:\t".$_GET["nome"]."\n\temail:\t".$_GET["email"], 'From: swudb@altervista.org' . "\r\n");
                 mail("swudb@altervista.org", "nuovo utente", "to swudb@altervista.org un nuovo utente si è registrato a SWUDB.altervista.org \n\tnome:\t".$_GET["nome"]."\n\temail:\t".$_GET["email"], 'From: swudb@altervista.org' . "\r\n");
                 mail($_GET["email"], "iscrizione a SWUDB", "congratulazioni per esserti registrato a www.swudb.altervista.org", 'From: swudb@altervista.org' . "\r\n");
-                ?><meta http-equiv="refresh" content="3; url=./logIn?from=<?php echo $_GET["from"] ?? "home"; ?>"><?php
+                ?><meta http-equiv="refresh" content="3; url=./login?from=<?php echo $_GET["from"] ?? "home"; ?>"><?php
             }catch(mysqli_sql_exception $e){
                 $resultText = $e->getMessage();
                 $resultClass = "failed";

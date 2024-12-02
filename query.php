@@ -65,7 +65,7 @@ require_once("header.php");?>
         <?php elseif(isset($_SESSION["user"])):?>
             <meta http-equiv="refresh" content="0; url=./home">
             <?php else: ?>
-            <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
+            <meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file; ?>">
             <?php endif;?>
     </body>
 </html>

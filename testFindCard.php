@@ -30,7 +30,7 @@ require_once "header.php";
     if($file == 'testFindCard'){
         if(!isset($_SESSION["user"])){
             ?>
-                <meta http-equiv="refresh" content="0; url=logIn?from=testFindCard">
+                <meta http-equiv="refresh" content="0; url=login?from=testFindCard">
             <?php
         }
         if(isset($_GET["espansione"]) and isset($_GET["numero"])){

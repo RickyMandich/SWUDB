@@ -14,7 +14,7 @@
         if (!isset($_SESSION["user"])){
             echo $file;
             ?>
-            <meta http-equiv="refresh" content="0; url=./logIn?from=<?php echo $file; ?>">
+            <meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file; ?>">
             <?php
         }else{
         $GLOBALS["conn"] = new mysqli("localhost","swudb","", "my_swudb", 3306);
