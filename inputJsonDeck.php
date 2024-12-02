@@ -8,41 +8,11 @@
     <?php
         require_once("header.php");
         function elaborazioneJson($jsonData){
+            require_once "testFindCard.php";
             $deck = new Deck($jsonData);
             $deck->createDeck($_GET["public"]=="on"?"1":"0");
             foreach($deck->carte as $c){
-                $query = "
-                select ca.espansione, ca.numero
-                from composizione c, mazzi m, carte ca
-                where c.idMazzo = (
-                    select id 
-                    from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." 
-                    and nome = 'collezione') 
-                and ca.nome = (
-                    select ca.nome 
-                    from mazzi m, composizione c, carte ca 
-                    where c.idMazzo = (
-                        select id from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." 
-                        and nome = 'collezione') 
-                    and (
-                        ca.numero = c.numero 
-                        and ca.espansione = c.espansione) 
-                    and ca.numero = $c->numero 
-                    and ca.espansione = '$c->espansione') 
-                and ca.titolo = (
-                    select c.titolo 
-                    from mazzi m, composizione c 
-                    where c.idMazzo = (
-                        select id 
-                        from mazzi 
-                        where codUtente = ".unserialize($_SESSION["user"])->getID()." 
-                        and nome = 'collezione') 
-                    and (
-                        ca.numero = c.numero 
-                        and ca.espansione = c.espansione) 
-                    and ca.numero = $c->numero 
-                    and ca.espansione = '$c->espansione');
-                ";
+                $query = getQueryCartaFromCollezione($c);
                 if($query = $GLOBALS["conn"]->query($query)->fetch_assoc()){
                     moveTo($deck->nome, $query["espansione"], $query["numero"], 0, "collezione");
                 }else{
