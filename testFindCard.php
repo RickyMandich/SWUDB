@@ -2,7 +2,7 @@
 require_once "header.php";
     function getQueryCartaFromCollezione(DeckCard $c){
         return "
-            select m.nome as mazzo, ca.espansione, ca.numero
+            select m.nome as mazzo, ca.nome, ca.espansione, ca.numero
             from composizione c, mazzi m, carte ca
             where c.idMazzo = (
                 select id 
