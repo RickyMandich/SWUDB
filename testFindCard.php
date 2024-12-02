@@ -11,32 +11,14 @@ require_once "header.php";
                 and nome = 'collezione') 
             and ca.nome = (
                 select ca.nome 
-                from mazzi m, composizione c, carte ca 
-                where c.idMazzo = (
-                    select id 
-                    from mazzi 
-                    where codUtente = ".unserialize($_SESSION["user"])->getID()." 
-                    and nome = 'collezione') 
-                and (
-                    ca.numero = c.numero 
-                    and ca.espansione = c.espansione
-                    and m.id = c.idMazzo) 
-                and ca.numero = $c->numero 
+                from carte ca 
+                where ca.numero = $c->numero 
                 and ca.espansione = '$c->espansione'
                 limit 1) 
             and ca.titolo = (
                 select ca.titolo 
-                from mazzi m, composizione c, carte ca 
-                where c.idMazzo = (
-                    select id 
-                    from mazzi 
-                    where codUtente = ".unserialize($_SESSION["user"])->getID()." 
-                    and nome = 'collezione') 
-                and (
-                    ca.numero = c.numero 
-                    and ca.espansione = c.espansione
-                    and m.id = c.idMazzo) 
-                and ca.numero = $c->numero 
+                from carte ca 
+                where ca.numero = $c->numero 
                 and ca.espansione = '$c->espansione'
                 limit 1)
             and m.id = c.idMazzo
