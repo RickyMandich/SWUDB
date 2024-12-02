@@ -43,9 +43,11 @@ require_once "header.php";
     }
 
     if($file == 'testFindCard'){
-        ?>
-            <meta http-equiv="refresh" content="0; url=login?from=testFindCard">
-        <?php
+        if(!isset($_SESSION["user"])){
+            ?>
+                <meta http-equiv="refresh" content="0; url=login?from=testFindCard">
+            <?php
+        }
         if(isset($_GET["espansione"]) and isset($_GET["numero"])){
             echo getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".numeri[$_GET["espansione"]]."3d", $_GET["numero"])));
             $result = $GLOBALS["conn"]->query(getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".numeri[$_GET["espansione"]]."3d", $_GET["numero"]))));
