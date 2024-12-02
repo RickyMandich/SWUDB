@@ -80,10 +80,10 @@ require_once "header.php";
         ?>
         <form action="testFindCard">
             espansione
-            <input type="text" name="espansione" id="espansione" placeholder="espansione">
+            <input type="text" name="espansione" id="espansione" placeholder="espansione" value="<?php echo isset($_GET["espansione"])?$_GET["espansione"]:""?>">
             <br>
             numero
-            <input type="number" name="numero" id="numero" placeholder="numero">
+            <input type="number" name="numero" id="numero" placeholder="numero" value="<?php echo isset($_GET["numero"])?$_GET["numero"]:""?>">
             <br>
             <input type="submit" value="cerca carta">
         </form>
