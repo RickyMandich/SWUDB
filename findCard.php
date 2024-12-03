@@ -27,7 +27,7 @@ require_once "header.php";
             ";
     }
 
-    if($file == 'testFindCard'){
+    if($file == 'findCard'){
         if(!isset($_SESSION["user"])){
             ?>
                 <meta http-equiv="refresh" content="0; url=login?from=testFindCard">
