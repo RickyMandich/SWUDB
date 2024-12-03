@@ -10,7 +10,7 @@ where (
         from mazzi 
         where (
             codUtente = ".unserialize($_SESSION["user"])->getID()." 
-            and nome = 'collezione')
+            )
         ) 
     and ca.nome = (
         select ca.nome 
@@ -83,7 +83,7 @@ where (
             <?php
         }
         ?>
-        <form action="testFindCard">
+        <form action="findCard">
             espansione
             <input type="text" name="espansione" id="espansione" placeholder="espansione" value="<?php echo isset($_GET["espansione"])?$_GET["espansione"]:""?>">
             <br>
