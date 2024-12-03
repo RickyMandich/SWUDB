@@ -34,7 +34,7 @@ require_once "header.php";
             <?php
         }
         if(isset($_GET["espansione"]) and isset($_GET["numero"])){
-            echo str_replace("\t", "&nbsp;&nbsp;", str_replace("\n", "<br>", getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."d", $_GET["numero"])))));
+            echo str_replace("  ", "&nbsp;", str_replace("\n", "<br>", getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."d", $_GET["numero"])))));
             $result = $GLOBALS["conn"]->query(getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."d", $_GET["numero"]))));
             ?>
                 <table>
