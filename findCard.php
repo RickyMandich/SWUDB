@@ -5,13 +5,8 @@ require_once "header.php";
 select m.nome as mazzo, ca.nome, ca.espansione, ca.numero
 from composizione c, mazzi m, carte ca
 where (
-    c.idMazzo = (
-        select id 
-        from mazzi 
-        where (
-            codUtente = ".unserialize($_SESSION["user"])->getID()." 
-            )
-        ) 
+    c.idMazzo = m.id
+    and m.codUtente = 0
     and ca.nome = (
         select ca.nome 
         from carte ca 
