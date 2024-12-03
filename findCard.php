@@ -2,29 +2,34 @@
 require_once "header.php";
     function getQueryCartaFromCollezione(DeckCard $c){
         return "
-            select m.nome as mazzo, ca.nome, ca.espansione, ca.numero
-            from composizione c, mazzi m, carte ca
-            where c.idMazzo = (
-                select id 
-                from mazzi 
-                where codUtente = ".unserialize($_SESSION["user"])->getID()." 
-                and nome = 'collezione') 
-            and ca.nome = (
-                select ca.nome 
-                from carte ca 
-                where ca.numero = $c->numero 
-                and ca.espansione = '$c->espansione'
-                limit 1) 
-            and ca.titolo = (
-                select ca.titolo 
-                from carte ca 
-                where ca.numero = $c->numero 
-                and ca.espansione = '$c->espansione'
-                limit 1)
-            and m.id = c.idMazzo
-            and ca.espansione = c.espansione
-            and ca.numero = c.numero;
-            ";
+select m.nome as mazzo, ca.nome, ca.espansione, ca.numero
+from composizione c, mazzi m, carte ca
+where (
+    c.idMazzo = (
+        select id 
+        from mazzi 
+        where (
+            codUtente = ".unserialize($_SESSION["user"])->getID()." 
+            and nome = 'collezione')
+        ) 
+    and ca.nome = (
+        select ca.nome 
+        from carte ca 
+        where (
+            ca.numero = $c->numero 
+            and ca.espansione = '$c->espansione')
+        limit 1) 
+    and ca.titolo = (
+        select ca.titolo 
+        from carte ca 
+        where (
+            ca.numero = $c->numero 
+            and ca.espansione = '$c->espansione')
+        limit 1)
+    and m.id = c.idMazzo
+    and ca.espansione = c.espansione
+    and ca.numero = c.numero;)
+";
     }
 
     if($file == 'findCard'){
