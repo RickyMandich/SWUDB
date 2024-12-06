@@ -10,7 +10,7 @@
     <?php
         function getQueryCartaFromCollezione(DeckCard $c){
             return "
-    select m.nome as mazzo, ca.nome, ca.espansione, ca.numero
+    select m.nome as mazzo, ca.nome, ca.titolo, ca.espansione, ca.numero
     from composizione c, mazzi m, carte ca
     where (
         c.idMazzo = m.id
