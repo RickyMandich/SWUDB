@@ -31,7 +31,8 @@
             limit 1)
         and m.id = c.idMazzo
         and ca.espansione = c.espansione
-        and ca.numero = c.numero);
+        and ca.numero = c.numero)
+        order by espansione, numero;
     ";
         }
 
