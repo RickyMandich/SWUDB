@@ -30,7 +30,7 @@ where (
     if($file == 'findCard'){
         if(!isset($_SESSION["user"])){
             ?>
-                <meta http-equiv="refresh" content="0; url=login?from=testFindCard">
+                <meta http-equiv="refresh" content="0; url=login?from=findCard">
             <?php
         }
         if(isset($_GET["espansione"]) and isset($_GET["numero"])){
