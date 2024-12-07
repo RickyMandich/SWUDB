@@ -14,7 +14,8 @@
             foreach($deck->carte as $c){
                 $query = getQueryCartaFromCollezione($c);
                 if($query = $GLOBALS["conn"]->query($query)->fetch_assoc()){
-                    moveTo($deck->nome, $query["espansione"], $query["numero"], 0, "collezione");
+                    insertTo($c->espansione, $c->numero, $deck->nome, 0);
+                    remove($c->numero, $deck->nome, $c->espansione, 0);
                 }else{
                     insertTo($c->espansione, $c->numero, "mancanti di ".$deck->nome, 0);
                 }
