@@ -47,7 +47,7 @@ require_once("header.php");?>
                                                 <td>
                                                     <?php if(isset($resultSet["nome"]) and isset($resultSet["espansione"]) and isset($resultSet["numero"])){?>
                                                     <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
-                                                        <?php echo "---$value---";
+                                                        <?php echo "$value";
                                                             if($value === $resultSet["nome"]){
                                                                 ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
                                                             }; ?>
