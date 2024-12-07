@@ -14,14 +14,15 @@
     from composizione c, mazzi m, carte ca
     where (
         c.idMazzo = m.id
-        and c.idMazzo = (
+        ".($nomeMazzo != "" ? "and c.idMazzo = (
             select id
             from mazzi
             where(
                 codUtente = ".unserialize($_SESSION["user"])->getID()."
                 and nome like '%$nomeMazzo%'
             )
-        )
+            limit 1
+        )":"")."
         and m.codUtente = 0
         and ca.nome = (
             select ca.nome 
