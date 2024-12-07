@@ -59,6 +59,7 @@
             <form action="inputJsonDeck" method="post" enctype="multipart/form-data">
                 <input type="file" name="fileJson" id="fileJson" accept=".json">
                 <textarea name="textJson" id="textJson"></textarea>
+                public <input type="checkbox" name="public" id="public">
                 <input type="submit" value="Carica">
             </form>
             <?php
