@@ -21,6 +21,7 @@ require_once("header.php");?>
                     <input type="text" name="query" id="query" value="<?php if(isset($_POST["query"])) echo $_POST["query"]; else echo "select * from "; ?>">
                 </form>
                 <?php
+                phpversion();
                 echo $_POST["query"]."<br>";
                 var_dump($_POST["query"]);
                 $rs = $GLOBALS["conn"]->query($_POST["query"]);
