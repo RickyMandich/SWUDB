@@ -1,3 +1,4 @@
+<?php require_once("header.php");?>
 <!DOCTYPE html>
 <html lang="it" class="<?php echo $file;?>">
     <head>
@@ -7,7 +8,6 @@
         <title>Log In</title>
     </head>
     <?php
-    require_once("header.php");
         if (isset($_SESSION["user"])):
     ?>
     <meta http-equiv="refresh" content="0; ./<?php echo $_GET["from"] ?? "profilo"?>">
