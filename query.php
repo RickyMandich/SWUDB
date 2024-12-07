@@ -14,7 +14,6 @@ require_once("header.php");?>
             foreach($_GET as $column => $value){
                 if(!isset($_POST[$column])) $_POST[$column] = $value;
             }
-            echo var_dump(unserialize($_SESSION["user"]))
         ?>
         <?php if(isset($_SESSION["user"]) && unserialize($_SESSION["user"])->isAdmin()):?>
             <div class="container">
