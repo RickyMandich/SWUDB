@@ -8,31 +8,44 @@
     </head>
     <body>
     <?php
-        function getQueryCartaFromCollezione(DeckCard $c){
+        function getQueryCartaFromCollezione(DeckCard $c, $nomeMazzo){
             return "
     select m.nome as mazzo, ca.nome, ca.titolo, ca.espansione, ca.numero
     from composizione c, mazzi m, carte ca
     where (
         c.idMazzo = m.id
+        and c.idMazzo = (
+            select id
+            from mazzi
+            where(
+                codUtente = ".unserialize($_SESSION["user"])->getID()."
+                and nome like '%$nomeMazzo%'
+            )
+        )
         and m.codUtente = 0
         and ca.nome = (
             select ca.nome 
             from carte ca 
             where (
                 ca.numero = $c->numero 
-                and ca.espansione = '$c->espansione')
-            limit 1) 
+                and ca.espansione = '$c->espansione'
+            )
+            limit 1
+        ) 
         and ca.titolo = (
             select ca.titolo 
             from carte ca 
             where (
                 ca.numero = $c->numero 
-                and ca.espansione = '$c->espansione')
-            limit 1)
+                and ca.espansione = '$c->espansione'
+            )
+            limit 1
+        )
         and m.id = c.idMazzo
         and ca.espansione = c.espansione
-        and ca.numero = c.numero)
-        order by ca.uscita, numero;
+        and ca.numero = c.numero
+    )
+    order by ca.uscita, numero;
     ";
         }
 
@@ -43,8 +56,9 @@
                 <?php
             }
             if(isset($_GET["espansione"]) and isset($_GET["numero"])){
-                echo str_replace("  ", "&nbsp;&nbsp;", str_replace("\n", "<br>", getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."d", $_GET["numero"])))));
-                $result = $GLOBALS["conn"]->query(getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."d", $_GET["numero"]))));
+                $queryRicerca = getQueryCartaFromCollezione(new DeckCard($_GET["espansione"]."_".sprintf("%0".$numeri[$_GET["espansione"]]."d", $_GET["numero"])), "");
+                echo str_replace("  ", "&nbsp;&nbsp;", str_replace("\n", "<br>", $queryRicerca));
+                $result = $GLOBALS["conn"]->query($queryRicerca);
                 ?>
                     <table>
                         <?php

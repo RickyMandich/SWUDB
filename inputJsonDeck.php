@@ -12,7 +12,7 @@
             $deck = new Deck($jsonData);
             $deck->createDeck($_GET["public"]=="on"?"1":"0");
             foreach($deck->carte as $c){
-                $query = getQueryCartaFromCollezione($c);
+                $query = getQueryCartaFromCollezione($c, $deck->nome);
                 if($query = $GLOBALS["conn"]->query($query)->fetch_assoc()){
                     insertTo($c->espansione, $c->numero, $deck->nome, 0);
                     remove($c->numero, $deck->nome, $c->espansione, 0);
