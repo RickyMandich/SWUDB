@@ -21,7 +21,9 @@
             }
             $this->sideboard = [];
             foreach($json["sideboard"] as $card){
-                array_push( $this->sideboard, new DeckCard($card["id"]));
+                for($i=0;$i<$card["count"];$i++){
+                    array_push( $this->sideboard, new DeckCard($card["id"]));
+                }
             }
             $this->carte = [];
             array_push($this->carte, $this->leader);
