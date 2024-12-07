@@ -1,4 +1,4 @@
-<?php require_once("header.php");?>
+<?php require_once "header.php" ;?>
 <!DOCTYPE html>
 <html lang="it" class="<?php echo $file;?>">
     <head>
@@ -35,7 +35,7 @@
                 <div class="form-container">
                     <h1>Log in</h1>
                     <form action="login?from=<?php echo $file; ?>">
-                        <?php if(isset($_GET["from"])) ?><input type="hidden" name="from" value="<?php echo $_GET["from"]?>">
+                        <?php if(isset($_GET["from"])){ ?><input type="hidden" name="from" value="<?php echo $_GET["from"]?>"><?php }?>
                         <div class="form-group">
                             <input type="text" name="userID" placeholder="Email/Username" required>
                         </div>
