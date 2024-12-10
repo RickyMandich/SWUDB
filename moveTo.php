@@ -29,9 +29,22 @@
                 la carta è foil
             </label>
             <br>
+            <?php
+                $optionMazzi = [];
+                $result = $GLOBALS["conn"]->query("select distinct m.id, m.nome as mazzo from mazzi m, composizione c where m.id = c.idMazzo order by m.nome");
+                while($line = $result->fetch_assoc()){
+                    $optionMazzi[$line["id"]] = $line["mazzo"];
+                }
+            ?>
             <label for="mazzo">
                 mazzo da cui prelevare la carta
-                <input type="text" name="mazzo" id="mazzo">
+                <select name="mazzo" id="mazzo">
+                    <?php foreach($optionMazzi as $option):?>
+                        <option>
+                            <?php echo $option; ?>
+                        </option>
+                    <?php endforeach;?>
+                </select>
             </label>
             <br>
         </form>
