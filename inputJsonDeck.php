@@ -1,12 +1,12 @@
+<?php require_once("header.php");?>
 <!DOCTYPE html>
 <html lang="it" class="<?php echo $file;?>">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>input deck from json</title>
+        <title><?php echo $file?></title>
     </head>
     <?php
-        require_once("header.php");
         function elaborazioneJson($jsonData){
             require_once "findCard.php";
             $deck = new Deck($jsonData);
