@@ -10,7 +10,7 @@
         function elaborazioneJson($jsonData){
             require_once "findCard.php";
             $deck = new Deck($jsonData);
-            $deck->createDeck($_GET["public"]=="on"?"1":"0");
+            $deck->createDeck(isset($_GET["public"]) ? ($_GET["public"] =="on"?"1":"0") : "0");
             foreach($deck->carte as $c){
                 $query = getQueryCartaFromCollezione($c, $deck->nome);
                 if($query = $GLOBALS["conn"]->query($query)->fetch_assoc()){
