@@ -42,6 +42,7 @@
                 </select>
             </label>
             <br>
+            <input type="submit" value="sposta carta">
         </form>
         <?php
     }
