@@ -83,7 +83,7 @@
         }
     }
 
-    function moveTo($into, $espansione, $numero, $foil, $mazzo){
+    function moveTo($into, $espansione, $numero, $mazzo){
         $exist = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$into."';");
         if(!$exist = $exist->fetch_assoc()){
             $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$into."', 0, ".unserialize($_SESSION["user"])->getID().");");
@@ -91,6 +91,7 @@
         }else{
             $id = $exist["id"];
         }
+        $foil = $GLOBALS["conn"]->query("select c.foil from composizione c, mazzi m where m.nome = $mazzo and m.id = c.idMazzo and c.espansione = $espansione and c.numero = $numero")->fetch_assoc()["foil"];
         $query = "insert into composizione\n values(".$id.", '".$espansione."', ".$numero.", ".$foil.")";
         echo "<br>query:";
         var_dump($query);
