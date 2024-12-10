@@ -102,3 +102,45 @@
             remove($numero, $mazzo, $espansione, $foil);
         }
     }
+
+    function getQueryCartaFromCollezione(DeckCard $c, $nomeMazzo){
+        return "
+select m.nome as mazzo, ca.nome, ca.titolo, ca.espansione, ca.numero
+from composizione c, mazzi m, carte ca
+where (
+    c.idMazzo = m.id
+    ".($nomeMazzo != "" ? "and c.idMazzo = (
+        select id
+        from mazzi
+        where(
+            codUtente = ".unserialize($_SESSION["user"])->getID()."
+            and nome like '%$nomeMazzo%'
+        )
+        limit 1
+    )":"")."
+    and m.codUtente = 0
+    and ca.nome = (
+        select ca.nome 
+        from carte ca 
+        where (
+            ca.numero = $c->numero 
+            and ca.espansione = '$c->espansione'
+        )
+        limit 1
+    ) 
+    and ca.titolo = (
+        select ca.titolo 
+        from carte ca 
+        where (
+            ca.numero = $c->numero 
+            and ca.espansione = '$c->espansione'
+        )
+        limit 1
+    )
+    and m.id = c.idMazzo
+    and ca.espansione = c.espansione
+    and ca.numero = c.numero
+)
+order by ca.uscita, numero;
+";
+    }
