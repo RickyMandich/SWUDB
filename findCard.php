@@ -8,7 +8,7 @@
     </head>
     <body>
         <?php
-
+            var_dump($file);
             if($file == 'findCard'){
                 if(!isset($_SESSION["user"])){
                     ?>
