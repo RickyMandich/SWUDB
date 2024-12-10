@@ -24,7 +24,6 @@
                 <input type="number" name="numero" id="numero">
             </label>
             <br>
-            <br>
             <?php
                 $optionMazzi = [];
                 $result = $GLOBALS["conn"]->query("select distinct m.id, m.nome as mazzo from mazzi m, composizione c where m.id = c.idMazzo order by m.nome");
