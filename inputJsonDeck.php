@@ -12,12 +12,13 @@
             $deck->createDeck(isset($_GET["public"]) ? ($_GET["public"] =="on"?"1":"0") : "0");
             foreach($deck->carte as $c){
                 $query = getQueryCartaFromCollezione($c, $deck->nome);
+                var_dump($query);
                 if($query = $GLOBALS["conn"]->query($query)->fetch_assoc()){
                     echo "sposto ".$query["nome"]." ".$query["titolo"]." da ".$query["mazzo"]." a $deck->nome<br>"; 
                     moveTo($deck->nome, $query["espansione"], $query["numero"], $query["mazzo"]);
                 }else{
                     $query = $GLOBALS["conn"]->query("select nome, titolo from carte where espansione = '$c->espansione' and numero = $c->numero")->fetch_assoc();
-                    echo "inserisco ".$query["nome"]." ".$query["titolo"]."in mancanti di $deck->nome";
+                    echo "inserisco ".$query["nome"]." ".$query["titolo"]."in mancanti di $deck->nome<br>";
                     insertTo($c->espansione, $c->numero, "mancanti di ".$deck->nome, 0);
                 }
             }
