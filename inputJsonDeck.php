@@ -12,11 +12,7 @@
             $deck->createDeck(isset($_GET["public"]) ? ($_GET["public"] =="on"?"1":"0") : "0");
             foreach($deck->carte as $c){
                 $query = getQueryCartaFromCollezione($c, "Collezione");
-                //echo str_replace("\n", "<br>", str_replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;", $query)."<br>");
-                $query = $GLOBALS["conn"]->query($query)->fetch_assoc();
-                var_dump($query);
-                echo "<br>";
-                if($query){
+                if($query = $GLOBALS["conn"]->query($query)->fetch_assoc()){
                     echo "sposto ".$query["nome"]." ".$query["titolo"]." da ".$query["mazzo"]." a $deck->nome<br>"; 
                     moveTo($deck->nome, $query["espansione"], $query["numero"], $query["mazzo"]);
                 }else{
