@@ -16,7 +16,7 @@
                     echo "sposto ".$query["nome"]." ".$query["titolo"]." da ".$query["mazzo"]." a $deck->nome<br>"; 
                     moveTo($deck->nome, $query["espansione"], $query["numero"], $query["mazzo"]);
                 }else{
-                    $query = $GLOBALS["conn"]->query("select nome, titolo from carte where espansione = $c->espansione and numero = $c->numero")->fetch_assoc();
+                    $query = $GLOBALS["conn"]->query("select nome, titolo from carte where espansione = '$c->espansione' and numero = $c->numero")->fetch_assoc();
                     echo "inserisco ".$query["nome"]." ".$query["titolo"]."in mancanti di $deck->nome";
                     insertTo($c->espansione, $c->numero, "mancanti di ".$deck->nome, 0);
                 }
