@@ -7,6 +7,7 @@ if(!isset($_GET["mazzo"])){
     }
 }
 require_once "header.php";
+require_once "orderCard.php";
 header('Content-Type: text/plain');
 header('Content-Disposition: attachment; filename="' . $_GET["mazzo"].".txt" . '"');
 $query = "select ca.espansione, ca.numero, ca.aspettoPrimario, ca.aspettoSecondario, m.nome as mazzo, ca.tipo, ca.nome, ca.titolo from composizione co, carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.nome = '".$_GET["mazzo"]."' and m.id = co.idMazzo order by uscita, numero";
