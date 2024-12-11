@@ -91,8 +91,10 @@
         }else{
             $id = $exist["id"];
         }
-        $foil = $GLOBALS["conn"]->query("select c.foil from composizione c, mazzi m where m.nome = '$mazzo' and m.id = c.idMazzo and c.espansione = '$espansione' and c.numero = $numero")->fetch_assoc()["foil"];
-        $query = "insert into composizione\n values(".$id.", '".$espansione."', ".$numero.", ".$foil.")";
+        $foil = $GLOBALS["conn"]->query("select c.foil from composizione c, mazzi m where m.nome = '$mazzo' and m.id = c.idMazzo and c.espansione = '$espansione' and c.numero = $numero")->fetch_assoc();
+        echo "<br>foil:";
+        var_dump($foil);
+        $query = "insert into composizione(idMazzo, espansione, numero)\n values(".$id.", '".$espansione."', ".$numero/*.", ".$foil.")"*/;
         echo "<br>query:";
         var_dump($query);
         echo "<br>get:";
