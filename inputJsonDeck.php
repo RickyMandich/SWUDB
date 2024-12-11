@@ -13,8 +13,11 @@
             foreach($deck->carte as $c){
                 $query = getQueryCartaFromCollezione($c, $deck->nome);
                 if($query = $GLOBALS["conn"]->query($query)->fetch_assoc()){
+                    echo "sposto ".$query["nome"]." ".$query["titolo"]." da ".$query["mazzo"]." a $deck->nome<br>"; 
                     moveTo($deck->nome, $query["espansione"], $query["numero"], $query["mazzo"]);
                 }else{
+                    $query = $GLOBALS["conn"]->query("select nome, titolo from carte where espansione = $c->espansione and numero = $c->numero")->fetch_assoc();
+                    echo "inserisco ".$query["nome"]." ".$query["titolo"]."in mancanti di $deck->nome";
                     insertTo($c->espansione, $c->numero, "mancanti di ".$deck->nome, 0);
                 }
             }
@@ -32,7 +35,8 @@
                 if($jsonData = json_decode($jsonContent, true)) {
                     elaborazioneJson($jsonData);
                     ?>
-                        <meta http-equiv="refresh" content="3; url=inputJsonDeck">
+                        <form action="inputJsonDeck"><input type="submit" value="torna al caricamento"></form>
+                        <!-- <meta http-equiv="refresh" content="3; url=inputJsonDeck"> -->
                     <?php
                 } else {
                     echo "Errore: Il file non contiene un JSON valido";
@@ -46,7 +50,8 @@
             if($jsonData = json_decode($_POST["textJson"], true)) {
                 elaborazioneJson($jsonData);
                 ?>
-                    <meta http-equiv="refresh" content="3; url=inputJsonDeck">
+                    <form action="inputJsonDeck"><input type="submit" value="torna al caricamento"></form>
+                    <!-- <meta http-equiv="refresh" content="3; url=inputJsonDeck"> -->
                 <?php
             } else {
                 echo "Errore: Il file non contiene un JSON valido";
