@@ -1,5 +1,6 @@
 <?php
     require_once "header.php";
+    ?><title><?php echo $file?></title><?php
     if(isset($_GET["from"]) and $file != 'moveTo'){
         moveTo($_GET["into"], $_GET["espansione"], $_GET["numero"], $_GET["mazzo"]);
         ?><meta http-equiv="refresh" content="0; url=./<?php echo $_GET["from"]?>"><?
