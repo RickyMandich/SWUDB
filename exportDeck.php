@@ -17,7 +17,7 @@ $rs = [];
 while($line = $resultSet->fetch_assoc()){
     array_push($rs, $line);
 }
-// mergeSort($rs);
+mergeSort($rs);
 foreach($rs as $line){
     $result = $result.$line["espansione"]."_".$line["numero"]."\t\t".strtoupper($line["nome"]).($line["titolo"]!=='0'?" ".$line["titolo"]:"")."\n";
 }
