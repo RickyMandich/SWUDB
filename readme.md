@@ -12,7 +12,7 @@ gestisce:
     - viene gestita come se fosse un mazzo ma senza i limiti legati al massimo di 3 carte uguali e non viene mostrato tra i mazzi nel `profilo`, mentre viene mostrata nella pagina `mazzi`
 
 #### *ATTENZIONE:* contenuti che si prevede di implementare in futuro
-- la gestione della collezione in una pagina specifica
+- la gestione della collezione in una pagina specifica (verranno visualizzate in un'unico gruppo sia le carte nei vari mazzi che quelle nella collezione)
 - possibilità di importare i mazzi tramite un link dal sito https://swudb.com (ATTENZIONE: nel caso in cui vengano inseriti due mazzi con lo stesso nome verranno considerati come lo stesso mazzo)
 #### dettagli
 - quasi tutte se non tutte le volte in cui si visualizza un'elenco di carte sono previste le seguenti funzioni:
