@@ -8,7 +8,6 @@
     </head>
     <?php
         function elaborazioneJson($jsonData){
-            require_once "findCard.php";
             $deck = new Deck($jsonData);
             $deck->createDeck(isset($_GET["public"]) ? ($_GET["public"] =="on"?"1":"0") : "0");
             foreach($deck->carte as $c){
