@@ -1,2 +1,2 @@
 
-<video src='https://www.la7.it/embedded/la7?&tid=player&content=571542&title=/film-e-fiction/rivedila7/lenin-cronaca-di-un-mistero-puntata-del-11122024-11-12-2024-571542' allowfullscreen width="75%", height="auto"></video>
+<video src='https://www.la7.it/embedded/la7?&tid=player&content=571542&title=/film-e-fiction/rivedila7/lenin-cronaca-di-un-mistero-puntata-del-11122024-11-12-2024-571542' allowfullscreen width='75%', height='auto'></video>
