@@ -10,7 +10,7 @@
     function compareElements(&$el1, &$el2) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
-        $result = $GLOBALS["conn"]->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by nome");
+        $result = $GLOBALS["conn"]->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by id");
         while($line = $result->fetch_assoc()){
             if($line["codUtente"] == (isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")){
                 array_push($mazzoOrder, $line["mazzo"]);
