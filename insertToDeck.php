@@ -14,7 +14,19 @@
     ?>
     <body>
         <form action="insertTo">
-            <label for="mazzo">inserisci il nome del mezzo in cui vuoi inserire la carta </label><input type="text" value="<?php if(isset($_GET["mazzo"])) echo $_GET["mazzo"];?>" name="mazzo" placeholder="mazzo">
+            <label for="mazzo">inserisci il nome del mezzo in cui vuoi inserire la carta </label><input list="mazzi" type="text" value="<?php if(isset($_GET["mazzo"])) echo $_GET["mazzo"];?>" name="mazzo" placeholder="mazzo">
+            <datalist id="mazzi">
+                <?php 
+                    $rs = $GLOBALS["conn"]->query("select nome as mazzo from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." and not nome like 'mancanti di %' order by nome");
+                    $mazzi = [];
+                    while($line = $rs->fetch_assoc()){
+                        array_push($mazzi, $line["mazzo"]);
+                    }
+                ?>
+                <?php foreach($mazzi as $m):?>
+                    <option value="<?php $m?>">
+                <?php endforeach;?>
+            </datalist>
             <br>
             <label for="espansione">inserisci il set della carta da inserire </label><input type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>">
             <br>
