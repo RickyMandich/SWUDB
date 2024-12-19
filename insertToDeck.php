@@ -24,8 +24,7 @@
                     }
                 ?>
                 <?php foreach($mazzi as $m):?>
-                    <?php echo $m;?>
-                    <option value="<?php $m?>">
+                    <option value="<?php echo $m?>">
                 <?php endforeach;?>
             </datalist>
             <br>
