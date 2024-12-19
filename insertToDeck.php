@@ -34,7 +34,7 @@
                     $rs = $GLOBALS["conn"]->query("select distinct espansione from carte order by uscita");
                     $espansioni = [];
                     while($line = $rs->fetch_assoc()){
-                        array_push($espansioni, $line["mazzo"]);
+                        array_push($espansioni, $line["espansione"]);
                     }
                     var_dump($espansioni);
                 ?>
