@@ -20,6 +20,7 @@
                     $rs = $GLOBALS["conn"]->query("select nome as mazzo from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." and not nome like 'mancanti di %' order by nome");
                     $mazzi = [];
                     while($line = $rs->fetch_assoc()){
+                        echo $line["mazzo"];
                         array_push($mazzi, $line["mazzo"]);
                     }
                 ?>
