@@ -28,7 +28,19 @@
                 <?php endforeach;?>
             </datalist>
             <br>
-            <label for="espansione">inserisci il set della carta da inserire </label><input type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>">
+            <label for="espansione">inserisci il set della carta da inserire </label><input list="espansioni" type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>">
+            <datalist id="espansioni">
+                <?php 
+                    $rs = $GLOBALS["conn"]->query("select distinct espansione from carte order by uscita");
+                    $espansioni = [];
+                    while($line = $rs->fetch_assoc()){
+                        array_push($espansioni, $line["mazzo"]);
+                    }
+                ?>
+                <?php foreach($espansioni as $e):?>
+                    <option value="<?php echo $e?>">
+                <?php endforeach;?>
+            </datalist>
             <br>
             <label for="numero">inserisci il numero della carta da inserire </label><input type="number" name="numero" placeholder="numero">
             <br>
