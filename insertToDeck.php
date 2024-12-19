@@ -36,6 +36,7 @@
                     while($line = $rs->fetch_assoc()){
                         array_push($espansioni, $line["mazzo"]);
                     }
+                    var_dump($espansioni);
                 ?>
                 <?php foreach($espansioni as $e):?>
                     <option value="<?php echo $e?>">
