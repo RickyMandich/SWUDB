@@ -130,17 +130,7 @@
             return 1;
         }
         
-        // Se aspetti secondari sono uguali, confronto per uscita (formato aaaa mm gg)
-        $compareDate = strcmp($el1['uscita'], $el2['uscita']);
-        if ($compareDate < 0) {
-            return -1;
-        }
-        
-        if ($compareDate > 0) {
-            return 1;
-        }
-        
-        // Se uscita è uguale, confronto per tipo specifico
+        // Se aspetto secondario è uguale, confronto per tipo specifico
         $tipoWeight1 = $getSpecificTipoWeight($el1);
         $tipoWeight2 = $getSpecificTipoWeight($el2);
         
@@ -179,6 +169,17 @@
             return 1;
         }
         */
+        
+        // Se nome è uguali, confronto per uscita (formato aaaa mm gg)
+        $compareDate = strcmp($el1['uscita'], $el2['uscita']);
+        if ($compareDate < 0) {
+            return -1;
+        }
+        
+        if ($compareDate > 0) {
+            return 1;
+        }
+
         // Se la carta è uguale, confronto per numero   
         if ($el1["numero"] < $el2["numero"]) {
             return -1;
