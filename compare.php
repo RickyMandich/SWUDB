@@ -47,8 +47,8 @@
             $numero1 = $_GET["numero1"];
             $espansione2 = $_GET["espansione2"];
             $numero2 = $_GET["numero2"];
-            $carta1 = $GLOBALS["conn"]->query("select * from carte where espnasione = $espansione1 and numero = $numero1")->fetch_assoc();
-            $carta2 = $GLOBALS["conn"]->query("select * from carte where espnasione = $espansione2 and numero = $numero2")->fetch_assoc();
+            $carta1 = $GLOBALS["conn"]->query("select * from carte where espanasione = $espansione1 and numero = $numero1")->fetch_assoc();
+            $carta2 = $GLOBALS["conn"]->query("select * from carte where espanasione = $espansione2 and numero = $numero2")->fetch_assoc();
             ?>
             <div>
                 <table>
