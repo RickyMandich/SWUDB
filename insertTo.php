@@ -10,8 +10,6 @@
         if(!isset($_SESSION["user"])){
             ?><meta http-equiv="" content="0; url=./login?from=<?php echo $file;?>"><?php
         }
-        $resultClass = "hidden";
-        $resultText = "";
         if(isset($_GET["mazzo"])){
             $result = insertTo($_GET["espansione"], $_GET["numero"], $_GET["mazzo"], $_GET["foil"]);
             $_GET["resultText"] = $result["resultText"];
@@ -24,7 +22,7 @@
         if(str_starts_with($_GET["from"], "./carte")): ?>
             <meta http-equiv="refresh" content="0; url=<?php echo $_GET["from"];?>">
         <?php else: ?>
-        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $resultClass, 'resultText' => $resultText, 'espansione' => strtoupper($_GET["espansione"]), 'numero' => sprintf("%0".$numeri[strtoupper($_GET["espansione"])]."d", $_GET["numero"]), 'mazzo' => $_GET["mazzo"]));?>">
+        <meta http-equiv="refresh" content="0; url=insertTo<?php echo $_GET["from"].'?'.http_build_query(array('resultClass' => $result["resultClass"], 'resultText' => $result["resultText"], 'espansione' => strtoupper($_GET["espansione"]), 'numero' => sprintf("%0".$numeri[strtoupper($_GET["espansione"])]."d", $_GET["numero"]), 'mazzo' => $_GET["mazzo"]));?>">
         <?php endif; ?>
     </body>
 </html>
