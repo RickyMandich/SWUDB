@@ -37,8 +37,8 @@
         // Funzione per ottenere il peso del tipo
         $getGenericTipoWeight = function($element) use ($genericTipoOrder) {
             $tipo = $element['tipo'];
-            $index = array_search($tipo, $tipoOrder);
-            return $index !== false ? $index : count($tipoOrder);
+            $index = array_search($tipo, $genericTipoOrder);
+            return $index !== false ? $index : count($genericTipoOrder);
         };
         
         // Funzione per ottenere il peso dell'aspetto primario
