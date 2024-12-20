@@ -50,7 +50,7 @@
             <input type="submit" value="aggiungi carta">
         </form>
         <form action="remove">
-            <input type="hidden" name="from" value="<?php echo $_GET["from"]?>">
+            <input type="hidden" name="from" value="insertToDeck">
             <input type="hidden" name="numero" value="<?php echo $_GET["numero"]?>">
             <input type="hidden" name="mazzo" value="<?php echo $_GET["mazzo"]?>">
             <input type="hidden" name="espansione" value="<?php echo $_GET["espansione"]?>">
