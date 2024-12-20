@@ -18,11 +18,14 @@
                 array_push($mazzoOrder, $line["mazzo"]." di ".$GLOBALS["conn"]->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
             }
         }
-        // Definisco l'ordine dei tipi
-        $tipoOrder = ['Leader', 'Base'];
+        // Definisco l'ordine dei tipi generici
+        $genericTipoOrder = ['Leader', 'Base'];
         
         // Definisco l'ordine degli aspetti primari
         $primaryAspectOrder = ['Blue', 'Green', 'Red', 'Yellow'];
+
+        // Definisco l'ordine dei tipi specifici
+        $specificTipoOrder = ['Unit', 'Upgrade', 'Event'];
         
         // Funzione per ottenere il peso del mazzo
         $getMazzoWeight = function($element) use ($mazzoOrder) {
@@ -32,7 +35,7 @@
         };
         
         // Funzione per ottenere il peso del tipo
-        $getTipoWeight = function($element) use ($tipoOrder) {
+        $getGenericTipoWeight = function($element) use ($genericTipoOrder) {
             $tipo = $element['tipo'];
             $index = array_search($tipo, $tipoOrder);
             return $index !== false ? $index : count($tipoOrder);
@@ -56,8 +59,18 @@
             if ($aspettoSecondario === 'Light') {
                 return 1;
             }
+
+            if ($aspettoSecondario === $element["aspettoPrimario"]) {
+                return 2;
+            }
             
-            return 2;
+            return 3;
+        };
+
+        $getSpecificTipoWeight = function($element) use ($specificTipoOrder){
+            $tipo = $element["tipo"];
+            $index = array_search($tipo, $specificTipoOrder);
+            return $index !== false ? $index : count($specificTipoOrder);
         };
         
         // faccio un confronto per utente
@@ -81,9 +94,9 @@
             return 1;
         }
         
-        // Confronto per tipo
-        $tipoWeight1 = $getTipoWeight($el1);
-        $tipoWeight2 = $getTipoWeight($el2);
+        // Confronto per tipo generico
+        $tipoWeight1 = $getGenericTipoWeight($el1);
+        $tipoWeight2 = $getGenericTipoWeight($el2);
         
         if ($tipoWeight1 < $tipoWeight2) {
             return -1;
@@ -127,7 +140,37 @@
             return 1;
         }
         
-        // Se uscita è uguale, confronto per numero (in ordine crescente)
+        // Se uscita è uguale, confronto per tipo specifico
+        $tipoWeight1 = $getSpecificTipoWeight($el1);
+        $tipoWeight2 = $getSpecificTipoWeight($el2);
+        
+        if ($tipoWeight1 < $tipoWeight2) {
+            return -1;
+        }
+        
+        if ($tipoWeight1 > $tipoWeight2) {
+            return 1;
+        }
+        
+        // Se tipo specifico è uguale, confronto per costo (in ordine crescente)
+        if ($el1["costo"] < $el2["costo"]) {
+            return -1;
+        }
+        
+        if ($el1["costo"] > $el2["costo"]) {
+            return 1;
+        }
+        
+        // Se costo è uguale, confronto per nome (in ordine crescente)
+        if ($el1["nome"] < $el2["nome"]) {
+            return -1;
+        }
+        
+        if ($el1["nome"] > $el2["nome"]) {
+            return 1;
+        }
+        
+        // Se nome è uguale, confronto per numero (in ordine crescente)
         if ($el1["getNumero"] < $el2["getNumero"]) {
             return -1;
         }
