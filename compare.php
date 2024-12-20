@@ -9,7 +9,7 @@
     </head>
     <body>
         <form action="compare">
-            <label for="espansione1">inserisci il set della prima carta da confrontare </label><input list="espansioni" type="text" name="espansione1" placeholder="set" value="<?php echo $_GET["espansione"];?>">
+            <label for="espansione1">inserisci il set della prima carta da confrontare </label><input list="espansioni" type="text" name="espansione1" placeholder="set" value="<?php echo $_GET["espansione1"];?>">
             <datalist id="espansioni">
                 <?php 
                     $rs = $GLOBALS["conn"]->query("select distinct espansione from carte order by uscita");
@@ -23,7 +23,7 @@
                 <?php endforeach;?>
             </datalist>
             <br>    
-            <label for="numero1">inserisci il numero della prima carta da confrontare </label><input <?php if(isset($_GET["espansione"])){echo "autofocus";}?> type="number" name="numero1" placeholder="numero">
+            <label for="numero1">inserisci il numero della prima carta da confrontare </label><input value="<?php echo $_GET["numero1"];?>" type="number" name="numero1" placeholder="numero">
             <br>
             <label for="espansione2">inserisci il set della seconda carta da confrontare </label><input list="espansioni" type="text" name="espansione2" placeholder="set" value="<?php echo $_GET["espansione2"];?>">
             <datalist id="espansioni">
@@ -39,7 +39,7 @@
                 <?php endforeach;?>
             </datalist>
             <br>
-            <label for="numero2">inserisci il numero della seconda carta da confrontare </label><input <?php if(isset($_GET["espansione"])){echo "autofocus";}?> type="number" name="numero2" placeholder="numero">
+            <label for="numero2">inserisci il numero della seconda carta da confrontare </label><input value="<?php echo $_GET["numero2"];?>" type="number" name="numero2" placeholder="numero">
             <br>
             <input type="submit" value="confronta">
         </form>
