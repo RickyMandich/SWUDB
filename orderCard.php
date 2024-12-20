@@ -169,7 +169,7 @@
         if ($el1["nome"] > $el2["nome"]) {
             return 1;
         }
-        
+        /*
         // Se nome è uguale, confronto per numero (in ordine crescente)
         if ($el1["getNumero"] < $el2["getNumero"]) {
             return -1;
@@ -178,7 +178,7 @@
         if ($el1["getNumero"] > $el2["getNumero"]) {
             return 1;
         }
-        
+        */
         // Se la carta è uguale, confronto per numero   
         if ($el1["numero"] < $el2["numero"]) {
             return -1;
