@@ -42,7 +42,7 @@
                 <?php endforeach;?>
             </datalist>
             <br>
-            <label for="numero">inserisci il numero della carta da inserire </label><input type="number" name="numero" placeholder="numero">
+            <label for="numero">inserisci il numero della carta da inserire </label><input <?php if(isset($_GET["espansione"])){echo "autofocus";}?> type="number" name="numero" placeholder="numero">
             <br>
             <label for="foil">inserisci se la carta è foil <input type="checkbox" name="foil" id="foil"></label>
             <br>
