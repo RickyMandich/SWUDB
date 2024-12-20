@@ -49,6 +49,13 @@
             <input type="hidden" name="from" value="Deck">
             <input type="submit" value="aggiungi carta">
         </form>
+        <form action="remove">
+            <input type="hidden" name="from" value="<?php echo $_GET["from"]?>">
+            <input type="hidden" name="numero" value="<?php echo $_GET["numero"]?>">
+            <input type="hidden" name="mazzo" value="<?php echo $_GET["mazzo"]?>">
+            <input type="hidden" name="espansione" value="<?php echo $_GET["espansione"]?>">
+            <input type="submit" value="annulla">
+        </form>
         <span id="result" class="<?php echo isset($_GET["resultClass"]) ? $_GET["resultClass"] : "hidden"?>">
             <?php echo isset($_GET["resultText"]) ? $_GET["resultText"] : ""?>
         </span>

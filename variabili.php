@@ -71,7 +71,14 @@
         return array("resultClass" => $resultClass, "resultText" => $resultText);
     }
 
-    function remove($numero, $mazzo, $espansione, $foil){
+    function remove($numero, $mazzo, $espansione){
+        $foil = $GLOBALS["conn"]->query("select foil from composizione where idMazzo = 
+            (
+                SELECT id 
+                FROM mazzi 
+                WHERE nome = '".$mazzo."')
+            AND espansione = '".$espansione."'
+            AND numero = ".$numero.";")->fetch_assoc()["foil"];
         $GLOBALS["conn"]->query("DELETE FROM composizione 
               WHERE idMazzo = (SELECT id FROM mazzi WHERE nome = '".$mazzo."')
                 AND espansione = '".$espansione."'
