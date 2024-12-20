@@ -1,3 +1,4 @@
+<?php require_once "header.php"?>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -20,7 +21,7 @@
                     <option value="<?php echo $e?>">
                 <?php endforeach;?>
             </datalist>
-            <br>
+            <br>    
             <label for="numero">inserisci il numero della prima carta da confrontare </label><input <?php if(isset($_GET["espansione"])){echo "autofocus";}?> type="number" name="numero1" placeholder="numero">
             <br>
             <label for="espansione">inserisci il set della seconda carta da confrontare </label><input list="espansioni" type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione2"];?>">
