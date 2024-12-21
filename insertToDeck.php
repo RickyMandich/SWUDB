@@ -9,7 +9,7 @@
     <?php
         require_once("header.php");
         if(!isset($_SESSION["user"])){
-            ?><meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file; ?>"><?php
+            ?><meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file."?".http_build_query($_GET); ?>"><?php
         }
     ?>
     <body>
