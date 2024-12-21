@@ -10,7 +10,7 @@
     <?php
         if (isset($_SESSION["user"])):
     ?>
-    <meta http-equiv="refresh" content="0; ./<?php echo $_GET["from"] ?? "profilo"?>">
+    <meta http-equiv="refresh" content="0; ./<?php echo str_replace("£", "&", $_GET["from"]) ?? "profilo"?>">
     <?php else:
         $resultClass = "hidden";
         $resultText = "";
