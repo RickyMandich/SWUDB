@@ -218,7 +218,7 @@
         }
 
         if($verbose){
-            echo "le carte hanno lo stesso costo (".$el1["cosri"].")<br>";
+            echo "le carte hanno lo stesso costo (".$el1["costo"].")<br>";
         }
         
         // Se costo è uguale, confronto per nome (in ordine alfabetico)
