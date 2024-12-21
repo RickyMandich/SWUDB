@@ -7,7 +7,7 @@
         return $numero ?? $el["numero"];
     };
 
-    function compareElements(&$el1, &$el2) {
+    function compareElements(&$el1, &$el2, $verbose) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
         $result = $GLOBALS["conn"]->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by id");
@@ -75,11 +75,21 @@
         
         // faccio un confronto per utente
         if ($el1['codUtente'] < $el2['codUtente']) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del codUtente del proprietario<br>";
+            }
             return -1;
         }
         
         if ($el1['codUtente'] > $el2['codUtente']) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del codUtente del proprietario<br>";
+            }
             return 1;
+        }
+
+        if($verbose){
+            echo "i codici utente sono uguali(".$el1["codUtente"].")<br>";
         }
         
         // Confronto per mazzo
@@ -87,10 +97,16 @@
         $mazzoWeight2 = $getMazzoWeight($el2);
         
         if ($mazzoWeight1 < $mazzoWeight2) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del mazzo di appartenenza<br>";
+            }
             return -1;
         }
         
         if ($mazzoWeight1 > $mazzoWeight2) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del mazzo di appartenenza<br>";
+            }
             return 1;
         }
         
@@ -99,10 +115,16 @@
         $tipoWeight2 = $getGenericTipoWeight($el2);
         
         if ($tipoWeight1 < $tipoWeight2) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del tipo generico<br>";
+            }
             return -1;
         }
         
         if ($tipoWeight1 > $tipoWeight2) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del tipo generico<br>";
+            }
             return 1;
         }
         
@@ -111,10 +133,16 @@
         $primaryAspectWeight2 = $getPrimaryAspectWeight($el2);
         
         if ($primaryAspectWeight1 < $primaryAspectWeight2) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'aspetto primario<br>";
+            }
             return -1;
         }
         
         if ($primaryAspectWeight1 > $primaryAspectWeight2) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'aspetto primario<br>";
+            }
             return 1;
         }
         
@@ -213,7 +241,7 @@
         
         while ($i < count($left) && $j < count($right)) {
             // Uso la funzione compareElements per confrontare
-            if (compareElements($left[$i], $right[$j]) <= 0) {
+            if (compareElements($left[$i], $right[$j], false) <= 0) {
                 $array[$k] = $left[$i];
                 $i++;
             } else {

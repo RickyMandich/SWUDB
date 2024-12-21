@@ -61,7 +61,7 @@
                             ?></td><?php
                         }
                         ?></tr><?php
-                        if(compareElements($carta1, $carta2)){
+                        if(compareElements($carta1, $carta2, true)){
                             ?><tr><?php
                             foreach($carta1 as $value){
                                 ?><td><?php
