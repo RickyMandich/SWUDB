@@ -109,6 +109,10 @@
             }
             return 1;
         }
+
+        if($verbose){
+            echo "le carte sono dello stesso mazzo(".$el1["mazzo"].")<br>";
+        }
         
         // Confronto per tipo generico
         $tipoWeight1 = $getGenericTipoWeight($el1);
@@ -126,6 +130,10 @@
                 echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del tipo generico<br>";
             }
             return 1;
+        }
+
+        if($verbose){
+            echo "le carte sono dello stesso tipo generico(".$el1["tipo"].")<br>";
         }
         
         // Se i tipi sono uguali, confronto per aspetto primario
@@ -145,17 +153,31 @@
             }
             return 1;
         }
+
+        if($verbose){
+            echo "le carte hanno lo stesso aspetto primario (".$el1["aspettoPrimario"].")<br>";
+        }
         
         // Se gli aspetti primari sono uguali, confronto per aspetto secondario
         $secondaryAspectWeight1 = $getSecondaryAspectWeight($el1);
         $secondaryAspectWeight2 = $getSecondaryAspectWeight($el2);
         
         if ($secondaryAspectWeight1 < $secondaryAspectWeight2) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'aspetto secondario<br>";
+            }
             return -1;
         }
         
         if ($secondaryAspectWeight1 > $secondaryAspectWeight2) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'aspetto secondario<br>";
+            }
             return 1;
+        }
+
+        if($verbose){
+            echo "le care hanno lo stesso aspetto secondario (".$el1["aspettoSecondario"].")<br>";
         }
         
         // Se aspetto secondario è uguale, confronto per tipo specifico
@@ -163,29 +185,59 @@
         $tipoWeight2 = $getSpecificTipoWeight($el2);
         
         if ($tipoWeight1 < $tipoWeight2) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del tipo specifico<br>";
+            }
             return -1;
         }
         
         if ($tipoWeight1 > $tipoWeight2) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del tipo specifico<br>";
+            }
             return 1;
+        }
+
+        if($verbose){
+            echo "le carte hanno lo stesso tipo specifico (".$el1["tipo"].")<br>";
         }
         
         // Se tipo specifico è uguale, confronto per costo (in ordine crescente)
         if ($el1["costo"] < $el2["costo"]) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del costo<br>";
+            }
             return -1;
         }
         
         if ($el1["costo"] > $el2["costo"]) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del costo<br>";
+            }
             return 1;
         }
+
+        if($verbose){
+            echo "le carte hanno lo stesso costo (".$el1["cosri"].")<br>";
+        }
         
-        // Se costo è uguale, confronto per nome (in ordine crescente)
+        // Se costo è uguale, confronto per nome (in ordine alfabetico)
         if ($el1["nome"] < $el2["nome"]) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del nome<br>";
+            }
             return -1;
         }
         
         if ($el1["nome"] > $el2["nome"]) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del nome<br>";
+            }
             return 1;
+        }
+
+        if($verbose){
+            echo "le carte hanno lo stesso nome (".$el1["nome"].")<br>";
         }
         /*
         // Se nome è uguale, confronto per numero (in ordine crescente)
@@ -201,20 +253,40 @@
         // Se nome è uguali, confronto per uscita (formato aaaa mm gg)
         $compareDate = strcmp($el1['uscita'], $el2['uscita']);
         if ($compareDate < 0) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'uscita<br>";
+            }
             return -1;
         }
         
         if ($compareDate > 0) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'uscita<br>";
+            }
             return 1;
+        }
+
+        if($verbose){
+            echo "le carte hanno la stessa uscita (".$el1["uscita"].")<br>";
         }
 
         // Se la carta è uguale, confronto per numero   
         if ($el1["numero"] < $el2["numero"]) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del numero<br>";
+            }
             return -1;
         }
         
         if ($el1["numero"] > $el2["numero"]) {
+            if($verbose){
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del numero<br>";
+            }
             return 1;
+        }
+
+        if($verbose){
+            echo "è la stessa carta<br>";
         }
         
         // Se tutti i criteri sono uguali
