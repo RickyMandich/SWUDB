@@ -58,7 +58,7 @@
                                     <?php echo $value; ?>
                                 </td>
                                 <td>
-                                    <?php $leader = $GLOBALS["conn"]->query("select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='leader' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'")->fetch_assoc();
+                                    <?php $leader = $GLOBALS["conn"]->query("select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='leader' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'")/*->fetch_assoc()*/;
                                     echo $leader["espansione"]."_".$leader["numero"]."<br>";
                                     var_dump($leader);?>
 
