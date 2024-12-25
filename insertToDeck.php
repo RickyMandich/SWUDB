@@ -28,7 +28,7 @@
                 <?php endforeach;?>
             </datalist>
             <br>
-            <label for="espansione">inserisci il set della carta da inserire </label><input list="espansioni" type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>">
+            <label for="espansione">inserisci il set della carta da inserire </label><input <?php if(isset($_GET["espansione"])){echo "autofocus";}?> list="espansioni" type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>">
             <datalist id="espansioni">
                 <?php 
                     $rs = $GLOBALS["conn"]->query("select distinct espansione from carte order by uscita");
@@ -42,7 +42,7 @@
                 <?php endforeach;?>
             </datalist>
             <br>
-            <label for="numero">inserisci il numero della carta da inserire </label><input <?php if(isset($_GET["espansione"])){echo "autofocus";}?> type="number" name="numero" placeholder="numero">
+            <label for="numero">inserisci il numero della carta da inserire </label><input type="number" name="numero" placeholder="numero">
             <br>
             <label for="foil">inserisci se la carta è foil <input type="checkbox" name="foil" id="foil"></label>
             <br>
