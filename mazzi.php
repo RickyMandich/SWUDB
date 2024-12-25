@@ -18,6 +18,7 @@
             <?php
         }else{
         $resultSet = $GLOBALS["conn"]->query("select m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and (".(isset($_GET["mazzo"])?"m.id = ".$_GET["mazzo"]." and ":"")."m.public = '1' or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
+        echo "select m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and (".(isset($_GET["mazzo"])?"m.id = ".$_GET["mazzo"]." and ":"")."m.public = '1' or m.codUtente = ".unserialize($_SESSION["user"])->getID().")";
         $preDeck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
