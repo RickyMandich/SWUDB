@@ -31,7 +31,7 @@
             <label for="espansione">inserisci il set della carta da inserire </label><input list="espansioni" type="text" name="espansione" placeholder="set" value="<?php echo $_GET["espansione"];?>">
             <datalist id="espansioni">
                 <?php 
-                    $rs = $GLOBALS["conn"]->query("select distinct espansione from carte order by uscita");
+                    $rs = $GLOBALS["conn"]->query("select distinct espansione from carte order by uscita, espansione");
                     $espansioni = [];
                     while($line = $rs->fetch_assoc()){
                         array_push($espansioni, $line["espansione"]);
