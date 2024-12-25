@@ -46,7 +46,7 @@
     function insertTo($espansione, $numero, $mazzo, $foil){
         $espansione = strtoupper($espansione);
         if(exist($espansione, $numero)){
-            if($mazzo === "Collezione" or quante($mazzo, $espansione, $numero)<3){
+            if(str_contains($mazzo, "Collezione") or quante($mazzo, $espansione, $numero)<3){
                 $id = $GLOBALS["conn"]->query("select id from mazzi where nome = '".$mazzo."';");
                 if(!$id = $id->fetch_assoc()){
                     $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$mazzo."', 0, ".unserialize($_SESSION["user"])->getID().");");
