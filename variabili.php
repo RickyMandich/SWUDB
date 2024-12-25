@@ -102,7 +102,7 @@
         $query = "insert into composizione(idMazzo, espansione, numero, foil)\n values(".$id.", '".$espansione."', ".$numero.", ".($foil ?? "0").")";
         $GLOBALS["conn"]-> query($query);
         if($mazzo != null){
-            remove($numero, $mazzo, $espansione, $foil);
+            remove($numero, $mazzo, $espansione);
         }
     }
 
