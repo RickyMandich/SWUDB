@@ -20,3 +20,7 @@
 #result.hidden{
     display: none;
 }
+
+.foil{
+    filter: drop-shadow(0 0 10px rgba(255, 0, 255, 0.25));
+}
