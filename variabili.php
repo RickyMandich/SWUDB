@@ -34,7 +34,7 @@
         return false;
     }
     function quante($mazzo, $espansione, $numero){
-        $query = "select * from mazzi m, composizione c where m.id = c.idMazzo and c.espansione = '".$espansione."' and c.numero = ".$numero." and m.codUtente = ".unserialize($_SESSION["user"])->getID();
+        $query = "select * from mazzi m, composizione c where m.id = c.idMazzo and c.espansione = '".$espansione."' and c.numero = ".$numero." and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '$mazzo';";
         $resultSet = $GLOBALS["conn"]->query($query);
         $quante = 0;
         while($resultSet->fetch_assoc()){
