@@ -55,7 +55,7 @@
                 $result = $GLOBALS["conn"]->query("insert into composizione (idMazzo, espansione, numero, foil) values(".$id["id"].", '$espansione', $numero, ".($foil === 'on' ? "1" : "0").");");
                 if($result === true){
                     $resultClass = "success";
-                    $resultText = "carta aggiunta";
+                    $resultText = quante($mazzo, $espansione, $numero)."° copia di questa carta aggiunta";
                 }else{
                     $resultClass = "failed";
                     $resultText = $GLOBALS["conn"]->error;
