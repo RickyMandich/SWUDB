@@ -59,6 +59,7 @@
         <span id="result" class="<?php echo isset($_GET["resultClass"]) ? $_GET["resultClass"] : "hidden"?>">
             <?php echo isset($_GET["resultText"]) ? $_GET["resultText"] : ""?>
         </span>
+        <hr>
         <?php if($_GET["foil"]){?>
             <span class="foil"><?php
         }?>
