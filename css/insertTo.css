@@ -27,6 +27,7 @@
     position: relative;
     width: auto;
     height: auto;
+    display: inline-block;
 }
 
 .foil>img{
