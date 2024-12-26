@@ -21,16 +21,18 @@
     display: none;
 }
 
-.foil{
+.foil {
     background-color: rgba(255, 0, 255, 1);
-    z-index: 1;
     position: relative;
     width: auto;
     height: auto;
     display: inline-block;
 }
 
-.foil>img{
-    z-index: -1;
-    position: relative;
+.foil>img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
