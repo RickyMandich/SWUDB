@@ -54,7 +54,7 @@
                     <?php foreach($mazzi as $value):
                         $leader = $GLOBALS["conn"]->query("select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='leader' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'");
                         $base = $GLOBALS["conn"]->query("select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='base' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'");
-                        if(!str_contains($value, "collezione") and $leader = $leader->fetch_assoc() and $base = $base->fetch_assoc()):?>
+                        if(!str_contains($value, "Collezione") and $leader = $leader->fetch_assoc() and $base = $base->fetch_assoc()):?>
                             <tr class="deck-card">
                                 <td>
                                     <?php echo $value; ?>
