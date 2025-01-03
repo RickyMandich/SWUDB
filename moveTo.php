@@ -12,7 +12,7 @@
         <form action="moveTo">
             <label for="into">
                 mazzo in cui inserire la carta
-                <input type="text" name="into" id="into">
+                <input list="mazzi" type="text" name="into" id="into">
             </label>
             <br>
             <label for="espansione">
