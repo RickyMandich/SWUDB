@@ -15,8 +15,8 @@
         if(isset($_GET["from"])){
             moveTo($_GET["into"], $_GET["espansione"], $_GET["numero"], $_GET["mazzo"]);
             ?><meta http-equiv="refresh" content="0; url=./<?php echo $_GET["from"]?>"><?php
-        } else if($_SERVER['REQUEST_METHOD'] === 'GET'){
-            $query = 'espansione=' . $_GET['espansione'] . '&numero=' . $_GET['numero'] . '&foil=' . $_GET['foil'];
+        } else if(isset($_GET["eseguito"])){
+            $query = 'espansione=' . $_GET['espansione'] . '&numero=' . $_GET['numero'];
             moveTo($_GET["into"], $_GET["espansione"], $_GET["numero"], $_GET["mazzo"]);
             ?><meta http-equiv="refresh" content="0; url=./moveTo?<?php echo $query ?>"><?php
         }
@@ -48,14 +48,8 @@
             <input type="text" name="mazzo" id="mazzo" value="<?php if(isset($_GET["mazzo"])) echo $_GET["mazzo"];?>">
             <br>
             <input type="hidden" name="from" value="<?php echo $_GET["from"] ?? '';?>">
+            <input type="hidden" name="eseguito" value="false">
             <input type="submit" value="sposta carta">
-        </form>
-        <form action="remove">
-            <input type="hidden" name="from" value="moveTo?into=<?php echo $_GET["into"]?>&espansione=<?php echo $_GET["espansione"] ?>&numero=<?php echo $_GET["numero"] ?>&mazzo=<?php echo $_GET["mazzo"] ?>">
-            <input type="hidden" name="numero" value="<?php echo $_GET["numero"]?>">
-            <input type="hidden" name="mazzo" value="<?php echo $_GET["mazzo"]?>">
-            <input type="hidden" name="espansione" value="<?php echo $_GET["espansione"]?>">
-            <input type="submit" value="annulla">
         </form>
         <span id="result" class="<?php echo isset($_GET["resultClass"]) ? $_GET["resultClass"] : "hidden"?>">
             <?php echo isset($_GET["resultText"]) ? $_GET["resultText"] : ""?>
