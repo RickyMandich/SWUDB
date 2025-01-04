@@ -27,7 +27,7 @@
             <input list="mazzi" type="text" name="into" id="into" value="<?php if(isset($_GET["into"])) echo $_GET["into"];?>">
             <datalist id="mazzi">
                 <?php 
-                    $rs = $GLOBALS["conn"]->query("select distinct m.id, m.nome as mazzo from mazzi m, composizione c where m.id = c.idMazzo order by m.nome");
+                    $rs = $GLOBALS["conn"]->query("select distinct m.nome as mazzo from mazzi m, composizione c where m.id = c.idMazzo order by m.id");
                     $mazzi = [];
                     while($line = $rs->fetch_assoc()){
                         array_push($mazzi, $line["mazzo"]);
@@ -45,7 +45,13 @@
             <input type="number" name="numero" id="numero" value="<?php if(isset($_GET["numero"])) echo $_GET["numero"];?>">
             <br>
             <label for="mazzo">mazzo da cui prelevare la carta</label>
-            <input type="text" name="mazzo" id="mazzo" value="<?php if(isset($_GET["mazzo"])) echo $_GET["mazzo"];?>">
+            <select name="mazzo" id="mazzo">
+                <?php foreach($mazzi as $m): ?>
+                    <option value="<?php echo $m; ?>" <?php if(isset($_GET["mazzo"]) && $_GET["mazzo"] == $m) echo 'selected'; ?>>
+                        <?php echo $m; ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
             <br>
             <input type="hidden" name="from" value="<?php echo $_GET["from"] ?? '';?>">
             <input type="hidden" name="eseguito" value="false">
