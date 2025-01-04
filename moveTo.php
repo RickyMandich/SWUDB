@@ -53,7 +53,6 @@
                 <?php endforeach; ?>
             </select>
             <br>
-            <input type="hidden" name="from" value="<?php echo $_GET["from"] ?? '';?>">
             <input type="hidden" name="eseguito" value="false">
             <input type="submit" value="sposta carta">
         </form>
