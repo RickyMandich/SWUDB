@@ -14,7 +14,7 @@
 
         if(isset($_GET["from"])){
             moveTo($_GET["into"], $_GET["espansione"], $_GET["numero"], $_GET["mazzo"]);
-            ?><meta http-equiv="refresh" content="0; url=./<?php echo $_GET["from"]?>"><?php
+            ?><meta http-equiv="refresh" content="5; url=./<?php echo $_GET["from"]?>"><?php
         } else if(isset($_GET["eseguito"])){
             $query = 'espansione=' . $_GET['espansione'] . '&numero=' . $_GET['numero'];
             moveTo($_GET["into"], $_GET["espansione"], $_GET["numero"], $_GET["mazzo"]);
