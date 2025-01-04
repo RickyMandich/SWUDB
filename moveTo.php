@@ -42,7 +42,7 @@
             <input type="text" name="espansione" id="espansione" value="<?php if(isset($_GET["espansione"])) echo $_GET["espansione"];?>">
             <br>
             <label for="numero">numero della carta</label>
-            <input type="number" name="numero" id="numero" value="<?php if(isset($_GET["numero"])) echo $_GET["numero"];?>">
+            <input type="number" name="numero" id="selected" value="<?php if(isset($_GET["numero"])) echo $_GET["numero"];?>">
             <br>
             <label for="mazzo">mazzo da cui prelevare la carta</label>
             <select name="mazzo" id="mazzo">
