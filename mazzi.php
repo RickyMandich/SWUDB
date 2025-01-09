@@ -22,7 +22,7 @@
         while($line = $resultSet->fetch_assoc()){
             $row = [];
             foreach($line as $key => $value){
-                if($key === 'nome' && $line["codUtente"] != unserialize($_SESSION["user"])->getID()){
+                if($key === 'mazzo' && $line["codUtente"] != unserialize($_SESSION["user"])->getID()){
                     $value = $value." di ".$GLOBALS["conn"]->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"];
                 }
                 $row[$key] = $value;
