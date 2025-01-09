@@ -124,10 +124,10 @@
                                                         <input type="submit" value="crea nuovo mazzo">
                                                     </form>
                                                 </div>
+                                                <?php endif;?>
                                             <?php else: ?>
                                                 <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
                                             <?php endif; ?>
-                                        <?php endif;?>
                                     </td>
                                     <td>
                                         <?php if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]):?>
