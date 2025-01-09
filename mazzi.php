@@ -90,7 +90,7 @@
                                                 <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])."-portrait.png";?>" width="100vw">
                                             <?php endif; ?>
                                         <?php elseif(!isset($precedente) or $row["mazzo"] !== $precedente):?>
-                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"]).".png";?>" height="100vh">
+                                            <img src="https://swudb.com/cards/<?php echo $row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])."-portrait.png";?>" height="100vh">
                                         <?php endif;?>
                                     </td>
                                     <td style="max-width: 100vw">
