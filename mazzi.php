@@ -37,7 +37,7 @@
             if(!isset($precedente) or $row["mazzo"] !== $precedente){
                 $header = $row;
                 foreach($header as $key => $i){
-                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero") $header[$key] = null;
+                    if($key !== "mazzo" and $key !== "espansione" and $key !== "numero" and $key !== "idMazzo") $header[$key] = null;
                 }
                 array_push($deck, $header);
             }
@@ -55,7 +55,6 @@
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $GLOBALS["conn"]->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
-                    <?php printlnd($deck); ?>
                     <table>
                         <?php if (count($deck) > 0): ?>
                         <thead>
