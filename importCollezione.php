@@ -7,22 +7,17 @@
     </head>
     <?php
         require_once("header.php");
+        /**
+         * elabora il json passato come parametro
+         * @param mixed $jsonData
+         * @return void
+         */
         function elaborazioneJson($jsonData){
             $deck = new Deck($jsonData);
             $i=0;
             $deck->createDeck('0');
             $GLOBALS["conn"]->query($deck->getInsertSql());
             $i = $GLOBALS["conn"]->affected_rows;
-            /*
-            foreach($jsonData as $c){
-                $id = $GLOBALS["conn"]->query("select id from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." and nome = '".$c["mazzo"]."'");
-                if($id = !$id->fetch_assoc()){
-                    $GLOBALS["conn"]->query("insert into mazzi (nome, public, codUtente) values('".$c["mazzo"]."', ".$c["public"].", ".$c["codUtente"].");");
-                }
-                $id = $GLOBALS["conn"]->query("select id from mazzi where codUtente = ".unserialize($_SESSION["user"])->getID()." and nome = '".$c["mazzo"]."'")->fetch_assoc()["id"];
-                insertTo($c["espansione"], $c["numero"], $c["mazzo"], $c["foil"]);
-                $i++;
-            }*/
             echo "ho fatto $i modifiche";
         }
         if(!isset($_SESSION["user"])){

@@ -7,6 +7,11 @@
         <title><?php echo $file?></title>
     </head>
     <?php
+        /**
+         * elabora il json passato come parametro con l'obbiettivo di spostare dalla collezione le carte presenti nel json del mazzo da importare nel nuovo mazzo
+         * @param mixed $jsonData
+         * @return void
+         */
         function elaborazioneJson($jsonData){
             $deck = new Deck($jsonData);
             $deck->createDeck(isset($_GET["public"]) ? ($_GET["public"] =="on"?"1":"0") : "0");

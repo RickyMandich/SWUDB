@@ -5,7 +5,13 @@
     require_once "classi/Card.php";
     require_once "classi/Cards.php";
     require_once "variabili.php";
-    function printlnd($line, $deep){
+    /**
+     * stampa di un oggetto che mi mostra tutti gli eventuali valori e array che lo compongono in modo ricorsivo con indentazione relativa alla profondità
+     * @param mixed $line
+     * @param int $deep
+     * @return void
+     */
+    function printlnd($line, $deep = 0){
         if(gettype($line) == 'array'){
             echo "{<br>";
             foreach($line as $i => $value){
@@ -25,8 +31,4 @@
             echo $line;
             echo "<br>";
         }
-    }
-
-    function println($line){
-        printlnd($line, 0);
     }

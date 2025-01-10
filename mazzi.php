@@ -17,7 +17,7 @@
             <meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file; ?>">
             <?php
         }else{
-        $resultSet = $GLOBALS["conn"]->query("select m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and ".(isset($_GET["mazzo"])?"m.id = ".$_GET["mazzo"]." and ":"")."(m.public = '1' or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
+        $resultSet = $GLOBALS["conn"]->query("select m.idMazzo, m.nome as mazzo, co.foil, m.public, ca.*, m.codUtente from mazzi m, carte ca, composizione co where co.idMazzo = m.id and ca.espansione = co.espansione and ca.numero = co.numero and ".(isset($_GET["mazzo"])?"m.id = ".$_GET["mazzo"]." and ":"")."(m.public = '1' or m.codUtente = ".unserialize($_SESSION["user"])->getID().")");
         $preDeck = [];
         while($line = $resultSet->fetch_assoc()){
             $row = [];
@@ -136,7 +136,7 @@
                                     <td>
                                         <?php if(!isset($precedente) or $row["mazzo"] !== $precedente){?>
                                             <form action="exportDeck">
-                                                <input type="hidden" name="mazzo" value="<?php echo $row["mazzo"];?>">
+                                                <input type="hidden" name="idMazzo" value="<?php echo $row["idMazzo"];?>">
                                                 <input type="image" src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="export as text" class="exportDeck">
                                             </form>
                                         <?php }else if(unserialize($_SESSION["user"])->getID() == $row["codUtente"]){?>

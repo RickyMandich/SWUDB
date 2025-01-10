@@ -1,4 +1,5 @@
 <?php
+$_GET["mazzo"]=$conn->query("select nome from mazzi where id = '".$_GET["idMazzo"]."'")->fetch_assoc()["nome"];
 if(!isset($_GET["mazzo"])){
     if(isset($_GET["from"])){
         ?><meta http-equiv="refresh" content="0; url=<?php echo $_GET["from"]?>"><?
@@ -10,7 +11,7 @@ require_once "header.php";
 require_once "orderCard.php";
 header('Content-Type: text/plain');
 header('Content-Disposition: attachment; filename="' . $_GET["mazzo"].".txt" . '"');
-$query = "select ca.espansione, ca.numero, ca.aspettoPrimario, ca.aspettoSecondario, m.nome as mazzo, ca.tipo, ca.nome, ca.titolo from composizione co, carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.nome = '".$_GET["mazzo"]."' and m.id = co.idMazzo order by uscita, numero";
+$query = "select ca.espansione, ca.numero, ca.aspettoPrimario, ca.aspettoSecondario, m.nome as mazzo, ca.tipo, ca.nome, ca.titolo from composizione co, carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.id = '".$_GET["idMazzo"]."' and m.id = co.idMazzo order by uscita, numero";
 $resultSet = $GLOBALS["conn"] -> query($query);
 $result = $_GET["mazzo"]."\n";
 $rs = [];
