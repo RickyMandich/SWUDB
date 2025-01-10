@@ -55,6 +55,7 @@
             <div class="decks-section">
                 <h2>I Tuoi Mazzi <?php echo $GLOBALS["conn"]->query("select nome from utenti where id = ".unserialize($_SESSION["user"])->getID())->fetch_assoc()["nome"]?></h2>
                 <div class="decks-container">
+                    <?php var_dump($deck); ?>
                     <table>
                         <?php if (count($deck) > 0): ?>
                         <thead>
