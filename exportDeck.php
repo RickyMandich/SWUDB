@@ -1,7 +1,7 @@
 <?php
 require_once "header.php";
 $_GET["mazzo"]=$conn->query("select nome from mazzi where id = '".$_GET["idMazzo"]."'")->fetch_assoc()["nome"];
-if(!isset($_GET["mazzo"])){
+if(!isset($_GET["idMazzo"])){
     if(isset($_GET["from"])){
         ?><meta http-equiv="refresh" content="0; url=<?php echo $_GET["from"]?>"><?
     }else{
