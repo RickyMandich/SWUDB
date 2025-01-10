@@ -154,6 +154,7 @@
                                         <?php }?>
                                     </td>
                                     <?php foreach($row as $key=>$cell): ?>
+                                        <?php if($key === "idMazzo" or $key === "codUtente" or $key === "getNumero") continue; ?>
                                         <td>
                                             <?php if(!(!isset($precedente) or $row["mazzo"] !== $precedente)): ?>
                                             <a href="<?php echo "https://www.swudb.com/card/".$row["espansione"]."/".sprintf("%0".$numeri[$row["espansione"]]."d", $row["numero"])?>" target="_blank">
