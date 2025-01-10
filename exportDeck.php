@@ -1,4 +1,5 @@
 <?php
+require_once "header.php";
 $_GET["mazzo"]=$conn->query("select nome from mazzi where id = '".$_GET["idMazzo"]."'")->fetch_assoc()["nome"];
 if(!isset($_GET["mazzo"])){
     if(isset($_GET["from"])){
@@ -7,7 +8,6 @@ if(!isset($_GET["mazzo"])){
         ?><meta http-equiv="refresh" content="0; url=mazzi"><?php
     }
 }
-require_once "header.php";
 require_once "orderCard.php";
 header('Content-Type: text/plain');
 header('Content-Disposition: attachment; filename="' . $_GET["mazzo"].".txt" . '"');
