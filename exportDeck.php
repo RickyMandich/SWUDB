@@ -1,12 +1,12 @@
 <?php
 require_once "header.php";
-$_GET["mazzo"]=$conn->query("select nome from mazzi where id = '".$_GET["idMazzo"]."'")->fetch_assoc()["nome"];
+$mazzo=$conn->query("select nome from mazzi where id = '".$_GET["idMazzo"]."'")->fetch_assoc()["nome"];
 require_once "orderCard.php";
 header('Content-Type: text/plain');
-header('Content-Disposition: attachment; filename="' . $_GET["mazzo"].".txt" . '"');
+header('Content-Disposition: attachment; filename="' . $mazzo.".txt" . '"');
 $query = "select ca.espansione, ca.numero, ca.aspettoPrimario, ca.aspettoSecondario, m.nome as mazzo, ca.tipo, ca.nome, ca.titolo from composizione co, carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.id = '".$_GET["idMazzo"]."' and m.id = co.idMazzo order by uscita, numero";
 $resultSet = $GLOBALS["conn"] -> query($query);
-$result = $_GET["mazzo"]."\n";
+$result = $mazzo."\n";
 $rs = [];
 while($line = $resultSet->fetch_assoc()){
     array_push($rs, $line);
