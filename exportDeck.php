@@ -4,7 +4,7 @@ $mazzo=$conn->query("select nome from mazzi where id = '".$_GET["idMazzo"]."'")-
 require_once "orderCard.php";
 header('Content-Type: text/plain');
 header('Content-Disposition: attachment; filename="' . $mazzo.".txt" . '"');
-$query = "select ca.espansione, ca.numero, ca.aspettoPrimario, ca.aspettoSecondario, m.nome as mazzo, ca.tipo, ca.nome, ca.titolo from composizione co, carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.id = '".$_GET["idMazzo"]."' and m.id = co.idMazzo order by uscita, numero";
+$query = "select ca.espansione, ca.numero, ca.aspettoPrimario, ca.aspettoSecondario, m.nome as mazzo, ca.tipo, ca.nome, ca.titolo from composizione co, carte ca, mazzi m where co.espansione = ca.espansione and co.numero = ca.numero and m.id = ".$_GET["idMazzo"]." and m.id = co.idMazzo order by uscita, numero";
 $resultSet = $GLOBALS["conn"] -> query($query);
 $result = $mazzo."\n";
 $rs = [];
