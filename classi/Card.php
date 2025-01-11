@@ -65,7 +65,7 @@ class Card {
         $insert = $insert."(";
         foreach(get_object_vars($this) as $key=>$value){
             if (!$value) $value = 0;
-            if ($key === 'tratti') $value = (str_contains($value, " * ")?join(" * ", $value):$value);
+            if ($key === 'tratti') $value = (str_contains($value, "*")?join(" * ", $value):$value);
             if(gettype($value) === "string"){
                 $insert = $insert.'\'';
             }
