@@ -59,7 +59,9 @@ class Card {
     public function getInsertSql(){
         $insert = "insert into carte (";
         foreach(get_object_vars($this) as $key => $value){
-            $insert .= $key.", ";
+            if($key != 'prezzo'){
+                $insert .= $key.", ";
+            }
         }
         $insert = substr($insert,0,-2).")\nvalues";
         $insert = $insert."(";
