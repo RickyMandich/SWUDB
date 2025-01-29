@@ -64,20 +64,22 @@ class Card {
         $insert = substr($insert,0,-2).")\nvalues";
         $insert = $insert."(";
         foreach(get_object_vars($this) as $key=>$value){
-            if (!$value) $value = 0;
-            if ($key === 'tratti') {
-                if(gettype($value) === "array"){
-                    $value = join(" * ", $value);
+            if($key != 'prezzo'){
+                if (!$value) $value = 0;
+                if ($key === 'tratti') {
+                    if(gettype($value) === "array"){
+                        $value = join(" * ", $value);
+                    }
                 }
+                if(gettype($value) === "string"){
+                    $insert = $insert.'\'';
+                }
+                $insert = $insert.str_replace("'", "\'", $value);
+                if(gettype($value) === "string"){
+                    $insert = $insert.'\'';
+                }
+                $insert = $insert.", ";
             }
-            if(gettype($value) === "string"){
-                $insert = $insert.'\'';
-            }
-            $insert = $insert.str_replace("'", "\'", $value);
-            if(gettype($value) === "string"){
-                $insert = $insert.'\'';
-            }
-            $insert = $insert.", ";
         }
         $insert = substr($insert,0,-2);
         $insert = $insert."),\n";
