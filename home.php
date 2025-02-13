@@ -6,28 +6,28 @@
     </head>
     <body>
         <span class="pageLink database">
-            <a href="./carte" target="_blank">
+            <a href="./carte">
                 <img src="https://imgs.search.brave.com/NnxRTb4Th5NIbAhODYxF1mfGSsrGWQmMeNlXVck08J0/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aWtpcGVk/aWEvY29tbW9ucy90/aHVtYi9mL2Y2L05v/dW5fcHJvamVjdF9k/YXRhYmFzZV8xMjc2/NTI2X2NjLnN2Zy82/NDBweC1Ob3VuX3By/b2plY3RfZGF0YWJh/c2VfMTI3NjUyNl9j/Yy5zdmcucG5n" alt="">
                 <br>
                 DATABASE
             </a>
         </span>
         <span class="pageLink inputDeck">
-            <a href="./insertToDeck" target="_blank">
+            <a href="./insertToDeck">
                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsVHhetQPbrMnemkmUqGzjuDIrJ86qoYjLpbJ-Vf7m4sEwaCdD" alt="insertToDeck">
                 <br>
                 INPUT DECK
             </a>
         </span>
         <span class="pageLink jsonDeck">
-            <a href="./uploadJsonDeck" target="_blank">
+            <a href="./uploadJsonDeck">
                 <img src="https://imgs.search.brave.com/4v057JpSYBXf9JUUEpNi8b8pQffnt95i0keWnk48h7k/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzA4LzIwLzAzLzk1/LzM2MF9GXzgyMDAz/OTU5NV8wTENMQzBx/cUx2SXVNcmtXTjI5/QWEyOU9NTng2bXhI/ZS5qcGc" alt="">
                 <br>
                 JSON DECK
             </a>
         </span>
         <span class="pageLink mazzo">
-            <a href="./mazzi" target="_blank">
+            <a href="./mazzi">
                 <img src="https://imgs.search.brave.com/dVRz4pmn6Hgw2REoO-lvu8yARI4i5eSwEERefh3_YTM/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly93d3cu/c3RpY2tlcnBvaW50/Lml0L2ltYWdlcy9z/dGFyLXdhcnMtdW5s/aW1pdGVkLWRvdWJs/ZS1kZWNrLXBvZC1i/bHVlLmpwZw">
                 <br>
                 mazzi
