@@ -60,10 +60,10 @@
                                     <?php echo $value; ?>
                                 </td>
                                 <td>
-                                    <img src="https://swudb.com/cards/<?php echo $leader["espansione"]."/".sprintf("%0". $numeri[$leader["espansione"]]."d", $leader["numero"]).".png"?>" alt="<?php echo $leader["nome"];?>">
+                                    <img src="https://swudb.com/images/cars/<?php echo $leader["espansione"]."/".sprintf("%0". $numeri[$leader["espansione"]]."d", $leader["numero"]).".png"?>" alt="<?php echo $leader["nome"];?>">
                                 </td>
                                 <td>
-                                    <img src="https://swudb.com/cards/<?php echo $base["espansione"]."/".sprintf("%0". $numeri[$base["espansione"]]."d", $base["numero"]).".png"?>" alt="<?php echo $base["nome"];?>">
+                                    <img src="https://swudb.com/images/cars/<?php echo $base["espansione"]."/".sprintf("%0". $numeri[$base["espansione"]]."d", $base["numero"]).".png"?>" alt="<?php echo $base["nome"];?>">
                                 </td>
                             </tr>
                         <?php endif;

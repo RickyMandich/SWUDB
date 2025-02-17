@@ -49,7 +49,7 @@ require_once("header.php");?>
                                                     <a href="<?php echo "https://swudb.com/card/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank">
                                                         <?php echo "$value";
                                                             if($value === $resultSet["nome"]){
-                                                                ?><img class="card-hover" src="https://swudb.com/cards/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
+                                                                ?><img class="card-hover" src="https://swudb.com/images/cars/<?php echo $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>.png"><?php
                                                             }; ?>
                                                     </a>
                                                     <?php }else{

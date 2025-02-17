@@ -63,7 +63,7 @@
         <?php if($_GET["foil"]){?>
             <span class="foil"><?php
         }?>
-        <img src="https://swudb.com/cards/<?php echo $_GET["espansione"]."/".sprintf("%0".$numeri[$_GET["espansione"]]."d",$_GET["numero"]);?>.png">
+        <img src="https://swudb.com/images/cars/<?php echo $_GET["espansione"]."/".sprintf("%0".$numeri[$_GET["espansione"]]."d",$_GET["numero"]);?>.png">
         <?php if($_GET["foil"]){?>
             </span><?php
         }?>
