@@ -36,7 +36,11 @@
     $mazzi = $result->fetch_all(MYSQLI_ASSOC);
 
     echo '<table>';
-    echo '<thead><tr><th>Immagine 1</th><th>Immagine 2</th><th>Icona</th><th>Nome Mazzo</th></tr></thead>';
+    echo '<thead><tr><th>Immagine 1</th><th>Immagine 2</th><th>Icona</th>';
+    foreach($mazzi[0] as $key => $value){
+        echo '<th>' . htmlspecialchars($key) . '</th>';
+    }
+    echo '</tr></thead>';
     echo '<tbody>';
 
     foreach ($mazzi as $mazzo) {
@@ -66,11 +70,9 @@
             echo '<td><img src="./img/rimuovi.png" alt="Rimuovi"></td>';
             echo '<td><img src="./img/collezione.png" alt="Collezione"></td>';
             echo '<td><img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29ucy52ZXJ5aWNvbi5jb20vcG5nLzEyOC9taXNjZWxsYW5lb3VzL2Vhc2Vtb2ItaWNvbi9leHBvcnQtZmlsZS0xLnBuZw" alt="Icon"></td>';
-            echo '<td class="nomeMazzo">' . htmlspecialchars($carta['mazzo']) . '</td>';
-            echo '<td class="nomeCarta">' . htmlspecialchars($carta['nome']) . '</td>';
-            echo '<td class="titoloCarta">' . htmlspecialchars($carta['titolo']) . '</td>';
-            echo '<td class="espansioneCarta">' . htmlspecialchars($carta['espansione']) . '</td>';
-            echo '<td class="NumeroCarta">' . htmlspecialchars($carta['numero']) . '</td>';
+            foreach ($carta as $value) {
+                echo '<td>' . htmlspecialchars($value) . '</td>';
+            }
             // Add other card attributes here
             echo '</tr>';
         }
