@@ -91,6 +91,12 @@
             });
         });
     });
+    if (header.getBoundingClientRect().top < 0) {
+        window.scrollTo({
+        top: header.offsetTop,
+        behavior: 'smooth'
+        });
+    }
 
     // Initially hide all card rows
     const mazzoId = header.getAttribute('data-mazzo-id');
