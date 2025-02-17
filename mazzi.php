@@ -61,8 +61,10 @@
 
         $composizioneQuery = "SELECT * FROM composizione WHERE idMazzo = ?";
         $stmtComposizione = $conn->prepare($composizioneQuery);
-        $stmtComposizione->execute([$mazzo['id']]);
-        $carte = $stmtComposizione->fetchAll(PDO::FETCH_ASSOC);
+        $stmtComposizione->bind_param('s', $mazzo['id']);
+        $stmtComposizione->execute();
+        $resultComposizione = $stmtComposizione->get_result();
+        $carte = $resultComposizione->fetch_all(MYSQLI_ASSOC);
 
         foreach ($carte as $carta) {
             echo '<tr class="mazzo-carta" data-mazzo-id="' . $mazzo['id'] . '">';
