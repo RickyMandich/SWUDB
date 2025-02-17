@@ -40,7 +40,14 @@
     echo '<tbody>';
 
     foreach ($mazzi as $mazzo) {
-        $orderCard = mergeSort($mazzo['id']);
+        $composizioneQuery = "SELECT * FROM composizione WHERE idMazzo = ?";
+        $stmtComposizione = $conn->prepare($composizioneQuery);
+        $stmtComposizione->bind_param('s', $mazzo['id']);
+        $stmtComposizione->execute();
+        $resultComposizione = $stmtComposizione->get_result();
+        $carte = $resultComposizione->fetch_all(MYSQLI_ASSOC);
+
+        $orderCard = mergeSort($carte);
         $firstCard = $orderCard[0];
         $expansion = $firstCard['espansione'];
         $number = str_pad($firstCard['numero'], 3, '0', STR_PAD_LEFT);
