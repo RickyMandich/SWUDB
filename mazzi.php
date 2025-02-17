@@ -40,7 +40,7 @@
     echo '<tbody>';
 
     foreach ($mazzi as $mazzo) {
-        $composizioneQuery = "SELECT ca.* FROM composizione co, carte ca WHERE idMazzo = ? and ca.espansione = co.espansione and ca.numero = co.numero";
+        $composizioneQuery = "SELECT m.nome as mazzo, ca.* FROM composizione co, carte ca, mazzi m WHERE idMazzo = ? and ca.espansione = co.espansione and ca.numero = co.numero and m.id = co.idMazzo";
         $stmtComposizione = $conn->prepare($composizioneQuery);
         $stmtComposizione->bind_param('s', $mazzo['id']);
         $stmtComposizione->execute();
@@ -66,7 +66,7 @@
             echo '<td><img src="./img/rimuovi.png" alt="Rimuovi"></td>';
             echo '<td><img src="./img/collezione.png" alt="Collezione"></td>';
             echo '<td><img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29ucy52ZXJ5aWNvbi5jb20vcG5nLzEyOC9taXNjZWxsYW5lb3VzL2Vhc2Vtb2ItaWNvbi9leHBvcnQtZmlsZS0xLnBuZw" alt="Icon"></td>';
-            echo '<td class="nomeMazzo">' . htmlspecialchars($mazzo['nome']) . '</td>';
+            echo '<td class="nomeMazzo">' . htmlspecialchars($carta['mazzo']) . '</td>';
             echo '<td class="nomeCarta">' . htmlspecialchars($carta['nome']) . '</td>';
             echo '<td class="titoloCarta">' . htmlspecialchars($carta['titolo']) . '</td>';
             echo '<td class="espansioneCarta">' . htmlspecialchars($carta['espansione']) . '</td>';
