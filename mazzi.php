@@ -18,7 +18,7 @@
         exit();
     }
 
-    $user = $_SESSION['user'];
+    $user = unserialize($_SESSION['user']);
     $conn = $GLOBALS['conn'];
 
     $mazziQuery = "SELECT * FROM mazzi WHERE codUtente = ? OR public = 1";
