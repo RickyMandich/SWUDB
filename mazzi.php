@@ -34,10 +34,11 @@
     $stmt->execute();
     $result = $stmt->get_result();
     $mazzi = $result->fetch_all(MYSQLI_ASSOC);
+    $template = $conn->query("SELECT * FROM carte LIMIT 1")->fetch_assoc();
 
     echo '<table>';
     echo '<thead><tr><th>Immagine 1</th><th>Immagine 2</th><th>Icona</th>';
-    foreach($mazzi[0] as $key => $value){
+    foreach($template as $key => $value){
         echo '<th>' . htmlspecialchars($key) . '</th>';
     }
     echo '</tr></thead>';
