@@ -51,8 +51,8 @@
         $firstCard = $orderCard[0];
         $expansion = $firstCard['espansione'];
         $number = str_pad($firstCard['numero'], 3, '0', STR_PAD_LEFT);
-        printlnd($orderCard);
-        printlnd($carte);
+        printlnd($orderCard, name: 'orderCard');
+        printlnd($carte, name: 'carte');
 
         if(count($orderCard) > 1){
             echo '<tr class="mazzo-header" data-mazzo-id="' . $mazzo['id'] . '">';

@@ -11,16 +11,15 @@
      * @param int $deep
      * @return void
      */
-    function printlnd($line, $deep = 0){
+    function printlnd($line, $deep = 0, $name){
         if(gettype($line) == 'array'){
-            echo "{<br>";
+            echo "$name-->{<br>";
             foreach($line as $i => $value){
                 unset($j);
                 for($j = 0;$j<=$deep;$j++){
                     echo "&nbsp;&nbsp;";
                 }
-                echo "$i-->";
-                printlnd($value, $deep+1);
+                printlnd($value, $deep+1, $i);
             }
             unset($j);
             for($j = 0;$j<$deep;$j++){
