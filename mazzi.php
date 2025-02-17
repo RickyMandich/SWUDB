@@ -94,7 +94,7 @@
         header.addEventListener('click', () => {
             let mazzoId = header.getAttribute('data-mazzo-id');
             document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
-            carta.style.display = carta.style.display === 'none' ? 'table-row' : 'none';
+            carta.style.display = carta.style.display === 'table-row' ? 'none' : 'table-row';
             });
         });
     });
