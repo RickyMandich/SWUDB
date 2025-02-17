@@ -51,6 +51,8 @@
         $firstCard = $orderCard[0];
         $expansion = $firstCard['espansione'];
         $number = str_pad($firstCard['numero'], 3, '0', STR_PAD_LEFT);
+        var_dump($orderCard);
+        var_dump($carte);
 
         if(count($orderCard) > 1){
             echo '<tr class="mazzo-header" data-mazzo-id="' . $mazzo['id'] . '">';
@@ -67,6 +69,8 @@
             echo '<td><img src="./img/collezione.png" alt="Collezione"></td>';
             echo '<td><img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29ucy52ZXJ5aWNvbi5jb20vcG5nLzEyOC9taXNjZWxsYW5lb3VzL2Vhc2Vtb2ItaWNvbi9leHBvcnQtZmlsZS0xLnBuZw" alt="Icon"></td>';
             echo '<td>' . htmlspecialchars($mazzo['nome']) . '</td>';
+            echo '<td>' . htmlspecialchars($carta['nome']) . '</td>';
+            echo '<td>' . htmlspecialchars($carta['titolo']) . '</td>';
             echo '<td>' . htmlspecialchars($carta['espansione']) . '</td>';
             echo '<td>' . htmlspecialchars($carta['numero']) . '</td>';
             // Add other card attributes here
