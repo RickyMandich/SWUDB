@@ -30,8 +30,10 @@
     }
 
     $stmt = $conn->prepare($mazziQuery);
-    $stmt->execute($params);
-    $mazzi = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->bind_param(str_repeat('s', count($params)), ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $mazzi = $result->fetch_all(MYSQLI_ASSOC);
 
     echo '<table>';
     echo '<thead><tr><th>Immagine 1</th><th>Immagine 2</th><th>Icona</th><th>Nome Mazzo</th></tr></thead>';
