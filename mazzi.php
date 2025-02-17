@@ -52,7 +52,7 @@
         $expansion = $firstCard['espansione'];
         $number = str_pad($firstCard['numero'], 3, '0', STR_PAD_LEFT);
 
-        if(count($carte) > 1){
+        if(count($orderCard) > 1){
             echo '<tr class="mazzo-header" data-mazzo-id="' . $mazzo['id'] . '">';
             echo '<td><img src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '-portrait.png" alt="Card Portrait"></td>';
             echo '<td><img src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '.png" alt="Card"></td>';
@@ -61,14 +61,7 @@
             echo '</tr>';
         }
 
-        $composizioneQuery = "SELECT * FROM composizione WHERE idMazzo = ?";
-        $stmtComposizione = $conn->prepare($composizioneQuery);
-        $stmtComposizione->bind_param('s', $mazzo['id']);
-        $stmtComposizione->execute();
-        $resultComposizione = $stmtComposizione->get_result();
-        $carte = $resultComposizione->fetch_all(MYSQLI_ASSOC);
-
-        foreach ($carte as $carta) {
+        foreach ($orderCard as $carta) {
             echo '<tr class="mazzo-carta" data-mazzo-id="' . $mazzo['id'] . '">';
             echo '<td><img src="./img/rimuovi.png" alt="Rimuovi"></td>';
             echo '<td><img src="./img/collezione.png" alt="Collezione"></td>';
