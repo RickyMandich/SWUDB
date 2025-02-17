@@ -72,7 +72,8 @@
             echo '<td><img src="./img/collezione.png" alt="Collezione"></td>';
             echo '<td><img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29ucy52ZXJ5aWNvbi5jb20vcG5nLzEyOC9taXNjZWxsYW5lb3VzL2Vhc2Vtb2ItaWNvbi9leHBvcnQtZmlsZS0xLnBuZw" alt="Icon"></td>';
             foreach ($carta as $value) {
-                echo '<td>' . $value . '</td>';
+                $value = str_replace("\n", "<br>", $value);
+                echo '<td>$value</td>';
             }
             echo '</tr>';
         }
