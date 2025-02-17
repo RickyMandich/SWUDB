@@ -38,7 +38,7 @@
     echo '<tbody>';
 
     foreach ($mazzi as $mazzo) {
-        $orderCard = orderCard($mazzo['id']);
+        $orderCard = mergeSort($mazzo['id']);
         $firstCard = $orderCard[0];
         $expansion = $firstCard['espansione'];
         $number = str_pad($firstCard['numero'], 3, '0', STR_PAD_LEFT);
