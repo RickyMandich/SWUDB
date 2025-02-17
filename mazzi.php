@@ -87,7 +87,7 @@
     <script>
     document.querySelectorAll('.mazzo-header').forEach(header => {
         header.addEventListener('click', () => {
-            const mazzoId = header.getAttribute('data-mazzo-id');
+            let mazzoId = header.getAttribute('data-mazzo-id');
             document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
             carta.style.display = carta.style.display === 'none' ? 'table-row' : 'none';
             });
@@ -95,7 +95,7 @@
     });
     
     // Initially hide all card rows
-    const mazzoId = header.getAttribute('data-mazzo-id');
+    let mazzoId = header.getAttribute('data-mazzo-id');
     document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
         carta.style.display = 'none';
     });
