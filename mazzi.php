@@ -22,7 +22,7 @@
     $conn = $GLOBALS['conn'];
 
     $mazziQuery = "SELECT * FROM mazzi WHERE codUtente = ? OR public = 1";
-    $params = [$user->id];
+    $params = [$user->getId()];
 
     if (isset($_GET['mazzi'])) {
         $mazziQuery .= " AND id = ?";
