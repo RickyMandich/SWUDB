@@ -88,6 +88,11 @@
         .mazzo-carta {
             display: none;
         }
+
+        img{
+            width: 15vw;
+            height: auto;
+        }
     </style>
     <script>
     document.querySelectorAll('.mazzo-header').forEach(header => {
