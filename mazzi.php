@@ -4,8 +4,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>mazzi</title>
-        <link rel="stylesheet" href="css/mazzi.css">
-        <link rel="stylesheet" href="css/cartaPopUp.css">
+        <!-- <link rel="stylesheet" href="css/mazzi.css"> -->
+        <!-- <link rel="stylesheet" href="css/cartaPopUp.css"> -->
     </head>
     <?php
         require_once "header.php";
@@ -91,13 +91,7 @@
             });
         });
     });
-    if (header.getBoundingClientRect().top < 0) {
-        window.scrollTo({
-        top: header.offsetTop,
-        behavior: 'smooth'
-        });
-    }
-
+    
     // Initially hide all card rows
     const mazzoId = header.getAttribute('data-mazzo-id');
     document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
