@@ -36,7 +36,7 @@
     $mazzi = $result->fetch_all(MYSQLI_ASSOC);
     $template = $conn->query("SELECT m.nome as mazzo, c.* FROM carte c, mazzi m LIMIT 1")->fetch_assoc();
 
-    echo '<table>';
+    echo '<table border>';
     echo '<thead><tr><th>Immagine 1</th><th>Immagine 2</th><th>Icona</th>';
     foreach($template as $key => $value){
         echo '<th>' . htmlspecialchars($key) . '</th>';
