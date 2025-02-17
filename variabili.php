@@ -1,5 +1,5 @@
 <?php
-    $GLOBALS["conn"] = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb", port:3306);
+    $GLOBALS["conn"] = new mysqli(hostname: "localhost",username: "swudb", database:"my_swudb");
     if ($GLOBALS["conn"]->connect_error) {
         die("Connection failed: " . $GLOBALS["conn"]->connect_error);
     }
