@@ -84,6 +84,11 @@
     echo '</tbody>';
     echo '</table>';
     ?>
+    <style>
+        .mazzo-carta {
+            display: none;
+        }
+    </style>
     <script>
     document.querySelectorAll('.mazzo-header').forEach(header => {
         header.addEventListener('click', () => {
@@ -92,12 +97,6 @@
             carta.style.display = carta.style.display === 'none' ? 'table-row' : 'none';
             });
         });
-    });
-    
-    // Initially hide all card rows
-    let mazzoId = header.getAttribute('data-mazzo-id');
-    document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
-        carta.style.display = 'none';
     });
     </script>
 </html>
