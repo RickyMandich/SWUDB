@@ -27,7 +27,7 @@
         <span id="result" class="<?php echo isset($_GET["resultClass"]) ? $_GET["resultClass"] : "hidden"?>">
             <?php echo isset($_GET["resultText"]) ? $_GET["resultText"] : ""?>
         </span>
-        <img src="https://swudb.com/images/cars/<?php echo $_GET["espansione"]."/".sprintf("%0".$numeri[$_GET["espansione"]]."d",$_GET["numero"]);?>.png">
+        <img src="https://swudb.com/images/cards/<?php echo $_GET["espansione"]."/".sprintf("%0".$numeri[$_GET["espansione"]]."d",$_GET["numero"]);?>.png">
     </body>
     <style>
         body{
