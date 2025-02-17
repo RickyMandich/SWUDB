@@ -96,7 +96,6 @@
         document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
             carta.style.display = 'none';
         });
-        });
     });
     </script>
 </html>
