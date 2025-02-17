@@ -40,7 +40,7 @@
     echo '<tbody>';
 
     foreach ($mazzi as $mazzo) {
-        $composizioneQuery = "SELECT * FROM composizione WHERE idMazzo = ?";
+        $composizioneQuery = "SELECT ca.* FROM composizione co, carte ca WHERE idMazzo = ? and ca.espansione = co.espansione and ca.numero = co.numero";
         $stmtComposizione = $conn->prepare($composizioneQuery);
         $stmtComposizione->bind_param('s', $mazzo['id']);
         $stmtComposizione->execute();
