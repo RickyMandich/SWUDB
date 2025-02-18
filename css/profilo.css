@@ -16,7 +16,9 @@ body {
 .container {
     width: 100%;
     max-width: 800px;
-    padding: 20px;
+    padding: 40px 20px 20px; /* Aggiunto padding-top per evitare overflow */
+    max-height: 100vh; /* Aggiunto per limitare l'altezza massima */
+    overflow-y: auto; /* Aggiunto per abilitare lo scorrimento verticale */
 }
 
 .profile-container {
@@ -155,17 +157,17 @@ table {
     display: none;
 }
 
-a{
+a {
     color: black;
     text-decoration: none;
 }
 
-.deck-header>td{
+.deck-header > td {
     padding-left: 5px;
     padding-right: 5px;
 }
 
-thead{
+thead {
     position: sticky;
     top: 0;
 }
