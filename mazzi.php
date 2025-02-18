@@ -119,7 +119,6 @@
 
         th {
             background-color: darkblue;
-            color: white;
         }
 
         img{
