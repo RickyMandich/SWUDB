@@ -91,22 +91,22 @@
     </body>
     <style>
         .mazzo-header {
-            background-color: blue;
-            color: white;
+            background-color: #2929C0;
             cursor: pointer;
         }
-
+        
         .mazzo-carta {
             background-color: lightgray;
             display: none;
         }
-
+        
         img {
             width: 5vw;
             height: auto;
         }
-
+        
         table {
+            color: darkgray;
             width: 100%;
             border-collapse: collapse;
         }
