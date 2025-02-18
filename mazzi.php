@@ -65,6 +65,9 @@
                     echo '<td><img src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '.png" alt="Card"></td>';
                     echo '<td><img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29ucy52ZXJ5aWNvbi5jb20vcG5nLzEyOC9taXNjZWxsYW5lb3VzL2Vhc2Vtb2ItaWNvbi9leHBvcnQtZmlsZS0xLnBuZw" alt="Icon"></td>';
                     echo '<td>' . htmlspecialchars($mazzo['nome']) . '</td>';
+                    foreach($orderCard[0] as $value){
+                        echo '<td></td>';
+                    }
                     echo '</tr>';
                 }
                 
