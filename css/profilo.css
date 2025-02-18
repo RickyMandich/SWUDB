@@ -15,10 +15,10 @@ body {
 
 .container {
     width: 100%;
-    max-width: 800px;
-    padding: 40px 20px 20px; /* Aggiunto padding-top per evitare overflow */
-    max-height: 100vh; /* Aggiunto per limitare l'altezza massima */
-    overflow-y: auto; /* Aggiunto per abilitare lo scorrimento verticale */
+    max-width: 98vw;
+    padding: 1vh 1vw;
+    max-height: 98vh;
+    overflow-y: auto;
 }
 
 .profile-container {
