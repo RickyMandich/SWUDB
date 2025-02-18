@@ -91,7 +91,7 @@
     </body>
     <style>
         .mazzo-header {
-            background-color: #2929C0;
+            background-color: #6b98c1;
             cursor: pointer;
         }
         
@@ -106,7 +106,7 @@
         }
         
         table {
-            color: darkgray;
+            color: black;
             width: 100%;
             border-collapse: collapse;
         }
