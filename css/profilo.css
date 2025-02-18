@@ -21,6 +21,10 @@ body {
     overflow-y: auto;
 }
 
+.profilo .container{
+    padding: 40px 20px 20px;
+}
+
 .profile-container {
     background-color: white;
     padding: 30px;
