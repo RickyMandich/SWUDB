@@ -38,7 +38,7 @@
             $mazzi = $result->fetch_all(MYSQLI_ASSOC);
             $template = $conn->query("SELECT m.nome as mazzo, c.* FROM carte c, mazzi m LIMIT 1")->fetch_assoc();
             
-            echo '<table border>';
+            echo '<table>';
             echo '<thead><tr><th>Elimina</th><th>Aggiungi alla collezione</th><th>Esporta mazzo/mancante</th>';
             foreach($template as $key => $value){
                 echo '<th>' . htmlspecialchars($key) . '</th>';
@@ -92,7 +92,7 @@
         }
 
         img{
-            width: 15vw;
+            width: 5vw;
             height: auto;
         }
     </style>
