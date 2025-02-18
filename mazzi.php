@@ -87,8 +87,36 @@
         </div>
     </body>
     <style>
+        .mazzo-header {
+            background-color: blue;
+            color: white;
+            cursor: pointer;
+        }
+
         .mazzo-carta {
+            background-color: lightgray;
             display: none;
+        }
+
+        img {
+            width: 5vw;
+            height: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: darkblue;
+            color: white;
         }
 
         img{
