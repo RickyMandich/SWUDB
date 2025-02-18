@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="it" class="<?php echo $file;?>">
-<?php header('Content-Type: text/plain');
-header('Content-Disposition: attachment; filename=ciao.txt"');?>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
