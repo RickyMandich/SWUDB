@@ -20,14 +20,14 @@
             $collezione = new Cards();
             foreach($jsonData as $key=> $value){
                 //var_dump($value);
-                require_once "./classi/Card.php";
                 $collezione->add(new Card($value));
             }
             $i=0;
             foreach($collezione->collezione as $value){
-                $GLOBALS["conn"]->query("delete from carte where espansione = '".$value->espansione."' and numero = ".$value->numero);
-                $GLOBALS["conn"]->query($value->getInsertSql());
-                $i++;
+                if(!$GLOBALS["conn"]->query("select * from carte where espansione = '".$value->espansione."' and numero = ".$value->numero)->fetch_assoc()){
+                    $GLOBALS["conn"]->query($value->getInsertSql());
+                    $i++;
+                }
             }
             echo "caricamento riuscito, ho inserito $i carte";
         } else {
