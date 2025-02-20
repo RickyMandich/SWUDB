@@ -57,7 +57,7 @@
                 $orderCard = mergeSort($carte);
                 $firstCard = $orderCard[0];
                 $expansion = $firstCard['espansione'];
-                $number = str_pad($firstCard['numero'], 3, '0', STR_PAD_LEFT);
+                $number = str_pad($firstCard['numero'], $numeri[$firstCard["espansione"]], '0', STR_PAD_LEFT);
 
                 if(count($orderCard) > 1){
                     echo '<tr class="mazzo-header" data-mazzo-id="' . $mazzo['id'] . '">';
