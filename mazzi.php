@@ -61,9 +61,9 @@
 
                 if(count($orderCard) > 1){
                     echo '<tr class="mazzo-header" data-mazzo-id="' . $mazzo['id'] . '">';
-                    echo '<td><img src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '-portrait.png" alt="Card Portrait"></td>';
-                    echo '<td><img src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '.png" alt="Card"></td>';
-                    echo '<td><img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="Icon"></td>';
+                    echo '<td class="image"><im-g src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '-portrait.png" alt="Card Portrait"></td>';
+                    echo '<td class="image"><im-g src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '.png" alt="Card"></td>';
+                    echo '<td class="image"><im-g src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="Icon"></td>';
                     echo '<td>' . htmlspecialchars($mazzo['nome']) . '</td>';
                     foreach($orderCard[0] as $value){
                         echo '<td></td>';
@@ -73,9 +73,9 @@
                 
                 foreach ($orderCard as $carta) {
                     echo '<tr class="mazzo-carta" data-mazzo-id="' . $mazzo['id'] . '">';
-                    echo '<td><img src="./img/rimuovi.png" alt="Rimuovi"></td>';
-                    echo '<td><img src="./img/collezione.png" alt="Collezione"></td>';
-                    echo '<td><img src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="Icon"></td>';
+                    echo '<td class="image"><im-g src="./img/rimuovi.png" alt="Rimuovi"></td>';
+                    echo '<td class="image"><im-g src="./img/collezione.png" alt="Collezione"></td>';
+                    echo '<td class="image"><im-g src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="Icon"></td>';
                     foreach ($carta as $value) {
                         $value = str_replace("\n", "<br>", $value);
                         echo "<td>$value</td>";
@@ -127,13 +127,16 @@
         }
     </style>
     <script>
-    document.querySelectorAll('.mazzo-header').forEach(header => {
-        header.addEventListener('click', () => {
-            let mazzoId = header.getAttribute('data-mazzo-id');
-            document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
-            carta.style.display = carta.style.display === 'table-row' ? 'none' : 'table-row';
+        document.querySelectorAll(".image").forEach(img=>{
+            img.innerHTML = img.innerHTML.replaceAll("im-g", "img");
+        })
+        document.querySelectorAll('.mazzo-header').forEach(header => {
+            header.addEventListener('click', () => {
+                let mazzoId = header.getAttribute('data-mazzo-id');
+                document.querySelectorAll(`.mazzo-carta[data-mazzo-id="${mazzoId}"]`).forEach(carta => {
+                carta.style.display = carta.style.display === 'table-row' ? 'none' : 'table-row';
+                });
             });
         });
-    });
     </script>
 </html>
