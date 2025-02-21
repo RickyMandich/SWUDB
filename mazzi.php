@@ -127,7 +127,7 @@
         }
     </style>
     <script>
-        document.addEventListener("click", {
+        document.addEventListener("click", () => {
             document.querySelectorAll(".image").forEach(img=>{
                 img.innerHTML = img.innerHTML.replaceAll("im-g", "img");
             });
