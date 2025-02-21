@@ -120,6 +120,7 @@
 
         th {
             background-color: darkblue;
+            color: white;
         }
 
         img{
@@ -128,7 +129,7 @@
         }
     </style>
     <script>
-        document.addEventListener("click", () => {
+        document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll(".image").forEach(img=>{
                 img.innerHTML = img.innerHTML.replaceAll("im-g", "img");
             });
