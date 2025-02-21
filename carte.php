@@ -73,8 +73,9 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php $toggle = false;?>
                                 <?php foreach($rs as $card): ?>
-                                    <tr class="card">
+                                    <tr class="<?php echo $toggle ? "oddCard" : "notOddCard"; ?>">
                                         <?php if(isset($_SESSION["user"])): ?>
                                             <td>
                                                 <form action="./insertTo" method="get">
@@ -120,8 +121,13 @@
             color: white;
         }
 
-        .card {
+        .oddCard {
             background-color: #6b98c1;
+            cursor: pointer;
+        }
+
+        .notOddCard {
+            background-color: lightgray;
             cursor: pointer;
         }
     </style>
