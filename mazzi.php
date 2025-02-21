@@ -127,9 +127,11 @@
         }
     </style>
     <script>
-        document.querySelectorAll(".image").forEach(img=>{
-            img.innerHTML = img.innerHTML.replaceAll("im-g", "img");
-        })
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll(".image").forEach(img=>{
+                img.innerHTML = img.innerHTML.replaceAll("im-g", "img");
+            })
+        });
         document.querySelectorAll('.mazzo-header').forEach(header => {
             header.addEventListener('click', () => {
                 let mazzoId = header.getAttribute('data-mazzo-id');
