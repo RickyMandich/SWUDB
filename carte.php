@@ -74,7 +74,7 @@
                             </thead>
                             <tbody>
                                 <?php foreach($rs as $card): ?>
-                                    <tr>
+                                    <tr class="card">
                                         <?php if(isset($_SESSION["user"])): ?>
                                             <td>
                                                 <form action="./insertTo" method="get">
@@ -120,14 +120,9 @@
             color: white;
         }
 
-        .mazzo-header {
+        .card {
             background-color: #6b98c1;
             cursor: pointer;
-        }
-        
-        .mazzo-carta {
-            background-color: lightgray;
-            display: none;
         }
     </style>
 </html>
