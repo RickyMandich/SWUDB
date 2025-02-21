@@ -128,7 +128,7 @@
         }
 
         .notOddCard {
-            background-color:#67839e;
+            background-color: #67839e;
             cursor: pointer;
         }
     </style>
