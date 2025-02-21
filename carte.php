@@ -115,6 +115,11 @@
             text-align: left;
         }
 
+        th {
+            background-color: darkblue;
+            color: white;
+        }
+
         .mazzo-header {
             background-color: #6b98c1;
             cursor: pointer;
