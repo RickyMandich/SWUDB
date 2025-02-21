@@ -127,10 +127,8 @@
         }
     </style>
     <script>
-        document.addEventListener('click', (e) => {
-            document.querySelectorAll(".image").forEach(img=>{
-                img.innerHTML = img.innerHTML.replaceAll("im-g", "img");
-            })
+        document.querySelectorAll(".image").forEach(img=>{
+            img.innerHTML = img.innerHTML.replaceAll("im-g", "img");
         });
         document.querySelectorAll('.mazzo-header').forEach(header => {
             header.addEventListener('click', () => {
