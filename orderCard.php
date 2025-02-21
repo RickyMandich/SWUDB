@@ -22,10 +22,10 @@
         $genericTipoOrder = ['Leader', 'Base'];
         
         // Definisco l'ordine degli aspetti primari
-        $primaryAspectOrder = ['Blue', 'Green', 'Red', 'Yellow'];
+        $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo'];
 
         // Definisco l'ordine dei tipi specifici
-        $specificTipoOrder = ['Unit', 'Upgrade', 'Event'];
+        $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
         
         // Funzione per ottenere il peso del mazzo
         $getMazzoWeight = function($element) use ($mazzoOrder) {
@@ -52,11 +52,11 @@
         $getSecondaryAspectWeight = function($element) {
             $aspettoSecondario = $element['aspettoSecondario'];
             
-            if ($aspettoSecondario === 'Dark') {
+            if ($aspettoSecondario === 'Nero') {
                 return 0;
             }
             
-            if ($aspettoSecondario === 'Light') {
+            if ($aspettoSecondario === 'Bianco') {
                 return 1;
             }
 
