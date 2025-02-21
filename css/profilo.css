@@ -68,7 +68,7 @@ h2 {
 
 .decks-container {
     margin-top: 20px;
-    max-height: 400px;
+    max-height: 85vh;
     overflow-y: auto;
     border: 1px solid #ddd;
     border-radius: 5px;
