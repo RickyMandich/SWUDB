@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $file; ?></title>
     <link rel="stylesheet" href="./css/cartaPopUp.css">
-    <link rel="stylesheet" href="css/mazzi.css">
+    <link rel="stylesheet" href="css/profilo.css">
 </head>
 <?php
     require_once "orderCard.php";
