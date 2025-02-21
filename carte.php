@@ -76,6 +76,7 @@
                                 <?php $toggle = false;?>
                                 <?php foreach($rs as $card): ?>
                                     <tr class="<?php echo $toggle ? "oddCard" : "notOddCard"; ?>">
+                                        <?php $toggle = !$toggle; ?>
                                         <?php if(isset($_SESSION["user"])): ?>
                                             <td>
                                                 <form action="./insertTo" method="get">
