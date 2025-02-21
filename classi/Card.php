@@ -1,5 +1,6 @@
 <?php
 class Card {
+    public $cid;
     public $unica;
     public $nome;
     public $titolo;
@@ -20,6 +21,7 @@ class Card {
     public $artista;
 
     public function __construct($jsonData) {
+        $this->cid = $jsonData['cid'];
         $this->unica = $jsonData['unica'];
         $this->nome = $jsonData['nome'];
         $this->titolo = $jsonData['titolo'];
