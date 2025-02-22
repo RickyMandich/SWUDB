@@ -64,7 +64,8 @@
                     echo '<td class="image"><im-g src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '-portrait.png" alt="Card Portrait"></td>';
                     echo '<td class="image"><im-g src="https://swudb.com/images/cards/' . $expansion . '/' . $number . '.png" alt="Card"></td>';
                     echo '<td class="image"><im-g src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="Icon"></td>';
-                    foreach($orderCard[0] as $value){
+                    echo '<td>' . htmlspecialchars($mazzo['nome']) . '</td>';
+                    for($i=0;$i<count($orderCard[0])-1;$i++){
                         echo '<td></td>';
                     }
                     echo '</tr>';
