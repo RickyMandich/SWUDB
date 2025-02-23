@@ -53,8 +53,11 @@
                         </td>
                     </tr>
                     <?php foreach($mazzi as $value):
-                        $leader = $GLOBALS["conn"]->query("select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='leader' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'");
-                        $base = $GLOBALS["conn"]->query("select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='base' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'");
+                        $queryLeader = "select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='leader' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'";
+                        $leader = $GLOBALS["conn"]->query($queryLeader);
+                        $queryBase = "select c.nome, c.espansione, c.numero from carte c, composizione co, mazzi m where co.idMazzo = m.id and c.tipo='base' and co.espansione = c.espansione and co.numero = c.numero and m.codUtente = ".unserialize($_SESSION["user"])->getID()." and m.nome = '".$value."'";
+                        $base = $GLOBALS["conn"]->query($queryBase);
+                        echo "<tr><td>$queryLeader</td><td>$queryBase</td></tr>";
                         if(!str_contains($value, "Collezione") and $leader = $leader->fetch_assoc() and $base = $base->fetch_assoc()):?>
                             <tr class="deck-card">
                                 <td>
