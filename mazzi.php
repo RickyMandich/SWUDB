@@ -78,10 +78,12 @@
                     echo '<td class="image"><im-g src="https://imgs.search.brave.com/8lh3CqznYphqQs7SYu1sy98oK3cOR-SqnP2fN0vs8UQ/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pY29u/cy52ZXJ5aWNvbi5j/b20vcG5nLzEyOC9t/aXNjZWxsYW5lb3Vz/L2Vhc2Vtb2ItaWNv/bi9leHBvcnQtZmls/ZS0xLnBuZw" alt="Icon"></td>';
                     // echo '<td class="image">'.'<im-g src="https://swudb.com/images/cards/' . $carta["espansione"] . '/' . $carta["numero"] . '.png" alt="Card">'."</td>";
                     foreach ($carta as $value) {
-                        ?><a href="<?php echo "https://starwarsunlimited.com/it/cards?cid=/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank"><?php
                         $value = str_replace("\n", "<br>", $value);
-                        echo "<td>$value</td>";
+                        echo "<td>";
+                        ?><a href="<?php echo "https://starwarsunlimited.com/it/cards?cid=/" . $resultSet["espansione"] . "/" . sprintf("%0" . $numeri[$resultSet["espansione"]] . "d", $resultSet["numero"]);?>" target="_blank"><?php
+                        echo $value;
                         ?></a><?php
+                        echo "</td>";
                     }
                     echo '</tr>';
                 }
