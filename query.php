@@ -74,4 +74,13 @@ require_once("header.php");?>
             <meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file.(isset($_POST["query"]) ? "?query=".$_POST["query"]:"");?>">
             <?php endif;?>
     </body>
+    <script>
+        function copyLink(link){
+            navigator.clipboard.writeText(link).then(function() {
+                console.log('Async: Copying to clipboard was successful!');
+            }, function(err) {
+                console.error('Async: Could not copy text: ', err);
+            });
+        }
+    </script>
 </html>
