@@ -20,7 +20,7 @@ require_once("header.php");?>
                 <form action="./query" method="post">
                     <input type="text" name="query" id="query" value="<?php if(isset($_POST["query"])) echo $_POST["query"]; else echo "select * from "; ?>">
                 </form>
-                <button onclick='copyLink("<?php echo "https://swudb.altervista.org/?".http_build_query($_POST);?>")'>copy link</button>
+                <button onclick='copyLink("<?php echo "https://swudb.altervista.org/query?".http_build_query($_POST);?>")'>copy link</button>
                 <?php
                 echo phpversion()."<br>";
                 echo $_POST["query"]."<br>";
