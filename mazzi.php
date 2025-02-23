@@ -80,7 +80,7 @@
                     foreach ($carta as $value) {
                         $value = str_replace("\n", "<br>", $value);
                         echo "<td>";
-                        ?><a href="<?php echo "https://starwarsunlimited.com/it/cards?cid=/" . $carta["cid"] . "?locale=it";?>" target="_blank"><?php
+                        ?><a href="<?php echo "https://starwarsunlimited.com/it/cards?cid=" . $carta["cid"];?>" target="_blank"><?php
                         echo $value;
                         ?></a><?php
                         echo "</td>";
