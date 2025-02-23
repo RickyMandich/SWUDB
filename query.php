@@ -20,6 +20,7 @@ require_once("header.php");?>
                 <form action="./query" method="post">
                     <input type="text" name="query" id="query" value="<?php if(isset($_POST["query"])) echo $_POST["query"]; else echo "select * from "; ?>">
                 </form>
+                <button onclick='copyLink("<?php echo "https://swudb.altervista.org/query?".http_build_query($_POST);?>")'>copy link</button>
                 <?php
                 echo phpversion()."<br>";
                 echo $_POST["query"]."<br>";
@@ -73,4 +74,13 @@ require_once("header.php");?>
             <meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file.(isset($_POST["query"]) ? "?query=".$_POST["query"]:"");?>">
             <?php endif;?>
     </body>
+    <script>
+        function copyLink(link){
+            navigator.clipboard.writeText(link).then(function() {
+                console.log('Async: Copying to clipboard was successful!');
+            }, function(err) {
+                console.error('Async: Could not copy text: ', err);
+            });
+        }
+    </script>
 </html>
