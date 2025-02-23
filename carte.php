@@ -90,7 +90,7 @@
                                         <?php endif; ?>
                                         <?php foreach($card as $value): ?>
                                             <td>
-                                                <a href="<?php echo "https://starwarsunlimited.com/cards?cid=" . $card["cid"];?>" target="_blank">
+                                                <a href="<?php echo "https://starwarsunlimited.com/it/cards?cid=" . $card["cid"];?>" target="_blank">
                                                     <?php echo htmlspecialchars($value); ?>
                                                     <?php if($value === $card["nome"]): ?>
                                                         <img class="card-hover" src="https://swudb.com/images/cards/<?php echo $card["espansione"] . "/" . sprintf("%0" . $numeri[$card["espansione"]] . "d", $card["numero"]); ?>.png">
