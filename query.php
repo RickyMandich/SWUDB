@@ -1,5 +1,5 @@
 <?php
-require_once("header.php");?>
+require_once "header.php";?>
 <!DOCTYPE html>
 <html lang="it" class="<?php echo $file;?>">
     <head>
@@ -42,7 +42,12 @@ require_once("header.php");?>
                                     <?php $rs = $GLOBALS["conn"]->query($_POST["query"]); ?>
                                 </thead>
                                 <tbody>
-                                    <?php while($resultSet = $rs->fetch_assoc()): ?>
+                                    <?php $carte = [];
+                                    while($resultSet = $rs->fetch_assoc()):
+                                        array_push($carte, $resultSet);
+                                    endwhile;
+                                    mergeSort($carte);
+                                    foreach($carte as $resultSet): ?>
                                         <tr class="card-in-deck-row deck-card">
                                             <?php foreach($resultSet as $value): ?>
                                                 <td>
@@ -59,7 +64,7 @@ require_once("header.php");?>
                                                 </td>
                                             <?php endforeach; ?>
                                         </tr>
-                                    <?php endwhile; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
