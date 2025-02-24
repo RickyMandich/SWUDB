@@ -1,5 +1,5 @@
 <?php
-require_once "header.php";
+require_once "../header.php";
 class Cards{
     public $collezione;
     public function __construct(){
