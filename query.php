@@ -48,6 +48,7 @@ require_once "header.php";?>
                                     endwhile;
                                     if($_POST["order"]){
                                         mergeSort($carte);
+                                        echo "ho ordinato<br>";
                                     }
                                     foreach($carte as $resultSet): ?>
                                         <tr class="card-in-deck-row deck-card">
