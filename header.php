@@ -6,6 +6,7 @@
     require_once "classi/Cards.php";
     require_once "orderCard.php";
     require_once "variabili.php";
+    echo __DIR__;
     /**
      * stampa di un oggetto che mi mostra tutti gli eventuali valori e array che lo compongono in modo ricorsivo con indentazione relativa alla profondità
      * @param mixed $line

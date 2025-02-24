@@ -1,6 +1,5 @@
 <?php
 require_once "../header.php";
-echo __DIR__;
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 if(isset($_GET["espansione"]) and isset($_GET["numero"])){
