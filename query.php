@@ -19,10 +19,10 @@ require_once "header.php";?>
             <div class="container">
                 <form action="./query" method="post">
                     <input type="text" name="query" id="query" value="<?php if(isset($_POST["query"])) echo $_POST["query"]; else echo "select * from "; ?>">
+                    <label for="order">ordina le carte</label><input type="checkbox" name="order" id="order">
                 </form>
                 <button onclick='copyLink("<?php echo "https://swudb.altervista.org/query?".http_build_query($_POST);?>")'>copy link</button>
                 <?php
-                echo phpversion()."<br>";
                 echo $_POST["query"]."<br>";
                 var_dump($_POST["query"]);
                 $rs = $GLOBALS["conn"]->query($_POST["query"]);
@@ -46,7 +46,9 @@ require_once "header.php";?>
                                     while($resultSet = $rs->fetch_assoc()):
                                         array_push($carte, $resultSet);
                                     endwhile;
-                                    mergeSort($carte);
+                                    if($_POST["order"]){
+                                        mergeSort($carte);
+                                    }
                                     foreach($carte as $resultSet): ?>
                                         <tr class="card-in-deck-row deck-card">
                                             <?php foreach($resultSet as $value): ?>
