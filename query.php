@@ -24,7 +24,7 @@ require_once "header.php";?>
                 <button onclick='copyLink("<?php echo "https://swudb.altervista.org/query?".http_build_query($_POST);?>")'>copy link</button>
                 <?php
                 echo $_POST["query"]."<br>";
-                var_dump($_POST["query"]);
+                var_dump($_POST);
                 $rs = $GLOBALS["conn"]->query($_POST["query"]);
                 if($rs):
                     $resultSet = $rs->fetch_assoc()?>
