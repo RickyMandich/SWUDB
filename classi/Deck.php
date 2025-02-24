@@ -1,5 +1,5 @@
 <?php
-    require_once "../header.php";
+    require_once "/membri/swudb/header.php";
     class Deck{
         public $nome;
         public $id;
