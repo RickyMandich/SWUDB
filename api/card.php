@@ -1,5 +1,5 @@
 <?php
-require_once "../header.php";
+require_once "/membri/swudb/header.php";
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 if(isset($_GET["espansione"]) and isset($_GET["numero"])){
