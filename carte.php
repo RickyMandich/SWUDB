@@ -88,8 +88,8 @@
                                                 </form>
                                             </td>
                                         <?php endif; ?>
-                                        <?php foreach($card as $value): ?>
-                                            <td>
+                                        <?php foreach($card as $key=>$value): ?>
+                                            <td class="<?php echo $key; ?>">
                                                 <a href="<?php echo "https://starwarsunlimited.com/it/cards?cid=" . $card["cid"];?>" target="_blank">
                                                     <?php echo htmlspecialchars($value); ?>
                                                     <?php if($value === $card["nome"]): ?>
