@@ -79,7 +79,7 @@
                     // echo '<td class="image">'.'<im-g src="https://swudb.com/images/cards/' . $carta["espansione"] . '/' . $carta["numero"] . '.png" alt="Card">'."</td>";
                     foreach ($carta as $value) {
                         $value = str_replace("\n", "<br>", $value);
-                        echo "<td>";
+                        echo "<td class=\"<?php echo $key;?>\">";
                         ?><a href="<?php echo "https://starwarsunlimited.com/it/cards?cid=" . $carta["cid"];?>" target="_blank"><?php
                         echo $value;
                         ?></a><?php
