@@ -415,11 +415,11 @@ function compareElements(&$el1, &$el2, $verbose) {
                     echo "ho fatto ".$GLOBALS["conn"]->affected_rows." modifiche";
                 endif;?>
             </div>
-        <?php elseif(isset($_SESSION["user"])):?>
+        <?php /*(isset($_SESSION["user"])):?>
             <meta http-equiv="refresh" content="0; url=./home">
-            <?php else: ?>
+        <?php else: ?>
             <meta http-equiv="refresh" content="0; url=./login?from=<?php echo $file.(isset($_POST["query"]) ? "?query=".$_POST["query"]:"");?>">
-            <?php endif;?>
+        <?php*/ endif;?>
     </body>
     <script>
         function copyLink(link){
