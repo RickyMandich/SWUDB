@@ -1,0 +1,11 @@
+RewriteEngine On
+
+   # Le tue regole esistenti
+   RewriteCond %{REQUEST_FILENAME} !-d
+   RewriteCond %{REQUEST_FILENAME}\.php -f
+   RewriteRule ^(.*)$ $1.php [L]
+   RewriteCond %{REQUEST_FILENAME} !-d
+   RewriteCond %{REQUEST_FILENAME}\.html -f
+   RewriteRule ^(.*)$ $1.html [L]
+# # av:php5-engine
+AddHandler av-php82 .php
