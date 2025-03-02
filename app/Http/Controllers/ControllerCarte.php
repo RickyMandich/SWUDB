@@ -12,8 +12,11 @@ class ControllerCarte extends Controller
      */
     public function index(Request $request){
         $get = $request->all();
-        $model = [];
-        $model = DB::select("describe cards");//table("cards")->whereLike("nome", "%".$get["nome"]."%")->get();
-        return view('carte', ["model" =>$model]);
+        if(!isset($get["nome"])){
+            $get["nome"] = "";
+        }
+        $model = DB::table("cards")->whereLike("nome", "%".$get["nome"]."%")->get();
+        $empty = $model->isEmpty();
+        return view('carte', ["model" => $model, "empty" => $empty, "nome" => $get["nome"]]);
     }
 }
