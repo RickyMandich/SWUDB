@@ -12,6 +12,9 @@ class ControllerCarte extends Controller
      */
     public function index(Request $request){
         $get = $request->all();
-        return view('carte');
+        $model = [
+            
+        ];
+        return view('carte', $model);
     }
 }
