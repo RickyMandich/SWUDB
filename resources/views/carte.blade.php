@@ -6,6 +6,6 @@
         <title>Carte</title>
     </head>
     <body>
-        
+        <?php var_dump($model); ?>
     </body>
 </html>

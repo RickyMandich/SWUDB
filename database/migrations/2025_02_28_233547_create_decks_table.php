@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('mazzi', function (Blueprint $table) {
+        Schema::create('Decks', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('nome', 500);
             $table->boolean('public')->default(0);
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mazzi');
+        Schema::dropIfExists('Decks');
     }
 };
