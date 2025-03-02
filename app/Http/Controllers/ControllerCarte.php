@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Card;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class ControllerCarte extends Controller
@@ -13,7 +13,7 @@ class ControllerCarte extends Controller
     public function index(Request $request){
         $get = $request->all();
         $model = [];
-        $model = Card::where('nome', 'like', '%' . $get["nome"] . '%')->get();
-        return view('carte', $model);
+        $model = DB::select("describe cards");//table("cards")->whereLike("nome", "%".$get["nome"]."%")->get();
+        return view('carte', ["model" =>$model]);
     }
 }
