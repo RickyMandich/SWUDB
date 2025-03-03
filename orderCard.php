@@ -10,13 +10,10 @@
     function compareElements(&$el1, &$el2, $verbose) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
-        $result = $GLOBALS["conn"]->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by id");
-        while($line = $result->fetch_assoc()){
-            if($line["codUtente"] == (isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")){
-                array_push($mazzoOrder, $line["mazzo"]);
-            }else{
-                array_push($mazzoOrder, $line["mazzo"]." di ".$GLOBALS["conn"]->query("select nome from utenti where id = ".$line["codUtente"])->fetch_assoc()["nome"]);
-            }
+        $result = DB::table("decks")->select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
+        foreach($result as &$line){
+            $line = (array)$line;
+            array_push($mazzoOrder, $line["mazzo"]);
         }
         // Definisco l'ordine dei tipi generici
         $genericTipoOrder = ['Leader', 'Base'];
@@ -74,44 +71,48 @@
         };
         
         // faccio un confronto per utente
-        if ($el1['codUtente'] < $el2['codUtente']) {
-            if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del codUtente del proprietario<br>";
+        if(isset($el1['codUtente']) && isset($el2['codUtente'])){
+            if ($el1['codUtente'] < $el2['codUtente']) {
+                if($verbose){
+                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del codUtente del proprietario<br>";
+                }
+                return -1;
             }
-            return -1;
-        }
         
-        if ($el1['codUtente'] > $el2['codUtente']) {
-            if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del codUtente del proprietario<br>";
+            if ($el1['codUtente'] > $el2['codUtente']) {
+                if($verbose){
+                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del codUtente del proprietario<br>";
+                }
+                return 1;
             }
-            return 1;
-        }
 
-        if($verbose){
-            echo "i codici utente sono uguali(".$el1["codUtente"].")<br>";
+            if($verbose){
+                echo "i codici utente sono uguali(".$el1["codUtente"].")<br>";
+            }
         }
         
         // Confronto per mazzo
-        $mazzoWeight1 = $getMazzoWeight($el1);
-        $mazzoWeight2 = $getMazzoWeight($el2);
-        
-        if ($mazzoWeight1 < $mazzoWeight2) {
-            if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del mazzo di appartenenza<br>";
+        if(isset($el1['mazzo']) && isset($el2['mazzo'])){
+            $mazzoWeight1 = $getMazzoWeight($el1);
+            $mazzoWeight2 = $getMazzoWeight($el2);
+            
+            if ($mazzoWeight1 < $mazzoWeight2) {
+                if($verbose){
+                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del mazzo di appartenenza<br>";
+                }
+                return -1;
             }
-            return -1;
-        }
-        
-        if ($mazzoWeight1 > $mazzoWeight2) {
-            if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del mazzo di appartenenza<br>";
+            
+            if ($mazzoWeight1 > $mazzoWeight2) {
+                if($verbose){
+                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del mazzo di appartenenza<br>";
+                }
+                return 1;
             }
-            return 1;
-        }
 
-        if($verbose){
-            echo "le carte sono dello stesso mazzo(".$el1["mazzo"].")<br>";
+            if($verbose){
+                echo "le carte sono dello stesso mazzo(".$el1["mazzo"].")<br>";
+            }
         }
         
         // Confronto per tipo generico
@@ -203,22 +204,24 @@
         }
         
         // Se tipo specifico è uguale, confronto per costo (in ordine crescente)
-        if ($el1["costo"] < $el2["costo"]) {
-            if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del costo<br>";
+        if($el1["tipo"] == "Leader"){
+            if ($el1["costo"] < $el2["costo"]) {
+                if($verbose){
+                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del costo<br>";
+                }
+                return -1;
             }
-            return -1;
-        }
-        
-        if ($el1["costo"] > $el2["costo"]) {
-            if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del costo<br>";
+            
+            if ($el1["costo"] > $el2["costo"]) {
+                if($verbose){
+                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del costo<br>";
+                }
+                return 1;
             }
-            return 1;
-        }
 
-        if($verbose){
-            echo "le carte hanno lo stesso costo (".$el1["costo"].")<br>";
+            if($verbose){
+                echo "le carte hanno lo stesso costo (".$el1["costo"].")<br>";
+            }
         }
         
         // Se costo è uguale, confronto per nome (in ordine alfabetico)
@@ -239,16 +242,6 @@
         if($verbose){
             echo "le carte hanno lo stesso nome (".$el1["nome"].")<br>";
         }
-        /*
-        // Se nome è uguale, confronto per numero (in ordine crescente)
-        if ($el1["getNumero"] < $el2["getNumero"]) {
-            return -1;
-        }
-        
-        if ($el1["getNumero"] > $el2["getNumero"]) {
-            return 1;
-        }
-        */
         
         // Se nome è uguali, confronto per uscita (formato aaaa mm gg)
         $compareDate = strcmp($el1['uscita'], $el2['uscita']);
