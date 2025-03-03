@@ -10,8 +10,8 @@
     function compareElements(&$el1, &$el2, $verbose) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
-        $result = DB::table("decks")->select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
-        foreach($result as &$line){
+        $result = $GLOBALS["conn"]->query("SELECT DISTINCT nome as mazzo, codUtente, public FROM mazzi where codUtente = ".(isset($_SESSION["user"])?unserialize($_SESSION["user"])->getID():"-1")." or public = '1' order by id");
+        while($line = $result->fetch_assoc()){
             $line = (array)$line;
             array_push($mazzoOrder, $line["mazzo"]);
         }
