@@ -6,9 +6,10 @@
         <title>Carte</title>
     </head>
     <?php
+    // $content = $content["*items"];
     function printlnd($line, $deep = 0, $name){
         if(gettype($line) == 'array' || gettype($line) == 'object'){
-            echo "$name-->{<br>";
+            echo "|$name|-->{<br>";
             foreach($line as $i => $value){
                 unset($j);
                 for($j = 0;$j<=$deep;$j++){
@@ -33,7 +34,6 @@
     }
     ?>
     <body>
-        <?php //printlnd($header, 0, 'header'); ?>
         <form action="/carte">
             <label for="nome">insersci il nome della carta</label>
             <input type="text" name="nome" id="nome" value="<?php echo "$nome" ?>">
@@ -42,28 +42,29 @@
         <form action="/carte">
             <input type="submit" value="cancella parametri di ricerca">
         </form>
-            <table border>
-                <tr>
-                    @foreach($header as $attributo)
-                        <th>{{ $attributo }}</th>
-                    @endforeach
-                </tr>
-                @if ($empty)
-                    <tr>
-                        <td colspan="{{ count($header) }}">
-                            <div>nessuna carta corrisponde ai criteri di ricerca</div>
-                        </td>
-                    </tr>
-                @else
-                    @foreach($content as $carta)
-                        <tr>
-                            @foreach ($carta as $attributo)
-                            <td>{{ $attributo }}</td>
-                            @endforeach
-                        </tr>
-                    @endforeach
-                @endif
-            </table>
+        <table border>
+            <tr>
+                @foreach($header as $attributo)
+                <th>{{ $attributo }}</th>
+                @endforeach
+            </tr>
+            @if ($empty)
+            <tr>
+                <td colspan="{{ count($header) }}">
+                    <div>nessuna carta corrisponde ai criteri di ricerca</div>
+                </td>
+            </tr>
+            @else
+            @foreach($content as $carta)
+            <tr>
+                @foreach ($carta as $attributo)
+                    <td>{{ $attributo }}</td>
+                @endforeach
+            </tr>
+            @endforeach
+            @endif
+        </table>
+        <?php //printlnd($content, 0, 'content'); ?>
     </body>
 </html>
 <style>
