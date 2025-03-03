@@ -8,3 +8,5 @@ Route::get('/', function () {
 });
 
 Route::get('/carte', [ControllerCarte::class, 'index']);
+
+Route::get('/carte/update', [ControllerCarte::class, 'create']);

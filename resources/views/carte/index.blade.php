@@ -33,6 +33,7 @@
     }
     ?>
     <body>
+        <?php //printlnd($header, 0, 'header'); ?>
         <form action="/carte">
             <label for="nome">insersci il nome della carta</label>
             <input type="text" name="nome" id="nome" value="<?php echo "$nome" ?>">
@@ -41,28 +42,44 @@
         <form action="/carte">
             <input type="submit" value="cancella parametri di ricerca">
         </form>
-        @if ($empty)
-            <div>nessuna carta corrisponde ai criteri di ricerca</div>
-        @else
-            <table>
+            <table border>
                 <tr>
-                    @foreach($model[0] as $attributo)
+                    @foreach($header as $attributo)
                         <th>{{ $attributo }}</th>
                     @endforeach
                 </tr>
-                @foreach($model as $carta)
+                @if ($empty)
                     <tr>
-                        @foreach ($carta as $attributo)
-                        <td>{{ $attributo }}</td>
-                        @endforeach
+                        <td colspan="{{ count($header) }}">
+                            <div>nessuna carta corrisponde ai criteri di ricerca</div>
+                        </td>
                     </tr>
-                @endforeach
+                @else
+                    @foreach($content as $carta)
+                        <tr>
+                            @foreach ($carta as $attributo)
+                            <td>{{ $attributo }}</td>
+                            @endforeach
+                        </tr>
+                    @endforeach
+                @endif
             </table>
-        @endif
     </body>
 </html>
 <style>
     form{
         display: inline-block;
     }
+    td, th{
+        text-align: center;
+    }
 </style>
+<script>
+    function refreshPage() {
+        setTimeout(function() {
+            location.reload();
+        }, 10000);
+    }
+
+    //refreshPage();
+</script>
