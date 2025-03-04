@@ -91,7 +91,7 @@ class ControllerCarte extends Controller
                 $card["tratti"] = implode(" * ", $card["tratti"]);
                 if(DB::table('cards')->where('espansione', "=", $card["espansione"])->where('numero', "=", $card["numero"])->get()->isEmpty()){
                     DB::table('cards')->insert($card);
-                    ControllerCarte::sendTelegramMessage("ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["espansione"]}-{$card["numero"]})");
+                    //ControllerCarte::sendTelegramMessage("ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["espansione"]}-{$card["numero"]})");
                     array_push($result, $card);
                 }
             }
