@@ -7,7 +7,8 @@
     </head>
     <body>
         <?php
-        passthru('php artisan migrate:fresh');
+        system('php artisan migrate:fresh', $returnVar);
+        echo "Return Status: " . $returnVar . "\n";
         ?>
     </body>
 </html>
