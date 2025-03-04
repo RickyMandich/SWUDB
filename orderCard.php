@@ -19,7 +19,7 @@
         $genericTipoOrder = ['Leader', 'Base'];
         
         // Definisco l'ordine degli aspetti primari
-        $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo'];
+        $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo', "Nero", "Bianco"];
 
         // Definisco l'ordine dei tipi specifici
         $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
