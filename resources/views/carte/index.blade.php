@@ -34,6 +34,7 @@
     }
     ?>
     <body>
+        <?php //printlnd($telegram, 0, 'telegram'); ?>
         <form action="/carte">
             <label for="nome">insersci il nome della carta</label>
             <input type="text" name="nome" id="nome" value="<?php echo "$nome" ?>">
@@ -42,6 +43,7 @@
         <form action="/carte">
             <input type="submit" value="cancella parametri di ricerca">
         </form>
+        trovati {{ count($content) }} risultati
         <table border>
             <tr>
                 @foreach($header as $attributo)
@@ -49,11 +51,6 @@
                 @endforeach
             </tr>
             @if ($empty)
-            <tr>
-                <td colspan="{{ count($header) }}">
-                    <div>nessuna carta corrisponde ai criteri di ricerca</div>
-                </td>
-            </tr>
             @else
             @foreach($content as $carta)
             <tr>
@@ -64,7 +61,6 @@
             @endforeach
             @endif
         </table>
-        <?php //printlnd($content, 0, 'content'); ?>
     </body>
 </html>
 <style>

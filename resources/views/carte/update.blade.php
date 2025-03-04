@@ -1,4 +1,5 @@
 <?php
+use App\Http\Controllers\ControllerCarte;
 function printlnd($line, $deep = 0, $name){
     if(gettype($line) == 'array' || gettype($line) == 'object'){
         echo "$name-->{<br>";
@@ -32,11 +33,8 @@ function printlnd($line, $deep = 0, $name){
         <title>Update</title>
     </head>
     <body>
-        <?php printlnd($keys, 0, "keys"); ?>
-        <?php //printlnd($data, 0, "data"); ?>
         @foreach ($result as $card)
-        ho inserito {{$card["nome"]}}, {{$card["titolo"]}} ({{$card["espansione"]}}-{{$card["numero"]}})
-        <br>
+        <?php echo("ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["espansione"]}-{$card["numero"]})<br>")?>
         @endforeach
     </body>
 </html>

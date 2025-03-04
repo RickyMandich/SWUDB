@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class ControllerCarte extends Controller
 {
@@ -17,6 +18,28 @@ class ControllerCarte extends Controller
         }else{
             return $obj;
         }
+    }
+
+    public static function sendTelegramMessage($message){
+        $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
+        $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
+        
+        try {
+            $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $message
+            ]);
+            echo "<script>console.log(\"$message\")</script>";
+            
+            return $response->json();
+        } catch (\Exception $e) {
+            \Log::error("Errore Telegram: " . $e->getMessage());
+            return $e->getMessage();
+        }
+    }
+
+    public function deleteSome(){
+        DB::delete("DELETE FROM cards WHERE numero = 152");
     }
 
     /**
@@ -36,26 +59,7 @@ class ControllerCarte extends Controller
         }
         $model = $this->toArray($model);
         $model = $this->mergeSort($model);
-        return view('carte/index', ["content" => $model, "empty" => $empty, "nome" => $get["nome"], "header" => $header]);
-    }
-
-    function getUscita($espansione){
-        switch($espansione){
-            case "CE24":
-                return "2024 08 01";
-            case "SOR":
-                return "2024 03 08";
-            case "SHD":
-                return "2024 07 12";
-            case "TWI":
-                return "2024 11 05";
-            case "JTL":
-                return "2025 03 14";
-            case "GGTS":
-                return "2025 03 15";
-            default:
-                return "2024 03 08";
-        }
+        return view('carte.index', ["content" => $model, "empty" => $empty, "nome" => $get["nome"], "header" => $header]);
     }
 
     public function create(){
@@ -87,12 +91,32 @@ class ControllerCarte extends Controller
                 $card["tratti"] = implode(" * ", $card["tratti"]);
                 if(DB::table('cards')->where('espansione', "=", $card["espansione"])->where('numero', "=", $card["numero"])->get()->isEmpty()){
                     DB::table('cards')->insert($card);
+                    ControllerCarte::sendTelegramMessage("ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["espansione"]}-{$card["numero"]})");
                     array_push($result, $card);
                 }
             }
         }
 
-        return view('carte.update', ["result" => $result, "keys" => $keys, "data" => $data]);
+        return view('carte.update', ["result" => $result]);
+    }
+
+    function getUscita($espansione){
+        switch($espansione){
+            case "CE24":
+                return "2024 08 01";
+            case "SOR":
+                return "2024 03 08";
+            case "SHD":
+                return "2024 07 12";
+            case "TWI":
+                return "2024 11 05";
+            case "JTL":
+                return "2025 03 14";
+            case "GGTS":
+                return "2025 03 15";
+            default:
+                return "2024 03 08";
+        }
     }
 
     function compareElements(&$el1, &$el2, $verbose) {
