@@ -11,4 +11,7 @@ Route::get('/carte', [ControllerCarte::class, 'index']);
 
 Route::get('/carte/update', [ControllerCarte::class, 'create']);
 
-//Route::get("/carte/delete", [ControllerCarte::class, 'deleteSome']);
+Route::get("/migrate", function(){
+    $return = Artisan::call('migrate');
+    return "migrate exit status: $return";
+});
