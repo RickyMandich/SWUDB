@@ -39,7 +39,7 @@ function printlnd($line, $deep = 0, $name){
             ti ho elencato le carte che ho inserito<br>
         @endif
         @foreach ($result as $card)
-        <?php echo "ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["id"]})<br>"?>
+        <?php echo "ho inserito {$card["snippet"]}<br>"?>
         @endforeach
     </body>
 </html>

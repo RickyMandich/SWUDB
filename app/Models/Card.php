@@ -31,10 +31,14 @@ class Card extends Model{
         'uscita'
     ];
     protected $appends = [
-        'id'
+        'id',
+        'snippet'
     ];
     public function getIdAttribute(){
         return "$this->espansione-$this->numero";
+    }
+    public function getSnippetAttribute(){
+        return $this->nome.((strlen($this->titolo) > 0 ? ", ". strtolower($this->titolo) : "")."($this->id)");
     }
     protected $hidden = [
         'creazione'

@@ -60,14 +60,20 @@ class ControllerCarte extends Controller
         }
         $message = "";
         $messageReturn = "";
+        $i=0;
         foreach($result as $added){
-            $newMessage = "ho inserito {$added["nome"]}, {$added["titolo"]} ({$added["id"]})\n";
-            if(strlen("$message$newMessage") >= 4096){
+            $newMessage = "ho inserito {$added["snippet"]}\n";
+            if(strlen("$message$newMessage") >= 4096 || $i > 15){
+                $i=0;
                 $messageReturn = $this->sendTelegramMessage($message);
                 $message = $newMessage;
             }else{
                 $message .= $newMessage;
             }
+            $i++;
+        }
+        if(strlen($message) > 0){
+            $messageReturn = $this->sendTelegramMessage($message);
         }
         return view('carte.update', ["result" => $result, "empty" => count($result) == 0, "message" => $messageReturn]);
     }
