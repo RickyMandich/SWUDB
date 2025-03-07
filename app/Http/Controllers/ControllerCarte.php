@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use App\Models\Card;
 use App\Models\Deck;
+use App\Events\MessageCreated;
 
 class ControllerCarte extends Controller
 {
@@ -58,49 +58,16 @@ class ControllerCarte extends Controller
                 }
             }
         }
-        $message = "";
-        $messageReturn = "";
-        $i=0;
         foreach($result as $added){
-            $newMessage = "ho inserito {$added["snippet"]}\n";
-            if(strlen("$message$newMessage") >= 4096 || $i > 15){
-                $i=0;
-                $messageReturn = $this->sendTelegramMessage($message);
-                $message = $newMessage;
-            }else{
-                $message .= $newMessage;
-            }
-            $i++;
+            MessageCreated::dispatch("ho inserito {$added["snippet"]}\n");
         }
-        if(strlen($message) > 0){
-            $messageReturn = $this->sendTelegramMessage($message);
-        }
-        return view('carte.update', ["result" => $result, "empty" => count($result) == 0, "message" => $messageReturn]);
+        return view('carte.update', ["result" => $result, "empty" => count($result) == 0]);
     }
 
     public function api(Request $request){
         $get = $request->all();
         return Card::where('numero', $get["numero"])->where('espansione', $get["espansione"])->get();
     }
-
-    public static function sendTelegramMessage($message){
-        $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
-        $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
-        
-        try {
-            $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
-                'chat_id' => $chatId,
-                'text' => $message
-            ]);
-            echo "<script>console.log(\"$message\")</script>";
-            
-            return $response->json();
-        } catch (\Exception $e) {
-            \Log::error("Errore Telegram: " . $e->getMessage());
-            return $e->getMessage();
-        }
-    }
-
 
     function getUscita($espansione){
         switch($espansione){
