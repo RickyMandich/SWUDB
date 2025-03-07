@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\SentArtisanCommand;
 use App\Events\CardReceived;
 
+use App\Jobs\ExecuteArtisanCommand;
 use Illuminate\Http\Request;
 
 use App\Models\Card;
@@ -57,7 +57,7 @@ class ControllerCarte extends Controller
                 CardReceived::dispatch($card);
             }
         }
-        SentArtisanCommand::dispatch('queue:work');
+        ExecuteArtisanCommand::dispatch('queue:work');
         return view('carte.update');
     }
 

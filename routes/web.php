@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\ExecuteArtisanCommand;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ControllerCarte;
 
@@ -16,4 +17,8 @@ Route::get("api/carte", [ControllerCarte::class, 'api']);
 Route::get("/migrate", function(){
     $return = Artisan::call('migrate');
     return "migrate exit status: $return";
+});
+
+Route::get("/command/{command}", function($command){
+    ExecuteArtisanCommand::dispatch($command);
 });
