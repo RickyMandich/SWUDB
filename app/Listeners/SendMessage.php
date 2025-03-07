@@ -20,7 +20,6 @@ class SendMessage implements ShouldQueue{
                 'chat_id' => $chatId,
                 'text' => $event->message
             ]);
-            echo "<script>console.log(\"$event->message\")</script>";
             
             return;
         } catch (\Exception $e) {
