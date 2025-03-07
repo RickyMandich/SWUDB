@@ -54,16 +54,22 @@ class ControllerCarte extends Controller
                 $card["tratti"] = implode(" * ", $card["tratti"]);
                 if(Card::where('espansione', $card["espansione"])->where('numero',$card["numero"])->get()->isEmpty()){
                     Card::insert($card);
-                    array_push($result, $card);
+                    array_push($result, Card::where('espansione', $card["espansione"])->where('numero',$card["numero"])->first()->toArray());
                 }
             }
         }
         $message = "";
+        $messageReturn = "";
         foreach($result as $added){
-            $message .= "ho inserito {$added["nome"]}, {$added["titolo"]} ({$added["espansione"]}-{$added["numero"]})\n";
+            $newMessage = "ho inserito {$added["nome"]}, {$added["titolo"]} ({$added["id"]})\n";
+            if(strlen("$message$newMessage") >= 4096){
+                $messageReturn = $this->sendTelegramMessage($message);
+                $message = $newMessage;
+            }else{
+                $message .= $newMessage;
+            }
         }
-        $this->sendTelegramMessage($message);
-        return view('carte.update', ["result" => $result]);
+        return view('carte.update', ["result" => $result, "empty" => count($result) == 0, "message" => $messageReturn]);
     }
 
     public function api(Request $request){
