@@ -34,7 +34,7 @@ function printlnd($line, $deep = 0, $name){
     </head>
     <body>
         @foreach ($result as $card)
-        <?php echo("ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["espansione"]}-{$card["numero"]})<br>")?>
+        <?php echo "ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["espansione"]}-{$card["numero"]})<br>"?>
         @endforeach
     </body>
 </html>

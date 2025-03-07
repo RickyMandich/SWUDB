@@ -58,24 +58,17 @@ class ControllerCarte extends Controller
                 }
             }
         }
-    
+        $message = "";
+        foreach($result as $added){
+            $message .= "ho inserito {$added["nome"]}, {$added["titolo"]} ({$added["espansione"]}-{$added["numero"]})\n";
+        }
+        $this->sendTelegramMessage($message);
         return view('carte.update', ["result" => $result]);
     }
 
-    public function test(){
-        return Card::where('numero', 14)->where('espansione', 'SHD')->get();
-    }
-
-    function toArray($obj){
-        if(gettype($obj) == 'array' || gettype($obj) == 'object'){
-            $arr = [];
-            foreach($obj as $key => $value){
-                $arr[$key] = $this->toArray($value);
-            }
-            return $arr;
-        }else{
-            return $obj;
-        }
+    public function api(Request $request){
+        $get = $request->all();
+        return Card::where('numero', $get["numero"])->where('espansione', $get["espansione"])->get();
     }
 
     public static function sendTelegramMessage($message){
