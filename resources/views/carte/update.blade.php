@@ -33,13 +33,6 @@ function printlnd($line, $deep = 0, $name){
         <title>Update</title>
     </head>
     <body>
-        @if ($empty)
-            non ci sono nuove carte<br>
-        @else
-            ti ho elencato le carte che ho inserito<br>
-        @endif
-        @foreach ($result as $card)
-        <?php echo "ho inserito {$card["snippet"]}<br>"?>
-        @endforeach
+        aggiornamento eseguito
     </body>
 </html>

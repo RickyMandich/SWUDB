@@ -4,8 +4,9 @@ namespace App\Listeners;
 
 use App\Events\MessageCreated;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SendMessage{
+class SendMessage implements ShouldQueue{
 
     /**
      * Handle the event.

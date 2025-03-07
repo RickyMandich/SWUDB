@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Card;
 use App\Models\Deck;
 use App\Events\MessageCreated;
+use App\Events\CardReceived;
+use Illuminate\Support\Facades\Artisan;
 
 class ControllerCarte extends Controller
 {
@@ -49,19 +51,13 @@ class ControllerCarte extends Controller
     
     
         if (json_last_error() === JSON_ERROR_NONE) {
-            $result = [];
             foreach ($data as &$card) {
                 $card["tratti"] = implode(" * ", $card["tratti"]);
-                if(Card::where('espansione', $card["espansione"])->where('numero',$card["numero"])->get()->isEmpty()){
-                    Card::insert($card);
-                    array_push($result, Card::where('espansione', $card["espansione"])->where('numero',$card["numero"])->first()->toArray());
-                }
+                CardReceived::dispatch($card);
             }
         }
-        foreach($result as $added){
-            MessageCreated::dispatch("ho inserito {$added["snippet"]}\n");
-        }
-        return view('carte.update', ["result" => $result, "empty" => count($result) == 0]);
+        Artisan::call('queue:work');
+        return view('carte.update');
     }
 
     public function api(Request $request){
