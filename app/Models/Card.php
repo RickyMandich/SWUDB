@@ -28,16 +28,16 @@ class Card extends Model{
         'tratti',
         'arena',
         'artista',
-        'uscita',
+        'uscita'
     ];
     protected $appends = [
-        'id',
+        'id'
     ];
     public function getIdAttribute(){
         return "$this->espansione-$this->numero";
     }
     protected $hidden = [
-        'creazione',
+        'creazione'
     ];
     protected $casts = [
         'cid' => 'string',
@@ -57,7 +57,7 @@ class Card extends Model{
         'tratti' => 'string',
         'arena' => 'string',
         'artista' => 'string',
-        'uscita' => 'datetime:Y-m-d H:i',
+        'uscita' => 'datetime:Y-m-d H:i'
     ];
     public function getFillable(){
         return $this->fillable;

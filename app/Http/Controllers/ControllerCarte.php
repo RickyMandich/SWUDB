@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\Card;
+use App\Models\Deck;
 
 class ControllerCarte extends Controller
 {
@@ -119,7 +119,7 @@ class ControllerCarte extends Controller
     function compareElements(&$el1, &$el2, $verbose) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
-        $result = DB::table("decks")->select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
+        $result = Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
         foreach($result as &$line){
             $line = (array)$line;
             array_push($mazzoOrder, $line["mazzo"]);
