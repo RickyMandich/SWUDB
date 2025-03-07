@@ -5,9 +5,67 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use App\Models\Card;
 
 class ControllerCarte extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request){
+        $get = $request->all();
+        if(!isset($get["nome"])){
+            $get["nome"] = "";
+        }
+        $model = Card::whereLike("nome", "%".$get["nome"]."%")->get();
+        $empty = $model->isEmpty();
+        $header = (new Card)->getFillable();
+        $model = $model->toArray();
+        $model = $this->mergeSort($model);
+        return view('carte.index', ["content" => $model, "empty" => $empty, "nome" => $get["nome"], "header" => $header]);
+    }
+    
+    public function create(){
+        $url = 'http://swudb.altervista.org/collezione.json';
+        $json = file_get_contents($url);
+        $data = json_decode($json, true);
+        $keys = [];
+        foreach($data as $carta){
+            $carta["uscita"] = $this->getUscita($carta["espansione"]);
+            foreach($carta as $key => $value){
+                if(!in_array($key, $keys)){
+                    array_push($keys, $key);
+                }
+            }
+        }
+        foreach($data as &$value){
+            foreach($keys as $key){
+                if(!isset($value[$key])){
+                    $value[$key] = "";
+                }
+            }
+        }
+        $data = $this->mergeSort($data);
+    
+    
+        if (json_last_error() === JSON_ERROR_NONE) {
+            $result = [];
+            foreach ($data as &$card) {
+                $card["tratti"] = implode(" * ", $card["tratti"]);
+                if(Card::where('espansione', $card["espansione"])->where('numero',$card["numero"])->get()->isEmpty()){
+                    Card::insert($card);
+                    array_push($result, $card);
+                }
+            }
+        }
+    
+        return view('carte.update', ["result" => $result]);
+    }
+
+    public function test(){
+        return Card::where('numero', 14)->where('espansione', 'SHD')->get();
+    }
+
     function toArray($obj){
         if(gettype($obj) == 'array' || gettype($obj) == 'object'){
             $arr = [];
@@ -38,67 +96,6 @@ class ControllerCarte extends Controller
         }
     }
 
-    public function deleteSome(){
-        DB::delete("DELETE FROM cards WHERE numero = 152");
-    }
-
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request){
-        $get = $request->all();
-        if(!isset($get["nome"])){
-            $get["nome"] = "";
-        }
-        $model = DB::table("cards")->whereLike("nome", "%".$get["nome"]."%")->get();
-        $empty = $model->isEmpty();
-        $resultHeader = DB::select("DESCRIBE cards");
-        $header = [];
-        foreach($resultHeader as $value){
-            $header[] = $value->Field;
-        }
-        $model = $this->toArray($model);
-        $model = $this->mergeSort($model);
-        return view('carte.index', ["content" => $model, "empty" => $empty, "nome" => $get["nome"], "header" => $header]);
-    }
-
-    public function create(){
-        $url = 'http://swudb.altervista.org/collezione.json';
-        $json = file_get_contents($url);
-        $data = json_decode($json, true);
-        $keys = [];
-        foreach($data as $carta){
-            $carta["uscita"] = $this->getUscita($carta["espansione"]);
-            foreach($carta as $key => $value){
-                if(!in_array($key, $keys)){
-                    array_push($keys, $key);
-                }
-            }
-        }
-        foreach($data as &$value){
-            foreach($keys as $key){
-                if(!isset($value[$key])){
-                    $value[$key] = "";
-                }
-            }
-        }
-        $data = $this->mergeSort($data);
-
-
-        if (json_last_error() === JSON_ERROR_NONE) {
-            $result = [];
-            foreach ($data as &$card) {
-                $card["tratti"] = implode(" * ", $card["tratti"]);
-                if(DB::table('cards')->where('espansione', "=", $card["espansione"])->where('numero', "=", $card["numero"])->get()->isEmpty()){
-                    DB::table('cards')->insert($card);
-                    //ControllerCarte::sendTelegramMessage("ho inserito {$card["nome"]}, {$card["titolo"]} ({$card["espansione"]}-{$card["numero"]})");
-                    array_push($result, $card);
-                }
-            }
-        }
-
-        return view('carte.update', ["result" => $result]);
-    }
 
     function getUscita($espansione){
         switch($espansione){

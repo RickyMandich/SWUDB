@@ -59,4 +59,7 @@ class Card extends Model{
         'artista' => 'string',
         'uscita' => 'datetime:Y-m-d H:i',
     ];
+    public function getFillable(){
+        return $this->fillable;
+    }
 }

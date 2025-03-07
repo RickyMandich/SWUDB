@@ -11,6 +11,8 @@ Route::get('/carte', [ControllerCarte::class, 'index']);
 
 Route::get('/carte/update', [ControllerCarte::class, 'create']);
 
+Route::get("carte/test", [ControllerCarte::class, 'test']);
+
 Route::get("/migrate", function(){
     $return = Artisan::call('migrate');
     return "migrate exit status: $return";
