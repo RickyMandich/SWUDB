@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Card extends Model
-{
-    //
+class Card extends Model{
+    public $incrementing = false;
+    protected $primaryKey = 'cid';
 }
