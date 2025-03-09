@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Events\CardReceived;
+use App\Events\MessageCreated;
+
+use App\Listeners\SendMessage;
+use App\Listeners\AddCard;
+use Event;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +25,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(
+            MessageCreated::class,
+            SendMessage::class
+        );
+        Event::listen(
+            CardReceived::class,
+            AddCard::class
+        );
     }
 }
