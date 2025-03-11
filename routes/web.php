@@ -1,6 +1,6 @@
 <?php
 
-use App\Jobs\ExecuteArtisanCommand;
+use App\Events\MessageCreated;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ControllerCarte;
 
@@ -19,6 +19,6 @@ Route::get("/migrate", function(){
     return "migrate exit status: $return";
 });
 
-Route::get("/command/{command}", function($command){
-    ExecuteArtisanCommand::dispatch($command);
+Route::get("/test/{message}", function($message){
+    MessageCreated::dispatch($message);
 });

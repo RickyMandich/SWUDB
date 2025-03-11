@@ -20,6 +20,7 @@ class SendMessage implements ShouldQueue{
                 'chat_id' => $chatId,
                 'text' => $event->message
             ]);
+            echo "Messaggio inviato:\t$event->message\n";
             
             return;
         } catch (\Exception $e) {

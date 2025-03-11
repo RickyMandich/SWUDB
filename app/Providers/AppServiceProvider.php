@@ -23,15 +23,5 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
-    {
-        Event::listen(
-            MessageCreated::class,
-            SendMessage::class
-        );
-        Event::listen(
-            CardReceived::class,
-            AddCard::class
-        );
-    }
+    public function boot(): void{}
 }
