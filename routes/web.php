@@ -1,11 +1,21 @@
 <?php
 
-use App\Events\MessageCreated;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ControllerCarte;
+
+use App\Events\MessageCreated;
+
+use Illuminate\Http\Request;
+
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('index');
+});
+
+Route::get("query", function(Request $request){
+    $get = $request->all();
+    $query = $get["query"];
+    return view("query", ["result" => DB::select($query), "query"=>$query]);
 });
 
 Route::get('/carte', [ControllerCarte::class, 'index']);
