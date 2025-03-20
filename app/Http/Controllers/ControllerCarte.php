@@ -57,7 +57,6 @@ class ControllerCarte extends Controller
                 CardReceived::dispatch($card);
             }
         }
-        ExecuteArtisanCommand::dispatch('queue:work');
         return view('carte.update');
     }
 
