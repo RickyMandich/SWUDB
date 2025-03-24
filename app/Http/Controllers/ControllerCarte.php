@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Events\CardReceived;
 
-use App\Jobs\ExecuteArtisanCommand;
 use Illuminate\Http\Request;
 
 use App\Models\Card;
@@ -340,7 +339,7 @@ class ControllerCarte extends Controller
             echo "le carte hanno la stessa uscita (".$el1["uscita"].")<br>";
         }
 
-        // Se la carta è uguale, confronto per numero   
+        // Se la carta è uguale, confronto per numero
         if ($el1["numero"] < $el2["numero"]) {
             if($verbose){
                 echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del numero<br>";

@@ -47,15 +47,15 @@
         <table border>
             <tr>
                 @foreach($header as $attributo)
-                <th>{{ $attributo }}</th>
+                    <th>{{ $attributo }}</th>
                 @endforeach
             </tr>
             @if ($empty)
             @else
             @foreach($content as $carta)
             <tr>
-                @foreach ($carta as $attributo)
-                    <td>{{ $attributo }}</td>
+                @foreach ($header as $attributo)
+                    <td>{{ $carta[$attributo] }}</td>
                 @endforeach
             </tr>
             @endforeach
