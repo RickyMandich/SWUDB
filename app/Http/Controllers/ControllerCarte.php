@@ -59,9 +59,13 @@ class ControllerCarte extends Controller
         return view('carte.update');
     }
 
-    public function api(Request $request){
-        $get = $request->all();
-        return Card::where('numero', $get["numero"])->where('espansione', $get["espansione"])->get();
+    public function api($espansione, $numero){
+        return Card::where('numero', $numero)->where('espansione', $espansione)->get();
+    }
+
+    public function show($espansione, $numero){
+        $carta = Card::where('numero', $numero)->where('espansione', $espansione)->get();
+        return view('carte.show', ["carta" => $carta->get(0), "numero" => $numero, "espansione" => $espansione]);
     }
 
     function getUscita($espansione){

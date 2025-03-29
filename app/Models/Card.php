@@ -38,7 +38,7 @@ class Card extends Model{
         return "$this->espansione-$this->numero";
     }
     public function getSnippetAttribute(){
-        return $this->nome.((strlen($this->titolo) > 0 ? ", ". strtolower($this->titolo) : "")."($this->id)");
+        return "$this->id - ".$this->nome.((strlen($this->titolo) > 0 ? ", ". strtoupper($this->titolo) : ""));
     }
     protected $hidden = [
         'creazione'

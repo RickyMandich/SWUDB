@@ -8,9 +8,7 @@ use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('index');
-});
+Route::get('/', function(){return view('index');});
 
 Route::get("query", function(Request $request){
     $get = $request->all();
@@ -22,13 +20,10 @@ Route::get('/carte', [ControllerCarte::class, 'index']);
 
 Route::get('/carte/update', [ControllerCarte::class, 'create']);
 
-Route::get("api/carte", [ControllerCarte::class, 'api']);
+Route::get("/api/carte/{espansione}/{numero}", [ControllerCarte::class, 'api']);
 
-Route::get("/migrate", function(){
-    $return = Artisan::call('migrate');
-    return "migrate exit status: $return";
-});
+Route::get('/carte/{espansione}/{numero}', [ControllerCarte::class, 'show']);
 
-Route::get("/test/{message}", function($message){
+Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
 });
