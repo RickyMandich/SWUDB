@@ -51,15 +51,15 @@
             </div>
             <p>Trovati {{ count($content) }} risultati</p>
             <div class="table-container">
-                <table class="table table-striped table-bordered">
+                <table class="table table-hover table-striped table-bordered">
                     <thead class="table-light sticky-top">
-                        <tr>
+                        <tr">
                             @foreach($header as $attributo)
                                 <th>{{ $attributo }}</th>
                             @endforeach
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class=".table-group-divider">
                         @if ($empty)
                         @else
                         @foreach($content as $carta)

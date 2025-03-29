@@ -27,3 +27,7 @@ Route::get('/carte/{espansione}/{numero}', [ControllerCarte::class, 'show']);
 Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
 });
+
+Route::fallback(function () {
+    return view('errors.404');
+});

@@ -96,10 +96,10 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card mb-3">
-                            <div class="card-header">
-                                <h5>immagine</h5>
+                            <div class="card-header d-flex justify-content-between">
+                                <h5 class="d-flex">immagine</h5>
                                 @if ($carta->tipo == "Leader")
-                                    <a onclick="toggleFrontCard(this)" class="btn btn-secondary">
+                                    <a onclick="toggleFrontCard(this)" class="d-flex btn btn-secondary">
                                         gira la carta
                                     </a>
                                 @endif
@@ -110,13 +110,13 @@
                                 </p>
                             </div>
                         </div>
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <h5>Descrizione</h5>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">{!! nl2br(e($carta->descrizione)) !!}</p>
-                            </div>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5>Descrizione</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">{!! nl2br(e($carta->descrizione)) !!}</p>
                         </div>
                     </div>
                 </div>
@@ -136,6 +136,10 @@
     img{
         max-width: 100%;
         max-height: 100%;
+    }
+
+    h5{
+        display: inline-block;
     }
 </style>
 <script>
