@@ -4,79 +4,74 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Carte</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            html{
+                box-sizing: border-box;
+                margin: 0;
+            }
+            .container {
+                max-width: 100%; /* Usa tutta la larghezza disponibile */
+                height: 96vh; /* Altezza massima pari all'altezza dello schermo */
+                display: flex;
+                flex-direction: column;
+            }
+            .table-container {
+                flex-grow: 1; /* Occupa tutto lo spazio disponibile */
+                overflow: auto; /* Abilita lo scorrimento */
+            }
+            .table thead th {
+                position: sticky;
+                top: 0;
+                background-color: #f8f9fa; /* Sfondo per l'intestazione */
+                z-index: 1;
+            }
+            a.btn{
+                display: inline-block;
+            }
+            form{
+                display: inline-block;
+            }
+
+            #row *{
+                display: inline;
+            }
+        </style>
     </head>
-    <?php
-    // $content = $content["*items"];
-    function printlnd($line, $deep = 0, $name){
-        if(gettype($line) == 'array' || gettype($line) == 'object'){
-            echo "|$name|-->{<br>";
-            foreach($line as $i => $value){
-                unset($j);
-                for($j = 0;$j<=$deep;$j++){
-                    echo "&nbsp;&nbsp;";
-                }
-                printlnd($value, $deep+1, $i);
-            }
-            unset($j);
-            for($j = 0;$j<$deep;$j++){
-                echo "&nbsp;&nbsp;";
-            }
-            echo "}<br>";
-        }else{
-            try{
-                echo "$name=>$line(" . gettype($line) . ")";
-            }catch(Error $e){
-                echo "Errore: " . $e->getMessage();
-                echo gettype($line);
-            }
-            echo "<br>";
-        }
-    }
-    ?>
     <body>
-        <?php //printlnd($telegram, 0, 'telegram'); ?>
-        <form action="/carte">
-            <label for="nome">insersci il nome della carta</label>
-            <input type="text" name="nome" id="nome" value="<?php echo "$nome" ?>">
-            <input type="submit" value="cerca">
-        </form>
-        <form action="/carte">
-            <input type="submit" value="cancella parametri di ricerca">
-        </form>
-        trovati {{ count($content) }} risultati
-        <table border>
-            <tr>
-                @foreach($header as $attributo)
-                    <th>{{ $attributo }}</th>
-                @endforeach
-            </tr>
-            @if ($empty)
-            @else
-            @foreach($content as $carta)
-            <tr>
-                @foreach ($header as $attributo)
-                    <td>{{ $carta[$attributo] }}</td>
-                @endforeach
-            </tr>
-            @endforeach
-            @endif
-        </table>
+        <div class="container mt-4">
+            <div id="row">
+                <form action="/carte" class="mb-3">
+                    <label for="nome" class="form-label">Inserisci il nome della carta</label>
+                    <input type="text" name="nome" id="nome" class="form-control mb-2" value="{{ $nome }}">
+                    <input type="submit" value="Cerca" class="btn btn-primary">
+                </form>
+                <a href="/carte" class="btn btn-secondary">Cancella parametri di ricerca</a>
+            </div>
+            <p>Trovati {{ count($content) }} risultati</p>
+            <div class="table-container">
+                <table class="table table-striped table-bordered">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            @foreach($header as $attributo)
+                                <th>{{ $attributo }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if ($empty)
+                        @else
+                        @foreach($content as $carta)
+                        <tr>
+                            @foreach ($header as $attributo)
+                                <td>{{ $carta[$attributo] }}</td>
+                            @endforeach
+                        </tr>
+                        @endforeach
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </body>
 </html>
-<style>
-    form{
-        display: inline-block;
-    }
-    td, th{
-        text-align: center;
-    }
-</style>
-<script>
-    function refreshPage() {
-        setTimeout(function() {
-            location.reload();
-        }, 10000);
-    }
-
-    //refreshPage();
-</script>
