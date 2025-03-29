@@ -40,6 +40,7 @@
     </head>
     <body>
         <div class="container mt-4">
+            @include('header')
             <div id="row">
                 <form action="/carte" class="mb-3">
                     <label for="nome" class="form-label">Inserisci il nome della carta</label>
