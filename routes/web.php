@@ -31,3 +31,6 @@ Route::get("/message/{message}", function($message){
 Route::fallback(function () {
     return view('errors.404');
 });
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
