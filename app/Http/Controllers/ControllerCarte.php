@@ -57,7 +57,7 @@ class ControllerCarte extends Controller
                 CardReceived::dispatch($card);
             }
         }
-        return view('carte.update', ["result"=>$result]);
+        return view('carte.update', ["result"=>$result, "data"=>$data]);
     }
 
     public function api(Request $request){
