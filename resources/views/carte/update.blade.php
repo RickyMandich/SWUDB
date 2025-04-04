@@ -10,6 +10,10 @@ use App\Http\Controllers\ControllerCarte;?>
     <body>
         aggiornamento eseguito
         <br>
-        {{ $result }}
+        @if($result)
+            success
+        @else
+            failed
+        @endif
     </body>
 </html>
