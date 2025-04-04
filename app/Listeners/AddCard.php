@@ -17,7 +17,7 @@ class AddCard implements ShouldQueue{
         if(Card::where('espansione', $event->card["espansione"])->where('numero',$event->card["numero"])->get()->isEmpty()){
             Card::insert($event->card);
             $card = Card::where('espansione', $event->card["espansione"])->where('numero',$event->card["numero"])->get()[0];
-            MessageCreated::dispatch("ho inserito {$card["snippet"]}");
+            // MessageCreated::dispatch("ho inserito {$card["snippet"]}");
         }
     }
 }

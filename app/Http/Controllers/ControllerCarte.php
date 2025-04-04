@@ -49,14 +49,15 @@ class ControllerCarte extends Controller
         }
         $data = $this->mergeSort($data);
     
-    
+        $result = false;
         if (json_last_error() === JSON_ERROR_NONE) {
+            $result = true;
             foreach ($data as &$card) {
                 $card["tratti"] = implode(" * ", $card["tratti"]);
                 CardReceived::dispatch($card);
             }
         }
-        return view('carte.update');
+        return view('carte.update', ["result"=>$result]);
     }
 
     public function api(Request $request){
