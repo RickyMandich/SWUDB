@@ -12,7 +12,11 @@ Route::get('/', function(){return view('index');});
 
 Route::get("query", function(Request $request){
     $get = $request->all();
-    $query = $get["query"];
+    if(isset($get["query"])){
+        $query = $get["query"];
+    }else{
+        $query = "SELECT * FROM cards limit 10";
+    }
     return view("query", ["result" => DB::select($query), "query"=>$query]);
 });
 
