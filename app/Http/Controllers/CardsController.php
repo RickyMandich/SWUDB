@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\Card;
 use App\Models\Deck;
 
-class ControllerCarte extends Controller
+class CardsController extends Controller
 {
     /**
      * Display a listing of the resource.

@@ -1,5 +1,5 @@
 <?php
-use App\Http\Controllers\ControllerCarte;?>
+use App\Http\Controllers\CardsController;?>
 <!DOCTYPE html>
 <html lang="en">
     <head>

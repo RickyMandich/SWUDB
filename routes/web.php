@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ControllerCarte;
+use App\Http\Controllers\CardsController;
 
 use App\Events\MessageCreated;
 
@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function(){return view('index');});
 
 Route::get("query", function(Request $request){
+    if(Auth::user()->admin == 0){
+        return view("errors.403");
+    }
     $get = $request->all();
     if(isset($get["query"])){
         $query = $get["query"];
@@ -20,13 +23,13 @@ Route::get("query", function(Request $request){
     return view("query", ["result" => DB::select($query), "query"=>$query]);
 });
 
-Route::get('/carte', [ControllerCarte::class, 'index']);
+Route::get('/carte', [CardsController::class, 'index']);
 
-Route::get('/carte/update', [ControllerCarte::class, 'create']);
+Route::get('/carte/update', [CardsController::class, 'create']);
 
-Route::get("/api/carte/{espansione}/{numero}", [ControllerCarte::class, 'api']);
+Route::get("/api/carte/{espansione}/{numero}", [CardsController::class, 'api']);
 
-Route::get('/carte/{espansione}/{numero}', [ControllerCarte::class, 'show']);
+Route::get('/carte/{espansione}/{numero}', [CardsController::class, 'show']);
 
 Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
@@ -37,4 +40,4 @@ Route::fallback(function () {
 });
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

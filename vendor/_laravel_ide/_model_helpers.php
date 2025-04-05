@@ -645,6 +645,7 @@ namespace App\Models {
     /**
      * App\Models\User
      *
+     * @property bool $admin
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
      * @property string|null $remember_token
@@ -663,6 +664,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<User>|User whereRememberToken($value)
      * @method static \Illuminate\Database\Eloquent\Builder<User>|User whereCreatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<User>|User whereUpdatedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<User>|User whereAdmin($value)
      * @method static \Illuminate\Database\Eloquent\Builder<User>|User newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<User>|User newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<User>|User query()
