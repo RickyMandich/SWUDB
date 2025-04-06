@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Card;
+use App\Models\Composition;
 use Illuminate\Http\Request;
 
 use App\Models\Deck;
@@ -17,7 +19,11 @@ class DecksController extends Controller{
         }
         $result = [];
         foreach($decks as $deck){
-            //$cards = 
+            $cards = Composition::where("idMazzo", $deck->id)->get();
+            foreach($cards as $card){
+                array_push($result, Card::where("espansione", $card->espansione)->where("numero", $card->numero)->first());
+            }
         }
+        return view("mazzi.index", ["result" => $result]);
     }
 }
