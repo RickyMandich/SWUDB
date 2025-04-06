@@ -4,6 +4,7 @@ use App\Http\Controllers\CardsController;
 
 use App\Events\MessageCreated;
 
+use App\Http\Controllers\DecksController;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Route;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function(){return view('index');});
 
 Route::get("query", function(Request $request){
-    if(Auth::user()->admin == 0){
+    if(!Auth::admin()){
         return view("errors.403");
     }
     $get = $request->all();
@@ -26,6 +27,8 @@ Route::get("query", function(Request $request){
 Route::get('/carte', [CardsController::class, 'index']);
 
 Route::get('/carte/update', [CardsController::class, 'create']);
+
+Route::get('/mazzi', [DecksController::class, 'index']);
 
 Route::get("/api/carte/{espansione}/{numero}", [CardsController::class, 'api']);
 

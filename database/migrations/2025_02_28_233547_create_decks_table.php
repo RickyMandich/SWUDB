@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('Decks', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->integer('id', true);
             $table->string('nome', 500);
             $table->boolean('public')->default(0);
             $table->integer('codUtente');
