@@ -1,28 +1,21 @@
 @extends('layouts.app')
 <style>
-    html{
-        box-sizing: border-box;
-        margin: 0;
-    }
-    .table-container {
+    .content {
         flex-grow: 1; /* Occupa tutto lo spazio disponibile */
         overflow: auto; /* Abilita lo scorrimento */
         max-width: 100%; /* Usa tutta la larghezza disponibile */
-        height: 63.5vh; /* Altezza massima pari all'altezza dello schermo */
+        height: 82.5vh; /* Altezza massima pari all'altezza dello schermo */
         display: flex;
         flex-direction: column;
     }
+
+    
+    
     .table thead th {
         position: sticky;
         top: 0;
         background-color: #f8f9fa; /* Sfondo per l'intestazione */
         z-index: 1;
-    }
-    a.btn{
-        display: inline-block;
-    }
-    form{
-        display: inline-block;
     }
 
     #row *{
@@ -30,7 +23,7 @@
     }
 </style>
 @section('content')
-    <div class="container mt-4">
+    <div class="container content mt-4">
         <div id="row">
             <form action="/carte" class="mb-3">
                 <label for="nome" class="form-label">Inserisci il nome della carta</label>

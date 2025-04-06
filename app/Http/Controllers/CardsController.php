@@ -93,7 +93,6 @@ class CardsController extends Controller
         $mazzoOrder = [];
         $result = Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
         foreach($result as &$line){
-            $line = (array)$line;
             array_push($mazzoOrder, $line["mazzo"]);
         }
         // Definisco l'ordine dei tipi generici

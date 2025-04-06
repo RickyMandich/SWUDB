@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\CardsController;
+use App\Http\Controllers\DecksController;
 
 use App\Events\MessageCreated;
 
-use App\Http\Controllers\DecksController;
+use App\Models\Deck;
+
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Route;
@@ -28,7 +30,9 @@ Route::get('/carte', [CardsController::class, 'index']);
 
 Route::get('/carte/update', [CardsController::class, 'create']);
 
-Route::get('/mazzi', [DecksController::class, 'index']);
+Route::get('/mazzi', /**/[DecksController::class, 'index']/*/function(){
+    return Deck::where("codUtente", auth()->user()->id)->get();
+}/**/);
 
 Route::get("/api/carte/{espansione}/{numero}", [CardsController::class, 'api']);
 
@@ -41,6 +45,11 @@ Route::get("/message/{message}", function($message){
 Route::fallback(function () {
     return view('errors.404');
 });
+
 Auth::routes();
 
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+Route::get('/test', function(){
+    return Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
+});
