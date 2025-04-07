@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function(){return view('index');});
+Route::get('/', function(){return view('index');})->name("index");
 
 Route::get("query", function(Request $request){
     if(!Auth::admin()){
@@ -24,23 +24,23 @@ Route::get("query", function(Request $request){
         $query = "SELECT * FROM cards limit 10";
     }
     return view("query", ["result" => DB::select($query), "query"=>$query]);
-});
+})->name("query");
 
-Route::get('/carte', [CardsController::class, 'index']);
+Route::get('/carte', [CardsController::class, 'index'])->name("carte");
 
-Route::get('/carte/update', [CardsController::class, 'create']);
+Route::get('/carte/update', [CardsController::class, 'create'])->name("carte/update");
 
 Route::get('/mazzi', /**/[DecksController::class, 'index']/*/function(){
     return Deck::where("codUtente", auth()->user()->id)->get();
-}/**/);
+}/**/)->name("mazzi");
 
-Route::get("/api/carte/{espansione}/{numero}", [CardsController::class, 'api']);
+Route::get("/api/carte/{espansione}/{numero}", [CardsController::class, 'api'])->name("api/carte");
 
-Route::get('/carte/{espansione}/{numero}', [CardsController::class, 'show']);
+Route::get('/carte/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 
 Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
-});
+})->name("message");
 
 Route::fallback(function () {
     return view('errors.404');
@@ -48,8 +48,8 @@ Route::fallback(function () {
 
 Auth::routes();
 
-Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 
 Route::get('/test', function(){
     return Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
-});
+})->name("test");
