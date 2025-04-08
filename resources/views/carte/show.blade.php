@@ -1,13 +1,5 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{$carta["snippet"]}}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
+@extends('layouts.app')
+@section('content')
     <div class="container">
         <div class="card mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -95,7 +87,7 @@
                         </table>
                     </div>
                     <div class="col-md-4">
-                        <div class="card mb-3">
+                        <div class="card">
                             <div class="card-header d-flex justify-content-between">
                                 <h5 class="d-flex">immagine</h5>
                                 @if ($carta->tipo == "Leader")
@@ -111,7 +103,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card mb-3">
+                    <div class="card">
                         <div class="card-header">
                             <h5>Descrizione</h5>
                         </div>
@@ -131,7 +123,6 @@
             </div>
         </div>
     </div>
-</body>
 <style>
     img{
         max-width: 100%;
@@ -165,4 +156,4 @@
         return link;
     }
 </script>
-</html>
+@endsection

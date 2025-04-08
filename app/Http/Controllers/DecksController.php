@@ -25,11 +25,23 @@ class DecksController extends Controller{
         $result = [];
         foreach($decks as $deck){
             $cards = Composition::where("idMazzo", $deck->id)->get();
+            $deckCards = [];
             foreach($cards as $card){
-                $card = Card::where("espansione", $card->espansione)->where("numero", $card->numero)->first()->toArray();
-                // return $card;
-                array_push($result, $card);
+                $card = Card::select(['aspettoPrimario', 'aspettoSecondario', 'unica', 'tipo', 'rarita', 'costo', 'vita', 'potenza', 'descrizione', 'tratti', 'arena', 'artista', 'nome', 'titolo', 'espansione', 'numero'])->where("espansione", $card->espansione)->where("numero", $card->numero)->first()->toArray();
+                unset($card["nome"]);
+                unset($card["titolo"]);
+                unset($card["espansione"]);
+                unset($card["numero"]);
+                unset($card["id"]);
+                foreach($card as $key => $value){
+                    if($key != "snippet"){
+                        unset($card[$key]);
+                        $card[$key] = $value;
+                    }
+                }
+                array_push($deckCards, $card);
             }
+            $result[$deck->nome] = $deckCards;
         }
         return view("mazzi.index", ["result" => $result, "decks" => $stateDeck]);
     }

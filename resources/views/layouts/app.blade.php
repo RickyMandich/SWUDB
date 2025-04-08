@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html data-bs-theme="dark" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,9 +16,14 @@
     <!-- Scripts -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 </head>
+<style>
+    nav{
+        z-index: 1021;
+    }
+</style>
 <body>
     <div id="app">
-        <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+        <nav class="navbar navbar-expand-md shadow-sm">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
                     {{ config('app.name', 'Laravel') }}
@@ -30,7 +35,17 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
-
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('mazzi') }}">{{ __('mazzi') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('carte') }}">{{ __('carte') }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <form action="{{ route('carte') }}">
+                                <input class="form-control" type="text" name="nome" id="nome">
+                            </form>
+                        </li> 
                     </ul>
 
                     <!-- Right Side Of Navbar -->
@@ -81,4 +96,5 @@
         </main>
     </div>
 </body>
+@yield('script')
 </html>
