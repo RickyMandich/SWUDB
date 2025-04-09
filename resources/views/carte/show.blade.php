@@ -16,72 +16,64 @@
                         <table class="table table-striped">
                             <tbody>
                                 <tr>
-                                    <th>Espansione</th>
+                                    <th scope="row">Nome</th>
+                                    <td>{{ $carta->nome }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">titolo</th>
+                                    <td>{{ $carta->titolo }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">espansione</th>
                                     <td>{{ $carta->espansione }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Numero</th>
+                                    <th scope="row">numero</th>
                                     <td>{{ $carta->numero }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Aspetto Primario</th>
+                                    <th scope="row">aspettoPrimario</th>
                                     <td>{{ $carta->aspettoPrimario }}</td>
                                 </tr>
-                                @if($carta->aspettoSecondario)
                                 <tr>
-                                    <th>Aspetto Secondario</th>
+                                    <th scope="row">aspettoSecondario</th>
                                     <td>{{ $carta->aspettoSecondario }}</td>
                                 </tr>
-                                @endif
                                 <tr>
-                                    <th>Tipo</th>
+                                    <th scope="row">unica</th>
+                                    <td>{{ $carta->unica?"sì":"no" }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">tipo</th>
                                     <td>{{ $carta->tipo }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Rarità</th>
+                                    <th scope="row">rarita</th>
                                     <td>{{ $carta->rarita }}</td>
                                 </tr>
-                                @if($carta->costo !== null)
                                 <tr>
-                                    <th>Costo</th>
+                                    <th scope="row">costo</th>
                                     <td>{{ $carta->costo }}</td>
                                 </tr>
-                                @endif
-                                @if($carta->vita !== null)
                                 <tr>
-                                    <th>Vita</th>
+                                    <th scope="row">vita</th>
                                     <td>{{ $carta->vita }}</td>
                                 </tr>
-                                @endif
-                                @if($carta->potenza !== null)
                                 <tr>
-                                    <th>Potenza</th>
+                                    <th scope="row">potenza</th>
                                     <td>{{ $carta->potenza }}</td>
                                 </tr>
-                                @endif
-                                @if($carta->tratti)
                                 <tr>
-                                    <th>Tratti</th>
+                                    <th scope="row">tratti</th>
                                     <td>{{ $carta->tratti }}</td>
                                 </tr>
-                                @endif
-                                @if($carta->arena)
                                 <tr>
-                                    <th>Arena</th>
+                                    <th scope="row">arena</th>
                                     <td>{{ $carta->arena }}</td>
                                 </tr>
-                                @endif
                                 <tr>
-                                    <th>Unica</th>
-                                    <td>{{ $carta->unica ? 'Sì' : 'No' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Artista</th>
+                                    <th scope="row">artista</th>
                                     <td>{{ $carta->artista }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Data di uscita</th>
-                                    <td>{{ $carta->uscita->format('d/m/Y') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -117,7 +109,7 @@
             <div class="card-footer">
                 <div class="d-flex justify-content-between">
                     <a href="/carte" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Torna alla lista
+                        <i class="fas fa-arrow-left"></i>Torna alla lista
                     </a>
                 </div>
             </div>

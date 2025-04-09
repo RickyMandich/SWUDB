@@ -61,7 +61,7 @@ class CardsController extends Controller
     }
 
     public function api($espansione, $numero){
-        return Card::where('numero', $numero)->where('espansione', $espansione)->get();
+        return Card::where('numero', $numero)->where('espansione', $espansione)->first();
     }
 
     public function show($espansione, $numero){
