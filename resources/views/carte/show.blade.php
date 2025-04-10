@@ -108,8 +108,14 @@
             
             <div class="card-footer">
                 <div class="d-flex justify-content-between">
-                    <a href="/carte" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i>Torna alla lista
+                    <a href="/carte/{{ $carta->espansione }}/{{ $carta->numero-1 }}" class="btn btn-secondary align-top">
+                        &larr;Back
+                    </a>
+                    <a href="/carte" class="btn btn-secondary align-middle">
+                        Torna alla lista
+                    </a>
+                    <a href="/carte/{{ $carta->espansione }}/{{ $carta->numero+1 }}" class="btn btn-secondary align-bottom">
+                        Next&rarr;
                     </a>
                 </div>
             </div>
