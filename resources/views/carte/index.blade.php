@@ -25,7 +25,11 @@
                     @foreach($content as $carta)
                     <tr>
                         @foreach ($header as $attributo)
-                            <td>{{ $carta[$attributo] }}</td>
+                            <td>
+                                <a href="/carta/{{ $carta["espansione"] }}/{{ $carta["numero"] }}">
+                                    {{ $carta[$attributo] }}
+                                </a>
+                            </td>
                         @endforeach
                     </tr>
                     @endforeach

@@ -90,7 +90,7 @@
                             </div>
                             <div class="card-body">
                                 <p class="card-text">
-                                    <img src="https://swudb.com/images/cards/{{ $carta->espansione }}/<?=str_pad($carta->numero, 3, '0', STR_PAD_LEFT)?>.png" alt="errere nel caricamento dell'immagine">
+                                    <img src="{{ $carta->frontArt }}" alt="errere nel caricamento dell'immagine">
                                 </p>
                             </div>
                         </div>
@@ -108,13 +108,13 @@
             
             <div class="card-footer">
                 <div class="d-flex justify-content-between">
-                    <a href="/carte/{{ $carta->espansione }}/{{ $carta->numero-1 }}" class="btn btn-secondary align-top">
+                    <a href="/carta/{{ $carta->espansione }}/{{ $carta->numero-1 }}" class="btn btn-secondary align-top">
                         &larr;Back
                     </a>
                     <a href="/carte" class="btn btn-secondary align-middle">
                         Torna alla lista
                     </a>
-                    <a href="/carte/{{ $carta->espansione }}/{{ $carta->numero+1 }}" class="btn btn-secondary align-bottom">
+                    <a href="/carta/{{ $carta->espansione }}/{{ $carta->numero+1 }}" class="btn btn-secondary align-bottom">
                         Next&rarr;
                     </a>
                 </div>
@@ -132,6 +132,8 @@
     }
 </style>
 <script>
+    const front = "{{ $carta->frontArt }}";
+    const back = "{{ $carta->backArt }}";
     function toggleFrontCard(button) {
         event.preventDefault();
         let card = button.closest('.card');
@@ -140,16 +142,10 @@
     }
 
     function toggleLink(link){
-        if(link.includes('portrait')) {
-            console.log("true");
-            console.log("il link attuale è: " + link);
-            link = link.replace('-portrait', '');
-            console.log("il nuovo link è: " + link);
+        if(link.includes('Unit')) {
+            link = front;
         } else {
-            console.log("false");
-            console.log("il link attuale è: " + link);
-            link = link.replace('.png', '-portrait.png');
-            console.log("il nuovo link è: " + link);
+            link = back;
         }
         return link;
     }

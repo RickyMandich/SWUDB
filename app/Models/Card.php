@@ -28,7 +28,9 @@ class Card extends Model{
         'tratti',
         'arena',
         'artista',
-        'uscita'
+        'uscita',
+        'frontArt',
+        'backArt'
     ];
     protected $appends = [
         'id',

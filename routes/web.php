@@ -35,9 +35,9 @@ Route::get('/mazzi', /**/[DecksController::class, 'index']/*/function(){
     return Deck::where("codUtente", auth()->user()->id)->get();
 }/**/)->name("mazzi");
 
-Route::get("/api/carte/{espansione}/{numero}", [CardsController::class, 'api'])->name("api/carte");
+Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api/carte");
 
-Route::get('/carte/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
+Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 
 Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);

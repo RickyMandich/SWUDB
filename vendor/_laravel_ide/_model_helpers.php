@@ -5,6 +5,8 @@ namespace App\Models {
     /**
      * App\Models\Card
      *
+     * @property string|null $backArt
+     * @property string|null $frontArt
      * @property datetime:Y-m-d H:i $uscita
      * @property string $artista
      * @property string|null $arena
@@ -43,6 +45,8 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereArena($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereArtista($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereUscita($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereFrontart($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereBackart($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card query()
