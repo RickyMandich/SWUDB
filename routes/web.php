@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
+use App\Http\Controllers\UsersController;
 
 use App\Events\MessageCreated;
 
