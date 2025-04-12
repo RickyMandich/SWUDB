@@ -7,7 +7,7 @@
             <div class="card">
                 <div class="card-header">{{ __('Dashboard') }}</div>
 
-                <div class="card-body">
+                <div class="card-body fs-4">
                     @if(session('error'))
                         <div class="row mb-3 justify-content">
                             <div class="col-md-12 text-danger text-center">
@@ -30,10 +30,29 @@
                     </div>
                     @endif
 
+
                     <div class="row mb-3 justify-content">
                         <div class="col-md-12 text-center">
-                            {{ __('You are logged in!') }}
+                            <h1>{{ __('Benvenuto, ') . Auth::user()->name . '!' }}</h1>
                         </div>
+                    </div>
+
+                    <div class="row mb-3 justify-content">
+                        <span class="col-md-5 text-md-end">
+                            {{ __("nome") }}:
+                        </span>
+                        <span class="col-md-7">
+                            {{ Auth::user()->name }}
+                        </span>
+                    </div>
+
+                    <div class="row mb-3 justify-content">
+                        <span class="col-md-5 text-md-end">
+                            {{ __("email") }}:
+                        </span>
+                        <span class="col-md-7">
+                            {{ Auth::user()->email }}
+                        </span>
                     </div>
                 </div>
             </div>
