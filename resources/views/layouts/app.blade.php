@@ -43,7 +43,7 @@
                         </li>
                         <li class="nav-item">
                             <form action="{{ route('carte') }}">
-                                <input class="form-control" type="text" name="nome" id="nome">
+                                <input class="form-control" type="text" placeholder="cerca una carta" name="nome" id="nome">
                             </form>
                         </li> 
                     </ul>

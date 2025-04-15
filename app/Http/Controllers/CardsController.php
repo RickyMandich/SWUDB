@@ -54,6 +54,7 @@ class CardsController extends Controller
             $result = true;
             foreach ($data as &$card) {
                 $card["tratti"] = implode(" * ", $card["tratti"]);
+                $card["snippet"] = $card["espansione"]."-".$card["numero"]." - ".$card["nome"].((strlen($card["titolo"]) > 0 ? ", ". strtoupper($card["titolo"]) : ""));
                 CardReceived::dispatch($card);
             }
         }
@@ -66,7 +67,7 @@ class CardsController extends Controller
 
     public function show($espansione, $numero){
         $carta = Card::where('numero', $numero)->where('espansione', $espansione)->get();
-        return view('carte.show', ["carta" => $carta->get(0), "numero" => $numero, "espansione" => $espansione]);
+        return view('carte.show', ["carta" => $carta->get(0), "numero" => $numero, "espansione" => $espansione, "find" => !$carta->empty()]);
     }
 
     function getUscita($espansione){
