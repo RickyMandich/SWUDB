@@ -5,6 +5,7 @@
         <title>Benvenuto</title>
     </head>
     <body>
-        <p>Grazie per esserti registrato, benvenuto {{ $name }}!</p>
+        <h2>Grazie per esserti registrato</h2>
+        <p>benvenuto {{ $name }}!</p>
     </body>
 </html>
