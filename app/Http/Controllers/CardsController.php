@@ -57,10 +57,12 @@ class CardsController extends Controller
             $result = true;
             $fullSet = $data;
             $data = [];
+            $dataRaw = Card::get()->toArray();
             foreach ($fullSet as &$card) {
                 $card["tratti"] = implode(" * ", $card["tratti"]);
                 $card["snippet"] = $card["espansione"]."-".$card["numero"]." - ".$card["nome"].((strlen($card["titolo"]) > 0 ? ", ". strtoupper($card["titolo"]) : ""));
-                if(!$this->contain($data, $card)){
+                if(!$this->contain($dataRaw, $card)){
+                    array_push($dataRaw, $card);
                     array_push($data, $card);
                 }
             }
@@ -96,7 +98,7 @@ class CardsController extends Controller
     function contain($array, $element){
         foreach($array as $el){
             if($el["espansione"] == $element["espansione"] && $el["numero"] == $element["numero"]){
-                echo "la carta ".$element["snippet"]." è già presente<br>";
+                // echo "la carta ".$element["snippet"]." è già presente<br>";
                 return true;
             }
         }
