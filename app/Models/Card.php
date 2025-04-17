@@ -7,7 +7,7 @@ class Card extends Model{
     protected $table = 'cards';
     public $incrementing = false;
     protected $primaryKey = 'cid';
-    public const CREATED_AT = 'creazione';
+    public const CREATED_AT = null;
     public const UPDATED_AT = null;
     protected $dateFormat = 'Y-m-d H:i';
     protected $fillable = [
@@ -42,9 +42,6 @@ class Card extends Model{
     public function getSnippetAttribute(){
         return "$this->id - ".$this->nome.((strlen($this->titolo) > 0 ? ", ". strtoupper($this->titolo) : ""));
     }
-    protected $hidden = [
-        'creazione'
-    ];
     protected $casts = [
         'cid' => 'string',
         'espansione' => 'string',

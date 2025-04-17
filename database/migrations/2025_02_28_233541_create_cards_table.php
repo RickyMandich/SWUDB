@@ -30,8 +30,8 @@ return new class extends Migration
             $table->string('arena', 100)->nullable();
             $table->string('artista', 100);
             $table->string('uscita', 65);
-            $table->string('frontArt', 100)->nullable();
-            $table->string('backArt', 100)->nullable();
+            $table->string('frontArt', 200)->nullable();
+            $table->string('backArt', 200)->nullable();
             $table->primary(['espansione', 'numero']);
         });
     }

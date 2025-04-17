@@ -38,7 +38,6 @@ class CardsController extends Controller
         $data = json_decode($json, true);
         $keys = [];
         foreach($data as $carta){
-            $carta["uscita"] = $this->getUscita($carta["espansione"]);
             foreach($carta as $key => $value){
                 if(!in_array($key, $keys)){
                     array_push($keys, $key);
@@ -52,14 +51,20 @@ class CardsController extends Controller
                 }
             }
         }
-        $data = $this->mergeSort($data);
     
         $result = false;
         if (json_last_error() === JSON_ERROR_NONE) {
             $result = true;
-            foreach ($data as &$card) {
+            $fullSet = $data;
+            $data = [];
+            foreach ($fullSet as &$card) {
                 $card["tratti"] = implode(" * ", $card["tratti"]);
                 $card["snippet"] = $card["espansione"]."-".$card["numero"]." - ".$card["nome"].((strlen($card["titolo"]) > 0 ? ", ". strtoupper($card["titolo"]) : ""));
+                if(!$this->contain($data, $card)){
+                    array_push($data, $card);
+                }
+            }
+            foreach($data as $card){
                 CardReceived::dispatch($card);
             }
         }
@@ -82,23 +87,21 @@ class CardsController extends Controller
         return view('carte.show', ["find" => $find, "carta" => $carta, "numero" => $numero, "espansione" => $espansione]);
     }
 
-    function getUscita($espansione){
-        switch($espansione){
-            case "CE24":
-                return "2024 08 01";
-            case "SOR":
-                return "2024 03 08";
-            case "SHD":
-                return "2024 07 12";
-            case "TWI":
-                return "2024 11 05";
-            case "JTL":
-                return "2025 03 14";
-            case "GGTS":
-                return "2025 03 15";
-            default:
-                return "2024 03 08";
+    /**
+     * control if the card is contained by the array
+     * @param mixed $array
+     * @param mixed $element
+     * @return bool
+     */
+    function contain($array, $element){
+        foreach($array as $el){
+            if($el["espansione"] == $element["espansione"] && $el["numero"] == $element["numero"]){
+                echo "la carta ".$element["snippet"]." è già presente<br>";
+                return true;
+            }
         }
+        // echo "la carta ".$element["snippet"]." non è presente<br>";
+        return false;
     }
 
     function compareElements(&$el1, &$el2, $verbose) {

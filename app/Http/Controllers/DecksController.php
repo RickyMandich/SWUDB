@@ -16,7 +16,6 @@ class DecksController extends Controller{
             foreach($decksUser as $deck){
                 array_push($decks, $deck);
             }
-            $stateDeck = $decks;
             $decksPublic = Deck::where("public", 1)->get();
             foreach($decksPublic as $deck){
                 array_push($decks, $deck);
@@ -42,7 +41,7 @@ class DecksController extends Controller{
                 }
                 $result[$deck->nome] = $deckCards;
             }
-            return view("mazzi.index", ["result" => $result, "decks" => $stateDeck]);
+            return view("mazzi.index", ["result" => $result]);
         }
         return redirect()->route("login")->with("warning", "Devi essere loggato per visualizzare questa pagina");
     }
