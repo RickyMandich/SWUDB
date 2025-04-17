@@ -67,7 +67,14 @@ class CardsController extends Controller
 
     public function show($espansione, $numero){
         $carta = Card::where('numero', $numero)->where('espansione', $espansione)->get();
-        return view('carte.show', ["carta" => $carta->get(0), "numero" => $numero, "espansione" => $espansione, "find" => !$carta->empty()]);
+        $carta = $carta->get(0);
+        try{
+            $carta->nome;
+            $find = true;
+        }catch(\Exception $e){
+            $find = false;
+        }
+        return view('carte.show', ["find" => $find, "carta" => $carta, "numero" => $numero, "espansione" => $espansione]);
     }
 
     function getUscita($espansione){

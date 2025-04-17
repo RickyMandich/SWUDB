@@ -54,3 +54,7 @@ Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])-
 Route::get('/test', function(){
     return Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
 })->name("test");
+
+Route::get('/users', function(){
+    return redirect()->route("query", ["query" => "SELECT * FROM users"]);
+}); 
