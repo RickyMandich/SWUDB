@@ -19,11 +19,16 @@ class CardsController extends Controller
         if(!isset($get["nome"])){
             $get["nome"] = "";
         }
-        $model = Card::whereLike("nome", "%".$get["nome"]."%")->get();
+        $model = Card::select("espansione", "numero", "aspettoPrimario", "aspettoSecondario", "nome", "titolo", "tipo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita")->whereLike("nome", "%".$get["nome"]."%")->get();
         $empty = $model->isEmpty();
-        $header = (new Card)->getFillable();
         $model = $model->toArray();
         $model = $this->mergeSort($model);
+        foreach($model as &$carta){
+            unset($carta["nome"]);
+            unset($carta["titolo"]);
+            unset($carta["id"]);
+        }
+        $header = ["snippet", "aspettoPrimario", "aspettoSecondario", "tipo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita"];
         return view('carte.index', ["content" => $model, "empty" => $empty, "nome" => $get["nome"], "header" => $header]);
     }
     

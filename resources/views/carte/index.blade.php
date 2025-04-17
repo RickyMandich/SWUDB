@@ -10,7 +10,7 @@
             <a href="/carte" class="btn btn-secondary">Cancella parametri di ricerca</a>
         </div>
         <p>Trovati {{ count($content) }} risultati</p>
-        <div class="table-container">
+        <div class="table-container table-responsive">
             <table class="table table-hover table-striped table-bordered">
                 <thead class="table-light sticky-top">
                     <tr">
@@ -20,19 +20,18 @@
                     </tr>
                 </thead>
                 <tbody class=".table-group-divider">
-                    @if ($empty)
-                    @else
-                    @foreach($content as $carta)
-                    <tr>
-                        @foreach ($header as $attributo)
-                            <td>
-                                <a href="/carta/{{ $carta["espansione"] }}/{{ $carta["numero"] }}">
-                                    {{ $carta[$attributo] }}
-                                </a>
-                            </td>
+                    @if (!$empty)
+                        @foreach($content as $carta)
+                        <tr>
+                            @foreach ($header as $attributo)
+                                <td>
+                                    <a href="/carta/{{ $carta["espansione"] }}/{{ $carta["numero"] }}">
+                                        {{ $carta[$attributo] }}
+                                    </a>
+                                </td>
+                            @endforeach
+                        </tr>
                         @endforeach
-                    </tr>
-                    @endforeach
                     @endif
                 </tbody>
             </table>
