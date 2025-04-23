@@ -29,15 +29,17 @@ Route::get("query", function(Request $request){
 
 Route::get('/carte', [CardsController::class, 'index'])->name("carte");
 
+Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
+
 Route::get('/carte/update', [CardsController::class, 'create'])->name("carte/update");
 
-Route::get('/mazzi', /**/[DecksController::class, 'index']/*/function(){
-    return Deck::where("codUtente", auth()->user()->id)->get();
-}/**/)->name("mazzi");
+Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
-Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api/carte");
+Route::get('/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
 
-Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
+Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api/carta");
+
+Route::get("/api/mazzi/{user}/{nome}/{public}", [DecksController::class, 'api'])->name("api/mazzi");
 
 Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);

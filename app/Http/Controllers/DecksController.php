@@ -6,6 +6,10 @@ use App\Models\Card;
 use App\Models\Composition;
 use App\Models\Deck;
 
+use App\Models\User;
+use DB;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 
 class DecksController extends Controller{
@@ -20,29 +24,44 @@ class DecksController extends Controller{
             foreach($decksPublic as $deck){
                 array_push($decks, $deck);
             }
-            $result = [];
-            foreach($decks as $deck){
-                $cards = Composition::where("idMazzo", $deck->id)->get();
-                $deckCards = [];
-                foreach($cards as $card){
-                    $card = Card::select(['aspettoPrimario', 'aspettoSecondario', 'unica', 'tipo', 'rarita', 'costo', 'vita', 'potenza', 'descrizione', 'tratti', 'arena', 'artista', 'nome', 'titolo', 'espansione', 'numero'])->where("espansione", $card->espansione)->where("numero", $card->numero)->first()->toArray();
-                    unset($card["nome"]);
-                    unset($card["titolo"]);
-                    unset($card["espansione"]);
-                    unset($card["numero"]);
-                    unset($card["id"]);
-                    foreach($card as $key => $value){
-                        if($key != "snippet"){
-                            unset($card[$key]);
-                            $card[$key] = $value;
-                        }
-                    }
-                    array_push($deckCards, $card);
-                }
-                $result[$deck->nome] = $deckCards;
-            }
-            return view("mazzi.index", ["result" => $result]);
+            return view("mazzi.index", ["decks" => $decks]);
         }
         return redirect()->route("login")->with("warning", "Devi essere loggato per visualizzare questa pagina");
+    }
+
+    public function show($user, $deck){
+        /*/return/*/$mazzo =/**/ Deck::where("nome", str_replace("+", " ", $deck))
+                    ->where("codUtente", 
+                        User::where("name", $user)
+                        ->first()
+                        ->id)
+                    ->first();
+        /*/return/*/$cards =/**/ DB::table('compositions')
+            ->leftJoin('cards', function (JoinClause $join){
+                $join->on('compositions.espansione', '=', 'cards.espansione')
+                    ->on('compositions.numero', '=', 'cards.numero');
+            })
+            ->select('cards.*', 'compositions.copie')
+            ->where('compositions.idMazzo', $mazzo->id)
+            ->get();
+        $carte = new Collection();
+        foreach($cards as $card){
+            foreach($card as $key => $value){
+                $c[$key] = $value;
+            }
+            $carte->push(new Card($c));
+        }
+        return view("mazzi.show", ["nome"=>$mazzo->nome, "mazzo" => $carte]);
+    }
+
+    public function api($user, $nome, $public){
+        return Deck::where("nome", "like", "%$nome%")
+                ->where("codUtente", 
+                    User::where("name", "like", "%$user%")
+                    // ->select("id")
+                    ->first()
+                    ->id)
+                ->where("public", $public)
+                ->get();
     }
 }

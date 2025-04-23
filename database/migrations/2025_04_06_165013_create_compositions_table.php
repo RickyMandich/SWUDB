@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('idMazzo');
             $table->foreign('idMazzo')->references('id')->on('decks')->onDelete('cascade');
             $table->boolean('foil')->default(0);
-            $table->primary(['espansione', 'numero']);
+            $table->primary(['espansione', 'numero', 'idMazzo']);
             $table->integer('copie')->default(1);
         });
     }

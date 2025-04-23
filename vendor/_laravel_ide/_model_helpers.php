@@ -344,6 +344,7 @@ namespace App\Models {
     /**
      * App\Models\Composition
      *
+     * @property int $copie
      * @property bool $foil
      * @property int $idMazzo
      * @property int $numero
@@ -352,6 +353,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereNumero($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereIdmazzo($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereFoil($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereCopie($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition query()
