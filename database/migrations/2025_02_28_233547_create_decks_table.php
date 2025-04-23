@@ -6,12 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+
+    protected array $tags = ['decks'];
+
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('Decks', function (Blueprint $table) {
+        Schema::create('decks', function (Blueprint $table) {
             $table->integer('id', true);
             $table->string('nome', 500);
             $table->boolean('public')->default(0);

@@ -15,5 +15,6 @@ class Composition extends Model{
         'numero',
         'idMazzo',
         'foil',
+        'copie'
     ];
 }

@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+
+    protected array $tags = ['compositions'];
+
     /**
      * Run the migrations.
      */
@@ -18,6 +21,7 @@ return new class extends Migration
             $table->foreign('idMazzo')->references('id')->on('decks')->onDelete('cascade');
             $table->boolean('foil')->default(0);
             $table->primary(['espansione', 'numero']);
+            $table->integer('copie')->default(1);
         });
     }
 
