@@ -36,9 +36,6 @@
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('mazzi') }}">{{ __('mazzi') }}</a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="{{ route('carte') }}">{{ __('carte') }}</a>
                         </li>
                         <li class="nav-item">
@@ -83,6 +80,10 @@
                                 <a class="dropdown-item" href="{{ route('dashboard') }}">
                                     {{ __('Dashboard') }}
                                 </a>
+
+                                <a class="dropdown-item" href="{{ route('mazzi') }}">
+                                    {{ __('Mazzi') }}
+                                </a>
                             </div>
                         </li>
                         @endguest
@@ -92,7 +93,9 @@
         </nav>
 
         <main class="py-4">
-            @yield('content')
+            <div class="container content">
+                @yield('content')
+            </div>
         </main>
     </div>
 </body>

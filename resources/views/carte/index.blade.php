@@ -1,6 +1,5 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container content">
         <div id="row">
             <form action="/carte" class="mb-3">
                 <label for="nome" class="form-label">Inserisci il nome della carta</label>
@@ -36,5 +35,4 @@
                 </tbody>
             </table>
         </div>
-    </div>
 @endsection

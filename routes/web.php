@@ -37,6 +37,8 @@ Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
 Route::get('/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
 
+Route::post('/{user}/{mazzo}/save', [DecksController::class, 'store'])->name("mazzo.save");
+
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api/carta");
 
 Route::get("/api/mazzi/{user}/{nome}/{public}", [DecksController::class, 'api'])->name("api/mazzi");
