@@ -17,17 +17,9 @@
             <div class="row">
                 <!-- Colonna sinistra -->
                 <div class="col-md-6">
-                    <div class="main-deck">
+                    <div class="mazzo">
                         <h3 class="mb-3">Mazzo</h3>
                         <div class="contenuto">
-                            @foreach ($mazzo as $carta)
-                                <span class="{{ $carta->espansione }}-{{ $carta->numero }} d-flex mt-4">
-                                    {{ $carta->copie }}
-                                        <button type="button" class="btn btn-success rounded-0 rounded-start-1 border-end-0 py-1 px-2 lh-1">+</button>
-                                        <button type="button" class="btn btn-danger rounded-0 rounded-end-1 border-start-0 py-1 px-2 lh-1">-</button>
-                                    {{ $carta->snippet }}
-                                </span>
-                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -56,14 +48,23 @@
         </div>
     @endif
 @endsection
-@section('scripts')
+@section('script')
     <script>
-        const mazzo;
-        const aggiunte;
-        const rimosse;
+        const mazzo = @json($mazzo);
+        const aggiunte = [];
+        const rimosse = [];
 
         function refresh(){
-
+            let contenuto = "";
+            mazzo.forEach(carta => {
+                contenuto += `<span class="${carta.espansione}-${carta.numero} d-flex mt-4">
+                    ${carta.copie}
+                    <button type="button" onclick="aggiungiCarta(${carta})" class="btn btn-success rounded-0 rounded-start-1 border-end-0 py-1 px-2 lh-1">+</button>
+                    <button type="button" class="btn btn-danger rounded-0 rounded-end-1 border-start-0 py-1 px-2 lh-1">-</button>
+                    ${carta.snippet}
+                </span>`;
+            });
+            document.querySelector('.mazzo .contenuto').innerHTML = contenuto;
         }
 
         function aggiungiCarta(carta) {
@@ -79,5 +80,7 @@
             mazzo.pop(carta);
             refresh();
         }
+
+        refresh();
     </script>
 @endsection
