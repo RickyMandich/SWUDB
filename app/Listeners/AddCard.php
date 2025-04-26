@@ -58,7 +58,25 @@ class AddCard implements ShouldQueue{
                 $card->frontArt = $event->card["frontArt"];
                 $last = "frontArt-backArt";
                 $card->backArt = $event->card["backArt"];
-                $last = "backArt-save";
+                $last = "backArt-maxCopie";
+                $card->maxCopie = 3;
+                if(str_contains(strtolower($card->tipo), 'leader')){
+                    $card->maxCopie = 1;
+                    MessageCreated::dispatch("maxCopie 1");
+                }
+                if(str_contains(strtolower($card->tipo), 'base')){
+                    $card->maxCopie = 1;
+                    MessageCreated::dispatch("maxCopie 1");
+                }
+                if(strtoupper($card->espansione) == 'JTL' && $card->numero == 256){
+                    $card->maxCopie = 15;
+                    MessageCreated::dispatch("maxCopie 15");
+                }
+                if(str_contains(strtolower($card->tipo), "segnalino")){
+                    $card->maxCopie = 0;
+                    MessageCreated::dispatch("maxCopie 0");
+                }
+                $last = "maxCopie-save";
                 unset($card->creazione);
                 $card->save();
             }catch(\Exception $e){
@@ -66,15 +84,14 @@ class AddCard implements ShouldQueue{
                 echo $last;
                 MessageCreated::dispatch("eccezione ".$e->getMessage());
             }
-            $result = Card::where('espansione', $event->card["espansione"])->where('numero',$event->card["numero"])->get()->get(0);
             try{
+                $result = Card::where('espansione', $event->card["espansione"])->where('numero',$event->card["numero"])->get()->get(0);
                 echo $result->snippet."\n";
                 // MessageCreated::dispatch($result->snippet);
             }catch(\Exception $e){
                 echo "eccezione ".$e->getMessage()."\n";
                 MessageCreated::dispatch("eccezione ".$e->getMessage());
             }
-            // MessageCreated::dispatch("ho inserito {$card["snippet"]}");
         }
     }
 

@@ -68,20 +68,4 @@ class Card extends Model{
     public function getFillable(){
         return $this->fillable;
     }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            MessageCreated::dispatch("$model->espansione-$model->numero ($model->nome $model->titolo: $model->tipo");
-            $model->tratti = 'fanculo';
-            if ($model->tipo == 'Leader' || $model->tipo == 'Base') {
-                $model->maxCopie = 1;
-            }
-            if($model->espansione == 'JTL' && $model->numero == 256){
-                $model->maxCopie = 15;
-            }
-        });
-    }
 }

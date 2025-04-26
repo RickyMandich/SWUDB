@@ -31,9 +31,10 @@ class DecksController extends Controller{
 
     public function show($user, $deck){
         if(User::where("name", $user)->first() == null){
-            $state = 404;
+            return view("errors.406");
+        }else if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
+            return view("errors.405");
         }else{
-            $state = 0;
             $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
                         ->where("codUtente", 
                             User::where("name", $user)
@@ -53,7 +54,6 @@ class DecksController extends Controller{
             }
             $carte = Card::get();
             return view("mazzi.show", [
-                "stato" => $state,
                 "nome" => $mazzo->nome,
                 "mazzo" => $cards,
                 "user" => $user,
