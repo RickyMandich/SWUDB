@@ -5,6 +5,7 @@ namespace App\Models {
     /**
      * App\Models\Card
      *
+     * @property int $maxCopie
      * @property string|null $backArt
      * @property string|null $frontArt
      * @property datetime:Y-m-d H:i $uscita
@@ -47,6 +48,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereUscita($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereFrontart($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereBackart($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereMaxcopie($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card query()

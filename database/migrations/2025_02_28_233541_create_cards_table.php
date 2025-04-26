@@ -35,6 +35,7 @@ return new class extends Migration
             $table->string('uscita', 65);
             $table->string('frontArt', 200)->nullable();
             $table->string('backArt', 200)->nullable();
+            $table->integer('maxCopie')->default(3);
             $table->primary(['espansione', 'numero']);
         });
     }

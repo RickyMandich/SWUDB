@@ -49,22 +49,23 @@
 @endsection
 @section('script')
     <script>
-        const carte = [];
-        const mazzo = @json($mazzo);
-        const aggiunte = [];
-        const rimosse = [];
+        const carte = new Map();
+        const mazzo = new Map();
+        @json($mazzo).forEach((carta) => {
+            mazzo.set(`${carta.espansione}-${carta.numero}`, carta);
+        });
+        const aggiunte = new Map();
+        const rimosse = new Map();
         
         let cards = @json($carte);
         cards.forEach((carta) => {
-            carte[`${carta.espansione}-${carta.numero}`] = carta;
+            carte.set(`${carta.espansione}-${carta.numero}`, carta);
         });
 
         function refresh() {
             let contenuto = "";
-            mazzo.forEach((carta, index) => {
-                // Serializza l'oggetto carta in JSON e lo passa come stringa
-                const cartaJSON = JSON.stringify(carta);
-                contenuto += `<span class="${carta.espansione}-${carta.numero} d-flex mt-4">
+            mazzo.forEach((carta) => {
+                contenuto += `<span class="d-flex mt-4">
                     ${carta.copie}
                     <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-0 rounded-start-1 border-end-0 py-1 px-2 lh-1">+</button>
                     <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-0 rounded-end-1 border-start-0 py-1 px-2 lh-1">-</button>
@@ -89,62 +90,55 @@
         }
 
         function aumentaCopia(id) {
-            console.log(`aumento ${id}`);
-            // Trova la carta nel mazzo
-            let index = mazzo.findIndex(c => 
-                c.espansione === carte[id].espansione && 
-                c.numero === carte[id].numero
-            );
-
-            console.log(carte[id]);
-            
-            if (index !== -1) {
-                console.log("carta già presente, aumento le copie di uno");
-                // Aumenta il numero di copie
-                mazzo[index].copie++;
-            }else{
-                console.log("carta non presente nel mazzo, la aggiungo");
-                mazzo[id] = carte[id];
-                mazzo[id].copie = 1;
+            let aggiungi = true;
+            if(mazzo.has(id)){
+                if(mazzo.get(id).copie < carte.get(id).maxCopie) {
+                    mazzo.get(id).copie++;
+                }else{
+                    alert("Hai raggiunto il numero massimo di copie di questa carta");
+                    aggiungi = false;
+                }
             }
-            // Registra l'operazione
-            index = aggiunte.findIndex(c => 
-                c.espansione === carte[id].espansione && 
-                c.numero === carte[id].numero
-            );
-            
-            if (index !== -1) {
-                console.log("carta già presente nelle aggiunte, aumento le copie di uno");
-                // Aumenta il numero di copie
-                aggiunte[index].copie++;
-            }else{
-                console.log("carta non presente nelle aggiunte, la aggiungo");
-                aggiunte[id] = carte[id];
-                aggiunte[id].copie = 1;
+            if(aggiungi){
+                if(rimosse.has(id)){
+                    if(rimosse.get(id).copie > 1) {
+                        rimosse.get(id).copie--;
+                    } else {
+                        rimosse.delete(id);
+                    }
+                }else if(aggiunte.has(id)){
+                    aggiunte.get(id).copie++;
+                }else{
+                    aggiunte.set(id, carte.get(id));
+                    aggiunte.get(id).copie = 1;
+                }
             }
             
             refresh();
         }
 
         function diminuisciCopia(id) {
-            console.log(`diminuisco ${id}`);
-            // Trova la carta nel mazzo
-            const index = mazzo.findIndex(c => 
-                c.espansione === carte[id].espansione && 
-                c.numero === carte[id].numero
-            );
-            
-            if (index !== -1 && mazzo[index].copie > 0) {
-                // Diminuisci il numero di copie
-                mazzo[index].copie--;
-                // Registra l'operazione
-                rimosse[id] = carte[id];
-                rimosse[id].copie = 1;
-                
-                // Se il numero di copie è 0, possiamo rimuovere la carta dal mazzo
-                if (mazzo[index].copie === 0) {
-                    mazzo.splice(index, 1);
+            if(mazzo.has(id)){
+                if(mazzo.get(id).copie > 1) {
+                    mazzo.get(id).copie--;
+                }else{
+                    mazzo.delete(id);
                 }
+                if(aggiunte.has(id)){
+                    if(aggiunte.get(id).copie > 1) {
+                        aggiunte.get(id).copie--;
+                    } else {
+                        aggiunte.delete(id);
+                    }
+                }
+                if(rimosse.has(id)){
+                    rimosse.get(id).copie++;
+                }else{
+                    rimosse.set(id, carte.get(id));
+                    rimosse.get(id).copie = 1;
+                }
+            }else{
+                alert("Non puoi rimuovere una carta che non è nel mazzo");
             }
             
             refresh();
