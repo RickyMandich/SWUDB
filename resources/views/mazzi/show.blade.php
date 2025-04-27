@@ -39,6 +39,7 @@
                     <form method="POST" action="{{ route('mazzo.save', ['user' => $user, 'mazzo' => $deck]) }}">
                         @csrf
                         <button type="submit" class="btn btn-success">Save</button>
+                        <span id="modifiche"></span>
                     </form>
                 </div>
             </div>
@@ -49,53 +50,77 @@
     <script>
         const carte = new Map();
         const mazzo = new Map();
-        @json($mazzo).forEach((carta) => {
-            mazzo.set(`${carta.espansione}-${carta.numero}`, carta);
-        });
         const aggiunte = new Map();
         const rimosse = new Map();
-        
+
         let cards = @json($carte);
         cards.forEach((carta) => {
             carte.set(`${carta.espansione}-${carta.numero}`, carta);
+        });
+
+        @json($mazzo).forEach((carta) => {
+            mazzo.set(`${carta.espansione}-${carta.numero}`, carta);
+            //aumentaCopia(`${carta.espansione}-${carta.numero}`);
         });
 
         function refresh() {
             let contenuto = "";
             mazzo.forEach((carta) => {
                 contenuto += `<span class="d-flex mt-4">
-                    ${carta.copie}
-                    <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-0 rounded-start-1 border-end-0 py-1 px-2 lh-1">+</button>
-                    <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-0 rounded-end-1 border-start-0 py-1 px-2 lh-1">-</button>
+                    ${carta.copie}x
+                    @if ($proprietario)
+                        <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-0 rounded-start-1 border-end-0 py-1 px-2 lh-1">+</button>
+                        <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-0 rounded-end-1 border-start-0 py-1 px-2 lh-1">-</button>
+                    @endif
                     ${carta.snippet}
                 </span>`;
             });
             document.querySelector('.mazzo .contenuto').innerHTML = contenuto;
             
+            let form = "";
+
             // Aggiorna anche la sezione delle carte aggiunte
             let contenutoAggiunte = "";
             aggiunte.forEach(carta => {
-                contenutoAggiunte += `<div>${carta.snippet}</div>`;
+                contenutoAggiunte += `<span class="d-flex mt-4">
+                    ${carta.copie}x
+                    @if ($proprietario)
+                        <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-0 py-1 px-2 lh-1">-</button>
+                    @endif
+                    ${carta.snippet}
+                </span>`;
+                form += `<input type="hidden" name="carte[${carta.espansione}-${carta.numero}]" value="A-${carta.copie}">`;
             });
             document.querySelector('.aggiunte .contenuto').innerHTML = contenutoAggiunte;
             
             // Aggiorna la sezione delle carte rimosse
             let contenutoRimosse = "";
             rimosse.forEach(carta => {
-                contenutoRimosse += `<div>${carta.snippet}</div>`;
+                contenutoRimosse += `<span class="d-flex mt-4">
+                    ${carta.copie}x
+                    @if ($proprietario)
+                        <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-0 py-1 px-2 lh-1">+</button>
+                    @endif
+                    ${carta.snippet}
+                </span>`;
+                form += `<input type="hidden" name="carte[${carta.espansione}-${carta.numero}]" value="R-${carta.copie}">`;
             });
             document.querySelector('.rimosse .contenuto').innerHTML = contenutoRimosse;
+            document.querySelector('#modifiche').innerHTML = form;
         }
 
         function aumentaCopia(id) {
             let aggiungi = true;
             if(mazzo.has(id)){
-                if(mazzo.get(id).copie < carte.get(id).maxCopie) {
+                if(mazzo.get(id).copie < mazzo.get(id).maxCopie) {
                     mazzo.get(id).copie++;
                 }else{
                     alert("Hai raggiunto il numero massimo di copie di questa carta");
                     aggiungi = false;
                 }
+            }else{
+                mazzo.set(id, structuredClone(carte.get(id)));
+                mazzo.get(id).copie = 1;
             }
             if(aggiungi){
                 if(rimosse.has(id)){
@@ -107,7 +132,7 @@
                 }else if(aggiunte.has(id)){
                     aggiunte.get(id).copie++;
                 }else{
-                    aggiunte.set(id, carte.get(id));
+                    aggiunte.set(id, structuredClone(carte.get(id)));
                     aggiunte.get(id).copie = 1;
                 }
             }
@@ -128,11 +153,10 @@
                     } else {
                         aggiunte.delete(id);
                     }
-                }
-                if(rimosse.has(id)){
+                }else if(rimosse.has(id)){
                     rimosse.get(id).copie++;
                 }else{
-                    rimosse.set(id, carte.get(id));
+                    rimosse.set(id, structuredClone(carte.get(id)));
                     rimosse.get(id).copie = 1;
                 }
             }else{

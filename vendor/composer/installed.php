@@ -3,13 +3,22 @@
         'name' => 'laravel/laravel',
         'pretty_version' => 'dev-laravel',
         'version' => 'dev-laravel',
-        'reference' => 'ecf522fc07195751e305c290acc8664f327a41b2',
+        'reference' => '6d1b12e0cfa1c6b138aaa4c0f829847781b41f95',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
+        'awobaz/compoships' => array(
+            'pretty_version' => '2.4.1',
+            'version' => '2.4.1.0',
+            'reference' => '49ef79d912201c8649651d63b5682afae092502e',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../awobaz/compoships',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'brick/math' => array(
             'pretty_version' => '0.12.3',
             'version' => '0.12.3.0',
@@ -388,7 +397,7 @@
         'laravel/laravel' => array(
             'pretty_version' => 'dev-laravel',
             'version' => 'dev-laravel',
-            'reference' => 'ecf522fc07195751e305c290acc8664f327a41b2',
+            'reference' => '6d1b12e0cfa1c6b138aaa4c0f829847781b41f95',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
