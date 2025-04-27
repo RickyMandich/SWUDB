@@ -1,14 +1,17 @@
 @extends('layouts.app')
+@section('include')
+    <script src="https://cdn.jsdelivr.net/npm/@simondmc/popup-js@1.4.2/popup.min.js"></script>
+@endsection
 @section('content')
     <div class="header text-center mb-4">
         <h1>
-            {{ $nome }} <button class="btn btn-primary"> + </button>
+            {{ $nome }} <button onclick="popUpCarte()" class="btn btn-primary"> + </button>
         </h1>
         <h6>
-            @if (count($mazzo) == 1)
-                in questo mazzo è presente {{ count($mazzo) }} carta
+            @if ($size == 1)
+                in questo mazzo è presente {{ $size }} carta
             @else
-                in questo mazzo sono presenti {{ count($mazzo) }} carte
+                in questo mazzo sono presenti {{ $size }} carte
             @endif
         </h6>
     </div>
@@ -25,23 +28,25 @@
             <!-- Colonna destra -->
             <div class="col-md-6">
                 <div class="aggiunte mb-4">
-                    <h3 class="mb-3">Carte aggiunte</h3>
-                    <div class="contenuto">
+                    <h3>Carte aggiunte</h3>
+                    <div class="mb-4 contenuto">
 
                     </div>
                 </div>
                 <div class="rimosse">
-                    <h3 class="mb-3">Carte rimosse</h3>
-                    <div class="contenuto">
+                    <h3>Carte rimosse</h3>
+                    <div class="mb-4 contenuto">
                     </div>
                 </div>
-                <div class="form">
-                    <form method="POST" action="{{ route('mazzo.save', ['user' => $user, 'mazzo' => $deck]) }}">
-                        @csrf
-                        <button type="submit" class="btn btn-success">Save</button>
-                        <span id="modifiche"></span>
-                    </form>
-                </div>
+                @if ($proprietario)
+                    <div class="form">
+                        <form method="POST" action="{{ route('mazzo.save', ['user' => $user, 'mazzo' => $deck]) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-success">Save</button>
+                            <span id="modifiche"></span>
+                        </form>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -60,7 +65,33 @@
 
         @json($mazzo).forEach((carta) => {
             mazzo.set(`${carta.espansione}-${carta.numero}`, carta);
-            //aumentaCopia(`${carta.espansione}-${carta.numero}`);
+        });
+
+        const popup = new Popup({
+            title: 'Aggiungi carte al mazzo',
+            content: 
+            `<div class="popup-carte">
+                <select class="form-select form-select-lg mb-3" oninput="showCopie()" name="id" id="id">
+                <option value="" selected disabled>---Seleziona una carta---</option>
+                    @foreach ($carte as $carta)
+                        @if ($mazzo->has($carta->espansione . '-' . $carta->numero) && $mazzo->get($carta->espansione . '-' . $carta->numero)->copie >= $carta->maxCopie)
+                        @else
+                            <option value="{{ $carta->espansione }}-{{ $carta->numero }}">{{ $carta->snippet }}</option>
+                        @endif
+                    @endforeach
+                </select>
+                <div id="copie"></div>
+                <div id="invio"></div>
+            </div>`,
+            buttons: [
+                {
+                    text: 'x',
+                    className: 'btn btn-secondary',
+                    onClick: function() {
+                        popup.close();
+                    }
+                }
+            ]
         });
 
         function refresh() {
@@ -116,7 +147,7 @@
                     mazzo.get(id).copie++;
                 }else{
                     alert("Hai raggiunto il numero massimo di copie di questa carta");
-                    aggiungi = false;
+                    return false;
                 }
             }else{
                 mazzo.set(id, structuredClone(carte.get(id)));
@@ -138,6 +169,7 @@
             }
             
             refresh();
+            return true;
         }
 
         function diminuisciCopia(id) {
@@ -161,10 +193,80 @@
                 }
             }else{
                 alert("Non puoi rimuovere una carta che non è nel mazzo");
+                return false;
             }
             
             refresh();
+            return true;
         }
+
+        function popUpCarte(){
+            popup.show();
+        }
+
+        function showCopie() {
+            let id = document.querySelector('#id').value;
+            let carta = carte.get(id);
+            let copie = "";
+            for (let i = 1; i <= carta.maxCopie; i++) {
+                copie += 
+                `<input type="radio" class="btn-check" name="copie" id="copie-${i}" autocomplete="off"${(i==1 ? 'checked' : '')}>
+                <label class="btn btn-outline-success" for="copie-${i}">${i}</label>`;
+            }
+            invio = `<input type="button" class="btn btn-success" value="aggiungi" onclick="confermaInserimento('${id}', this.closest('div.popup-carte').querySelector('input[type=radio]:checked').id.split('-')[1])">`;
+            document.querySelector('#copie').innerHTML = copie;
+            document.querySelector('#invio').innerHTML += invio;
+        }
+
+        function confermaInserimento(id, copie) {
+            popup.hide();
+            let continua = true;
+            for(let i = 0; i < copie && continua; i++) {
+                continua = aumentaCopia(id);
+            }
+        }
+
+        window.addEventListener('load', function(event){
+            async function a(popup) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                popup.hide();
+            }
+            @if(session('warning'))
+                let warning = new Popup({
+                    hideTitle: true,
+                    title: 'Warning',
+                    content: `{{ session('warning') }}`,
+                    buttons: [
+                        {
+                            text: 'x',
+                            className: 'btn btn-secondary',
+                            onClick: function() {
+                                warning.close();
+                            }
+                        }
+                    ]
+                });
+                warning.show();
+                a(warning);
+            @endif
+            @if(session('success'))
+                let success = new Popup({
+                    hideTitle: true,
+                    content: `{{ session('success') }}`,
+                    buttons: [
+                        {
+                            text: 'x',
+                            className: 'btn btn-secondary',
+                            onClick: function() {
+                                success.close();
+                            }
+                        }
+                    ]
+                });
+                success.show();
+                a(success);
+            @endif
+        });
 
         refresh();
     </script>

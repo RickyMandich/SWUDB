@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Card;
 use App\Models\Composition;
 use App\Models\Deck;
-
 use App\Models\User;
+
 use DB;
-use Illuminate\Database\Eloquent\Collection;
+
 use Illuminate\Database\Query\JoinClause;
+
 use Illuminate\Http\Request;
+
 use Illuminate\Support\Facades\Auth;
 
 class DecksController extends Controller{
@@ -51,17 +53,20 @@ class DecksController extends Controller{
                 ->select('cards.*', 'compositions.copie')
                 ->where('compositions.idMazzo', $mazzo->id)
                 ->get();
+            $copie = 0;
             foreach($cards as $card){
                 $card->snippet = "$card->espansione-$card->numero - ".$card->nome.(strlen($card->titolo) > 0 ? ", ". strtoupper($card->titolo) : "");
+                $copie += $card->copie;
             }
-            $carte = Card::get();
+            $carte = Card::select("espansione", "numero", "nome", "titolo", "maxCopie")->get();
             return view("mazzi.show", [
                 "nome" => $mazzo->nome,
                 "mazzo" => $cards,
                 "user" => $user,
                 "proprietario" => $proprietario,
                 "deck" => $deck,
-                "carte" => $carte
+                "carte" => $carte,
+                "size" => $copie,
             ]);
         }
     }
@@ -71,7 +76,7 @@ class DecksController extends Controller{
             return view("errors.406");
         }else if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
             return view("errors.405");
-        }else{
+        }else if($request->input("carte") != null){
             $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
                         ->where("codUtente", 
                             User::where("name", $user)
@@ -126,15 +131,29 @@ class DecksController extends Controller{
                             }
                         }
                     }
-                }/*/catch(\Exception $e){
+                }catch(\Exception $e){
                     $vars["error"] = "Errore durante il salvataggio del mazzo: ".$e->getMessage();
                     return $vars;
-                }/**/finally{
+                }finally{
                     $vars["msg"] = "sono arrivato alla fine";
                 }
             };
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("success", "Mazzo salvato con successo");
+        }else{
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("warning", "Non hai aggiunto o rimosso nessuna carta");
         }
+    }
+
+    public function create(Request $request){
+        if(auth()->check()){
+            $mazzo = new Deck();
+            $mazzo->nome = $request->input("nome");
+            $mazzo->public = $request->input("public") == true;
+            $mazzo->codUtente = Auth::user()->id;
+            $mazzo->save();
+            return redirect()->route("mazzo", ["user" => Auth::user()->name, "mazzo" => str_replace(" ", "+", $mazzo->nome)])->with("success", "Mazzo creato con successo");
+        }
+        return redirect()->route("login")->with("warning", "Devi essere loggato per visualizzare questa pagina");
     }
 
     public function api($user, $nome, $public){

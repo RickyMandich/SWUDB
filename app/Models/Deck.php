@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Deck extends Model{
     protected $table = 'decks';
     protected $primaryKey = 'id';
-    public const CREATED_AT = 'creazione';
-    public const UPDATED_AT = 'modifica';
-    protected $dateFormat = 'Y-m-d H:i';
+    public $timestamps = false;
     protected $fillable = [
         'id',
         'nome',
