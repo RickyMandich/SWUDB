@@ -6,7 +6,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2>{{ $carta->nome }} 
                         @if(strlen($carta->titolo) > 0)
-                        <small class="text-muted">{{ strtoupper($carta->titolo) }}</small>
+                        <small class="text-muted text-uppercase">{{ $carta->titolo }}</small>
                         @endif
                     </h2>
                 </div>
@@ -82,9 +82,8 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header d-flex justify-content-between">
-                                    <h5 class="d-flex">immagine</h5>
                                     @if ($carta->tipo == "Leader")
-                                        <a onclick="toggleFrontCard(this)" class="d-flex btn btn-secondary">
+                                        <a onclick="toggleFrontCard(this)" class="d-flex mx-auto btn btn-secondary">
                                             gira la carta
                                         </a>
                                     @endif

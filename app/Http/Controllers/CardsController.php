@@ -59,10 +59,6 @@ class CardsController extends Controller
             $data = [];
             $dataRaw = Card::get()->toArray();
             foreach ($fullSet as &$card) {
-                if(str_contains($card["tipo"], "Segnalino")){
-
-                    $card["espansione"] = "T".$card["espansione"];
-                }
                 $card["tratti"] = implode(" * ", $card["tratti"]);
                 $card["snippet"] = $card["espansione"]."-".$card["numero"]." - ".$card["nome"].((strlen($card["titolo"]) > 0 ? ", ". strtoupper($card["titolo"]) : ""));
                 if(!$this->contain($dataRaw, $card)){

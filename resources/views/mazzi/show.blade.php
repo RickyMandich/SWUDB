@@ -1,7 +1,4 @@
 @extends('layouts.app')
-@section('include')
-    <script src="https://cdn.jsdelivr.net/npm/@simondmc/popup-js@1.4.2/popup.min.js"></script>
-@endsection
 @section('content')
     <div class="header text-center mb-4">
         <h1>
@@ -67,32 +64,7 @@
             mazzo.set(`${carta.espansione}-${carta.numero}`, carta);
         });
 
-        const popup = new Popup({
-            title: 'Aggiungi carte al mazzo',
-            content: 
-            `<div class="popup-carte">
-                <select class="form-select form-select-lg mb-3" oninput="showCopie()" name="id" id="id">
-                <option value="" selected disabled>---Seleziona una carta---</option>
-                    @foreach ($carte as $carta)
-                        @if ($mazzo->has($carta->espansione . '-' . $carta->numero) && $mazzo->get($carta->espansione . '-' . $carta->numero)->copie >= $carta->maxCopie)
-                        @else
-                            <option value="{{ $carta->espansione }}-{{ $carta->numero }}">{{ $carta->snippet }}</option>
-                        @endif
-                    @endforeach
-                </select>
-                <div id="copie"></div>
-                <div id="invio"></div>
-            </div>`,
-            buttons: [
-                {
-                    text: 'x',
-                    className: 'btn btn-secondary',
-                    onClick: function() {
-                        popup.close();
-                    }
-                }
-            ]
-        });
+        let popup;
 
         function refresh() {
             let contenuto = "";
@@ -227,6 +199,33 @@
         }
 
         window.addEventListener('load', function(event){
+            popup = new Popup({
+                title: 'Aggiungi carte al mazzo',
+                content: 
+                `<div class="popup-carte">
+                    <select class="form-select form-select-lg mb-3" oninput="showCopie()" name="id" id="id">
+                    <option value="" selected disabled>---Seleziona una carta---</option>
+                        @foreach ($carte as $carta)
+                            @if ($mazzo->has($carta->espansione . '-' . $carta->numero) && $mazzo->get($carta->espansione . '-' . $carta->numero)->copie >= $carta->maxCopie)
+                            @else
+                                <option value="{{ $carta->espansione }}-{{ $carta->numero }}">{{ $carta->snippet }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <div id="copie"></div>
+                    <div id="invio"></div>
+                </div>`,
+                buttons: [
+                    {
+                        text: 'x',
+                        className: 'btn btn-secondary',
+                        onClick: function() {
+                            popup.close();
+                        }
+                    }
+                ]
+            });
+
             async function a(popup) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 popup.hide();

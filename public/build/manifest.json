@@ -1,8 +1,14 @@
 {
   "resources/js/app.js": {
-    "file": "assets/app-CL0H1wEI.js",
+    "file": "assets/app-D8U4DUeK.js",
     "name": "app",
     "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/popup.js": {
+    "file": "assets/popup-DWV7a6dH.js",
+    "name": "popup",
+    "src": "resources/js/popup.js",
     "isEntry": true
   },
   "resources/sass/app.scss": {
