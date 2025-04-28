@@ -6,6 +6,7 @@
     <button class="btn btn-primary" onclick="openCreaMazzo()">
         Crea Mazzo
     </button>
+    <br>
     @if(count($decks) != 0)
         <ul>
             @foreach ($decks as $deck)

@@ -215,7 +215,7 @@
             }
             invio = `<input type="button" class="btn btn-success" value="aggiungi" onclick="confermaInserimento('${id}', this.closest('div.popup-carte').querySelector('input[type=radio]:checked').id.split('-')[1])">`;
             document.querySelector('#copie').innerHTML = copie;
-            document.querySelector('#invio').innerHTML += invio;
+            document.querySelector('#invio').innerHTML = invio;
         }
 
         function confermaInserimento(id, copie) {

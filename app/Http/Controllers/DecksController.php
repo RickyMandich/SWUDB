@@ -21,11 +21,11 @@ class DecksController extends Controller{
         if(auth()->check()){
             $decksUser = Deck::where("codUtente", auth()->user()->id)->get();
             foreach($decksUser as $deck){
-                array_push($decks, $deck);
+                $decks[$deck->id] = $deck;
             }
             $decksPublic = Deck::where("public", 1)->get();
             foreach($decksPublic as $deck){
-                array_push($decks, $deck);
+                $decks[$deck->id] = $deck;
             }
             return view("mazzi.index", ["decks" => $decks]);
         }
@@ -146,12 +146,16 @@ class DecksController extends Controller{
 
     public function create(Request $request){
         if(auth()->check()){
-            $mazzo = new Deck();
-            $mazzo->nome = $request->input("nome");
-            $mazzo->public = $request->input("public") == true;
-            $mazzo->codUtente = Auth::user()->id;
-            $mazzo->save();
-            return redirect()->route("mazzo", ["user" => Auth::user()->name, "mazzo" => str_replace(" ", "+", $mazzo->nome)])->with("success", "Mazzo creato con successo");
+                if(Deck::where("nome", $request->input("nome"))->where("codUtente", Auth::user()->id)->first() == null){
+                $mazzo = new Deck();
+                $mazzo->nome = $request->input("nome");
+                $mazzo->public = $request->input("public") == true;
+                $mazzo->codUtente = Auth::user()->id;
+                $mazzo->save();
+                return redirect()->route("mazzo", ["user" => Auth::user()->name, "mazzo" => str_replace(" ", "+", $mazzo->nome)])->with("success", "Mazzo creato con successo");
+            }else{
+                return redirect()->route("mazzo", ["user" => Auth::user()->name, "mazzo" => str_replace(" ", "+", $request->input("nome"))])->with("warning", "Questo mazzo esiste già");
+            }
         }
         return redirect()->route("login")->with("warning", "Devi essere loggato per visualizzare questa pagina");
     }
