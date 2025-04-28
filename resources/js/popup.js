@@ -43,6 +43,9 @@ class Popup {
 
     init() {
         // assign parameters with default values
+            // |||||| IMPORTANT ||||||
+            // VVVVVV IMPORTANT VVVVVV
+            // run `npm run build` after edit this file otherwise the changes won't be reflected in the web app
         this.id = this.params.id ?? "popup";
         this.title = this.params.title ?? "Popup Title";
         this.content = this.params.content ?? "Popup Content";
