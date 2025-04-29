@@ -4,4 +4,4 @@
 - ~~sistemare webscraping segnalini~~
 - ~~sistemare l'accesso a mazzi~~
 - ~~sistemare i popup~~
-- sistemare webscraping descrizione leader
+- ~~sistemare webscraping descrizione leader~~
