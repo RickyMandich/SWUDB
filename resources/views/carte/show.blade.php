@@ -17,14 +17,6 @@
                             <table class="table table-striped">
                                 <tbody>
                                     <tr>
-                                        <th scope="row">Nome</th>
-                                        <td>{{ $carta->nome }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">titolo</th>
-                                        <td>{{ $carta->titolo }}</td>
-                                    </tr>
-                                    <tr>
                                         <th scope="row">espansione</th>
                                         <td>{{ $carta->espansione }}</td>
                                     </tr>
@@ -39,10 +31,6 @@
                                     <tr>
                                         <th scope="row">aspettoSecondario</th>
                                         <td>{{ $carta->aspettoSecondario }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">unica</th>
-                                        <td>{{ $carta->unica?"sì":"no" }}</td>
                                     </tr>
                                     <tr>
                                         <th scope="row">tipo</th>

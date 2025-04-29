@@ -1,12 +1,12 @@
 {
   "resources/js/app.js": {
-    "file": "assets/app-D8U4DUeK.js",
+    "file": "assets/app-DTdKnCa4.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
   },
   "resources/js/popup.js": {
-    "file": "assets/popup-DWV7a6dH.js",
+    "file": "assets/popup-BQW33FHy.js",
     "name": "popup",
     "src": "resources/js/popup.js",
     "isEntry": true

@@ -4,6 +4,9 @@
         <h1>
             {{ $nome }} <button onclick="popUpCarte()" class="btn btn-primary"> + </button>
         </h1>
+        <h4>
+            <small class="text-muted">di {{ $user }}</small>
+        </h4>
         <h6>
             @if ($size == 1)
                 in questo mazzo è presente {{ $size }} carta
@@ -52,14 +55,16 @@
     <script>
         const carte = new Map();
         const mazzo = new Map();
-        const aggiunte = new Map();
-        const rimosse = new Map();
 
-        let cards = @json($carte);
-        cards.forEach((carta) => {
-            carte.set(`${carta.espansione}-${carta.numero}`, carta);
-        });
+        @if($proprietario)
+            const aggiunte = new Map();
+            const rimosse = new Map();
 
+            let cards = @json($carte);
+            cards.forEach((carta) => {
+                carte.set(`${carta.espansione}-${carta.numero}`, carta);
+            });
+        @endif
         @json($mazzo).forEach((carta) => {
             mazzo.set(`${carta.espansione}-${carta.numero}`, carta);
         });
@@ -79,98 +84,101 @@
                 </span>`;
             });
             document.querySelector('.mazzo .contenuto').innerHTML = contenuto;
-            
-            let form = "";
+            @if($proprietario)
+                let form = "";
 
-            // Aggiorna anche la sezione delle carte aggiunte
-            let contenutoAggiunte = "";
-            aggiunte.forEach(carta => {
-                contenutoAggiunte += `<span class="d-flex mt-4">
-                    ${carta.copie}x
-                    @if ($proprietario)
-                        <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-0 py-1 px-2 lh-1">-</button>
-                    @endif
-                    ${carta.snippet}
-                </span>`;
-                form += `<input type="hidden" name="carte[${carta.espansione}-${carta.numero}]" value="A-${carta.copie}">`;
-            });
-            document.querySelector('.aggiunte .contenuto').innerHTML = contenutoAggiunte;
-            
-            // Aggiorna la sezione delle carte rimosse
-            let contenutoRimosse = "";
-            rimosse.forEach(carta => {
-                contenutoRimosse += `<span class="d-flex mt-4">
-                    ${carta.copie}x
-                    @if ($proprietario)
-                        <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-0 py-1 px-2 lh-1">+</button>
-                    @endif
-                    ${carta.snippet}
-                </span>`;
-                form += `<input type="hidden" name="carte[${carta.espansione}-${carta.numero}]" value="R-${carta.copie}">`;
-            });
-            document.querySelector('.rimosse .contenuto').innerHTML = contenutoRimosse;
-            document.querySelector('#modifiche').innerHTML = form;
+                // Aggiorna anche la sezione delle carte aggiunte
+                let contenutoAggiunte = "";
+                aggiunte.forEach(carta => {
+                    contenutoAggiunte += `<span class="d-flex mt-4">
+                        ${carta.copie}x
+                        @if ($proprietario)
+                            <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-0 py-1 px-2 lh-1">-</button>
+                        @endif
+                        ${carta.snippet}
+                    </span>`;
+                    form += `<input type="hidden" name="carte[${carta.espansione}-${carta.numero}]" value="A-${carta.copie}">`;
+                });
+                document.querySelector('.aggiunte .contenuto').innerHTML = contenutoAggiunte;
+                
+                // Aggiorna la sezione delle carte rimosse
+                let contenutoRimosse = "";
+                rimosse.forEach(carta => {
+                    contenutoRimosse += `<span class="d-flex mt-4">
+                        ${carta.copie}x
+                        @if ($proprietario)
+                            <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-0 py-1 px-2 lh-1">+</button>
+                        @endif
+                        ${carta.snippet}
+                    </span>`;
+                    form += `<input type="hidden" name="carte[${carta.espansione}-${carta.numero}]" value="R-${carta.copie}">`;
+                });
+                document.querySelector('.rimosse .contenuto').innerHTML = contenutoRimosse;
+                document.querySelector('#modifiche').innerHTML = form;
+            @endif
         }
 
-        function aumentaCopia(id) {
-            let aggiungi = true;
-            if(mazzo.has(id)){
-                if(mazzo.get(id).copie < mazzo.get(id).maxCopie) {
-                    mazzo.get(id).copie++;
+        @if($proprietario)
+            function aumentaCopia(id) {
+                let aggiungi = true;
+                if(mazzo.has(id)){
+                    if(mazzo.get(id).copie < mazzo.get(id).maxCopie) {
+                        mazzo.get(id).copie++;
+                    }else{
+                        alert("Hai raggiunto il numero massimo di copie di questa carta");
+                        return false;
+                    }
                 }else{
-                    alert("Hai raggiunto il numero massimo di copie di questa carta");
+                    mazzo.set(id, structuredClone(carte.get(id)));
+                    mazzo.get(id).copie = 1;
+                }
+                if(aggiungi){
+                    if(rimosse.has(id)){
+                        if(rimosse.get(id).copie > 1) {
+                            rimosse.get(id).copie--;
+                        } else {
+                            rimosse.delete(id);
+                        }
+                    }else if(aggiunte.has(id)){
+                        aggiunte.get(id).copie++;
+                    }else{
+                        aggiunte.set(id, structuredClone(carte.get(id)));
+                        aggiunte.get(id).copie = 1;
+                    }
+                }
+                
+                refresh();
+                return true;
+            }
+
+            function diminuisciCopia(id) {
+                if(mazzo.has(id)){
+                    if(mazzo.get(id).copie > 1) {
+                        mazzo.get(id).copie--;
+                    }else{
+                        mazzo.delete(id);
+                    }
+                    if(aggiunte.has(id)){
+                        if(aggiunte.get(id).copie > 1) {
+                            aggiunte.get(id).copie--;
+                        } else {
+                            aggiunte.delete(id);
+                        }
+                    }else if(rimosse.has(id)){
+                        rimosse.get(id).copie++;
+                    }else{
+                        rimosse.set(id, structuredClone(carte.get(id)));
+                        rimosse.get(id).copie = 1;
+                    }
+                }else{
+                    alert("Non puoi rimuovere una carta che non è nel mazzo");
                     return false;
                 }
-            }else{
-                mazzo.set(id, structuredClone(carte.get(id)));
-                mazzo.get(id).copie = 1;
+                
+                refresh();
+                return true;
             }
-            if(aggiungi){
-                if(rimosse.has(id)){
-                    if(rimosse.get(id).copie > 1) {
-                        rimosse.get(id).copie--;
-                    } else {
-                        rimosse.delete(id);
-                    }
-                }else if(aggiunte.has(id)){
-                    aggiunte.get(id).copie++;
-                }else{
-                    aggiunte.set(id, structuredClone(carte.get(id)));
-                    aggiunte.get(id).copie = 1;
-                }
-            }
-            
-            refresh();
-            return true;
-        }
-
-        function diminuisciCopia(id) {
-            if(mazzo.has(id)){
-                if(mazzo.get(id).copie > 1) {
-                    mazzo.get(id).copie--;
-                }else{
-                    mazzo.delete(id);
-                }
-                if(aggiunte.has(id)){
-                    if(aggiunte.get(id).copie > 1) {
-                        aggiunte.get(id).copie--;
-                    } else {
-                        aggiunte.delete(id);
-                    }
-                }else if(rimosse.has(id)){
-                    rimosse.get(id).copie++;
-                }else{
-                    rimosse.set(id, structuredClone(carte.get(id)));
-                    rimosse.get(id).copie = 1;
-                }
-            }else{
-                alert("Non puoi rimuovere una carta che non è nel mazzo");
-                return false;
-            }
-            
-            refresh();
-            return true;
-        }
+        @endif
 
         function popUpCarte(){
             popup.show();

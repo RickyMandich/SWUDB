@@ -21,15 +21,17 @@ class DecksController extends Controller{
         if(auth()->check()){
             $decksUser = Deck::where("codUtente", auth()->user()->id)->get();
             foreach($decksUser as $deck){
+                $deck->utente = User::where("id", $deck->codUtente)->first()->name;
                 $decks[$deck->id] = $deck;
             }
-            $decksPublic = Deck::where("public", 1)->get();
-            foreach($decksPublic as $deck){
-                $decks[$deck->id] = $deck;
-            }
-            return view("mazzi.index", ["decks" => $decks]);
         }
-        return redirect()->route("login")->with("warning", "Devi essere loggato per visualizzare questa pagina");
+        $decksPublic = Deck::where("public", 1)->where("codUtente", "!=", auth()->user()->id)->orderBy("codUtente")->get();
+        foreach($decksPublic as $deck){
+            $deck->utente = User::where("id", $deck->codUtente)->first()->name;
+            $deck->dirtyName = "$deck->nome di $deck->utente";
+            $decks[$deck->id] = $deck;
+        }
+        return view("mazzi.index", ["decks" => $decks]);
     }
 
     public function show($user, $deck){

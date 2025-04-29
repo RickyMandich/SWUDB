@@ -1,14 +1,16 @@
 @extends('layouts.app')
 @section('content')
-    <button class="btn btn-primary" onclick="openCreaMazzo()">
-        Crea Mazzo
-    </button>
-    <br>
+    @if(Auth::check())
+        <button class="btn btn-primary" onclick="openCreaMazzo()">
+            Crea Mazzo
+        </button>
+        <br>
+    @endif
     @if(count($decks) != 0)
         <ul>
             @foreach ($decks as $deck)
                 <li>
-                    <a class="link-underline link-underline-opacity-0" href="/<?php echo Auth::user()->name ?>/{{ str_replace(" ", "+", $deck->nome) }}">{{ $deck->nome }}</a>
+                    <a class="link-underline link-underline-opacity-0" href="/<?php echo $deck->utente; ?>/{{ str_replace(" ", "+", $deck->nome) }}">{{ $deck->dirtyName != "" ? $deck->dirtyName : $deck->nome }}</a>
                 </li>
             @endforeach
         </ul>

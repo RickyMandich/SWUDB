@@ -1,38 +1,11 @@
-// const queuedPopups = [];
-// let loadPhase = 2;
-
 // download css and apply
 const head = document.getElementsByTagName("head")[0];
 const link = document.createElement("link");
 link.rel = "stylesheet";
 link.type = "text/css";
 link.href = "https://cdn.jsdelivr.net/npm/@simondmc/popup-js@1.4.3/popup.min.css";
-//link.href = "../popup.css";
 link.media = "all";
 head.appendChild(link);
-
-// // when css loads add to loadPhase
-// link.onload = function () {
-//     loadPhase += 1;
-//     if (loadPhase === 2) {
-//         loadPopups();
-//     }
-// };
-
-// // when doc loads add to loadPhase
-// window.addEventListener("load", () => {
-//     loadPhase += 1;
-//     if (loadPhase === 2) {
-//         loadPopups();
-//     }
-// });
-
-// function loadPopups() {
-//     // initialize all queued popups
-//     while (queuedPopups.length > 0) {
-//         queuedPopups.shift().init();
-//     }
-// }
 
 class Popup {
     // build popup with parameters
@@ -49,10 +22,10 @@ class Popup {
         this.id = this.params.id ?? "popup";
         this.title = this.params.title ?? "Popup Title";
         this.content = this.params.content ?? "Popup Content";
-        this.titleColor = this.params.titleColor ?? "#000000";
-        this.backgroundColor = this.params.backgroundColor ?? "#ffffff";
-        this.closeColor = this.params.closeColor ?? "#000000";
-        this.textColor = this.params.textColor ?? "#000000";
+        this.titleColor = this.params.titleColor ?? "#ffffff";
+        this.backgroundColor = this.params.backgroundColor ?? "#555555";
+        this.closeColor = this.params.closeColor ?? "#ffffff";
+        this.textColor = this.params.textColor ?? "#ffffff";
         this.linkColor = this.params.linkColor ?? "#383838";
         this.widthMultiplier = this.params.widthMultiplier ?? 1;
         this.heightMultiplier = this.params.heightMultiplier ?? 0.66;
