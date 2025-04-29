@@ -5,3 +5,4 @@
 - ~~sistemare l'accesso a mazzi~~
 - ~~sistemare i popup~~
 - ~~sistemare webscraping descrizione leader~~
+- ~~sistemare visualizzazione descrizione leader~~

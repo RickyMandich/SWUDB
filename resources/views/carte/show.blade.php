@@ -88,7 +88,7 @@
                                 <h5>Descrizione</h5>
                             </div>
                             <div class="card-body">
-                                <p class="card-text">{!! nl2br(e($carta->descrizione)) !!}</p>
+                                <p class="card-text">{!! nl2br($carta->descrizione) !!}</p>
                             </div>
                         </div>
                     </div>
