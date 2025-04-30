@@ -68,7 +68,7 @@
                             </table>
                         </div>
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card immagine">
                                 <div class="card-header d-flex justify-content-between">
                                     @if ($carta->tipo == "Leader")
                                         <a onclick="toggleFrontCard(this)" class="d-flex mx-auto btn btn-secondary">
@@ -120,10 +120,14 @@
             }
 
             function toggleLink(link){
-                if(link.includes('Unit')) {
+                if(back == link){
                     link = front;
+                    console.log("ho impostato il fronte della carta");
+                    console.log(link);
                 } else {
                     link = back;
+                    console.log("ho impostato il retro della carta");
+                    console.log(link);
                 }
                 return link;
             }
@@ -132,9 +136,13 @@
         carta non trovata
     @endif
     <style>
-        img{
+        .immagine img{
             max-width: 100%;
             max-height: 100%;
+        }
+        
+        .immagine img{
+            width: 100%;
         }
 
         h5{
