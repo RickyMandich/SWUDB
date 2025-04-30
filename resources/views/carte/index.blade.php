@@ -25,7 +25,7 @@
                             @foreach ($header as $attributo)
                                 <td>
                                     <a href="/carta/{{ $carta["espansione"] }}/{{ $carta["numero"] }}">
-                                        {{ $carta[$attributo] }}
+                                        {!! nl2br($carta[$attributo]) !!}
                                     </a>
                                 </td>
                             @endforeach
