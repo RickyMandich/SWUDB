@@ -103,7 +103,7 @@
             </div>
         </main>
 
-        <footer>
+        <footer class="bg-custom-light">
             <div class="container">
                 <div class="row">
                     <div class="col text-center">
