@@ -17,7 +17,13 @@ use App\Http\Controllers\CardsController;?>
         @endif
         <?php function printlnd($line, $deep = 0, $name, $link = false){
             if(gettype($line) == 'array' || gettype($line) == 'object'){
-                echo "$name-->{<br>";
+                if(array_key_exists("cid", $line)){
+                    ?>
+                    <a href="{{ route('carta', ['espansione' => $line["espansione"], 'numero' => $line["numero"]]) }}">{{$name}}</a>-->{<br>
+                    <?php
+                }else{
+                    echo "$name-->{<br>";
+                }
                 foreach($line as $i => $value){
                     unset($j);
                     for($j = 0;$j<=$deep;$j++){

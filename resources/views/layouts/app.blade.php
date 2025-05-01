@@ -7,7 +7,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'SWUDB') }}</title>
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.bunny.net">
@@ -32,7 +32,7 @@
         <nav class="navbar navbar-expand-md shadow-sm bg-custom-light">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
-                    {{ config('app.name', 'SWUDB.net') }}
+                    {{ config('app.domain', 'SWUDB.net') }}
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
                     <span class="navbar-toggler-icon"></span>
@@ -107,8 +107,8 @@
             <div class="container">
                 <div class="row">
                     <div class="col text-center">
-                        <p>{{ config('app.name', 'SWUDB.net') }} is an unofficial fan site. The literal and graphical information presented on this site about Star Wars: Unlimited, including card images and aspect symbols, is copyright Fantasy Flight Publishing Inc and Lucasfilm Ltd. {{ config('app.name', 'SWUDB.net') }} is not produced by or endorsed by FFG or LFL.</p>
-                        <p>All other content © 2023 - 2025 {{ config('app.name', 'SWUDB.net') }}. Use of this site constitutes acceptance of the {{ config('app.name', 'SWUDB.net') }} Terms of Service.</p>
+                        <p>{{ config('app.domain', 'SWUDB.net') }} is an unofficial fan site. The literal and graphical information presented on this site about Star Wars: Unlimited, including card images and aspect symbols, is copyright Fantasy Flight Publishing Inc and Lucasfilm Ltd. {{ config('app.domain', 'SWUDB.net') }} is not produced by or endorsed by FFG or LFL.</p>
+                        <p>All other content © 2023 - 2025 {{ config('app.domain', 'SWUDB.net') }}. Use of this site constitutes acceptance of the {{ config('app.domain', 'SWUDB.net') }} Terms of Service.</p>
                     </div>
                 </div>
             </div>
