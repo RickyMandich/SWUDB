@@ -6,3 +6,4 @@
 - ~~sistemare i popup~~
 - ~~sistemare webscraping descrizione leader~~
 - ~~sistemare visualizzazione descrizione leader~~
+- sistemare il footer
