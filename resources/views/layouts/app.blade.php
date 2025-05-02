@@ -103,7 +103,7 @@
             </div>
         </main>
 
-        <footer class="bg-custom-light mt-auto">
+        <footer class="bg-custom-light mt-auto pt-2">
             <div class="container">
                 <div class="row">
                     <div class="col text-center">

@@ -93,7 +93,7 @@
                     contenutoAggiunte += `<span class="d-flex mt-4">
                         ${carta.copie}x
                         @if ($proprietario)
-                            <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-0 py-1 px-2 lh-1">-</button>
+                            <button type="button" onclick='diminuisciCopia("${carta.espansione}-${carta.numero}")' class="btn btn-danger rounded-1 border-0 py-1 px-2 lh-1">-</button>
                         @endif
                         ${carta.snippet}
                     </span>`;
@@ -107,7 +107,7 @@
                     contenutoRimosse += `<span class="d-flex mt-4">
                         ${carta.copie}x
                         @if ($proprietario)
-                            <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-0 py-1 px-2 lh-1">+</button>
+                            <button type="button" onclick='aumentaCopia("${carta.espansione}-${carta.numero}")' class="btn btn-success rounded-1 border-0 py-1 px-2 lh-1">+</button>
                         @endif
                         ${carta.snippet}
                     </span>`;
