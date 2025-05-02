@@ -25,7 +25,7 @@ class DecksController extends Controller{
                 $decks[$deck->id] = $deck;
             }
         }
-        $decksPublic = Deck::where("public", 1)->where("codUtente", "!=", auth()->user()->id)->orderBy("codUtente")->get();
+        $decksPublic = Deck::where("public", 1)->where("codUtente", "!=", Auth::user()!= null ? Auth::user()->id : -1)->orderBy("codUtente")->get();
         foreach($decksPublic as $deck){
             $deck->utente = User::where("id", $deck->codUtente)->first()->name;
             $deck->dirtyName = "$deck->nome di $deck->utente";
