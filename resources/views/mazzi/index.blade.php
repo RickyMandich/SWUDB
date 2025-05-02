@@ -10,7 +10,7 @@
         <ul>
             @foreach ($decks as $deck)
                 <li>
-                    <a class="link-underline link-underline-opacity-0" href="/<?php echo $deck->utente; ?>/{{ str_replace(" ", "+", $deck->nome) }}">{{ $deck->dirtyName != "" ? $deck->dirtyName : $deck->nome }}</a>
+                    <a class="link-underline link-underline-opacity-0" href="{{ route("mazzo", ["user" => $deck->utente, "mazzo" => str_replace(" ", "+", $deck->nome)]) }}">{{ $deck->dirtyName != "" ? $deck->dirtyName : $deck->nome }}</a>
                 </li>
             @endforeach
         </ul>
