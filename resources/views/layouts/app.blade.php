@@ -120,8 +120,7 @@
                             <small class="text-muted text-uppercase">
                                 Mandich Riccardo
                             </small>
-                        </p>
-                        <p>
+                            <br>
                             with
                             <small class="text-muted text-uppercase">
                                 laravel
