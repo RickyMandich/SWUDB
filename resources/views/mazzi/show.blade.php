@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('title', "$nome di $user")
 @section('content')
     <div class="header text-center mb-4">
         <h1>
