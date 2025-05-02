@@ -28,7 +28,7 @@
     }
 </style>
 <body>
-    <div id="app">
+    <div id="app" class="min-vh-100">
         <nav class="navbar navbar-expand-md shadow-sm bg-custom-light">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
@@ -97,13 +97,13 @@
             </div>
         </nav>
 
-        <main class="py-4">
+        <main class="py-4 flex-grow-1">
             <div class="container content @yield('content-class')">
                 @yield('content')
             </div>
         </main>
 
-        <footer class="bg-custom-light">
+        <footer class="bg-custom-light mt-auto">
             <div class="container">
                 <div class="row">
                     <div class="col text-center">
