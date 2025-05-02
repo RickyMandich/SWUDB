@@ -35,9 +35,9 @@ Route::get('/carte/update', [CardsController::class, 'create'])->name("carte/upd
 
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
-Route::get('/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
+Route::get('mazzo/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
 
-Route::post('/{user}/{mazzo}/save', [DecksController::class, 'store'])->name("mazzo.save");
+Route::post('mazzo/{user}/{mazzo}/save', [DecksController::class, 'store'])->name("mazzo.save");
 
 Route::post('mazzo/create', [DecksController::class, 'create'])->name("mazzo.create");
 
@@ -63,4 +63,12 @@ Route::get('/test', function(){
 
 Route::get('/users', function(){
     return redirect()->route("query", ["query" => "SELECT * FROM users"]);
-}); 
+});
+
+Route::get('/docs/tos', function(){
+    return view("docs.termOfService");
+})->name("docs.tos");
+
+Route::get('/docs/privacy', function(){
+    return view("docs.privacy");
+})->name("docs.privacy");

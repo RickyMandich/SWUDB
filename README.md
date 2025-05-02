@@ -8,3 +8,5 @@
 - ~~sistemare visualizzazione descrizione leader~~
 - ~~sistemare la posizion del footer~~
 - ~~sistemare la posizione dei messaggi di errore~~
+- ~~scrivere i termini di servizio~~
+- ~~scrivere le traduzioni~~

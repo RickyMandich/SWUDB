@@ -42,14 +42,14 @@
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('mazzi') }}">{{ __('mazzi') }}</a>
+                            <a class="nav-link" href="{{ route('mazzi') }}">{{ __('custom.mazzi') }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('carte') }}">{{ __('carte') }}</a>
+                            <a class="nav-link" href="{{ route('carte') }}">{{ __('custom.carte') }}</a>
                         </li>
                         <li class="nav-item">
                             <form action="{{ route('carte') }}">
-                                <input class="form-control" type="text" placeholder="cerca una carta" name="nome" id="nome">
+                                <input class="form-control" type="text" placeholder="{{ __("custom.searchCard") }}" name="nome" id="nome">
                             </form>
                         </li> 
                     </ul>
@@ -60,13 +60,13 @@
                         @guest
                             @if (Route::has('login'))
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
+                                    <a class="nav-link" href="{{ route('login') }}">{{ __('custom.Login') }}</a>
                                 </li>
                             @endif
 
                             @if (Route::has('register'))
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
+                                    <a class="nav-link" href="{{ route('register') }}">{{ __('custom.Register') }}</a>
                                 </li>
                             @endif
                         @else
@@ -76,19 +76,19 @@
                             </a>
 
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="{{ route('dashboard') }}">
+                                    {{ __('custom.Dashboard') }}
+                                </a>
+
                                 <a class="dropdown-item" href="{{ route('logout') }}"
                                    onclick="event.preventDefault();
                                                  document.getElementById('logout-form').submit();">
-                                    {{ __('Logout') }}
+                                    {{ __('custom.Logout') }}
                                 </a>
 
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                     @csrf
                                 </form>
-
-                                <a class="dropdown-item" href="{{ route('dashboard') }}">
-                                    {{ __('Dashboard') }}
-                                </a>
                             </div>
                         </li>
                         @endguest
@@ -107,8 +107,8 @@
             <div class="container">
                 <div class="row">
                     <div class="col text-center">
-                        <p>{{ config('app.domain', 'SWUDB.net') }} is an unofficial fan site. The literal and graphical information presented on this site about Star Wars: Unlimited, including card images and aspect symbols, is copyright Fantasy Flight Publishing Inc and Lucasfilm Ltd. {{ config('app.domain', 'SWUDB.net') }} is not produced by or endorsed by FFG or LFL.</p>
-                        <p>All other content © 2023 - 2025 {{ config('app.domain', 'SWUDB.net') }}. Use of this site constitutes acceptance of the {{ config('app.domain', 'SWUDB.net') }} Terms of Service.</p>
+                        <p>{{ __("custom.upperFooter") }}</p>
+                        <p>{{ __("custom.lowerFooter") }}</p>
                     </div>
                 </div>
             </div>
