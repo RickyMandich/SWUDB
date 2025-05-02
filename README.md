@@ -6,5 +6,5 @@
 - ~~sistemare i popup~~
 - ~~sistemare webscraping descrizione leader~~
 - ~~sistemare visualizzazione descrizione leader~~
-- sistemare il footer
+- sistemare la posizion del footer
 - ~~sistemare la posizione dei messaggi di errore~~
