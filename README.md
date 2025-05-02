@@ -10,3 +10,4 @@
 - ~~sistemare la posizione dei messaggi di errore~~
 - ~~scrivere i termini di servizio~~
 - ~~scrivere le traduzioni~~
+- sistemare bordi aggiunta/rimozione carte
