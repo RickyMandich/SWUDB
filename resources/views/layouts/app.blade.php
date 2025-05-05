@@ -26,6 +26,10 @@
     nav{
         z-index: 1021;
     }
+    a{
+        text-decoration: none;
+        color: inherit;
+    }
 </style>
 <body>
     <div id="app" class="d-flex flex-column justify-content-between min-vh-100">
@@ -108,7 +112,7 @@
                 <div class="row">
                     <div class="col text-center">
                         <p>{{ __("custom.upperFooter") }}</p>
-                        <p>{{ __("custom.lowerFooter") }}</p>
+                        <p>{{ __("custom.lowerFooter") }} <a href="/docs/tos">Terms of Service<a>.</p>
                     </div>
                 </div>
             </div>
@@ -123,7 +127,7 @@
                             <br>
                             with
                             <small class="text-muted text-uppercase">
-                                laravel
+                                <a href="https://laravel.com/docs/12.x">laravel</a>
                             </small>
                         </p>
                     </div>
