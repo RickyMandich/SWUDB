@@ -2,12 +2,10 @@
 
 namespace App\Providers;
 
-use App\Events\CardReceived;
-use App\Events\MessageCreated;
+use Illuminate\Http\Request;
 
-use App\Listeners\SendMessage;
-use App\Listeners\AddCard;
-use Event;
+use Illuminate\Support\Facades\URL;
+
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,5 +21,21 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void{}
+    public function boot(): void{
+        // Soluzione semplificata per HTTPS con ngrok
+    if (str_contains(request()->getHost(), 'ngrok')) {
+        URL::forceScheme('https');
+        
+        // Forza il trust proxy per ngrok
+        if (method_exists(Request::class, 'setTrustedProxies')) {
+            request()->setTrustedProxies(
+                ['*'], 
+                Request::HEADER_X_FORWARDED_FOR | 
+                Request::HEADER_X_FORWARDED_HOST | 
+                Request::HEADER_X_FORWARDED_PORT | 
+                Request::HEADER_X_FORWARDED_PROTO
+            );
+        }
+    }
+    }
 }
