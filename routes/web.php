@@ -27,7 +27,9 @@ Route::get("query", function(Request $request){
     return view("query", ["result" => DB::select($query), "query"=>$query]);
 })->name("query");
 
-Route::get('/carte/{espansione?}', [CardsController::class, 'index'])->name("carte");
+Route::get('/carte/{espansione}', [CardsController::class, 'index'])->name("carte.set");
+
+Route::get('/carte', [CardsController::class, 'indexAll'])->name("carte");
 
 Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 

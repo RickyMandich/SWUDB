@@ -14,7 +14,7 @@ class CardsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index($espansione = "", Request $request){
+    public function index($espansione, Request $request){
         $get = $request->all();
         if(!isset($get["nome"])){
             $get["nome"] = "";
@@ -30,6 +30,10 @@ class CardsController extends Controller
         }
         $header = ["snippet", "aspettoPrimario", "aspettoSecondario", "tipo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita"];
         return view('carte.index', ["content" => $model, "empty" => $empty, "nome" => $get["nome"], "header" => $header]);
+    }
+
+    public function indexAll(Request $request){
+        return CardsController::index("", $request);
     }
     
     public function create(){
