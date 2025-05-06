@@ -33,15 +33,15 @@ Route::get('/carte', [CardsController::class, 'indexAll'])->name("carte");
 
 Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 
-Route::get('/carte/update', [CardsController::class, 'create'])->name("carte.update");
+Route::get('/update', [CardsController::class, 'create'])->name("carte.update");
 
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
-Route::get('mazzo/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
+Route::get('/mazzo/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
 
-Route::post('mazzo/{user}/{mazzo}/save', [DecksController::class, 'store'])->name("mazzo.save");
+Route::post('/mazzo/{user}/{mazzo}/save', [DecksController::class, 'store'])->name("mazzo.save");
 
-Route::post('mazzo/create', [DecksController::class, 'create'])->name("mazzo.create");
+Route::post('/mazzo/create', [DecksController::class, 'create'])->name("mazzo.create");
 
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
