@@ -24,9 +24,13 @@
                         <tr>
                             @foreach ($header as $attributo)
                                 <td>
+                                    @if ($attributo == "snippet")
                                     <a href="/carta/{{ $carta["espansione"] }}/{{ $carta["numero"] }}">
                                         {!! nl2br($carta[$attributo]) !!}
                                     </a>
+                                    @else
+                                        {!! nl2br($carta[$attributo]) !!}
+                                    @endif
                                 </td>
                             @endforeach
                         </tr>

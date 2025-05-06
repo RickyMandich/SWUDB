@@ -14,12 +14,12 @@ class CardsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request){
+    public function index($espansione = "", Request $request){
         $get = $request->all();
         if(!isset($get["nome"])){
             $get["nome"] = "";
         }
-        $model = Card::select("espansione", "numero", "aspettoPrimario", "aspettoSecondario", "nome", "titolo", "tipo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita")->whereLike("nome", "%".$get["nome"]."%")->get();
+        $model = Card::select("espansione", "numero", "aspettoPrimario", "aspettoSecondario", "nome", "titolo", "tipo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita")->whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
         $empty = $model->isEmpty();
         $model = $model->toArray();
         $model = $this->mergeSort($model);
@@ -75,6 +75,11 @@ class CardsController extends Controller
 
     public function api($espansione, $numero){
         return Card::where('numero', $numero)->where('espansione', $espansione)->first();
+    }
+
+    public function apis($espansione){
+        $ret = Card::where('espansione', $espansione)->get();
+        return [$ret->count(), $ret];
     }
 
     public function show($espansione, $numero){

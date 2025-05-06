@@ -27,11 +27,11 @@ Route::get("query", function(Request $request){
     return view("query", ["result" => DB::select($query), "query"=>$query]);
 })->name("query");
 
-Route::get('/carte', [CardsController::class, 'index'])->name("carte");
+Route::get('/carte/{espansione?}', [CardsController::class, 'index'])->name("carte");
 
 Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 
-Route::get('/carte/update', [CardsController::class, 'create'])->name("carte/update");
+Route::get('/carte/update', [CardsController::class, 'create'])->name("carte.update");
 
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
@@ -41,9 +41,11 @@ Route::post('mazzo/{user}/{mazzo}/save', [DecksController::class, 'store'])->nam
 
 Route::post('mazzo/create', [DecksController::class, 'create'])->name("mazzo.create");
 
-Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api/carta");
+Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
-Route::get("/api/mazzi/{user}/{nome}/{public}", [DecksController::class, 'api'])->name("api/mazzi");
+Route::get("/api/carte/{espansione}", [CardsController::class, 'apis'])->name("api.carte");
+
+Route::get("/api/mazzi/{user}/{nome}/{public}", [DecksController::class, 'api'])->name("api.mazzi");
 
 Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
