@@ -11,4 +11,4 @@
 - ~~scrivere i termini di servizio~~
 - ~~scrivere le traduzioni~~
 - ~~sistemare bordi aggiunta/rimozione carte~~
-- sistemare la barra di ricerca nella navbar
+- ~~sistemare la barra di ricerca nella navbar~~
