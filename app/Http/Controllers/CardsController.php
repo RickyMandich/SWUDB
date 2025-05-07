@@ -107,11 +107,9 @@ class CardsController extends Controller
     function contain($array, $element){
         foreach($array as $el){
             if($el["espansione"] == $element["espansione"] && $el["numero"] == $element["numero"]){
-                // echo "la carta ".$element["snippet"]." è già presente<br>";
                 return true;
             }
         }
-        // echo "la carta ".$element["snippet"]." non è presente<br>";
         return false;
     }
 
