@@ -1,5 +1,5 @@
 # todo list
-- ~~sistemare l'intestazione dell'immagine [CardsController::class, 'show']~~
+- ~~sistemare l'intestazione dell'immagine~~
 - ~~sistemare icona unica~~
 - ~~sistemare webscraping segnalini~~
 - ~~sistemare l'accesso a mazzi~~
@@ -11,3 +11,4 @@
 - ~~scrivere i termini di servizio~~
 - ~~scrivere le traduzioni~~
 - ~~sistemare bordi aggiunta/rimozione carte~~
+- sistemare la barra di ricerca nella navbar
