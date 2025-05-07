@@ -51,11 +51,6 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('carte') }}">{{ __('custom.carte') }}</a>
                         </li>
-                        <li class="nav-item">
-                            <form action="{{ route('carte') }}">
-                                <input class="form-control" type="text" placeholder="{{ __("custom.searchCard") }}" name="nome" id="nome">
-                            </form>
-                        </li> 
                     </ul>
 
                     <!-- Right Side Of Navbar -->
@@ -98,6 +93,10 @@
                         @endguest
                     </ul>
                 </div>
+                
+                <form action="{{ route('carte') }}">
+                    <input class="form-control" type="text" placeholder="{{ __("custom.searchCard") }}" name="nome" id="nome">
+                </form>
             </div>
         </nav>
 
