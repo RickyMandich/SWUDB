@@ -41,15 +41,19 @@
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false">
                     <span class="navbar-toggler-icon"></span>
                 </button>
+                
+                <form action="{{ route('carte') }}">
+                    <input class="form-control" type="text" placeholder="{{ __("custom.searchCard") }}" name="nome" id="nome">
+                </form>
 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('mazzi') }}">{{ __('custom.mazzi') }}</a>
+                            <a class="nav-link" href="{{ route('carte') }}">{{ __('custom.carte') }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('carte') }}">{{ __('custom.carte') }}</a>
+                            <a class="nav-link" href="{{ route('mazzi') }}">{{ __('custom.mazzi') }}</a>
                         </li>
                     </ul>
 
@@ -93,10 +97,6 @@
                         @endguest
                     </ul>
                 </div>
-                
-                <form action="{{ route('carte') }}">
-                    <input class="form-control" type="text" placeholder="{{ __("custom.searchCard") }}" name="nome" id="nome">
-                </form>
             </div>
         </nav>
 
