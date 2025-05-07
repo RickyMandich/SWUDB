@@ -1,11 +1,6 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Benvenuto</title>
-    </head>
-    <body>
-        <h2>Grazie per esserti registrato</h2>
-        <p>benvenuto {{ $name }}!</p>
-    </body>
-</html>
+@extends('layouts.app')
+@section('title', 'Benvenuto')
+@section('content')
+    <h2>Grazie per esserti registrato</h2>
+    <p>benvenuto {{ $name }}!</p>
+@endsection
