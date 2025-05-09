@@ -19,17 +19,20 @@ class CardsController extends Controller
         if(!isset($get["nome"])){
             $get["nome"] = "";
         }
-        $model = Card::select("espansione", "numero", "aspettoPrimario", "aspettoSecondario", "nome", "titolo", "tipo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita")->whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
+        $model = Card::select("espansione", "numero", "nome", "titolo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita", "frontArt", "backArt")->whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
         $empty = $model->isEmpty();
-        $model = $model->toArray();
-        $model = $this->mergeSort($model);
-        foreach($model as &$carta){
-            unset($carta["nome"]);
-            unset($carta["titolo"]);
-            unset($carta["id"]);
+        // $model = $this->mergeSort($model);
+        if($espansione == ""){
+            $title = "Carte";
+        }else{
+            $title = "Carte ".strtoupper($espansione);
         }
-        $header = ["snippet", "aspettoPrimario", "aspettoSecondario", "tipo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita"];
-        return view('carte.index', ["content" => $model, "empty" => $empty, "nome" => $get["nome"], "header" => $header]);
+        return view('carte.index', [
+            "content" => $model,
+            "empty" => $empty,
+            "nome" => $get["nome"],
+            "title" => $title
+        ]);
     }
 
     public function indexAll(Request $request){

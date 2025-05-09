@@ -20,6 +20,30 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 </head>
 <style>
+    * {
+        box-sizing: border-box;
+    }
+    
+    .Comune{
+        color: #8B4513;
+    }
+
+    .NonComune{
+        color: white;
+    }
+
+    .Rara{
+        color: yellow;
+    }
+
+    .Leggendaria{
+        color: lightblue;
+    }
+
+    .Speciale{
+        color: #a6a594;
+    }
+
     .bg-custom-light{
         background-color: #555555;
     }
@@ -137,3 +161,4 @@
 </body>
 @yield('script')
 </html>
+@yield("php")
