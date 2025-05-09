@@ -71,6 +71,12 @@
         });
 
         let popup;
+        let message;
+
+        async function a(popup) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            popup.hide();
+        }
 
         function refresh() {
             let contenuto = "";
@@ -126,7 +132,21 @@
                     if(mazzo.get(id).copie < mazzo.get(id).maxCopie) {
                         mazzo.get(id).copie++;
                     }else{
-                        alert("Hai raggiunto il numero massimo di copie di questa carta");
+                        message = new Popup({
+                            hideTitle: true,
+                            content: `Hai raggiunto il numero massimo di copie di questa carta`,
+                            buttons: [
+                                {
+                                    text: 'x',
+                                    className: 'btn btn-secondary',
+                                    onClick: function() {
+                                        message.close();
+                                    }
+                                }
+                            ]
+                        });
+                        message.show();
+                        a(message);
                         return false;
                     }
                 }else{
@@ -172,7 +192,21 @@
                         rimosse.get(id).copie = 1;
                     }
                 }else{
-                    alert("Non puoi rimuovere una carta che non è nel mazzo");
+                    message = new Popup({
+                            hideTitle: true,
+                            content: `Non puoi rimuovere una carta che non è presente nel mazzo`,
+                            buttons: [
+                                {
+                                    text: 'x',
+                                    className: 'btn btn-secondary',
+                                    onClick: function() {
+                                        message.close();
+                                    }
+                                }
+                            ]
+                        });
+                        message.show();
+                        a(message);
                     return false;
                 }
                 
@@ -235,10 +269,6 @@
                 ]
             });
 
-            async function a(popup) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                popup.hide();
-            }
             @if(session('warning'))
                 let warning = new Popup({
                     hideTitle: true,
