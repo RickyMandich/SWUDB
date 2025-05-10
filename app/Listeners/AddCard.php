@@ -92,23 +92,23 @@ class AddCard implements ShouldQueue{
     }
 
     function getUscita($espansione){
-        switch($espansione){
-            case "CE24":
-                return "2024-08-01";
-            case "SOR":
-                return "2024-03-08";
-            case "SHD":
-                return "2024-07-12";
-            case "TWI":
-                return "2024-11-05";
-            case "JTL":
-                return "2025-03-14";
-            case "LEG":
-                return "2025-07-11";
-            case "GGTS":
-                return "2025-03-15";
-            default:
-                return "2024-03-08";
+        $espansione = strtoupper($espansione);
+        if (str_contains($espansione, "C24")) {
+            return "2024-08-01";
+        } elseif (str_contains($espansione, "SOR")) {
+            return "2024-03-08";
+        } elseif (str_contains($espansione, "SHD")) {
+            return "2024-07-12";
+        } elseif (str_contains($espansione, "TWI")) {
+            return "2024-11-05";
+        } elseif (str_contains($espansione, "JTL")) {
+            return "2025-03-14";
+        } elseif (str_contains($espansione, "LOF")) {
+            return "2025-07-11";
+        } elseif (str_contains($espansione, "GG")) {
+            return "2025-03-15";
+        } else {
+            return "2024-03-08";
         }
     }
 }

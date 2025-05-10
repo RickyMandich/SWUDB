@@ -19,19 +19,21 @@ class CardsController extends Controller
         if(!isset($get["nome"])){
             $get["nome"] = "";
         }
-        $model = Card::select("espansione", "numero", "nome", "titolo", "rarita", "costo", "vita", "potenza", "descrizione", "tratti", "arena", "artista", "uscita", "frontArt", "backArt")->whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
+        $model = Card::whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
         $empty = $model->isEmpty();
-        // $model = $this->mergeSort($model);
+        $model = $this->mergeSort($model);
         if($espansione == ""){
             $title = "Carte";
         }else{
             $title = "Carte ".strtoupper($espansione);
         }
+        $espansioni = Card::select("espansione", "uscita")->distinct()->orderBy("uscita")->get();
         return view('carte.index', [
             "content" => $model,
             "empty" => $empty,
             "nome" => $get["nome"],
-            "title" => $title
+            "title" => $title,
+            "espansioni" => $espansioni,
         ]);
     }
 
@@ -395,49 +397,48 @@ class CardsController extends Controller
     }
 
     function mergeSort(&$array) {
-        // Caso base: se l'array ha 0 o 1 elemento, è già ordinato
-        if (count($array) <= 1) {
+        // Caso base: se la collezione ha 0 o 1 elemento, è già ordinata
+        if ($array->count() <= 1) {
             return $array;
         }
         
-        // Divido l'array in due metà
-        $mid = floor(count($array) / 2);
-        $left = array_slice($array, 0, $mid);
-        $right = array_slice($array, $mid);
+        // Divido la collezione in due metà
+        $mid = floor($array->count() / 2);
+        $left = $array->slice(0, $mid)->values();
+        $right = $array->slice($mid)->values();
         
         // Richiamo ricorsivamente mergeSort sulle due metà
-        $this->mergeSort($left);
-        $this->mergeSort($right);
+        $left = $this->mergeSort($left);
+        $right = $this->mergeSort($right);
         
         // Fondo le due metà
-        $i = $j = $k = 0;
+        $result = collect();
+        $leftIndex = 0;
+        $rightIndex = 0;
         
-        while ($i < count($left) && $j < count($right)) {
+        while ($leftIndex < $left->count() && $rightIndex < $right->count()) {
             // Uso la funzione compareElements per confrontare
-            if ($this->compareElements($left[$i], $right[$j], false) <= 0) {
-                $array[$k] = $left[$i];
-                $i++;
+            if ($this->compareElements($left[$leftIndex], $right[$rightIndex], false) <= 0) {
+            $result->push($left[$leftIndex]);
+            $leftIndex++;
             } else {
-                $array[$k] = $right[$j];
-                $j++;
+            $result->push($right[$rightIndex]);
+            $rightIndex++;
             }
-            $k++;
         }
         
-        // Copio gli eventuali elementi rimanenti di left
-        while ($i < count($left)) {
-            $array[$k] = $left[$i];
-            $i++;
-            $k++;
+        // Aggiungo gli eventuali elementi rimanenti di left
+        while ($leftIndex < $left->count()) {
+            $result->push($left[$leftIndex]);
+            $leftIndex++;
         }
         
-        // Copio gli eventuali elementi rimanenti di right
-        while ($j < count($right)) {
-            $array[$k] = $right[$j];
-            $j++;
-            $k++;
+        // Aggiungo gli eventuali elementi rimanenti di right
+        while ($rightIndex < $right->count()) {
+            $result->push($right[$rightIndex]);
+            $rightIndex++;
         }
         
-        return $array;
+        return $result;
     }
 }
