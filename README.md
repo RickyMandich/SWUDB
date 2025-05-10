@@ -12,3 +12,5 @@
 - ~~scrivere le traduzioni~~
 - ~~sistemare bordi aggiunta/rimozione carte~~
 - ~~sistemare la barra di ricerca nella navbar~~
+- migliorare il popup di aggiunta carte
+- sistemare la generazione dell'uscita della carta
