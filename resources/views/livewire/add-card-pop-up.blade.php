@@ -1,0 +1,59 @@
+<div>
+    <!-- Modal Livewire per l'aggiunta di carte -->
+    <div x-data="{ show: @entangle('isOpen') }" 
+         x-show="show" 
+         @keydown.escape.window="show = false"
+         style="display: none;"
+         class="fixed inset-0 z-50 overflow-y-auto">
+        
+        <!-- Overlay di sfondo -->
+        <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+        
+        <!-- Modal contenuto -->
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-md mx-auto" @click.outside="show = false">
+                <!-- Header -->
+                <div class="p-4 border-b bg-primary text-white">
+                    <h3 class="text-lg font-semibold">Aggiungi carte al mazzo</h3>
+                </div>
+                
+                <!-- Body -->
+                <div class="p-4">
+                    <!-- Selettore carta -->
+                    <div class="mb-4">
+                        <select wire:model.live="selectedCardId" class="form-select form-select-lg w-full">
+                            <option value="" selected disabled>---Seleziona una carta---</option>
+                            @foreach($availableCards as $card)
+                                <option value="{{ $card['id'] }}">{{ $card['snippet'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <!-- Selettore copie -->
+                    @if($selectedCardId)
+                        <div class="mb-4">
+                            <div class="flex justify-center space-x-2" id="copie">
+                                @for($i = 1; $i <= $maxCopies; $i++)
+                                    <div>
+                                        <input type="radio" wire:model="copiesAmount" value="{{ $i }}" id="copie-{{ $i }}" class="btn-check" autocomplete="off" @if($i==1) checked @endif>
+                                        <label class="btn btn-outline-success" for="copie-{{ $i }}">{{ $i }}</label>
+                                    </div>
+                                @endfor
+                            </div>
+                        </div>
+                        
+                        <!-- Bottone aggiungi -->
+                        <div class="text-center">
+                            <button wire:click="addCardsToDeck" class="btn btn-success">Aggiungi</button>
+                        </div>
+                    @endif
+                </div>
+                
+                <!-- Footer -->
+                <div class="p-4 border-t bg-gray-100 flex justify-end">
+                    <button class="btn btn-secondary" wire:click="close">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

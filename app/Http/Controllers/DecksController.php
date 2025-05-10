@@ -35,42 +35,57 @@ class DecksController extends Controller{
     }
 
     public function show($user, $deck){
+        // Verifica esistenza dell'utente
         if(User::where("name", $user)->first() == null){
             return view("errors.406");
-        }else if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
-            return view("errors.405");
-        }else{
-            $proprietario = Auth::check() ? Auth()->user()->id == User::where("name", $user)->first()->id:false;
-            $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
-                        ->where("codUtente", 
-                            User::where("name", $user)
-                            ->first()
-                            ->id)
-                        ->first();
-            $cards = DB::table('compositions')
-                ->leftJoin('cards', function (JoinClause $join){
-                    $join->on('compositions.espansione', '=', 'cards.espansione')
-                        ->on('compositions.numero', '=', 'cards.numero');
-                })
-                ->select('cards.*', 'compositions.copie')
-                ->where('compositions.idMazzo', $mazzo->id)
-                ->get();
-            $copie = 0;
-            foreach($cards as $card){
-                $card->snippet = "$card->espansione-$card->numero - ".$card->nome.(strlen($card->titolo) > 0 ? ", ". strtoupper($card->titolo) : "");
-                $copie += $card->copie;
-            }
-            $carte = Card::select("espansione", "numero", "nome", "titolo", "maxCopie")->get();
-            return view("mazzi.show", [
-                "nome" => $mazzo->nome,
-                "mazzo" => $cards,
-                "user" => $user,
-                "proprietario" => $proprietario,
-                "deck" => $deck,
-                "carte" => $carte,
-                "size" => $copie,
-            ]);
         }
+        
+        // Verifica esistenza del mazzo
+        if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
+            return view("errors.405");
+        }
+        
+        // Se utente e mazzo esistono, procedi
+        $proprietario = Auth::check() ? Auth()->user()->id == User::where("name", $user)->first()->id : false;
+        
+        // Recupera il mazzo
+        $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
+                    ->where("codUtente", 
+                        User::where("name", $user)
+                        ->first()
+                        ->id)
+                    ->first();
+        
+        // Recupera le carte del mazzo
+        $cards = DB::table('compositions')
+            ->leftJoin('cards', function (JoinClause $join){
+                $join->on('compositions.espansione', '=', 'cards.espansione')
+                    ->on('compositions.numero', '=', 'cards.numero');
+            })
+            ->select('cards.*', 'compositions.copie')
+            ->where('compositions.idMazzo', $mazzo->id)
+            ->get();
+        
+        // Calcola il numero totale di carte e aggiunge gli snippet
+        $copie = 0;
+        foreach($cards as $card){
+            $card->snippet = "$card->espansione-$card->numero - ".$card->nome.(strlen($card->titolo) > 0 ? ", ". strtoupper($card->titolo) : "");
+            $copie += $card->copie;
+        }
+        
+        // Recupera tutte le carte disponibili
+        $carte = Card::select("espansione", "numero", "nome", "titolo", "maxCopie")->get();
+        // return $carte;
+        // Prepara i dati per la view utilizzando Livewire
+        return view("mazzi.show", [
+            "nome" => $mazzo->nome,
+            "mazzo" => $cards,
+            "user" => $user,
+            "proprietario" => $proprietario,
+            "deck" => $deck,
+            "carte" => $carte,
+            "size" => $copie,
+        ]);
     }
 
     public function store(Request $request, $user, $deck){
