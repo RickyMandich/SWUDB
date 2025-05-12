@@ -27,7 +27,7 @@ class CardsController extends Controller
         }else{
             $title = "Carte ".strtoupper($espansione);
         }
-        $espansioni = Card::select("espansione", "uscita")->distinct()->orderBy("uscita")->get();
+        $espansioni = Card::select('espansione')->selectRaw('MIN(uscita) as prima_uscita')->groupBy('espansione')->orderBy('prima_uscita')->get();
         return view('carte.index', [
             "content" => $model,
             "empty" => $empty,

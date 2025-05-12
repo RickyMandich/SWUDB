@@ -61,9 +61,9 @@ Auth::routes();
 
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 
-Route::get('/test', function(){
-    return Deck::select(["nome as mazzo", "codUtente", "public", "id"])->distinct()->orderBy("id")->get();
-})->name("test");
+Route::get('/test/{espansione}', function($espansione){
+    return App\Listeners\AddCard::getUscita($espansione);
+});
 
 Route::get('/users', function(){
     return redirect()->route("query", ["query" => "SELECT * FROM users"]);

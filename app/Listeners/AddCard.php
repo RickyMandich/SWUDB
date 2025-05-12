@@ -53,7 +53,7 @@ class AddCard implements ShouldQueue{
                 $last = "arena-artista";
                 $card->artista = $event->card["artista"];
                 $last = "artista-uscita";
-                $card->uscita = $this->getUscita($event->card["espansione"]);
+                $card->uscita = $event->card["uscita"];//$this->getUscita($event->card["espansione"]);
                 $last = "uscita-frontArt";
                 $card->frontArt = $event->card["frontArt"];
                 $last = "frontArt-backArt";
@@ -91,7 +91,7 @@ class AddCard implements ShouldQueue{
         }
     }
 
-    function getUscita($espansione){
+    static function getUscita($espansione){
         $espansione = strtoupper($espansione);
         if (str_contains($espansione, "C24")) {
             return "2024-08-01";
@@ -107,8 +107,10 @@ class AddCard implements ShouldQueue{
             return "2025-07-11";
         } elseif (str_contains($espansione, "GG")) {
             return "2025-03-15";
+        } elseif (str_contains($espansione, "C25")) {
+            return "2025-07-01";
         } else {
-            return "2024-03-08";
+            return "2024-03-01";
         }
     }
 }
