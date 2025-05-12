@@ -23,9 +23,9 @@
     <script src="{{ asset('js/alpinejs-config.js') }}"></script> --}}
 </head>
 <style>
-    * {
+    /* * {
         box-sizing: border-box;
-    }
+    } */
     
     .Comune{
         color: #8B4513;

@@ -19,33 +19,38 @@
     <p>Trovati {{ count($content) }} risultati</p>
     <div class="row">
         @foreach ($content as $carta)
-            <div class="col-12 col-sm-4 border border-primary-subtle bg-primary-subtle">
-                <a href="{{ route("carta", ["espansione" => $carta->espansione, "numero" => $carta->numero]) }}">
-                    <div class="row">
-                        <div class="col">
-                            <img class="col-12" src="{{ $carta->backArt != "" ? $carta->backArt : $carta->frontArt }}" alt="immagine di {{$carta->snippet}}">
-                        </div>
-                        <div class="col">
-                            <h5>{{ $carta->snippet }}</h5>
-                            {{ $carta->tratti }} <br>
+        {{-- border rounded-4 border-primary-subtle bg-primary-subtle --}}
+            <div class="col-12 col-sm-4 ps-4 pe-4 pt-4 pb-4">
+                <div class="row pr-10">
+                    <div class="col-12 col-sm-12  rounded-4 border-primary-subtle bg-secondary-subtle p-3">
+                        <a href="{{ route("carta", ["espansione" => $carta->espansione, "numero" => $carta->numero]) }}">
                             <div class="row">
-                                <span class="col-9">costo:</span>
-                                <span class="m-auto text-warning align-self-end col-3">{{ $carta->costo }}</span> <br>
+                                <div class="col">
+                                    <img class="col-12" src="{{ $carta->backArt != "" ? $carta->backArt : $carta->frontArt }}" alt="immagine di {{$carta->snippet}}">
+                                </div>
+                                <div class="col">
+                                    <h5>{{ $carta->snippet }}</h5>
+                                    {{ $carta->tratti }} <br>
+                                    <div class="row">
+                                        <span class="col-9">costo:</span>
+                                        <span class="m-auto text-warning align-self-end col-3">{{ $carta->costo }}</span> <br>
+                                    </div>
+                                    <div class="row">
+                                        <span class="col-9">potenza:</span>
+                                        <span class="m-auto text-danger align-self-end col-3">{{ $carta->potenza }}</span> <br>
+                                    </div>
+                                    <div class="row">
+                                        <span class="col-9">vita:</span>
+                                        <span class="m-auto text-primary align-self-end col-3">{{ $carta->vita }}</span> <br>
+                                    </div>
+                                    <div class="row text-center">
+                                        <span class="col-12 {{ toClass($carta->rarita) }}">{{ $carta->rarita }}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="row">
-                                <span class="col-9">potenza:</span>
-                                <span class="m-auto text-danger align-self-end col-3">{{ $carta->potenza }}</span> <br>
-                            </div>
-                            <div class="row">
-                                <span class="col-9">vita:</span>
-                                <span class="m-auto text-primary align-self-end col-3">{{ $carta->vita }}</span> <br>
-                            </div>
-                            <div class="row text-center">
-                                <span class="col-12 {{ toClass($carta->rarita) }}">{{ $carta->rarita }}</span>
-                            </div>
-                        </div>
+                        </a>
                     </div>
-                </a>
+                </div>
             </div>
         @endforeach
     </div>
