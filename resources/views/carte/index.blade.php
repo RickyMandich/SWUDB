@@ -19,7 +19,6 @@
     <p>Trovati {{ count($content) }} risultati</p>
     <div class="row">
         @foreach ($content as $carta)
-        {{-- border rounded-4 border-primary-subtle bg-primary-subtle --}}
             <div class="col-12 col-sm-4 ps-4 pe-4 pt-4 pb-4">
                 <div class="row pr-10">
                     <div class="col-12 col-sm-12  rounded-4 border-primary-subtle bg-secondary-subtle p-3">
