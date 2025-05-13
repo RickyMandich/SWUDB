@@ -34,6 +34,7 @@ class CardsController extends Controller
             "nome" => $get["nome"],
             "title" => $title,
             "espansioni" => $espansioni,
+            "espansione" => $espansione,
         ]);
     }
 

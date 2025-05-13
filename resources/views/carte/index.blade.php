@@ -3,17 +3,17 @@
 @section('content')
     <div id="row">
         <form action="/carte" class="mb-3 row">
-            <label for="nome" class="form-label">Inserisci il nome della carta</label>
-            <span class="col-11">
+            <label for="nome" class="form-label col-12">Inserisci il nome della carta</label>
+            <span class="col-11 my-4">
                 <input type="text" placeholder="Carta" name="nome" id="nome" class="form-control" value="{{ $nome }}">
             </span>
-            <input type="submit" value="Cerca" class="btn btn-primary col-1">
+            <input type="submit" value="Cerca" class="btn btn-primary col-1 my-4">
             @foreach ($espansioni as $set)
-            <a href="{{ route("carte.set", ["espansione" => $set->espansione]) }}" class="btn btn-secondary col-3 col-sm-1 m-2 text-center">
+            <a href="{{ route("carte.set", ["espansione" => $set->espansione]) }}" class="btn btn-{{ $set->espansione == $espansione ? "primary" : "secondary" }} col-3 col-sm-1 m-2 text-center">
                 {{ $set->espansione }}
             </a>
             @endforeach
-            <a href="{{ route("carte") }}" class="btn btn-secondary col-9 m-4">Cancella parametri di ricerca</a>
+            <a href="{{ route("carte") }}" class="btn btn-{{ $espansione == "" ? "primary" : "secondary" }} col-10 col-sm-12 m-2 my-4">Cancella parametri di ricerca</a>
         </form>
     </div>
     <p>Trovati {{ count($content) }} risultati</p>
