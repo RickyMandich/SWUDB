@@ -38,10 +38,6 @@ class CardsController extends Controller
             "espansione" => $espansione,
         ]);
     }
-
-    public function indexAll(Request $request){
-        return CardsController::index("", $request);
-    }
     
     public function create(){
         $url = 'http://swudb.altervista.org/collezione.json';
