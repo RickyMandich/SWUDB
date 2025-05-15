@@ -2,7 +2,7 @@
 @section('title', $title)
 @section('content')
     <div id="row">
-        <form action="/carte" class="mb-3 row">
+        <form action="{{ route("carte.set", ["espansione" => $espansione]) }}" class="mb-3 row">
             <label for="nome" class="form-label col-12">Inserisci il nome della carta</label>
             <span class="col-11 my-4">
                 <input type="text" placeholder="Carta" name="nome" id="nome" class="form-control" value="{{ $nome }}">
