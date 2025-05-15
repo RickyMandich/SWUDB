@@ -14,7 +14,7 @@ class CardsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index($espansione, Request $request){
+    public function index(Request $request, ?string $espansione = ""){
         $espansione = strtoupper($espansione);
         $get = $request->all();
         if(!isset($get["nome"])){

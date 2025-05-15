@@ -2,14 +2,14 @@
 @section('title', $title)
 @section('content')
     <div id="row">
-        <form action="{{ route("carte.set", ["espansione" => $espansione]) }}" class="mb-3 row">
+        <form action="{{ route("carte", ["espansione" => $espansione]) }}" class="mb-3 row">
             <label for="nome" class="form-label col-12">Inserisci il nome della carta</label>
             <span class="col-11 my-4">
                 <input type="text" placeholder="Carta" name="nome" id="nome" class="form-control" value="{{ $nome }}">
             </span>
             <input type="submit" value="Cerca" class="btn btn-primary col-1 my-4">
             @foreach ($espansioni as $set)
-            <a href="{{ route("carte.set", ["espansione" => $set->espansione]) }}" class="btn btn-{{ $set->espansione == $espansione ? "primary" : "secondary" }} col-3 col-sm-1 m-2 text-center">
+            <a href="{{ route("carte", ["espansione" => $set->espansione]) }}" class="btn btn-{{ $set->espansione == $espansione ? "primary" : "secondary" }} col-3 col-sm-1 m-2 text-center">
                 {{ $set->espansione }}
             </a>
             @endforeach
