@@ -19,8 +19,10 @@
     <!-- Scripts -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
-    {{-- @livewireScripts
-    <script src="{{ asset('js/alpinejs-config.js') }}"></script> --}}
+    @livewireStyles
+
+    @livewireScripts
+    <script src="{{ asset('js/alpinejs-config.js') }}"></script>
 </head>
 <style>
     .innerCarta{

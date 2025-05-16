@@ -552,6 +552,7 @@ class ComposerStaticInit88970a0117c062eed55fa8728fc43833
         'App\\Jobs\\ExecuteArtisanCommand' => __DIR__ . '/../..' . '/app/Jobs/ExecuteArtisanCommand.php',
         'App\\Listeners\\AddCard' => __DIR__ . '/../..' . '/app/Listeners/AddCard.php',
         'App\\Listeners\\SendMessage' => __DIR__ . '/../..' . '/app/Listeners/SendMessage.php',
+        'App\\Livewire\\DeckManager' => __DIR__ . '/../..' . '/app/Livewire/DeckManager.php',
         'App\\Mail\\WelcomeEmail' => __DIR__ . '/../..' . '/app/Mail/WelcomeEmail.php',
         'App\\Models\\Card' => __DIR__ . '/../..' . '/app/Models/Card.php',
         'App\\Models\\Composition' => __DIR__ . '/../..' . '/app/Models/Composition.php',

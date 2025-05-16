@@ -21,6 +21,7 @@ return array(
     'App\\Jobs\\ExecuteArtisanCommand' => $baseDir . '/app/Jobs/ExecuteArtisanCommand.php',
     'App\\Listeners\\AddCard' => $baseDir . '/app/Listeners/AddCard.php',
     'App\\Listeners\\SendMessage' => $baseDir . '/app/Listeners/SendMessage.php',
+    'App\\Livewire\\DeckManager' => $baseDir . '/app/Livewire/DeckManager.php',
     'App\\Mail\\WelcomeEmail' => $baseDir . '/app/Mail/WelcomeEmail.php',
     'App\\Models\\Card' => $baseDir . '/app/Models/Card.php',
     'App\\Models\\Composition' => $baseDir . '/app/Models/Composition.php',
