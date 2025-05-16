@@ -53,7 +53,7 @@ class AddCard implements ShouldQueue{
                 $last = "arena-artista";
                 $card->artista = $event->card["artista"];
                 $last = "artista-uscita";
-                $card->uscita = $event->card["uscita"];//$this->getUscita($event->card["espansione"]);
+                $card->uscita = $event->card["uscita"];
                 $last = "uscita-frontArt";
                 $card->frontArt = $event->card["frontArt"];
                 $last = "frontArt-backArt";
@@ -88,29 +88,6 @@ class AddCard implements ShouldQueue{
                 echo "eccezione ".$e->getMessage()."\n";
                 MessageCreated::dispatch("eccezione ".$e->getMessage());
             }
-        }
-    }
-
-    static function getUscita($espansione){
-        $espansione = strtoupper($espansione);
-        if (str_contains($espansione, "C24")) {
-            return "2024-08-01";
-        } elseif (str_contains($espansione, "SOR")) {
-            return "2024-03-08";
-        } elseif (str_contains($espansione, "SHD")) {
-            return "2024-07-12";
-        } elseif (str_contains($espansione, "TWI")) {
-            return "2024-11-05";
-        } elseif (str_contains($espansione, "JTL")) {
-            return "2025-03-14";
-        } elseif (str_contains($espansione, "LOF")) {
-            return "2025-07-11";
-        } elseif (str_contains($espansione, "GG")) {
-            return "2025-03-15";
-        } elseif (str_contains($espansione, "C25")) {
-            return "2025-07-01";
-        } else {
-            return "2024-03-01";
         }
     }
 }
