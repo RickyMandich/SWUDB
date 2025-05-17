@@ -10,11 +10,8 @@ use App\Http\Controllers\CardsController;?>
     <body>
         aggiornamento eseguito
         <br>
-        @if($result)
-            success
-        @else
-            failed
-        @endif
+        {{ $count }} carte aggiunte
+        <br>
         <?php function printlnd($line, $deep = 0, $name, $link = false){
             if(gettype($line) == 'array' || gettype($line) == 'object'){
                 if(array_key_exists("cid", $line)){

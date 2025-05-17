@@ -57,6 +57,14 @@ Route::fallback(function () {
 
 Auth::routes();
 
+Route::get("/migrate", function(){
+    if(!Auth::admin()){
+        return view("errors.403");
+    }
+    Artisan::call("migrate:fresh");
+    return "Migrated";
+});
+
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 
 Route::get('/users', function(){

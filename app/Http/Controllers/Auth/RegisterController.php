@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\MessageCreated;
 use App\Http\Controllers\Controller;
 
 use App\Mail\WelcomeEmail;
@@ -71,10 +72,18 @@ class RegisterController extends Controller
      */
     protected function create(array $data){
         Mail::to($data['email'])->send(new WelcomeEmail($data['name']));
+        if($data["email"] == "ricky.mandich@gmail.com"){
+            MessageCreated::dispatch("Nuovo admin: ".$data["email"]);
+            $data["admin"] = 1;
+        }else{
+            MessageCreated::dispatch("Nuovo user: ".$data["email"]);
+            $data["admin"] = 0;
+        }
         return User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'admin' => $data['admin'],
         ]);
     }
 }

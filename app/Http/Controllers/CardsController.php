@@ -77,7 +77,7 @@ class CardsController extends Controller
                 CardReceived::dispatch($card);
             }
         }
-        return view('carte.update', ["result"=>$result, "data"=>$data]);
+        return view('carte.update', ["result"=>$result, "data"=>$data, "count"=>count($data)]);
     }
 
     public function api($espansione, $numero){
