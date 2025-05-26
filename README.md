@@ -14,3 +14,4 @@
 - ~~sistemare la barra di ricerca nella navbar~~
 - ~~sistemare la generazione dell'uscita della carta~~
 - migliorare il popup di aggiunta carte
+- impostare i thread per la gestione dell'inserimento carte
