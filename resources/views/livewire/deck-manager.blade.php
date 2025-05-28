@@ -129,7 +129,6 @@
             
             // Gestione dei messaggi toast
             Livewire.on('showMessage', (data) => {
-                console.log(data);
                 window.dispatchEvent(new CustomEvent('show-message', { 
                     detail: {
                         message: data.message,
