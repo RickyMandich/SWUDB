@@ -39,45 +39,48 @@ class CardsController extends Controller
         ]);
     }
     
-    public function create(){
+    public function startImport(){
         $url = 'http://swudb.altervista.org/collezione.json';
         $json = file_get_contents($url);
-        $data = json_decode($json, true);
-        $keys = [];
-        foreach($data as $carta){
-            foreach($carta as $key => $value){
-                if(!in_array($key, $keys)){
-                    array_push($keys, $key);
-                }
+        $fullSet = json_decode($json, true);
+        $dbSet = Card::select('espansione', 'numero')->get()->toArray();
+
+        $toInsert = [];
+
+        foreach ($fullSet as $card) {
+            if (!$this::contain($dbSet, $card)) {
+                $toInsert[] = $card;
             }
         }
-        foreach($data as &$value){
-            foreach($keys as $key){
-                if(!isset($value[$key])){
-                    $value[$key] = "";
-                }
-            }
+
+        // Salva su file temporaneo sul server
+        if(env("APP_DEBUG")){
+            file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
         }
-    
-        $result = false;
-        if (json_last_error() === JSON_ERROR_NONE) {
-            $result = true;
-            $fullSet = $data;
-            $data = [];
-            $dataRaw = Card::get()->toArray();
-            foreach ($fullSet as &$card) {
-                $card["tratti"] = implode(" * ", $card["tratti"]);
-                $card["snippet"] = $card["espansione"]."-".$card["numero"]." - ".$card["nome"].((strlen($card["titolo"]) > 0 ? ", ". strtoupper($card["titolo"]) : ""));
-                if(!$this->contain($dataRaw, $card)){
-                    array_push($dataRaw, $card);
-                    array_push($data, $card);
-                }
-            }
-            foreach($data as $card){
-                CardReceived::dispatch($card);
-            }
+        return view("carte.update", ["result" => true, "count" => count($toInsert), "data" => $toInsert]);
+    }
+
+    public function dispatchBatch(Request $request){
+        $cards = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
+        $start = intval($request->input("start", 0));
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "startBatch start:$start \n\n", FILE_APPEND);
+        $batchSize = 5;
+        $slice = array_slice($cards, $start, $batchSize);
+
+        foreach($slice as $card){
+            JobController::fireAndForgetGet(route('job.addCard'), [
+                "card" => json_encode($card),
+                "token" => env('JOB_TOKEN')
+            ]);
         }
-        return view('carte.update', ["result"=>$result, "data"=>$data, "count"=>count($data)]);
+
+        $next = $start + $batchSize;
+
+        if ($next >= count($cards)) {
+            return response()->json(["done" => true]);
+        }
+
+        return response()->json(["next" => $next]);
     }
 
     public function api($espansione, $numero){
@@ -107,9 +110,9 @@ class CardsController extends Controller
      * @param mixed $element
      * @return bool
      */
-    function contain($array, $element){
+    static function contain($array, $element){
         foreach($array as $el){
-            if($el["espansione"] == $element["espansione"] && $el["numero"] == $element["numero"]){
+            if($el["espansione"] === $element["espansione"] && $el["numero"] === $element["numero"]){
                 return true;
             }
         }

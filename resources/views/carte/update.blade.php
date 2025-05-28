@@ -45,4 +45,23 @@ use App\Http\Controllers\CardsController;?>
         }?>
         <?php printlnd($data, 0, "data", false) ?>
     </body>
+    <script>
+        let next = 0;
+
+        function sendNextBatch(){
+            console.log("Inizio importazione batch " + next);
+            fetch("{{ route('carte.dispatchBatch', ["start" => ""]) }}" + next)
+            .then(r => r.json())
+            .then(data => {
+                if(data.done){
+                    alert("Import completato!");
+                } else {
+                    next = data.next;
+                    setTimeout(sendNextBatch, 100); // Piccolo delay tra i batch
+                }
+            });
+        }
+
+        sendNextBatch();
+    </script>
 </html>

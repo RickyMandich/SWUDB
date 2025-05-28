@@ -3,95 +3,99 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Card;
+use Illuminate\Support\Facades\Http;
+use App\Events\MessageCreated;
+use App\Events\CardReceived;
 
 class JobController extends Controller{
     public function addCard(Request $request){
-        if(Card::where('espansione', $event->card["espansione"])->where('numero',$event->card["numero"])->get()->isEmpty()){
+        $card = json_decode($request->input('card'), true);
+        // return $card;
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-start.log", "start addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
+        if(Card::where('espansione', $card["espansione"])->where('numero',$card["numero"])->get()->isEmpty()){
             $last = "prima di new";
             try{
-                $card = new Card();
+                $carta = new Card();
                 $last = "new-cid";
-                $card->cid = $event->card["cid"];
+                $carta->cid = $card["cid"];
                 $last = "cid-espansione";
-                $card->espansione = $event->card["espansione"];
+                $carta->espansione = $card["espansione"];
                 $last = "espansione-numero";
-                $card->numero = $event->card["numero"];
+                $carta->numero = $card["numero"];
                 $last = "numero-aspettoPrimario";
-                $card->aspettoPrimario = $event->card["aspettoPrimario"];
+                $carta->aspettoPrimario = $card["aspettoPrimario"] ?? "";
                 $last = "aspettoPrimario-aspettoSecondario";
-                $card->aspettoSecondario = $event->card["aspettoSecondario"];
+                $carta->aspettoSecondario = $card["aspettoSecondario"] ?? "";
                 $last = "aspettoSecondario-unica";
-                $card->unica = $event->card["unica"];
+                $carta->unica = $card["unica"] ?? "";
                 $last = "unica-nome";
-                $card->nome = $event->card["nome"];
+                $carta->nome = $card["nome"];
                 $last = "nome-titolo";
-                $card->titolo = $event->card["titolo"];
+                $carta->titolo = $card["titolo"] ?? "";
                 $last = "titolo-tipo";
-                $card->tipo = $event->card["tipo"];
+                $carta->tipo = $card["tipo"];
                 $last = "tipo-rarita";
-                $card->rarita = $event->card["rarita"];
+                $carta->rarita = $card["rarita"];
                 $last = "rarita-costo";
-                $card->costo = $event->card["costo"];
+                $carta->costo = $card["costo"];
                 $last = "costo-vita";
-                $card->vita = $event->card["vita"];
+                $carta->vita = $card["vita"] ?? "";
                 $last = "vita-potenza"; 
-                $card->potenza = $event->card["potenza"];
+                $carta->potenza = $card["potenza"] ?? "";
                 $last = "potenza-descrizione";
-                $card->descrizione = $event->card["descrizione"];
+                $carta->descrizione = $card["descrizione"] ?? "";
                 $last = "descrizione-tratti";
-                $card->tratti = $event->card["tratti"];
+                if(gettype($card["tratti"]) == "string"){
+                    $carta->tratti = $card["tratti"];
+                }else{
+                    $carta->tratti = implode(" * ", $card["tratti"]);
+                }
                 $last = "tratti-arena";
-                $card->arena = $event->card["arena"];
+                $carta->arena = $card["arena"] ?? "";
                 $last = "arena-artista";
-                $card->artista = $event->card["artista"];
+                $carta->artista = $card["artista"];
                 $last = "artista-uscita";
-                $card->uscita = $event->card["uscita"];
+                $carta->uscita = $card["uscita"];
                 $last = "uscita-frontArt";
-                $card->frontArt = $event->card["frontArt"];
+                $carta->frontArt = $card["frontArt"];
                 $last = "frontArt-backArt";
-                $card->backArt = $event->card["backArt"];
-                $last = "backArt-maxCopie";
-                $card->maxCopie = 3;
-                if(str_contains(strtolower($card->tipo), 'leader')){
-                    $card->maxCopie = 1;
+                $carta->backArt = $card["backArt"] ?? "";
+                $last = "backArt-maxCopie3";
+                $carta->maxCopie = 3;
+                $last = "maxCopie3-maxCopie1";
+                if(str_contains(strtolower($carta->tipo), 'leader')){
+                    $carta->maxCopie = 1;
                 }
-                if(str_contains(strtolower($card->tipo), 'base')){
-                    $card->maxCopie = 1;
+                $last = "maxCopie1leader-maxCopie1base";
+                if(str_contains(strtolower($carta->tipo), 'base')){
+                    $carta->maxCopie = 1;
                 }
-                if(strtoupper($card->espansione) == 'JTL' && $card->numero == 256){
-                    $card->maxCopie = 15;
+                $last = "maxCopie1-maxCopie15";
+                if(strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256){
+                    $carta->maxCopie = 15;
                 }
-                if(str_contains(strtolower($card->tipo), "segnalino")){
-                    $card->maxCopie = 0;
+                $last = "maxCopie15-maxCopie0";
+                if(str_contains(strtolower($carta->tipo), "segnalino")){
+                    $carta->maxCopie = 0;
                 }
-                $last = "maxCopie-save";
-                unset($card->creazione);
-                $card->save();
+                $last = "maxCopie-creazione";
+                unset($carta->creazione);
+                $last = "creazione-save";
+                $carta->save();
             }catch(\Exception $e){
-                echo "eccezione ".$e->getMessage()."\n";
-                echo $last;
-                MessageCreated::dispatch("eccezione ".$e->getMessage());
+                echo "eccezione ".$e->getMessage() . " <strong>at</strong> " . $last;
+                if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
+                // MessageCreated::dispatch("eccezione ".$e->getMessage());
             }
-            try{
-                $result = Card::where('espansione', $event->card["espansione"])->where('numero',$event->card["numero"])->get()->get(0);
-                echo $result->snippet."\n";
-                // MessageCreated::dispatch($result->snippet);
-            }catch(\Exception $e){
-                echo "eccezione ".$e->getMessage()."\n";
-                MessageCreated::dispatch("eccezione ".$e->getMessage());
-            }
+            if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "end addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
         }
     }
 
     public function sendMessage(Request $request){
-        file_put_contents(__DIR__ . '/debug-job.log', "invio messaggio telegram alle " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
-
         if ($request->input('token') !== env('JOB_TOKEN')) {
-        file_put_contents(__DIR__ . '/debug-job.log', "token non valido alle " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
             abort(403);
         }
-
-        file_put_contents(__DIR__ . '/debug-job.log', "token valido alle " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
 
         $message = $request->input('message');
 
@@ -103,54 +107,80 @@ class JobController extends Controller{
                 'chat_id' => $chatId,
                 'text' => $message
             ]);
-            
-            return;
         } catch (\Exception $e) {
             \Log::error("Errore Telegram: " . $e->getMessage());
-            return;
         }
 
-        file_put_contents(__DIR__ . '/debug-job.log', "messaggio inviato: $message alle " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
     }
 
-    static function fireAndForget($url, $data = []) {
-        $logPath = __DIR__ . '/debug-fire.log';
-
-        file_put_contents($logPath, "=== fireAndForget START === " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
-        file_put_contents($logPath, "URL: $url\n", FILE_APPEND);
-        file_put_contents($logPath, "DATA: " . json_encode($data) . "\n", FILE_APPEND);
-
-        $postdata = http_build_query($data);
+    static function fireAndForgetGet($url, $data = []) {
+        $query = http_build_query($data);
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget: $url?$query" . "\n\n", FILE_APPEND);
         $parts = parse_url($url);
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            file_put_contents($logPath, "ERRORE: URL non valido.\n", FILE_APPEND);
             return false;
         }
 
-        $fp = fsockopen($parts['host'], 8000, $errno, $errstr, 30);
+        // Ricostruisci la query string
+        $path = $parts['path'];
+        if (isset($parts['query']) && $parts['query'] !== '') {
+            $path .= '?' . $parts['query'] . '&' . $query;
+        } elseif ($query !== '') {
+            $path .= '?' . $query;
+        }
+
+        $fp = fsockopen($parts['host'], $parts['port'] ?? 80, $errno, $errstr, 30);
 
         if (!$fp) {
-            file_put_contents($logPath, "ERRORE: fsockopen fallito - $errstr ($errno)\n", FILE_APPEND);
             return false;
         }
 
-        $out = "POST " . $parts['path'] . " HTTP/1.1\r\n";
+        $out = "GET " . $path . " HTTP/1.1\r\n";
         $out .= "Host: " . $parts['host'] . "\r\n";
-        $out .= "Content-Type: application/x-www-form-urlencoded\r\n";
-        $out .= "Content-Length: " . strlen($postdata) . "\r\n";
         $out .= "Connection: Close\r\n\r\n";
-        $out .= $postdata;
-
-        file_put_contents($logPath, "REQUEST:\n$out\n", FILE_APPEND);
 
         fwrite($fp, $out);
         fclose($fp);
 
-        file_put_contents($logPath, "=== fireAndForget END ===\n\n", FILE_APPEND);
-
         return true;
     }
 
+    static function fireAndForgetPost($url, $data = []) {
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST: $url, " . http_build_query($data) . "\n\n", FILE_APPEND);
+        $parts = parse_url($url);
 
+        if (!isset($parts['host']) || !isset($parts['path'])) {
+            return false;
+        }
+
+        $host = $parts['host'];
+        $port = $parts['port'] ?? 80;
+        $path = $parts['path'];
+        if (isset($parts['query']) && $parts['query'] !== '') {
+            $path .= '?' . $parts['query'];
+        }
+
+        $postData = http_build_query($data);
+
+        $fp = fsockopen($host, $port, $errno, $errstr, 30);
+
+        if (!$fp) {
+            return false;
+        }
+
+        $out = "POST " . $path . " HTTP/1.1\r\n";
+        $out .= "Host: " . $host . "\r\n";
+        $out .= "Content-Type: application/x-www-form-urlencoded\r\n";
+        $out .= "Content-Length: " . strlen($postData) . "\r\n";
+        $out .= "Connection: Close\r\n\r\n";
+        $out .= $postData;
+
+        fwrite($fp, $out);
+        fclose($fp);
+
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fine fire post \n\n", FILE_APPEND);
+
+        return true;
+    }
 }

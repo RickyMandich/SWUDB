@@ -1,9 +1,10 @@
 <?php
 
+use App\Events\CardReceived;
 use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
 use App\Http\Controllers\JobController;
-use App\Http\Controllers\UsersController;
+use App\Models\Card;
 
 use App\Events\MessageCreated;
 
@@ -32,7 +33,9 @@ Route::get('/carte/{espansione?}', [CardsController::class, 'index'])->name("car
 
 Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 
-Route::get('/update', [CardsController::class, 'create'])->name("carte.update");
+Route::get('/update', [CardsController::class, 'startImport'])->name("carte.update");
+
+Route::get('/dispatchBatchCards', [CardsController::class, 'dispatchBatch'])->name("carte.dispatchBatch");
 
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
@@ -80,11 +83,6 @@ Route::get('/docs/privacy', function(){
     return view("docs.privacy");
 })->name("docs.privacy");
 
-Route::post("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
+Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 
-Route::post("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");
-
-Route::get("/test/{message}", function($message){
-    MessageCreated::dispatch($message);
-    return "Message sent: ".$message;
-})->name("test.message");
+Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");

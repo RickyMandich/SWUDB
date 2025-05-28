@@ -24,4 +24,5 @@ return[
     'Register' => 'Register',
     'Logout' => 'Logout',
     'Dashboard' => 'Dashboard',
+    'refreshDB' => 'Refresh Database',
 ];

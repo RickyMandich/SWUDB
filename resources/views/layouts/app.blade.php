@@ -118,6 +118,10 @@
                                     {{ __('custom.Logout') }}
                                 </a>
 
+                                <a class="dropdown-item" href="{{ route('carte.update') }}">
+                                    {{ __('custom.refreshDB') }}
+                                </a>
+
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                     @csrf
                                 </form>
