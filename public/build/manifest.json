@@ -1,4 +1,10 @@
 {
+  "resources/js/alpinejs-config.js": {
+    "file": "assets/alpinejs-config-DbNh7wM6.js",
+    "name": "alpinejs-config",
+    "src": "resources/js/alpinejs-config.js",
+    "isEntry": true
+  },
   "resources/js/app.js": {
     "file": "assets/app-DTdKnCa4.js",
     "name": "app",

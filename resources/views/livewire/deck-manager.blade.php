@@ -99,7 +99,10 @@
     </div>
     
     <!-- Inclusione del popup per l'aggiunta di carte -->
-    <livewire:add-card-popup :userId="$user" :deckId="$deck" />
+    <livewire:add-card-popup
+        :userId="$user"
+        :deckId="$deck"
+    />
     
     <script>
         document.addEventListener('livewire:initialized', () => {
@@ -110,7 +113,8 @@
                 
                 // Aggiungiamo i campi nascosti al form
                 const modificheDiv = document.getElementById('modifiche');
-                
+                data = data[0];
+                console.log(data);
                 Object.entries(data.carte).forEach(([id, value]) => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
@@ -128,8 +132,8 @@
                 console.log(data);
                 window.dispatchEvent(new CustomEvent('show-message', { 
                     detail: {
-                        message: data[0].message,
-                        type: data[0].type
+                        message: data.message,
+                        type: data.type
                     }
                 }));
             });

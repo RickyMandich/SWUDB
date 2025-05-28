@@ -1,0 +1,1 @@
+document.addEventListener("alpine:init",()=>{Alpine.data("toast",()=>({visible:!1,message:"",type:"info",show(e,i="info",s=3e3){this.visible=!0,this.message=e,this.type=i,setTimeout(()=>{this.hide()},s)},hide(){this.visible=!1}}))});
