@@ -13,5 +13,6 @@
 - ~~sistemare bordi aggiunta/rimozione carte~~
 - ~~sistemare la barra di ricerca nella navbar~~
 - ~~sistemare la generazione dell'uscita della carta~~
+- ~~aggiustare il tasto di aggiunta carte~~
 - migliorare il popup di aggiunta carte
 - impostare i thread per la gestione dell'inserimento carte
