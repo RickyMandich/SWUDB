@@ -3,29 +3,18 @@
 namespace App\Listeners;
 
 use App\Events\MessageCreated;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SendMessage implements ShouldQueue{
+use App\Http\Controllers\JobController;
+
+use Illuminate\Support\Facades\Http;
+
+class SendMessage{
 
     /**
      * Handle the event.
      */
     public function handle(MessageCreated $event): void{
-        $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
-        $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
-        
-        try {
-            Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
-                'chat_id' => $chatId,
-                'text' => $event->message
-            ]);
-            echo "Messaggio inviato:\t$event->message\n";
-            
-            return;
-        } catch (\Exception $e) {
-            \Log::error("Errore Telegram: " . $e->getMessage());
-            return;
-        }
+        file_put_contents(__DIR__ . '/debug-job.log', "sending message: $event->message alle " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
+        JobController::fireAndForget(route("job.sendMessage"), ["message" => $event->message, "token" => env("JOB_TOKEN")]);
     }
 }
