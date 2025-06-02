@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\CardReceived;
 
+use App\Events\MessageCreated;
 use Illuminate\Http\Request;
 
 use App\Models\Card;
@@ -57,14 +58,39 @@ class CardsController extends Controller
         if(env("APP_DEBUG")){
             file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
         }
+        JobController::fireAndForgetGet(route('carte.sendBatch'), [
+            "token" => env('JOB_TOKEN')
+        ]);
         return view("carte.update", ["result" => true, "count" => count($toInsert), "data" => $toInsert]);
+    }
+
+    public function sendBatch(Request $request){
+        $next = intval($request->input("next", 0));
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
+        MessageCreated::dispatch("Inizio importazione batch " . $next);
+        $batchSize = 5;
+        JobController::fireAndForgetGet(route('carte.dispatchBatch', ['start' => $next, 'batchSize' => $batchSize]));
+        $data = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
+        if ($next + $batchSize >= count($data)) {
+            echo "Import completato!\n";
+            MessageCreated::dispatch("Import completato!");
+            file_put_contents(storage_path("app/to_insert.json"), "[]"); // Pulisce il file dopo l'importazione
+        } else {
+            echo "Batch $next dispatchato, prossima esecuzione tra 100ms...\n";
+            MessageCreated::dispatch("Batch $next dispatchato");
+            $next += $batchSize;
+            usleep(100000); // 100ms delay
+            JobController::fireAndForgetGet(route('carte.sendBatch', ['next' => $next]), [
+                "token" => env('JOB_TOKEN')
+            ]);
+        }
     }
 
     public function dispatchBatch(Request $request){
         $cards = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
         $start = intval($request->input("start", 0));
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "startBatch start:$start \n\n", FILE_APPEND);
-        $batchSize = 5;
+        $batchSize = intval($request->input("batchSize", 5));
         $slice = array_slice($cards, $start, $batchSize);
 
         foreach($slice as $card){

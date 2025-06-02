@@ -35,7 +35,9 @@ Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->na
 
 Route::get('/update', [CardsController::class, 'startImport'])->name("carte.update");
 
-Route::get('/dispatchBatchCards', [CardsController::class, 'dispatchBatch'])->name("carte.dispatchBatch");
+Route::get('/dispatchBatch', [CardsController::class, 'dispatchBatch'])->name("carte.dispatchBatch");
+
+Route::get('/sendBatch', [CardsController::class, 'sendBatch'])->name("carte.sendBatch");
 
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
