@@ -1,0 +1,27 @@
+# Blocca accesso a tutto tranne alla cartella public
+<FilesMatch "\.(env|json|lock|md|txt|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protegge cartelle sensibili
+RedirectMatch 403 ^/app/.*$
+RedirectMatch 403 ^/bootstrap/.*$
+RedirectMatch 403 ^/config/.*$
+RedirectMatch 403 ^/database/.*$
+RedirectMatch 403 ^/resources/.*$
+RedirectMatch 403 ^/routes/.*$
+RedirectMatch 403 ^/storage/.*$
+RedirectMatch 403 ^/vendor/.*$
+RedirectMatch 403 ^/tests/.*$
+
+# Reindirizza tutto il traffico alla cartella public
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/$1 [L]
+
+# Se il file esiste nella cartella public, servilo direttamente
+RewriteCond %{REQUEST_URI} ^/public/
+RewriteRule ^public/(.*)$ public/$1 [L]
