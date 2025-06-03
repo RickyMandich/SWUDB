@@ -74,7 +74,7 @@ class CardsController extends Controller
         if ($next + $batchSize >= count($data)) {
             echo "Import completato!\n";
             MessageCreated::dispatch("Import completato!");
-            file_put_contents(storage_path("app/to_insert.json"), "[]"); // Pulisce il file dopo l'importazione
+            // file_put_contents(storage_path("app/to_insert.json"), "[]"); // Pulisce il file dopo l'importazione
         } else {
             echo "Batch $next dispatchato, prossima esecuzione tra 100ms...\n";
             MessageCreated::dispatch("Batch $next dispatchato");

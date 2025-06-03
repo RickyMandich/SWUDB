@@ -1,7 +1,10 @@
 <div>
     <div class="header text-center mb-4">
         <h1>
-            {{ $nome }} <button wire:click="openAddCardPopup" class="btn btn-primary"> + </button>
+            {{ $nome }} 
+            @if($proprietario)
+                <button wire:click="openAddCardPopup" class="btn btn-primary"> + </button>
+            @endif
         </h1>
         <h4>
             <small class="text-muted">di {{ $user }}</small>
@@ -129,12 +132,22 @@
             
             // Gestione dei messaggi toast
             Livewire.on('showMessage', (data) => {
-                window.dispatchEvent(new CustomEvent('show-message', { 
-                    detail: {
-                        message: data.message,
-                        type: data.type
-                    }
-                }));
+                try{
+                    window.dispatchEvent(new CustomEvent('show-message', { 
+                        detail: {
+                            message: data[0].message,
+                            type: data[0].type
+                        }
+                    }));
+                } catch (e) {
+                    window.dispatchEvent(new CustomEvent('show-message', { 
+                        detail: {
+                            message: data.message,
+                            type: data.type
+                        }
+                    }));
+                }
+                console.log(data);
             });
         });
     </script>
