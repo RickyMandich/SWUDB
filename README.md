@@ -17,3 +17,6 @@
 - ~~impostare i thread per la gestione dell'inserimento carte~~
 - ~~migliorare i thread per la gestione dell'inserimento carte~~
 - migliorare il popup di aggiunta carte
+- gestione della collezione
+- filtri di ricerca
+- analisi delle statiche delle carte nei mazzi
