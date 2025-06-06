@@ -97,7 +97,7 @@
                             @endif
 
                             @if (Route::has('register'))
-                                <li class="nav-item">
+                                <li id="test" class="nav-item">
                                     <a class="nav-link" href="https://{{ route('register') }}">{{ __('custom.Register') }}</a>
                                 </li>
                             @endif
