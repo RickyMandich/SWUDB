@@ -1,3 +1,8 @@
 RewriteEngine On
 RewriteBase /
-RewriteRule ^(.*)$ public/$1 [L]
+
+# Solo se il file/cartella non esiste fisicamente
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L,QSA]
