@@ -1,7 +1,3 @@
-Options +FollowSymLinks
 RewriteEngine On
 RewriteBase /
-
-# Evita loop di rewrite
-RewriteCond %{REQUEST_URI} !^/public/
-RewriteRule ^(.*)$ public/$1 [L,QSA]
+RewriteRule ^(.*)$ public/$1 [L]
