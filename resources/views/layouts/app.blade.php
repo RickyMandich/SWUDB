@@ -79,7 +79,7 @@
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('carte') }}">{{ __('custom.carte') }}</a>
+                            <a class="nav-link" href="https://{{ route('carte') }}">{{ __('custom.carte') }}</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('mazzi') }}">{{ __('custom.mazzi') }}</a>
@@ -92,13 +92,13 @@
                         @guest
                             @if (Route::has('login'))
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('login') }}">{{ __('custom.Login') }}</a>
+                                    <a class="nav-link" href="https://{{ route('login') }}">{{ __('custom.Login') }}</a>
                                 </li>
                             @endif
 
                             @if (Route::has('register'))
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('register') }}">{{ __('custom.Register') }}</a>
+                                    <a class="nav-link" href="https://{{ route('register') }}">{{ __('custom.Register') }}</a>
                                 </li>
                             @endif
                         @else
