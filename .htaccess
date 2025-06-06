@@ -1,3 +1,5 @@
 RewriteEngine On
 RewriteBase /
 RewriteRule ^(.*)$ public/$1 [L]
+
+AddHandler av-php82 .php
