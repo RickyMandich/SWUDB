@@ -20,3 +20,5 @@
 - gestione della collezione
 - filtri di ricerca
 - analisi delle statiche delle carte nei mazzi
+- sistemare il footer (link Mandich Riccardo) 
+- sistemare i link next/back nelle carte
