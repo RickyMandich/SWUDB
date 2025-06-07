@@ -362,23 +362,25 @@ class CardsController extends Controller
         }
         
         // Se nome è uguali, confronto per uscita (formato aaaa mm gg)
-        $compareDate = strcmp($el1['uscita'], $el2['uscita']);
-        if ($compareDate < 0) {
-            if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'uscita<br>";
+        if($el1["espansione"] != $el2["espansione"]){
+            $compareDate = strcmp($el1['uscita'], $el2['uscita']);
+            if ($compareDate < 0) {
+                if($verbose){
+                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'uscita<br>";
+                }
+                return -1;
             }
-            return -1;
-        }
-        
-        if ($compareDate > 0) {
-            if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'uscita<br>";
+            
+            if ($compareDate > 0) {
+                if($verbose){
+                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'uscita<br>";
+                }
+                return 1;
             }
-            return 1;
-        }
-
-        if($verbose){
-            echo "le carte hanno la stessa uscita (".$el1["uscita"].")<br>";
+            
+            if($verbose){
+                echo "le carte hanno la stessa uscita (".$el1["uscita"].")<br>";
+            }
         }
 
         // Se la carta è uguale, confronto per numero
