@@ -341,24 +341,22 @@ class CardsController extends Controller
         }
         
         // Se tipo specifico è uguale, confronto per costo (in ordine crescente)
-        if($el1["tipo"] != "Leader"){
-            if ($el1["costo"] < $el2["costo"]) {
-                if($verbose){
-                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del costo<br>";
-                }
-                return -1;
-            }
-            
-            if ($el1["costo"] > $el2["costo"]) {
-                if($verbose){
-                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del costo<br>";
-                }
-                return 1;
-            }
-
+        if ($el1["costo"] < $el2["costo"]) {
             if($verbose){
-                echo "le carte hanno lo stesso costo (".$el1["costo"].")<br>";
+                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del costo<br>";
             }
+            return -1;
+        }
+        
+        if ($el1["costo"] > $el2["costo"]) {
+            if($verbose){
+                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del costo<br>";
+            }
+            return 1;
+        }
+
+        if($verbose){
+            echo "le carte hanno lo stesso costo (".$el1["costo"].")<br>";
         }
         
         // Se costo è uguale, confronto per nome (in ordine alfabetico)
