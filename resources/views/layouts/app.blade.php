@@ -154,12 +154,12 @@
                         <p>
                             Created by 
                             <small class="text-muted text-uppercase">
-                                Mandich Riccardo
+                                <a href="http://github.com/RickyMandich" target="_blank" rel="author noopener noreferrer">Mandich Riccardo</a>
                             </small>
                             <br>
                             with
                             <small class="text-muted text-uppercase">
-                                <a href="https://laravel.com/docs/12.x">laravel</a>
+                                <a href="https://laravel.com/docs/12.x" rel="noopener noreferrer">laravel</a>
                             </small>
                         </p>
                     </div>
