@@ -88,15 +88,14 @@ Route::get('/docs/privacy', function(){
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 
 Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");
-route::get("test", function(Request $request){
-    $get = $request->all();
-    if(isset($get["espansione1"]) and isset($get["numero1"]) and isset($get["espansione2"]) and isset($get["numero2"])){
-        $cards = Card::where(function($query) use ($get) {
-            $query->where('espansione', $get['espansione1'])
-                ->where('numero', $get['numero1']);
-        })->orWhere(function($query) use ($get) {
-            $query->where('espansione', $get['espansione2'])
-                ->where('numero', $get['numero2']);
+route::get("compare/espansione1-numero1/espansione2-numero2", function($espansione1, $numero1, $espansione2, $numero2) {
+    if(isset($espansione1) and isset($get["numero1"]) and isset($espansione2) and isset($numero2)){
+        $cards = Card::where(function($query) use ($espansione1, $numero1) {
+            $query->where('espansione', $espansione1)
+                ->where('numero', $numero1);
+        })->orWhere(function($query) use ($espansione2, $numero2) {
+            $query->where('espansione', $espansione2)
+                ->where('numero', $numero2);
         })->get();
         ob_start();
         // return var_dump($cards);
@@ -106,4 +105,4 @@ route::get("test", function(Request $request){
     }else{
         return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
     }
-})->name("test");
+})->name("compare");
