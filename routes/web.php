@@ -93,6 +93,10 @@ route::get("test", function(Request $request){
     if(isset($get["espansione1"]) and isset($get["numero1"]) and isset($get["espansione2"]) and isset($get["numero2"])){
         $card1 = Card::where("espansione", $get["espansione1"])->where("numero", $get["numero1"])->first();
         $card2 = Card::where("espansione", $get["espansione2"])->where("numero", $get["numero2"])->first();
-        return CardsController::compareElements($card1, $card2, true);
+        $cards = [$card1, $card2];
+        ob_start();
+        CardsController::mergeSort($cards, true);
+        $output = ob_get_clean();
+        return $output;
     }
 })->name("test");
