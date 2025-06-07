@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\CardReceived;
-
 use App\Events\MessageCreated;
-use Illuminate\Http\Request;
+
+use App\Mail\newCardsEmail;
 
 use App\Models\Card;
 use App\Models\Deck;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+
+use Illuminate\Support\Facades\Mail;
 
 class CardsController extends Controller
 {
@@ -61,6 +65,15 @@ class CardsController extends Controller
         JobController::fireAndForgetGet(route('carte.sendBatch'), [
             "token" => env('JOB_TOKEN')
         ]);
+        if(count($toInsert) > 0){
+            $users = User::select("email")->where('email', '!=', null)->get();
+            foreach($users as $user){
+                foreach($toInsert as $card){
+                    $message .= $card["espansione"] . "-" . $card["numero"] . " - " . $card["nome"] . (" " . $card["titolo"] ?? "") . "\n";
+                }
+                Mail::to($user['email'])->send(new NewCardsEmail($message));
+            }
+        }
         return view("carte.update", ["result" => true, "count" => count($toInsert), "data" => $toInsert]);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Events\MessageCreated;
+
 use App\Http\Controllers\Controller;
 
 use App\Mail\WelcomeEmail;

@@ -5,7 +5,7 @@ namespace App\Models {
     /**
      * App\Models\Card
      *
-     * @property mixed $maxCopie
+     * @property int $maxCopie
      * @property string|null $backArt
      * @property string|null $frontArt
      * @property datetime:Y-m-d H:i $uscita
@@ -347,10 +347,10 @@ namespace App\Models {
      * App\Models\Composition
      *
      * @property string $id
-     * @property mixed $copie
+     * @property int $copie
      * @property bool $foil
-     * @property mixed $idMazzo
-     * @property mixed $numero
+     * @property int $idMazzo
+     * @property int $numero
      * @property string $espansione
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereEspansione($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereNumero($value)
