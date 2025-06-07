@@ -88,3 +88,12 @@ Route::get('/docs/privacy', function(){
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 
 Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");
+route::get("test", function(Request $request){
+    $get = $request->all();
+    if(isset($get["espansione1"]) and isset($get["numero1"]) and isset($get["espansione2"]) and isset($get["numero2"])){
+        $card1 = Card::where("espansione", $get["espansione1"])->where("numero", $get["numero1"])->first();
+        $card2 = Card::where("espansione", $get["espansione2"])->where("numero", $get["numero2"])->first();
+        $cards = [$card1, $card2];
+        CardsController::mergeSort($cards, true);
+    }
+})->name("test");

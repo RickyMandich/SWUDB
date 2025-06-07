@@ -23,7 +23,7 @@ class CardsController extends Controller
         }
         $model = Card::whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
         $empty = $model->isEmpty();
-        $model = $this->mergeSort($model);
+        $model = CardsController::mergeSort($model);
         if($espansione == ""){
             $title = "Carte";
         }else{
@@ -145,7 +145,7 @@ class CardsController extends Controller
         return false;
     }
 
-    function compareElements(&$el1, &$el2, $verbose) {
+    static function compareElements(&$el1, &$el2, $verbose) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
         $result = Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
@@ -423,7 +423,7 @@ class CardsController extends Controller
         return 0;
     }
 
-    function mergeSort(&$array) {
+    static function mergeSort(&$array, $verbose = false) {
         // Caso base: se la collezione ha 0 o 1 elemento, è già ordinata
         if ($array->count() <= 1) {
             return $array;
@@ -435,8 +435,8 @@ class CardsController extends Controller
         $right = $array->slice($mid)->values();
         
         // Richiamo ricorsivamente mergeSort sulle due metà
-        $left = $this->mergeSort($left);
-        $right = $this->mergeSort($right);
+        $left = CardsController::mergeSort($left);
+        $right = CardsController::mergeSort($right);
         
         // Fondo le due metà
         $result = collect();
@@ -445,7 +445,7 @@ class CardsController extends Controller
         
         while ($leftIndex < $left->count() && $rightIndex < $right->count()) {
             // Uso la funzione compareElements per confrontare
-            if ($this->compareElements($left[$leftIndex], $right[$rightIndex], false) <= 0) {
+            if (CardsController::compareElements($left[$leftIndex], $right[$rightIndex], $verbose) <= 0) {
             $result->push($left[$leftIndex]);
             $leftIndex++;
             } else {
