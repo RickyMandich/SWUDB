@@ -361,25 +361,6 @@ class CardsController extends Controller
             }
         }
         
-        // Se costo è uguale, confronto per nome (in ordine alfabetico)
-        if ($el1["nome"] < $el2["nome"]) {
-            if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del nome<br>";
-            }
-            return -1;
-        }
-        
-        if ($el1["nome"] > $el2["nome"]) {
-            if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del nome<br>";
-            }
-            return 1;
-        }
-
-        if($verbose){
-            echo "le carte hanno lo stesso nome (".$el1["nome"].")<br>";
-        }
-        
         // Se nome è uguali, confronto per uscita (formato aaaa mm gg)
         $compareDate = strcmp($el1['uscita'], $el2['uscita']);
         if ($compareDate < 0) {
