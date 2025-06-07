@@ -88,7 +88,8 @@ Route::get('/docs/privacy', function(){
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 
 Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");
-route::get("compare/espansione1/numero1/espansione2/numero2", function($espansione1, $numero1, $espansione2, $numero2) {
+
+route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', function($espansione1, $numero1, $espansione2, $numero2) {
     if(isset($espansione1) and isset($get["numero1"]) and isset($espansione2) and isset($numero2)){
         $cards = Card::where(function($query) use ($espansione1, $numero1) {
             $query->where('espansione', $espansione1)
