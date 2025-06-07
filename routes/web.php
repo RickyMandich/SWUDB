@@ -98,5 +98,7 @@ route::get("test", function(Request $request){
         CardsController::mergeSort($cards, true);
         $output = ob_get_clean();
         return var_dump($get);
+    }else{
+        return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
     }
 })->name("test");
