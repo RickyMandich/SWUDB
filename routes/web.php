@@ -97,7 +97,7 @@ route::get("test", function(Request $request){
         })->orWhere(function($query) use ($get) {
             $query->where('espansione', $get['espansione2'])
                 ->where('numero', $get['numero2']);
-        })->get();
+        })->get()->toArray();
         ob_start();
         return var_dump($cards);
         CardsController::mergeSort($cards, true);
