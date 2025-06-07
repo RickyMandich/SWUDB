@@ -95,9 +95,10 @@ route::get("test", function(Request $request){
         $card2 = Card::where("espansione", $get["espansione2"])->where("numero", $get["numero2"])->first();
         $cards = [$card1, $card2];
         ob_start();
+        return var_dump($cards);
         CardsController::mergeSort($cards, true);
         $output = ob_get_clean();
-        return var_dump($get);
+        return var_dump($output);
     }else{
         return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
     }
