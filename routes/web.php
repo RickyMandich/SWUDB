@@ -97,6 +97,6 @@ route::get("test", function(Request $request){
         ob_start();
         CardsController::mergeSort($cards, true);
         $output = ob_get_clean();
-        return var_dump($output);
+        return var_dump($get);
     }
 })->name("test");
