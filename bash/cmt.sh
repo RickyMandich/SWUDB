@@ -10,5 +10,5 @@ git commit -m "$nomeCommit"
 # Esegui il push sul repository remoto
 git push -f
 
-sleep 5
+sleep 1
 clear

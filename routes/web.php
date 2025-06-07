@@ -99,7 +99,7 @@ route::get("test", function(Request $request){
                 ->where('numero', $get['numero2']);
         })->get()->toArray();
         ob_start();
-        return var_dump($cards);
+        // return var_dump($cards);
         CardsController::mergeSort($cards, true);
         $output = ob_get_clean();
         return var_dump($output);
