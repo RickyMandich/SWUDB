@@ -159,7 +159,7 @@
                             <br>
                             with
                             <small class="text-muted text-uppercase">
-                                <a href="https://laravel.com/docs/12.x" rel="noopener noreferrer">laravel</a>
+                                <a href="https://laravel.com/docs/12.x" target="_blank" rel="noopener noreferrer">laravel</a>
                             </small>
                         </p>
                     </div>
