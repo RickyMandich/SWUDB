@@ -3,6 +3,7 @@ RewriteBase /
 
 # Eccezioni per i file nella root
 RewriteCond %{REQUEST_URI} ^/collezione\.json$ [OR]
+RewriteCond %{REQUEST_URI} ^/README\.md$ [OR]
 RewriteCond %{REQUEST_URI} ^/WebScrapingStarWars\.jar$
 RewriteRule ^ - [L]
 
