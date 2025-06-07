@@ -16,9 +16,9 @@
 - ~~aggiustare il tasto di aggiunta carte~~
 - ~~impostare i thread per la gestione dell'inserimento carte~~
 - ~~migliorare i thread per la gestione dell'inserimento carte~~
+- ~~sistemare il footer (link Mandich Riccardo)~~
 - migliorare il popup di aggiunta carte
 - gestione della collezione
 - filtri di ricerca
 - analisi delle statiche delle carte nei mazzi
-- sistemare il footer (link Mandich Riccardo) 
 - sistemare i link next/back nelle carte
