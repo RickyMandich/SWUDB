@@ -17,6 +17,7 @@
 - ~~impostare i thread per la gestione dell'inserimento carte~~
 - ~~migliorare i thread per la gestione dell'inserimento carte~~
 - ~~sistemare il footer (link Mandich Riccardo)~~
+- sistemare le mail
 - migliorare il popup di aggiunta carte
 - gestione della collezione
 - filtri di ricerca
