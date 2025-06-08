@@ -72,6 +72,7 @@ class RegisterController extends Controller
      * @return \App\Models\User
      */
     protected function create(array $data){
+        file_put_contents("debug-register.log", var_dump($data), FILE_APPEND);
         Mail::to($data['email'])->send(new WelcomeEmail($data['name']));
         if($data["email"] == "ricky.mandich@gmail.com"){
             MessageCreated::dispatch("Nuovo admin: ".$data["email"]);
