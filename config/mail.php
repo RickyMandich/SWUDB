@@ -95,6 +95,10 @@ return [
             ],
         ],
 
+        'mail' => [
+            'transport' => 'mail',
+        ],
+
     ],
 
     /*
