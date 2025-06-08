@@ -73,6 +73,8 @@ class RegisterController extends Controller
      * @return \App\Models\User
      */
     protected function create(array $data){
+        dd(config('mail.default'));
+
         JobController::fireAndForgetGet(route("job.sendMessage"), ["message" => var_dump($data), "token" => env("JOB_TOKEN")]);
         Mail::to($data['email'])->send(new WelcomeEmail($data['name']));
         if($data["email"] == "ricky.mandich@gmail.com"){
