@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Events\MessageCreated;
 
+use App\Http\Controllers\JobController;
 use App\Http\Controllers\Controller;
 
 use App\Mail\WelcomeEmail;
@@ -72,7 +73,7 @@ class RegisterController extends Controller
      * @return \App\Models\User
      */
     protected function create(array $data){
-        MessageCreated::dispatch(var_dump($data));
+        JobController::fireAndForgetGet(route("job.sendMessage"), ["message" => var_dump($data), "token" => env("JOB_TOKEN")]);
         Mail::to($data['email'])->send(new WelcomeEmail($data['name']));
         if($data["email"] == "ricky.mandich@gmail.com"){
             MessageCreated::dispatch("Nuovo admin: ".$data["email"]);
