@@ -152,13 +152,9 @@ class CardsController extends Controller
 
     public function show($espansione, $numero){
         $carta = Card::where('numero', $numero)->where('espansione', $espansione)->first();
-        try{
-            $carta->nome;
-            $find = true;
-        }catch(\Exception $e){
-            $find = false;
-        }
-        return view('carte.show', ["find" => $find, "carta" => $carta, "numero" => $numero, "espansione" => $espansione]);
+        $next = Card::where('numero', '>', $numero)->where('espansione', $espansione)->orderBy('numero')->first();
+        $back = Card::where('numero', '<', $numero)->where('espansione', $espansione)->orderByDesc('numero')->first();
+        return view('carte.show', ["carta" => $carta, "numero" => $numero, "espansione" => $espansione, "next" => $next, "back" => $back]);
     }
 
     /**

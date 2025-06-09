@@ -96,14 +96,14 @@
                 
                 <div class="card-footer">
                     <div class="d-flex justify-content-between">
-                        <a href="/carta/{{ $carta->espansione }}/{{ $carta->numero-1 }}" class="btn btn-secondary align-top">
-                            &larr;Back
+                        <a href="/carta/{{ $back->espansione }}/{{ $back->numero }}" class="btn btn-secondary align-top">
+                            &larr;{{ __("custom.back") }} ({{ $back->snippet }})
                         </a>
                         <a href="/carte" class="btn btn-secondary align-middle">
                             Torna alla lista
                         </a>
-                        <a href="/carta/{{ $carta->espansione }}/{{ $carta->numero+1 }}" class="btn btn-secondary align-bottom">
-                            Next&rarr;
+                        <a href="/carta/{{ $next->espansione }}/{{ $next->numero }}" class="btn btn-secondary align-bottom">
+                            {{ __("custom.next") }} ({{ $next->snippet }})&rarr;
                         </a>
                     </div>
                 </div>
