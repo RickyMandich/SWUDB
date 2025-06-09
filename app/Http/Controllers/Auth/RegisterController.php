@@ -75,7 +75,7 @@ class RegisterController extends Controller
     protected function create(array $data){
         try{
             Mail::to($data['email'])->send(new WelcomeEmail($data['name']));
-        }catch(\Exception $e){
+        }catch(\Error $e){
             MessageCreated::dispatch("Errore invio mail: ".$e->getMessage());
             return config("RESEND_API_KEY");
         }
