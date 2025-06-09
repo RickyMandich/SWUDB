@@ -89,7 +89,7 @@ Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard
 
 Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");
 
-route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', CardsController::class, 'compare')->name("compare");
+route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', [CardsController::class, 'compare'])->name("compare");
 
 route::get('test', function(){
     $data = [
