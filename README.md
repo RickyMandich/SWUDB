@@ -20,7 +20,7 @@
 - ~~refreshare tutte le carte~~
 - ~~far funzionare le mail~~
 - ~~sistemare il testo delle mail di aggiunta nuove carte~~
-- sistemare l'esistenza dei link next/back nelle carte
+- ~~sistemare l'esistenza dei link next/back nelle carte~~
 - filtri di ricerca
 - migliorare il popup di aggiunta carte
 - gestione della collezione
