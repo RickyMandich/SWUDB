@@ -97,4 +97,5 @@ route::get('test', function(){
         'email' => 'ricky.mandich@gmail.com',
     ];
     Mail::to($data['email'])->send(new \App\Mail\WelcomeEmail($data['name']));
+    return view("emails.welcome", ["name" => $data['name']]);
 });
