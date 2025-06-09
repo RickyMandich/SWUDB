@@ -102,7 +102,7 @@
     </div>
     
     <!-- Inclusione del popup per l'aggiunta di carte -->
-    <livewire:add-card-popup
+    <livewire:add-card-pop-up
         :userId="$user"
         :deckId="$deck"
     />
