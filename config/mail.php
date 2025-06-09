@@ -98,7 +98,6 @@ return [
         'mail' => [
             'transport' => 'mail',
         ],
-
     ],
 
     /*
