@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('title', "$carta->snippet")
 @section('content')
     @if($carta)
         <div class="container">
