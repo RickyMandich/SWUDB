@@ -48,7 +48,7 @@
 
                     <div class="row mb-3 justify-content">
                         <span class="col-md-5 text-md-end">
-                            {{ "email" }}:
+                            {{ __("custom.email") }}:
                         </span>
                         <span class="col-md-7">
                             {{ Auth::user()->email }}

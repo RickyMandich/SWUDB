@@ -29,4 +29,6 @@ return[
     'back' => 'Precedente',
     'query' => 'Accedi al Database',
     'nome' => 'Nome',
+    'email' => 'Email',
+    'Benvenuto, ' => 'Benvenuto, ',
 ];
