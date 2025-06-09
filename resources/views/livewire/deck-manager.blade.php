@@ -83,8 +83,9 @@
                             </form>
                         </div>
                     </div>
-                @endif
-        </div>
+                </div>
+            </div>
+        @endif
     </div>
     
     <!-- Messaggi Toast -->
