@@ -61,6 +61,22 @@ class CardsController extends Controller
             return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
         }
     }
+
+    public function api($espansione, $numero){
+        return Card::where('numero', $numero)->where('espansione', $espansione)->first();
+    }
+
+    public function apis($espansione){
+        $ret = Card::where('espansione', $espansione)->get();
+        return [$ret->count(), $ret];
+    }
+
+    public function show($espansione, $numero){
+        $carta = Card::where('numero', $numero)->where('espansione', $espansione)->first();
+        $next = Card::where('numero', '>', $numero)->where('espansione', $espansione)->orderBy('numero')->first();
+        $back = Card::where('numero', '<', $numero)->where('espansione', $espansione)->orderByDesc('numero')->first();
+        return view('carte.show', ["carta" => $carta, "numero" => $numero, "espansione" => $espansione, "next" => $next, "back" => $back]);
+    }
     
     public function startImport(){
         $url = 'http://swudb.altervista.org/collezione.json';
@@ -139,22 +155,6 @@ class CardsController extends Controller
         }
 
         return response()->json(["next" => $next]);
-    }
-
-    public function api($espansione, $numero){
-        return Card::where('numero', $numero)->where('espansione', $espansione)->first();
-    }
-
-    public function apis($espansione){
-        $ret = Card::where('espansione', $espansione)->get();
-        return [$ret->count(), $ret];
-    }
-
-    public function show($espansione, $numero){
-        $carta = Card::where('numero', $numero)->where('espansione', $espansione)->first();
-        $next = Card::where('numero', '>', $numero)->where('espansione', $espansione)->orderBy('numero')->first();
-        $back = Card::where('numero', '<', $numero)->where('espansione', $espansione)->orderByDesc('numero')->first();
-        return view('carte.show', ["carta" => $carta, "numero" => $numero, "espansione" => $espansione, "next" => $next, "back" => $back]);
     }
 
     /**

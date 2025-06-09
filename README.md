@@ -18,8 +18,9 @@
 - ~~migliorare i thread per la gestione dell'inserimento carte~~
 - ~~sistemare il footer (link Mandich Riccardo)~~
 - ~~refreshare tutte le carte~~
-- ~~sistemare le mail~~
-- sistemare i link next/back nelle carte
+- ~~far funzionare le mail~~
+- sistemare il testo delle mail di aggiunta nuove carte
+- ~~sistemare i link next/back nelle carte~~
 - filtri di ricerca
 - migliorare il popup di aggiunta carte
 - gestione della collezione
