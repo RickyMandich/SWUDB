@@ -1,11 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Query</title>
-</head>
-<body>
+@extends('layouts.app')
+@section('title', $query)
+@section('content')
     <form action="query">
         <label for="query">
             inserisci la query
@@ -47,11 +42,12 @@
             </tr>
         @endforeach
     </table>
-</body>
-</html>
-<style>
-    input{
-        display: block;
-        width: 100%;
-    }
-</style>
+@endsection
+@section('style')
+    <style>
+        input{
+            display: block;
+            width: 100%;
+        }
+    </style>
+@endsection

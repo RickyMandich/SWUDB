@@ -169,5 +169,6 @@
     </div>
 </body>
 @yield('script')
+@yield('style')
 </html>
 @yield("php")
