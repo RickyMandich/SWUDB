@@ -85,7 +85,7 @@
                     </div>
                 </div>
             @endif
-        </div>
+        {{-- </div> --}}
     </div>
     
     <!-- Messaggi Toast -->
