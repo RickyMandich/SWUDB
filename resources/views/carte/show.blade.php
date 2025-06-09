@@ -98,7 +98,7 @@
                 <div class="card-footer">
                     <div class="d-flex justify-content-between">
                         @if($back)
-                            <a href="/carta/{{ $back->espansione }}/{{ $back->numero }}" class="btn btn-secondary align-top">
+                            <a href="/carta/{{ $back->espansione }}/{{ $back->numero }}" class="btn btn-primary align-top">
                                 &larr;{{ __("custom.back") }} ({{ $back->snippet }})
                             </a>
                         @endif
@@ -106,7 +106,7 @@
                             Torna alla lista
                         </a>
                         @if($next)
-                            <a href="/carta/{{ $next->espansione }}/{{ $next->numero }}" class="btn btn-secondary align-bottom">
+                            <a href="/carta/{{ $next->espansione }}/{{ $next->numero }}" class="btn btn-primary align-bottom">
                                 {{ __("custom.next") }} ({{ $next->snippet }})&rarr;
                             </a>
                         @endif
