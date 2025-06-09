@@ -10,6 +10,7 @@
         <label for="query">
             inserisci la query
         </label>
+        <a href="{{ route("index") }}" class="btn btn-primary">torna al sito</a>
         <input type="text" name="query" id="inputQuery" value="{{ $query }}">
     </form>
     <?php $header = [];
