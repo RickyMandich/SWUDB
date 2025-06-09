@@ -110,4 +110,4 @@ route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', function($
 
 route::get('test', function(){
     return env("RESEND_API_KEY");
-})
+});
