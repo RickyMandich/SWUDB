@@ -43,6 +43,24 @@ class CardsController extends Controller
             "espansione" => $espansione,
         ]);
     }
+
+    public function compare($espansione1, $numero1, $espansione2, $numero2) {
+        if(isset($espansione1) and isset($numero1) and isset($espansione2) and isset($numero2)){
+            $cards = Card::where(function($query) use ($espansione1, $numero1) {
+                $query->where('espansione', $espansione1)
+                    ->where('numero', $numero1);
+            })->orWhere(function($query) use ($espansione2, $numero2) {
+                $query->where('espansione', $espansione2)
+                    ->where('numero', $numero2);
+            })->get();
+            ob_start();
+            CardsController::mergeSort($cards, true);
+            $output = ob_get_clean();
+            return var_dump($output);
+        }else{
+            return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
+        }
+    }
     
     public function startImport(){
         $url = 'http://swudb.altervista.org/collezione.json';
