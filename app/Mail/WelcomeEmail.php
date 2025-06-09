@@ -23,8 +23,8 @@ class WelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'SWUDB',
-            from: new Address('noreply@swudb.gmail.com', 'SWUDB'),
+            subject: "Benventuto $this->name",
+            from: new Address('noreply@unlimitedDB.net', 'UnlimitedDB'),
         );
     }
 
