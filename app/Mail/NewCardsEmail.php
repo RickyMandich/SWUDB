@@ -41,7 +41,7 @@ class NewCardsEmail extends Mailable
         return new Content(
             view: 'emails.new-cards',
             with: [
-                'message' => $this->message,
+                'messaggio' => $this->message,
             ]
         );
     }
