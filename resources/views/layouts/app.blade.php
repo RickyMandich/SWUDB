@@ -121,6 +121,12 @@
                                 <a class="dropdown-item" href="{{ route('carte.update') }}">
                                     {{ __('custom.refreshDB') }}
                                 </a>
+                                
+                                @if(Auth::admin())
+                                    <a class="dropdown-item" href="{{ route('query') }}">
+                                        {{ __('custom.query') }}
+                                    </a>
+                                @endif
 
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                     @csrf

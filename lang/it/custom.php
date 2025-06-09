@@ -27,4 +27,5 @@ return[
     'refreshDB' => 'Aggiorna il Database',
     'next' => 'Prossima',
     'back' => 'Precedente',
+    'query' => 'Accedi al Database',
 ];
