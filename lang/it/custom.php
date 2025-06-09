@@ -25,4 +25,6 @@ return[
     'Logout' => 'Esci',
     'Dashboard' => 'Profilo',
     'refreshDB' => 'Aggiorna il Database',
+    'next' => 'Prossima',
+    'back' => 'Precedente',
 ];

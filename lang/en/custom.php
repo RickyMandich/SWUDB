@@ -25,4 +25,6 @@ return[
     'Logout' => 'Logout',
     'Dashboard' => 'Dashboard',
     'refreshDB' => 'Refresh Database',
+    'next' => 'Next',
+    'back' => 'Previous',
 ];
