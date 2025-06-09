@@ -57,7 +57,16 @@
                 </div>
             </div>
             
+            <div class="card mt-4 bg-primary-subtle">
+                <div class="card-header">{{ __('README.md') }}</div>
+                <div class="card-body">
+                    <div class="markdown-content">
+                        {!! Illuminate\Support\Str::markdown(file_get_contents(base_path('README.md'))) !!}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 @endsection
+
