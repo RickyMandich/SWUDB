@@ -60,7 +60,7 @@
 <body>
     
     {{-- @livewireScripts --}}
-    <script src="{{ asset('js/alpinejs-config.js') }}"></script>
+    @vite('resources/js/alpinejs-config.js')
     <div id="app" class="d-flex flex-column justify-content-between min-vh-100">
         <nav class="navbar navbar-expand-md shadow-sm bg-custom-light">
             <div class="container">

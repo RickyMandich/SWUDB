@@ -1,10 +1,8 @@
 <?php
 
-use App\Events\CardReceived;
 use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
 use App\Http\Controllers\JobController;
-use App\Models\Card;
 
 use App\Events\MessageCreated;
 
