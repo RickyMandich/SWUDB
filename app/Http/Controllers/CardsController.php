@@ -151,8 +151,7 @@ class CardsController extends Controller
     }
 
     public function show($espansione, $numero){
-        $carta = Card::where('numero', $numero)->where('espansione', $espansione)->get();
-        $carta = $carta->get(0);
+        $carta = Card::where('numero', $numero)->where('espansione', $espansione)->first();
         try{
             $carta->nome;
             $find = true;

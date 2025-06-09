@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-    @if($find)
+    @if($carta)
         <div class="container">
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
