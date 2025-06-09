@@ -124,4 +124,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'RESEND_API_KEY' => env('RESEND_API_KEY'),
+
 ];
