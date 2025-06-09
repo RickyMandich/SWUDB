@@ -40,52 +40,50 @@
                 </div>
             </div>
             <!-- Colonna destra -->
-            <div class="col-md-6">
-                <div class="aggiunte mb-4">
-                    <h3>Carte aggiunte</h3>
-                    <div class="mb-4 contenuto">
-                        @foreach($aggiunte as $id => $carta)
-                            <span class="d-flex mt-4">
-                                {{ $carta['copie'] }}x
-                                @if ($proprietario)
-                                    <button type="button" wire:click="diminuisciCopia('{{ $id }}')" class="btn btn-danger rounded-1 border-0 py-1 px-2 lh-1">-</button>
-                                @endif
-                                <a href="{{ route('carta', ["espansione" => $carta["espansione"], "numero" => $carta["numero"]]) }}" target="_blank">
-                                    {{ $carta['snippet'] }}
-                                </a>
-                            </span>
-                        @endforeach
+            @if ($proprietario)
+                <div class="col-md-6">
+                    <div class="aggiunte mb-4">
+                        <h3>Carte aggiunte</h3>
+                        <div class="mb-4 contenuto">
+                            @foreach($aggiunte as $id => $carta)
+                                <span class="d-flex mt-4">
+                                    {{ $carta['copie'] }}x
+                                    @if ($proprietario)
+                                        <button type="button" wire:click="diminuisciCopia('{{ $id }}')" class="btn btn-danger rounded-1 border-0 py-1 px-2 lh-1">-</button>
+                                    @endif
+                                    <a href="{{ route('carta', ["espansione" => $carta["espansione"], "numero" => $carta["numero"]]) }}" target="_blank">
+                                        {{ $carta['snippet'] }}
+                                    </a>
+                                </span>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
-                <div class="rimosse">
-                    <h3>Carte rimosse</h3>
-                    <div class="mb-4 contenuto">
-                        @foreach($rimosse as $id => $carta)
-                            <span class="d-flex mt-4">
-                                {{ $carta['copie'] }}x
-                                @if ($proprietario)
+                    <div class="rimosse">
+                        <h3>Carte rimosse</h3>
+                        <div class="mb-4 contenuto">
+                            @foreach($rimosse as $id => $carta)
+                                <span class="d-flex mt-4">
+                                    {{ $carta['copie'] }}x
                                     <button type="button" wire:click="aumentaCopia('{{ $id }}')" class="btn btn-success rounded-1 border-0 py-1 px-2 lh-1">+</button>
-                                @endif
-                                <a href="{{ route('carta', ["espansione" => $carta["espansione"], "numero" => $carta["numero"]]) }}" target="_blank">
-                                    {{ $carta['snippet'] }}
-                                </a>
-                            </span>
-                        @endforeach
+                                    <a href="{{ route('carta', ["espansione" => $carta["espansione"], "numero" => $carta["numero"]]) }}" target="_blank">
+                                        {{ $carta['snippet'] }}
+                                    </a>
+                                </span>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
-                @if ($proprietario)
-                    <div class="form">
-                        <form id="saveDeckForm" method="POST" action="{{ route('mazzo.save', ['user' => $user, 'mazzo' => $deck]) }}">
-                            @csrf
-                            <button type="button" wire:click="saveDeck" class="btn btn-success">Save</button>
-                            
-                            <div id="modifiche">
-                                <!-- I campi nascosti verranno generati dinamicamente dal JavaScript -->
-                            </div>
-                        </form>
+                        <div class="form">
+                            <form id="saveDeckForm" method="POST" action="{{ route('mazzo.save', ['user' => $user, 'mazzo' => $deck]) }}">
+                                @csrf
+                                <button type="button" wire:click="saveDeck" class="btn btn-success">Save</button>
+                                
+                                <div id="modifiche">
+                                    <!-- I campi nascosti verranno generati dinamicamente dal JavaScript -->
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 @endif
-            </div>
         </div>
     </div>
     
