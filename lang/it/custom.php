@@ -28,4 +28,5 @@ return[
     'next' => 'Prossima',
     'back' => 'Precedente',
     'query' => 'Accedi al Database',
+    'nome' => 'Nome',
 ];

@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">{{ __('Dashboard') }}</div>
+                <div class="card-header">{{ 'Dashboard' }}</div>
 
                 <div class="card-body fs-4">
                     @if(session('error'))
@@ -39,7 +39,7 @@
 
                     <div class="row mb-3 justify-content">
                         <span class="col-md-5 text-md-end">
-                            {{ __("nome") }}:
+                            {{ __("custom.nome") }}:
                         </span>
                         <span class="col-md-7">
                             {{ Auth::user()->name }}
@@ -48,7 +48,7 @@
 
                     <div class="row mb-3 justify-content">
                         <span class="col-md-5 text-md-end">
-                            {{ __("email") }}:
+                            {{ "email" }}:
                         </span>
                         <span class="col-md-7">
                             {{ Auth::user()->email }}
@@ -58,7 +58,7 @@
             </div>
             
             <div class="card mt-4 bg-primary-subtle">
-                <div class="card-header">{{ __('README.md') }}</div>
+                <div class="card-header">{{ 'README.md' }}</div>
                 <div class="card-body">
                     <div class="markdown-content">
                         {!! Illuminate\Support\Str::markdown(file_get_contents(base_path('README.md'))) !!}
