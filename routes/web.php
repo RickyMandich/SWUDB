@@ -113,5 +113,6 @@ route::get('test', function(){
         'name' => 'Ricky',
         'email' => 'ricky.mandich@gmail.com',
     ];
+    return $this->app['config']->get('services.resend.key');
     Mail::to($data['email'])->send(new \App\Mail\WelcomeEmail($data['name']));
 });
