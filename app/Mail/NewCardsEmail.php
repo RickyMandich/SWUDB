@@ -29,7 +29,7 @@ class NewCardsEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Cards Email',
+            subject: 'NUove carte disponibili',
         );
     }
 
@@ -39,7 +39,7 @@ class NewCardsEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.new_cards',
+            view: 'emails.new-cards',
             with: [
                 'message' => $this->message,
             ]

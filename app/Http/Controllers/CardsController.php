@@ -84,11 +84,12 @@ class CardsController extends Controller
             "token" => env('JOB_TOKEN')
         ]);
         if(count($toInsert) > 0){
+            $message = "Sono disponibili queste nuove carte:\n";
+            foreach($toInsert as $card){
+                $message .= $card["espansione"] . "-" . $card["numero"] . " - " . $card["nome"] . (" " . $card["titolo"] ?? "") . "\n";
+            }
             $users = User::select("email")->where('email', '!=', null)->get();
             foreach($users as $user){
-                foreach($toInsert as $card){
-                    $message .= $card["espansione"] . "-" . $card["numero"] . " - " . $card["nome"] . (" " . $card["titolo"] ?? "") . "\n";
-                }
                 Mail::to($user['email'])->send(new NewCardsEmail($message));
             }
         }

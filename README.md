@@ -17,14 +17,14 @@
 - ~~impostare i thread per la gestione dell'inserimento carte~~
 - ~~migliorare i thread per la gestione dell'inserimento carte~~
 - ~~sistemare il footer (link Mandich Riccardo)~~
-- **refreshare tutte le carte**
-- sistemare le mail
+- ~~refreshare tutte le carte~~
+- ~~sistemare le mail~~
+- sistemare i link next/back nelle carte
+- filtri di ricerca
 - migliorare il popup di aggiunta carte
 - gestione della collezione
-- filtri di ricerca
 - analisi delle statistiche delle carte nei mazzi
     - numero carte
     - tratti
     - keyword
     - hp/vita media
-- sistemare i link next/back nelle carte
