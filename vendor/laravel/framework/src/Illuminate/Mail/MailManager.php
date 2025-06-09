@@ -2,6 +2,7 @@
 
 namespace Illuminate\Mail;
 
+use App\Events\MessageCreated;
 use Aws\Ses\SesClient;
 use Aws\SesV2\SesV2Client;
 use Closure;
@@ -317,6 +318,8 @@ class MailManager implements FactoryContract
      */
     protected function createResendTransport(array $config)
     {
+        MessageCreated::dispatch($config['RESEND_API_KEY']);
+
         return new ResendTransport(
             Resend::client($config['key'] ?? $this->app['config']->get('services.resend.key')),
         );
