@@ -3,11 +3,11 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Mail\Mailables\Address;
 
 class NewCardsEmail extends Mailable
 {
@@ -29,7 +29,8 @@ class NewCardsEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'NUove carte disponibili',
+            subject: 'Nuove carte disponibili',
+            // from: new Address('noreply@mailing.unlimiteddb.net', 'UnlimitedDB'),
         );
     }
 
