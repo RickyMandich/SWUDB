@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\MessageCreated;
 
-use App\Mail\newCardsEmail;
+use App\Mail\NewCardsEmail;
 
 use App\Models\Card;
 use App\Models\Deck;
