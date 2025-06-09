@@ -57,7 +57,7 @@
                 </div>
             </div>
             
-            <div class="card mt-4 bg-primary-subtle">
+            <div class="card mt-4 bg-secondary-subtle">
                 <div class="card-header">{{ __('README.md') }}</div>
                 <div class="card-body">
                     <div class="markdown-content">
