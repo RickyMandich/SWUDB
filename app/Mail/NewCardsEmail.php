@@ -30,7 +30,6 @@ class NewCardsEmail extends Mailable
     {
         return new Envelope(
             subject: 'Nuove carte disponibili',
-            // from: new Address('noreply@mailing.unlimiteddb.net', 'UnlimitedDB'),
         );
     }
 

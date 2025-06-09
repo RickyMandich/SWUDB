@@ -24,7 +24,6 @@ class WelcomeEmail extends Mailable
     {
         return new Envelope(
             subject: "Benvenuto $this->name",
-            from: new Address('noreply@mailing.unlimiteddb.net', 'UnlimitedDB'),
         );
     }
 

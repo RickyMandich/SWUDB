@@ -84,9 +84,9 @@ class CardsController extends Controller
             "token" => env('JOB_TOKEN')
         ]);
         if(count($toInsert) > 0){
-            $message = "Sono disponibili queste nuove carte:\n";
+            $message = "Sono disponibili queste nuove carte:\n<br>";
             foreach($toInsert as $card){
-                $message .= $card["espansione"] . "-" . $card["numero"] . " - " . $card["nome"] . (" " . $card["titolo"] ?? "") . "\n";
+                $message .= $card["espansione"] . "-" . $card["numero"] . " - " . $card["nome"] . (" " . $card["titolo"] ?? "") . "\n<br>";
             }
             $users = User::select("email")->where('email', '!=', null)->get();
             foreach($users as $user){
