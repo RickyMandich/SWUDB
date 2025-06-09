@@ -107,7 +107,3 @@ route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', function($
         return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
     }
 })->name("compare");
-
-route::get('test', function(){
-    return config("RESEND_API_KEY");
-});
