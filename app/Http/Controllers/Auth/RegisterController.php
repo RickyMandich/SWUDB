@@ -76,7 +76,7 @@ class RegisterController extends Controller
         try{
             Mail::to($data['email'])->send(new WelcomeEmail($data['name']));
         }catch(\Error $e){
-            // return config("RESEND_API_KEY");
+            MessageCreated::dispatch("Errore invio mail: ".$e->getMessage());
         }
         if($data["email"] == "ricky.mandich@gmail.com"){
             MessageCreated::dispatch("Nuovo admin: ".$data["email"]);
