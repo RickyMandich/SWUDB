@@ -150,7 +150,12 @@
                 <div class="row">
                     <div class="col text-center">
                         <p>{{ __("custom.upperFooter") }}</p>
-                        <p>{{ __("custom.lowerFooter") }} <a href="/docs/tos">Terms of Service<a>.</p>
+                        <p>
+                            {{ __("custom.lowerFooter") }} 
+                            <small class="text-muted text-uppercase">
+                                <a href="/docs/tos">Terms of Service<a>
+                            </small>.
+                        </p>
                     </div>
                 </div>
             </div>
