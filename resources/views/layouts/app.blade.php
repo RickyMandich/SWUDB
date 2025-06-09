@@ -161,7 +161,7 @@
             </div>
             <div class="container">
                 <div class="row">
-                    <div class="col text-center">
+                    <div class="col-6 text-center">
                         <p>
                             Created by 
                             <small class="text-muted text-uppercase">
@@ -172,6 +172,11 @@
                             <small class="text-muted text-uppercase">
                                 <a href="https://laravel.com/docs/12.x" target="_blank" rel="noopener noreferrer">laravel</a>
                             </small>
+                        </p>
+                    </div>
+                    <div class="col-6 text-center">
+                        <p>
+                            you can contact us at <a href="mailto:info@unlimiteddb.net">info@unlimiteddb.net</a>
                         </p>
                     </div>
                 </div>
