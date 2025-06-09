@@ -318,8 +318,6 @@ class MailManager implements FactoryContract
      */
     protected function createResendTransport(array $config)
     {
-        MessageCreated::dispatch($this->app['config']->get('services.resend.key'));
-
         return new ResendTransport(
             Resend::client($config['key'] ?? $this->app['config']->get('services.resend.key')),
         );
