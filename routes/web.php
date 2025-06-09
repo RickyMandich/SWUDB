@@ -109,5 +109,9 @@ route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', function($
 })->name("compare");
 
 route::get('test', function(){
-    return config("app.RESEND_API_KEY");
+    $data = [
+        'name' => 'Ricky',
+        'email' => 'ricky.mandich@gmail.com',
+    ];
+    Mail::to($data['email'])->send(new \App\Mail\WelcomeEmail($data['name']));
 });
