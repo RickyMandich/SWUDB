@@ -176,7 +176,7 @@
                     </div>
                     <div class="col-6 text-center">
                         <p>
-                            you can contact us at <a href="mailto:info@unlimiteddb.net">info@unlimiteddb.net</a>
+                            {{__("custom.contactMail")}}
                         </p>
                     </div>
                 </div>
