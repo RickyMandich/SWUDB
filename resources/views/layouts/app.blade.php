@@ -176,7 +176,7 @@
                     </div>
                     <div class="col-6 text-center">
                         <p>
-                            {{__("custom.contactMail")}}
+                            {!! __("custom.contactMail") !!}
                         </p>
                     </div>
                 </div>
@@ -188,3 +188,4 @@
 @yield('style')
 </html>
 @yield("php")
+
