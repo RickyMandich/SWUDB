@@ -58,9 +58,6 @@
     }
 </style>
 <body>
-    
-    @livewireScripts
-    @vite('resources/js/alpinejs-config.js')
     <div id="app" class="d-flex flex-column justify-content-between min-vh-100">
         <nav class="navbar navbar-expand-md shadow-sm bg-custom-light">
             <div class="container">
@@ -184,9 +181,11 @@
         </footer>
     </div>
 
+    @vite('resources/js/alpinejs-config.js')
+    @livewireScripts
     @stack('scripts')
+    @yield('script')
 </body>
-@yield('script')
 @yield('style')
 </html>
 @yield("php")

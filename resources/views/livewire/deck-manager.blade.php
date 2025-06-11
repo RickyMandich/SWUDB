@@ -101,10 +101,12 @@
     </div>
     
     <!-- Inclusione del popup per l'aggiunta di carte -->
-    <livewire:add-card-pop-up
-        :userId="$user"
-        :deckId="$deck"
-    />
+    @livewire('add-card-pop-up', [
+        'userId' => $user,
+        'deckId' => $deck,
+        'currentDeckCards' => [],
+        'availableCards' => []
+    ])
     
     <script>
         document.addEventListener('livewire:initialized', () => {

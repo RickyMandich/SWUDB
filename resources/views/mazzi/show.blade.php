@@ -12,9 +12,7 @@
     />
 @endsection
 
-@section('script')
-    @livewireScripts
-    <!-- Aggiungi qui qualsiasi script personalizzato che vuoi mantenere -->
+@push('scripts')
     <script>
         document.addEventListener('livewire:initialized', () => {
             // Gestione delle notifiche di sistema
@@ -32,4 +30,4 @@
             @endif
         });
     </script>
-@endsection
+@endpush

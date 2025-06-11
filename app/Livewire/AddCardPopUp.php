@@ -30,6 +30,7 @@ class AddCardPopup extends Component
         $this->userId = $userId;
         $this->deckId = $deckId;
         $this->loadAvailableCards($currentDeckCards, $availableCards);
+        $this->filteredCards = $this->availableCards; // Initialize filtered cards
     }
     
     public function loadAvailableCards($currentDeckCards = [], $availableCards = [])

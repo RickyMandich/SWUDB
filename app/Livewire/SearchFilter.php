@@ -193,6 +193,9 @@ class SearchFilter extends Component
         // Emetti evento per aggiornare la vista principale
         if ($this->mode === 'page') {
             $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
+        } elseif ($this->mode === 'popup') {
+            // Emetti evento specifico per il popup
+            $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
         }
     }
 
