@@ -91,6 +91,9 @@ class AddCardPopup extends Component
 
         $this->isOpen = true;
         $this->filteredCards = $this->availableCards; // Inizializza con tutte le carte
+
+        // Emetti evento per Alpine.js
+        $this->dispatch('popup-opened');
     }
 
     public function close()
@@ -101,7 +104,7 @@ class AddCardPopup extends Component
             'message' => 'DEBUG: Funzione close() chiamata!'
         ]);
 
-        $this->isOpen = false;
+        // $this->isOpen = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
 
         // Forziamo l'aggiornamento del componente
@@ -113,7 +116,7 @@ class AddCardPopup extends Component
         // Toast di conferma
         $this->dispatch('showMessage', [
             'type' => 'success',
-            'message' => 'DEBUG: isOpen impostato a false, isOpen: '.($this->isOpen ? 'true' : 'false')
+            'message' => 'DEBUG: isOpen impostato a false, isOpen: '.$this->isOpen
         ]);
     }
 
