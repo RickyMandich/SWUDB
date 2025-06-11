@@ -84,12 +84,7 @@ class AddCardPopUp extends Component
     public function open()
     {
         $this->isOpen = true;
-
-        // Simula caricamento per mostrare il loading spinner
-        sleep(1); // 1 secondo di delay per vedere il loading
-
-        // Inizializza con tutte le carte disponibili
-        $this->filteredCards = $this->availableCards;
+        $this->filteredCards = $this->availableCards; // Inizializza con tutte le carte
     }
 
     public function close()
