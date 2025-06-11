@@ -31,7 +31,6 @@ Route::get('/carte/{espansione?}', [CardsController::class, 'index'])->name("car
 
 Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 
-
 Route::get('/update', [CardsController::class, 'startImport'])->name("carte.update");
 
 Route::get('/dispatchBatch', [CardsController::class, 'dispatchBatch'])->name("carte.dispatchBatch");
