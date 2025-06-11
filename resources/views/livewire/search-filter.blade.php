@@ -1,6 +1,6 @@
 <div class="search-filter-container">
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header bg-secondary d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
                 <i class="fas fa-filter me-2"></i>Filtri di Ricerca
             </h5>
