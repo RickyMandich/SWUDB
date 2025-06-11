@@ -8,8 +8,8 @@
                 <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm" title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
-                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true" title="Mostra/Nascondi filtri">
-                    <i class="fas fa-chevron-down"></i>
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true" aria-controls="filterCollapse" title="Mostra/Nascondi filtri">
+                    <i class="fas fa-chevron-down" id="filterToggleIcon"></i>
                 </button>
             </div>
         </div>
@@ -218,6 +218,23 @@
             </div>
         </div>
     </div>
-
-
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterCollapse = document.getElementById('filterCollapse');
+    const toggleIcon = document.getElementById('filterToggleIcon');
+
+    if (filterCollapse && toggleIcon) {
+        filterCollapse.addEventListener('show.bs.collapse', function () {
+            toggleIcon.classList.remove('fa-chevron-right');
+            toggleIcon.classList.add('fa-chevron-down');
+        });
+
+        filterCollapse.addEventListener('hide.bs.collapse', function () {
+            toggleIcon.classList.remove('fa-chevron-down');
+            toggleIcon.classList.add('fa-chevron-right');
+        });
+    }
+});
+</script>

@@ -11,25 +11,24 @@
 
         <!-- Modal contenuto -->
         <div class="position-relative">
-            <div class="bg-white rounded shadow-lg overflow-hidden" style="width: 500px; max-width: 90vw;" @click.outside="$wire.close()">
+            <div class="card shadow-lg" style="width: 600px; max-width: 90vw;" @click.outside="$wire.close()">
                 <!-- Header -->
-                <div class="p-4 border-b bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h3 class="text-lg font-semibold mb-0">Aggiungi carte al mazzo</h3>
-                    <button wire:click="toggleFilters" class="btn btn-outline-light btn-sm">
-                        <i class="fas fa-filter me-1"></i>
-                        {{ $showFilters ? 'Nascondi' : 'Mostra' }} Filtri
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Aggiungi carte al mazzo
+                    </h5>
+                    <button wire:click="close" class="btn btn-outline-light btn-sm" title="Chiudi">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
 
-                <!-- Filtri (se abilitati) -->
-                @if($showFilters)
-                <div class="p-3 bg-light border-bottom">
+                <!-- Filtri -->
+                <div class="bg-light border-bottom">
                     @livewire('search-filter', ['mode' => 'popup'])
                 </div>
-                @endif
 
                 <!-- Body -->
-                <div class="p-4">
+                <div class="card-body">
                     <!-- Contatore carte disponibili -->
                     <div class="mb-3">
                         <small class="text-muted">
@@ -66,11 +65,6 @@
                             <button wire:click="addCardsToDeck" class="btn btn-success">Aggiungi</button>
                         </div>
                     @endif
-                </div>
-                
-                <!-- Footer -->
-                <div class="p-4 border-top bg-light d-flex justify-content-end">
-                    <button class="btn btn-secondary" wire:click="close">Chiudi</button>
                 </div>
             </div>
         </div>

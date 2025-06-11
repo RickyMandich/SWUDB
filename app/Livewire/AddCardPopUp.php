@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Events\MessageCreated;
 use Livewire\Component;
 use App\Models\Card;
 
@@ -16,7 +15,6 @@ class AddCardPopup extends Component
     public $filteredCards = [];
     public $deckId;
     public $userId;
-    public $showFilters = false;
 
     // Eventi custom che verranno ascoltati dalla vista principale
     protected $listeners = [
@@ -92,13 +90,7 @@ class AddCardPopup extends Component
     public function close()
     {
         $this->isOpen = false;
-        $this->showFilters = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
-    }
-
-    public function toggleFilters()
-    {
-        $this->showFilters = !$this->showFilters;
     }
 
     public function updateCards($currentDeckCards)
