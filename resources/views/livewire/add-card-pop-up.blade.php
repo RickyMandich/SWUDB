@@ -1,22 +1,18 @@
 <div>
     <!-- Modal Livewire per l'aggiunta di carte -->
-    <div x-data="{
-            show: @entangle('isOpen').live,
-            forceClose() {
-                console.log('Force close chiamato');
-                this.show = false;
-                $wire.close();
-            }
-         }"
+    <div x-data="{ show: false }"
          x-show="show"
-         @keydown.escape.window="console.log('ESC premuto!'); forceClose()"
-         @force-close.window="console.log('Force close event ricevuto'); show = false"
+         x-init="
+            $wire.on('popup-opened', () => { show = true; console.log('Popup aperto via evento'); });
+            $wire.on('popup-closed', () => { show = false; console.log('Popup chiuso via evento'); });
+         "
+         @keydown.escape.window="console.log('ESC premuto!'); show = false; $wire.close()"
          class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
          style="display: none; z-index: 1050; overflow-y: auto;">
 
         <!-- Overlay di sfondo -->
         <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
-             @click="console.log('Overlay cliccato!'); forceClose()"></div>
+             @click="console.log('Overlay cliccato!'); show = false; $wire.close()"></div>
 
         <!-- Modal contenuto -->
         <div class="position-relative w-100 d-flex align-items-center justify-content-center" style="min-height: 100%;">
@@ -26,7 +22,7 @@
                     <h5 class="mb-0">
                         <i class="fas fa-plus me-2"></i>Aggiungi carte al mazzo
                     </h5>
-                    <button @click="console.log('Pulsante X cliccato!'); forceClose()"
+                    <button @click="console.log('Pulsante X cliccato!'); show = false; $wire.close()"
                             class="btn btn-outline-light btn-sm" title="Chiudi">
                         <i class="fas fa-times"></i>
                     </button>

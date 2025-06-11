@@ -5,7 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Card;
 
-class AddCardPopup extends Component
+class AddCardPopUp extends Component
 {
     public $isOpen = false;
     public $selectedCardId = '';
