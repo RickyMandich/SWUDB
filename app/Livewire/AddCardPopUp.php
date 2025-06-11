@@ -84,7 +84,7 @@ class AddCardPopUp extends Component
     public function open()
     {
         $this->isOpen = true;
-        $this->filteredCards = $this->availableCards; // Inizializza con tutte le carte
+        $this->filteredCards = []; // Inizializza con nessuna carta
     }
 
     public function close()
