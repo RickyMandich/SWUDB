@@ -83,32 +83,14 @@ class AddCardPopUp extends Component
     
     public function open()
     {
-        // Toast di debug
-        $this->dispatch('showMessage', [
-            'type' => 'info',
-            'message' => 'DEBUG: Funzione open() chiamata!'
-        ]);
-
         $this->isOpen = true;
         $this->filteredCards = $this->availableCards; // Inizializza con tutte le carte
     }
 
     public function close()
     {
-        // Toast di debug
-        $this->dispatch('showMessage', [
-            'type' => 'info',
-            'message' => 'DEBUG: Funzione close() chiamata!'
-        ]);
-
         $this->isOpen = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
-
-        // Toast di conferma
-        $this->dispatch('showMessage', [
-            'type' => 'success',
-            'message' => "DEBUG: isOpen impostato a false - popup dovrebbe chiudersi"
-        ]);
     }
 
     public function updateCards($currentDeckCards)
@@ -140,17 +122,7 @@ class AddCardPopUp extends Component
     
     public function addCardsToDeck()
     {
-        // Toast di debug
-        $this->dispatch('showMessage', [
-            'type' => 'info',
-            'message' => 'DEBUG: Funzione addCardsToDeck() chiamata!'
-        ]);
-
         if(empty($this->selectedCardId)) {
-            $this->dispatch('showMessage', [
-                'type' => 'warning',
-                'message' => 'DEBUG: Nessuna carta selezionata!'
-            ]);
             return;
         }
 
@@ -158,11 +130,6 @@ class AddCardPopUp extends Component
         $this->dispatch('cardAdded', [
             'cardId' => $this->selectedCardId,
             'copies' => $this->copiesAmount
-        ]);
-
-        $this->dispatch('showMessage', [
-            'type' => 'success',
-            'message' => 'DEBUG: Carta aggiunta, chiudendo popup...'
         ]);
 
         $this->close();
