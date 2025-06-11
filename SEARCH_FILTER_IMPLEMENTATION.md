@@ -10,19 +10,23 @@
 
 Il componente offre filtri per tutti gli attributi del model `Card`:
 
+**Filtri Standard:**
 - **Nome**: Ricerca testuale con debounce
+- **Titolo**: Ricerca testuale con debounce
 - **Espansione**: Select con tutte le espansioni disponibili
 - **Tipo**: Select con tutti i tipi di carta
 - **Aspetto Primario**: Select con tutti gli aspetti primari
 - **Aspetto Secondario**: Select con tutti gli aspetti secondari
 - **Rarità**: Select con tutte le rarità disponibili
+- **Unica**: Select per carte uniche
+
+**Filtri Avanzati (collassabili):**
 - **Costo**: Range numerico (min-max)
 - **Potenza**: Range numerico (min-max)
 - **Vita**: Range numerico (min-max)
 - **Tratti**: Ricerca testuale con debounce
 - **Arena**: Select con tutte le arene disponibili
 - **Artista**: Select con tutti gli artisti
-- **Unica**: Checkbox per carte uniche
 
 ### 2. Modalità di Utilizzo
 
@@ -37,7 +41,8 @@ Il componente supporta due modalità:
 - **Aggiornamento in Tempo Reale**: I risultati si aggiornano automaticamente
 - **Ordinamento Automatico**: Utilizza il sistema di ordinamento esistente
 - **Interfaccia Responsive**: Ottimizzata per dispositivi mobili
-- **Contatore Risultati**: Mostra il numero di carte trovate
+- **Contatore Risultati**: Posizionato tra i filtri e le carte, aggiornato dinamicamente
+- **Solo Bootstrap 5.3**: Nessun CSS personalizzato, solo classi Bootstrap
 
 ## File Modificati/Creati
 
@@ -45,7 +50,6 @@ Il componente supporta due modalità:
 
 1. **`app/Livewire/SearchFilter.php`** - Logica del componente
 2. **`resources/views/livewire/search-filter.blade.php`** - Template del componente
-3. **`resources/css/search-filter.css`** - Stili CSS dedicati
 
 ### File Modificati
 
@@ -92,12 +96,12 @@ Il componente utilizza il metodo `mergeSort` esistente del `CardsController` per
 
 ### Design
 
-- **Card Layout**: Il filtro è presentato in una card collassabile con bordi arrotondati
-- **Header Moderno**: Gradiente blu con effetti di ombra e overlay
-- **Icone FontAwesome**: Per migliorare l'usabilità (icona filtro dorata, chevron animato)
-- **Colori Bootstrap**: Integrazione con il tema esistente
-- **Animazioni CSS**: Transizioni fluide per i collassi e rotazione dell'icona chevron
-- **Effetti Visivi**: Ombre, gradienti e overlay per un aspetto professionale
+- **Bootstrap 5.3 Puro**: Utilizza esclusivamente classi Bootstrap senza CSS personalizzato
+- **Card Layout**: Il filtro è presentato in una card collassabile con ombra
+- **Header Bootstrap**: Header blu primario con testo bianco
+- **Icone FontAwesome**: Per migliorare l'usabilità
+- **Layout Responsive**: Grid system Bootstrap per tutti i dispositivi
+- **Contatore Risultati**: Alert info posizionato tra filtri e carte
 
 ### Accessibilità
 

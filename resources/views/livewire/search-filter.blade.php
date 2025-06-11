@@ -1,14 +1,14 @@
-<div class="search-filter-container">
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+<div class="mb-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
                 <i class="fas fa-filter me-2"></i>Filtri di Ricerca
             </h5>
             <div class="d-flex gap-2">
-                <button wire:click="resetAllFilters" class="btn btn-outline-secondary btn-sm" title="Resetta tutti i filtri">
+                <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm" title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
-                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true" title="Mostra/Nascondi filtri">
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true" title="Mostra/Nascondi filtri">
                     <i class="fas fa-chevron-down"></i>
                 </button>
             </div>
@@ -16,19 +16,12 @@
 
         <div class="collapse show" id="filterCollapse">
             <div class="card-body">
-                <!-- Risultati -->
-                @if($mode === 'page')
-                <div class="alert alert-info mb-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Trovati <strong>{{ $totalResults }}</strong> risultati
-                </div>
-                @endif
 
                 <!-- Filtri principali -->
                 <div class="row g-3">
                     <!-- Nome -->
-                    <div class="col-md-6">
-                        <label for="nome" class="form-label">Nome della carta</label>
+                    <div class="col-md-4">
+                        <label for="nome" class="form-label fw-bold">Nome della carta</label>
                         <input type="text"
                                wire:model.live.debounce.300ms="nome"
                                class="form-control"
@@ -36,9 +29,19 @@
                                placeholder="Inserisci il nome...">
                     </div>
 
+                    <!-- Titolo -->
+                    <div class="col-md-4">
+                        <label for="titolo" class="form-label fw-bold">Titolo</label>
+                        <input type="text"
+                               wire:model.live.debounce.300ms="titolo"
+                               class="form-control"
+                               id="titolo"
+                               placeholder="Inserisci il titolo...">
+                    </div>
+
                     <!-- Espansione -->
-                    <div class="col-md-6">
-                        <label for="espansione" class="form-label">Espansione</label>
+                    <div class="col-md-4">
+                        <label for="espansione" class="form-label fw-bold">Espansione</label>
                         <select wire:model.live="espansione" class="form-select" id="espansione">
                             <option value="">Tutte le espansioni</option>
                             @foreach($espansioni as $esp)
@@ -49,7 +52,7 @@
 
                     <!-- Tipo -->
                     <div class="col-md-4">
-                        <label for="tipo" class="form-label">Tipo</label>
+                        <label for="tipo" class="form-label fw-bold">Tipo</label>
                         <select wire:model.live="tipo" class="form-select" id="tipo">
                             <option value="">Tutti i tipi</option>
                             @foreach($tipi as $t)
@@ -60,7 +63,7 @@
 
                     <!-- Aspetto Primario -->
                     <div class="col-md-4">
-                        <label for="aspettoPrimario" class="form-label">Aspetto Primario</label>
+                        <label for="aspettoPrimario" class="form-label fw-bold">Aspetto Primario</label>
                         <select wire:model.live="aspettoPrimario" class="form-select" id="aspettoPrimario">
                             <option value="">Tutti gli aspetti</option>
                             @foreach($aspettiPrimari as $asp)
@@ -71,7 +74,7 @@
 
                     <!-- Aspetto Secondario -->
                     <div class="col-md-4">
-                        <label for="aspettoSecondario" class="form-label">Aspetto Secondario</label>
+                        <label for="aspettoSecondario" class="form-label fw-bold">Aspetto Secondario</label>
                         <select wire:model.live="aspettoSecondario" class="form-select" id="aspettoSecondario">
                             <option value="">Tutti gli aspetti</option>
                             @foreach($aspettiSecondari as $asp)
@@ -82,7 +85,7 @@
 
                     <!-- Rarità -->
                     <div class="col-md-6">
-                        <label for="rarita" class="form-label">Rarità</label>
+                        <label for="rarita" class="form-label fw-bold">Rarità</label>
                         <select wire:model.live="rarita" class="form-select" id="rarita">
                             <option value="">Tutte le rarità</option>
                             @foreach($rarita_options as $rar)
@@ -93,7 +96,7 @@
 
                     <!-- Unica -->
                     <div class="col-md-6">
-                        <label for="unica" class="form-label">Carta Unica</label>
+                        <label for="unica" class="form-label fw-bold">Carta Unica</label>
                         <select wire:model.live="unica" class="form-select" id="unica">
                             <option value="">Tutte</option>
                             <option value="1">Solo uniche</option>
@@ -112,7 +115,7 @@
                         <div class="row g-3">
                             <!-- Costo -->
                             <div class="col-md-6">
-                                <label class="form-label">Costo</label>
+                                <label class="form-label fw-bold">Costo</label>
                                 <div class="row g-2">
                                     <div class="col">
                                         <input type="number"
@@ -134,7 +137,7 @@
 
                             <!-- Potenza -->
                             <div class="col-md-6">
-                                <label class="form-label">Potenza</label>
+                                <label class="form-label fw-bold">Potenza</label>
                                 <div class="row g-2">
                                     <div class="col">
                                         <input type="number"
@@ -156,7 +159,7 @@
 
                             <!-- Vita -->
                             <div class="col-md-6">
-                                <label class="form-label">Vita</label>
+                                <label class="form-label fw-bold">Vita</label>
                                 <div class="row g-2">
                                     <div class="col">
                                         <input type="number"
@@ -178,7 +181,7 @@
 
                             <!-- Tratti -->
                             <div class="col-md-6">
-                                <label for="tratti" class="form-label">Tratti</label>
+                                <label for="tratti" class="form-label fw-bold">Tratti</label>
                                 <input type="text"
                                        wire:model.live.debounce.300ms="tratti"
                                        class="form-control"
@@ -188,7 +191,7 @@
 
                             <!-- Arena -->
                             <div class="col-md-6">
-                                <label for="arena" class="form-label">Arena</label>
+                                <label for="arena" class="form-label fw-bold">Arena</label>
                                 <select wire:model.live="arena" class="form-select" id="arena">
                                     <option value="">Tutte le arene</option>
                                     @foreach($arene as $ar)
@@ -199,7 +202,7 @@
 
                             <!-- Artista -->
                             <div class="col-md-6">
-                                <label for="artista" class="form-label">Artista</label>
+                                <label for="artista" class="form-label fw-bold">Artista</label>
                                 <select wire:model.live="artista" class="form-select" id="artista">
                                     <option value="">Tutti gli artisti</option>
                                     @foreach($artisti as $art)
@@ -210,6 +213,8 @@
                         </div>
                     </div>
                 </div>
+
+
             </div>
         </div>
     </div>

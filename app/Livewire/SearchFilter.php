@@ -10,6 +10,7 @@ class SearchFilter extends Component
 {
     // Proprietà per i filtri
     public $nome = '';
+    public $titolo = '';
     public $espansione = '';
     public $tipo = '';
     public $aspettoPrimario = '';
@@ -114,6 +115,11 @@ class SearchFilter extends Component
             $query->where('nome', 'like', '%' . $this->nome . '%');
         }
 
+        // Filtro per titolo
+        if (!empty($this->titolo)) {
+            $query->where('titolo', 'like', '%' . $this->titolo . '%');
+        }
+
         // Filtro per espansione
         if (!empty($this->espansione)) {
             $query->where('espansione', $this->espansione);
@@ -193,6 +199,7 @@ class SearchFilter extends Component
     public function resetAllFilters()
     {
         $this->nome = '';
+        $this->titolo = '';
         $this->espansione = '';
         $this->tipo = '';
         $this->aspettoPrimario = '';
@@ -220,6 +227,7 @@ class SearchFilter extends Component
 
     // Metodi per aggiornare i filtri in tempo reale
     public function updatedNome() { $this->applyFilters(); }
+    public function updatedTitolo() { $this->applyFilters(); }
     public function updatedEspansione() { $this->applyFilters(); }
     public function updatedTipo() { $this->applyFilters(); }
     public function updatedAspettoPrimario() { $this->applyFilters(); }

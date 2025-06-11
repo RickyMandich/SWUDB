@@ -7,6 +7,14 @@
             @livewire('search-filter', ['mode' => 'page', 'initialEspansione' => $espansione])
         </div>
 
+        <!-- Risultati di ricerca -->
+        <div class="mb-3">
+            <div class="alert alert-info d-flex align-items-center" id="results-counter">
+                <i class="fas fa-info-circle me-2"></i>
+                <span>Trovati <strong>{{ count($content) }}</strong> risultati</span>
+            </div>
+        </div>
+
         <!-- Contenitore per i risultati -->
         <div id="cards-container">
             <div class="row" id="cards-grid">
@@ -59,6 +67,15 @@
 
         function updateCardsDisplay(cards) {
             const cardsGrid = document.getElementById('cards-grid');
+            const resultsCounter = document.getElementById('results-counter');
+
+            // Aggiorna il contatore dei risultati
+            if (resultsCounter) {
+                resultsCounter.innerHTML = `
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span>Trovati <strong>${cards ? cards.length : 0}</strong> risultati</span>
+                `;
+            }
 
             if (!cards || cards.length === 0) {
                 cardsGrid.innerHTML = `
