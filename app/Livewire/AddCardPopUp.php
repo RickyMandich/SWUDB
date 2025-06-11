@@ -20,7 +20,8 @@ class AddCardPopup extends Component
     protected $listeners = [
         'openAddCardPopup' => 'open',
         'updateAvailableCards' => 'updateCards',
-        'cardsFiltered' => 'updateFilteredCards'
+        'cardsFiltered' => 'updateFilteredCards',
+        'closeAddCardPopup' => 'close'
     ];
     
     public function mount($userId, $deckId, $currentDeckCards = [], $availableCards = [])
@@ -89,8 +90,10 @@ class AddCardPopup extends Component
 
     public function close()
     {
+        \Log::info('AddCardPopUp: close() method called');
         $this->isOpen = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
+        \Log::info('AddCardPopUp: isOpen set to false');
     }
 
     public function updateCards($currentDeckCards)

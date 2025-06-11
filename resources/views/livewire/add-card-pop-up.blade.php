@@ -6,25 +6,26 @@
                 console.log('Closing popup...');
                 this.show = false;
                 $wire.close();
+                Livewire.dispatch('closeAddCardPopup');
             }
          }"
          x-show="show"
          @keydown.escape.window="closePopup()"
-         class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-         style="display: none; z-index: 1050;">
+         class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+         style="display: none; z-index: 1050; overflow-y: auto;">
 
         <!-- Overlay di sfondo -->
         <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" @click="closePopup()"></div>
 
         <!-- Modal contenuto -->
-        <div class="position-relative">
-            <div class="card shadow-lg bg-white text-dark" style="width: 600px; max-width: 90vw;" data-bs-theme="light">
+        <div class="position-relative w-100 d-flex align-items-center justify-content-center" style="min-height: 100%;">
+            <div class="card shadow-lg bg-white text-dark" style="width: 600px; max-width: 100%; max-height: 95vh; overflow-y: auto;" data-bs-theme="light">
                 <!-- Header -->
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-plus me-2"></i>Aggiungi carte al mazzo
                     </h5>
-                    <button wire:click="close" class="btn btn-outline-light btn-sm" title="Chiudi">
+                    <button wire.click="closePopup()" class="btn btn-outline-light btn-sm" title="Chiudi">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
