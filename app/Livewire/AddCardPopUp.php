@@ -19,8 +19,10 @@ class AddCardPopup extends Component
     // Eventi custom che verranno ascoltati dalla vista principale
     protected $listeners = [
         'openAddCardPopup' => 'open',
+        'closeAddCardPopup' => 'close',
         'updateAvailableCards' => 'updateCards',
-        'cardsFiltered' => 'updateFilteredCards'
+        'cardsFiltered' => 'updateFilteredCards',
+        'addCardsToDeck' => 'addCardsToDeck'
     ];
     
     public function mount($userId, $deckId, $currentDeckCards = [], $availableCards = [])
