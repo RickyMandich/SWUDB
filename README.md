@@ -21,6 +21,7 @@
 - ~~far funzionare le mail~~
 - ~~sistemare il testo delle mail di aggiunta nuove carte~~
 - ~~sistemare l'esistenza dei link next/back nelle carte~~
+- ~~creazione di mail alias `info@unlimiteddb.net`~~
 - filtri di ricerca
 - migliorare il popup di aggiunta carte
 - gestione della collezione
