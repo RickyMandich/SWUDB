@@ -4,7 +4,7 @@
             <h5 class="mb-0">
                 <i class="fas fa-filter me-2"></i>Filtri di Ricerca
             </h5>
-            <div class="d-flex gap-2 text-primary">
+            <div class="d-flex gap-2 text-primary-emphasis">
                 <button wire:click="resetAllFilters" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
