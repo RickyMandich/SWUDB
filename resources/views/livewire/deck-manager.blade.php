@@ -93,7 +93,7 @@
          x-on:show-message.window="showMessage = true; message = $event.detail.message; type = $event.detail.type; setTimeout(() => { showMessage = false }, 3000)"
          x-show="showMessage"
          x-transition
-         class="fixed bottom-4 right-4 p-4 form-control border-secondary border-5 shadow-lg text-center fs-3"
+         class="fixed bottom-4 right-4 p-4 rounded-4 border-secondary border-5 shadow-lg text-center fs-3"
          :class="{ 'bg-green-100 text-green-800': type === 'success', 'bg-red-100 text-red-800': type === 'error', 'bg-yellow-100 text-yellow-800': type === 'warning', 'bg-blue-100 text-blue-800': type === 'info' }"
          style="display: none;"
     >
