@@ -25,7 +25,7 @@
                     <h5 class="mb-0">
                         <i class="fas fa-plus me-2"></i>Aggiungi carte al mazzo
                     </h5>
-                    <button wire.click="closePopup()" class="btn btn-outline-light btn-sm" title="Chiudi">
+                    <button @click="closePopup()" class="btn btn-outline-light btn-sm" title="Chiudi">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
