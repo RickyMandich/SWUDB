@@ -92,10 +92,12 @@ Il componente utilizza il metodo `mergeSort` esistente del `CardsController` per
 
 ### Design
 
-- **Card Layout**: Il filtro è presentato in una card collassabile
-- **Icone FontAwesome**: Per migliorare l'usabilità
+- **Card Layout**: Il filtro è presentato in una card collassabile con bordi arrotondati
+- **Header Moderno**: Gradiente blu con effetti di ombra e overlay
+- **Icone FontAwesome**: Per migliorare l'usabilità (icona filtro dorata, chevron animato)
 - **Colori Bootstrap**: Integrazione con il tema esistente
-- **Animazioni CSS**: Transizioni fluide per i collassi
+- **Animazioni CSS**: Transizioni fluide per i collassi e rotazione dell'icona chevron
+- **Effetti Visivi**: Ombre, gradienti e overlay per un aspetto professionale
 
 ### Accessibilità
 

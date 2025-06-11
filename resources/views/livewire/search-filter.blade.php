@@ -5,10 +5,10 @@
                 <i class="fas fa-filter me-2"></i>Filtri di Ricerca
             </h5>
             <div class="d-flex gap-2">
-                <button wire:click="resetAllFilters" class="btn btn-outline-secondary btn-sm">
+                <button wire:click="resetAllFilters" class="btn btn-outline-secondary btn-sm" title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
-                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true" title="Mostra/Nascondi filtri">
                     <i class="fas fa-chevron-down"></i>
                 </button>
             </div>
@@ -213,4 +213,6 @@
             </div>
         </div>
     </div>
+
+
 </div>

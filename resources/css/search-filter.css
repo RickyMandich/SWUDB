@@ -5,12 +5,89 @@
 
 .search-filter-container .card {
     border: 1px solid #dee2e6;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.75rem;
+    overflow: hidden;
 }
 
 .search-filter-container .card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-filter-container .card-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    pointer-events: none;
+}
+
+.search-filter-container .card-header h5 {
+    color: white;
+    font-weight: 600;
+}
+
+.search-filter-container .card-header .btn-outline-secondary {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    background-color: transparent;
+}
+
+.search-filter-container .card-header .btn-outline-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    color: white;
+}
+
+.search-filter-container .card-header .btn-outline-primary {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    background-color: transparent;
+}
+
+.search-filter-container .card-header .btn-outline-primary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    color: white;
+}
+
+/* Icona del filtro nell'header */
+.search-filter-container .card-header .fas.fa-filter {
+    color: #ffc107;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Effetto hover per il collapse button */
+.search-filter-container .card-header .btn[data-bs-toggle="collapse"] {
+    transition: transform 0.2s ease;
+}
+
+.search-filter-container .card-header .btn[data-bs-toggle="collapse"]:hover {
+    transform: scale(1.05);
+}
+
+/* Stile per l'icona chevron */
+.search-filter-container .card-header .fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+/* Rotazione dell'icona quando il collasso è aperto */
+.search-filter-container .card-header .btn[aria-expanded="true"] .fa-chevron-down,
+.search-filter-container .card-header .btn:not(.collapsed) .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Assicura che l'icona torni alla posizione normale quando chiuso */
+.search-filter-container .card-header .btn[aria-expanded="false"] .fa-chevron-down,
+.search-filter-container .card-header .btn.collapsed .fa-chevron-down {
+    transform: rotate(0deg);
 }
 
 .search-filter-container .form-label {
@@ -56,9 +133,16 @@
 }
 
 .search-filter-container .alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
+    background: linear-gradient(135deg, #d1ecf1 0%, #b8e6f0 100%);
+    border: 1px solid #bee5eb;
+    border-left: 4px solid #17a2b8;
     color: #0c5460;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-filter-container .alert-info .fas {
+    color: #17a2b8;
 }
 
 /* Animazioni per il collasso */
