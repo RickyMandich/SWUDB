@@ -91,7 +91,7 @@ class AddCardPopUp extends Component
         $this->render();
 
         // Simula un piccolo delay per mostrare il loading (opzionale)
-        // usleep(500000); // 0.5 secondi - decommentare se vuoi un delay
+        usleep(500000); // 0.5 secondi - decommentare se vuoi un delay
 
         // In realtà il caricamento avviene qui
         $this->filteredCards = $this->availableCards; // Inizializza con tutte le carte
