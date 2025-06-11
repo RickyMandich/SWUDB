@@ -95,7 +95,7 @@
                     <div class="col-12 col-sm-4 ps-4 pe-4 pt-4 pb-4 card-item">
                         <div class="innerCarta row pr-10">
                             <div class="col-12 col-sm-12 rounded-4 border-primary-subtle bg-secondary-subtle p-3">
-                                <a href="/carte/${carta.espansione}/${carta.numero}">
+                                <a href="{{ route("carta", ["espansione" => $carta->espansione, "numero" => $carta->numero]) }}">
                                     <div class="row">
                                         <div class="col">
                                             <img class="col-12" src="${carta.frontArt}" alt="immagine di ${carta.snippet}">
