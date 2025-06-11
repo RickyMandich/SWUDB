@@ -45,5 +45,5 @@ function uploadFilesFromCommit() {
 # Carica i file presenti nell'ultimo commit
 uploadFilesFromCommit
 
-sleep 5
+sleep 1
 clear
