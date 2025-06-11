@@ -2,28 +2,28 @@
     <!-- Modal Livewire per l'aggiunta di carte -->
     <div x-data="{ show: @entangle('isOpen').live }"
          x-show="show"
-         @keydown.escape.window="$wire.close()"
+         @keydown.escape.window="show = false; $wire.close()"
          class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
          style="display: none; z-index: 1050;">
 
         <!-- Overlay di sfondo -->
-        <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"></div>
+        <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" @click="show = false; $wire.close()"></div>
 
         <!-- Modal contenuto -->
         <div class="position-relative">
-            <div class="card shadow-lg" style="width: 600px; max-width: 90vw;" @click.outside="$wire.close()">
+            <div class="card shadow-lg" style="width: 600px; max-width: 90vw;">
                 <!-- Header -->
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-plus me-2"></i>Aggiungi carte al mazzo
                     </h5>
-                    <button wire:click="close" class="btn btn-outline-light btn-sm" title="Chiudi">
+                    <button wire:click="close" @click="show = false" class="btn btn-outline-light btn-sm" title="Chiudi">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
 
                 <!-- Filtri -->
-                <div class="bg-light border-bottom">
+                <div class="bg-light border-bottom p-3">
                     @livewire('search-filter', ['mode' => 'popup'])
                 </div>
 
