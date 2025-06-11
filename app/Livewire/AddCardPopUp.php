@@ -104,19 +104,16 @@ class AddCardPopup extends Component
             'message' => 'DEBUG: Funzione close() chiamata!'
         ]);
 
-        // $this->isOpen = false;
+        $this->isOpen = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
 
-        // Forziamo l'aggiornamento del componente
-        $this->dispatch('$refresh');
-
-        // Emettiamo evento JavaScript per forzare la chiusura
-        $this->js('window.dispatchEvent(new CustomEvent("force-close"))');
+        // Emetti evento per Alpine.js
+        $this->dispatch('popup-closed');
 
         // Toast di conferma
         $this->dispatch('showMessage', [
             'type' => 'success',
-            'message' => 'DEBUG: isOpen impostato a false, isOpen: '.$this->isOpen
+            'message' => "DEBUG: isOpen impostato a false, evento popup-closed emesso"
         ]);
     }
 
