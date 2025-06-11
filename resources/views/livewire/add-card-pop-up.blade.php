@@ -11,9 +11,9 @@
 
         <!-- Modal contenuto -->
         <div class="position-relative w-100 d-flex align-items-center justify-content-center" style="min-height: 100%;">
-            <div class="card shadow-lg" style="width: 600px; max-width: 100%; max-height: 95vh; overflow-y: auto;" data-bs-theme="light">
+            <div class="card shadow-lg" style="width: 600px; max-width: 100%; max-height: 95vh; overflow-y: auto;">
                 <!-- Header -->
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-plus me-2"></i>Aggiungi carte al mazzo
                     </h5>
