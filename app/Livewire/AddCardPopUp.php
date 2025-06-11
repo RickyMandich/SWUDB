@@ -113,7 +113,7 @@ class AddCardPopup extends Component
         // Toast di conferma
         $this->dispatch('showMessage', [
             'type' => 'success',
-            'message' => 'DEBUG: isOpen impostato a false, isOpen: '.$this->isOpen
+            'message' => 'DEBUG: isOpen impostato a false, isOpen: '.$this->isOpen ? 'true' : 'false'
         ]);
     }
 
