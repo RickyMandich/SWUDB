@@ -20,8 +20,7 @@ class AddCardPopup extends Component
     protected $listeners = [
         'openAddCardPopup' => 'open',
         'updateAvailableCards' => 'updateCards',
-        'cardsFiltered' => 'updateFilteredCards',
-        'closeAddCardPopup' => 'close'
+        'cardsFiltered' => 'updateFilteredCards'
     ];
     
     public function mount($userId, $deckId, $currentDeckCards = [], $availableCards = [])
