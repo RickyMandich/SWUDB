@@ -4,11 +4,11 @@
             <h5 class="mb-0">
                 <i class="fas fa-filter me-2"></i>Filtri di Ricerca
             </h5>
-            <div class="d-flex gap-2 text-primary-emphasis">
-                <button wire:click="resetAllFilters" class="btn btn-outline-secondary btn-sm">
+            <div class="d-flex gap-2">
+                <button wire:click="resetAllFilters" class="btn btn-outline-secondary btn-sm  text-primary-emphasis">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
-                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <button type="button" class="btn btn-outline-primary btn-sm text-primary-emphasis" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
                     <i class="fas fa-chevron-down"></i>
                 </button>
             </div>
