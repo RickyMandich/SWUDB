@@ -24,7 +24,7 @@
                 </div>
 
                 <!-- Filtri -->
-                <div class="bg-light border-bottom p-3">
+                <div class="border-bottom p-3">
                     @livewire('search-filter', ['mode' => 'popup'])
                 </div>
 
