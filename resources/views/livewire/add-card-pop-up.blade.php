@@ -13,17 +13,36 @@
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-md mx-auto" @click.outside="show = false">
                 <!-- Header -->
-                <div class="p-4 border-b bg-primary text-white">
-                    <h3 class="text-lg font-semibold">Aggiungi carte al mazzo</h3>
+                <div class="p-4 border-b bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="text-lg font-semibold mb-0">Aggiungi carte al mazzo</h3>
+                    <button wire:click="toggleFilters" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-filter me-1"></i>
+                        {{ $showFilters ? 'Nascondi' : 'Mostra' }} Filtri
+                    </button>
                 </div>
-                
+
+                <!-- Filtri (se abilitati) -->
+                @if($showFilters)
+                <div class="p-3 bg-light border-bottom">
+                    @livewire('search-filter', ['mode' => 'popup'])
+                </div>
+                @endif
+
                 <!-- Body -->
                 <div class="p-4">
+                    <!-- Contatore carte disponibili -->
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{ count($filteredCards) }} carte disponibili
+                        </small>
+                    </div>
+
                     <!-- Selettore carta -->
                     <div class="mb-4">
                         <select wire:model.live="selectedCardId" class="form-select form-select-lg w-full">
                             <option value="" selected disabled>---Seleziona una carta---</option>
-                            @foreach($availableCards as $card)
+                            @foreach($filteredCards as $card)
                                 <option value="{{ $card['id'] }}">{{ $card['snippet'] }}</option>
                             @endforeach
                         </select>

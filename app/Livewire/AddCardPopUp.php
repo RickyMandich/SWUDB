@@ -13,13 +13,16 @@ class AddCardPopup extends Component
     public $copiesAmount = 1;
     public $maxCopies = 1;
     public $availableCards = [];
+    public $filteredCards = [];
     public $deckId;
     public $userId;
-    
+    public $showFilters = false;
+
     // Eventi custom che verranno ascoltati dalla vista principale
     protected $listeners = [
         'openAddCardPopup' => 'open',
-        'updateAvailableCards' => 'updateCards'
+        'updateAvailableCards' => 'updateCards',
+        'cardsFiltered' => 'updateFilteredCards'
     ];
     
     public function mount($userId, $deckId, $currentDeckCards = [], $availableCards = [])
@@ -82,17 +85,46 @@ class AddCardPopup extends Component
     public function open()
     {
         $this->isOpen = true;
+        $this->filteredCards = $this->availableCards; // Inizializza con tutte le carte
     }
-    
+
     public function close()
     {
         $this->isOpen = false;
+        $this->showFilters = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
     }
-    
+
+    public function toggleFilters()
+    {
+        $this->showFilters = !$this->showFilters;
+    }
+
     public function updateCards($currentDeckCards)
     {
         $this->loadAvailableCards($currentDeckCards);
+        $this->filteredCards = $this->availableCards;
+    }
+
+    public function updateFilteredCards($cards)
+    {
+        // Filtra le carte in base ai filtri applicati e alle carte disponibili
+        $availableCardIds = collect($this->availableCards)->pluck('id')->toArray();
+
+        $this->filteredCards = collect($cards)->filter(function($card) use ($availableCardIds) {
+            $cardId = $card['espansione'] . '-' . $card['numero'];
+            return in_array($cardId, $availableCardIds);
+        })->map(function($card) {
+            $cardId = $card['espansione'] . '-' . $card['numero'];
+            $snippet = "$cardId - " . $card['nome'] . (strlen($card['titolo']) > 0 ? ", " . strtoupper($card['titolo']) : "");
+
+            return [
+                'id' => $cardId,
+                'maxCopies' => $card['maxCopie'],
+                'snippet' => $snippet,
+                'isMaxed' => false
+            ];
+        })->toArray();
     }
     
     public function addCardsToDeck()
