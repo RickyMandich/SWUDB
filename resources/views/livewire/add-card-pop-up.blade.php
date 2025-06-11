@@ -2,12 +2,14 @@
     <!-- Modal Livewire per l'aggiunta di carte -->
     <div x-data="{ show: @entangle('isOpen').live }"
          x-show="show"
-         @keydown.escape.window="$wire.close()"
+         @keydown.escape.window="console.log('ESC premuto!'); $wire.close()"
          class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
          style="display: none; z-index: 1050; overflow-y: auto;">
 
         <!-- Overlay di sfondo -->
-        <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" wire:click="close"></div>
+        <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
+             wire:click="close"
+             onclick="console.log('Overlay cliccato!')"></div>
 
         <!-- Modal contenuto -->
         <div class="position-relative w-100 d-flex align-items-center justify-content-center" style="min-height: 100%;">
@@ -17,7 +19,9 @@
                     <h5 class="mb-0">
                         <i class="fas fa-plus me-2"></i>Aggiungi carte al mazzo
                     </h5>
-                    <button wire:click="close" class="btn btn-outline-light btn-sm" title="Chiudi">
+                    <button wire:click="close"
+                            onclick="console.log('Pulsante X cliccato!')"
+                            class="btn btn-outline-light btn-sm" title="Chiudi">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
