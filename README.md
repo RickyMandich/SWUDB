@@ -23,7 +23,8 @@
 - ~~sistemare l'esistenza dei link next/back nelle carte~~
 - ~~creazione di mail alias `info@unlimiteddb.net`~~
 - ~~filtri di ricerca~~
-- aggiustare il popup di aggiunta carte
+- ~~aggiustare il popup di aggiunta carte~~
+- ottimizzare il popup di aggiunta carte
 - gestione della collezione
 - analisi delle statistiche delle carte nei mazzi
     - numero carte

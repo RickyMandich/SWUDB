@@ -8,7 +8,6 @@ use App\Models\Card;
 class AddCardPopUp extends Component
 {
     public $isOpen = false;
-    public $isLoading = false;
     public $selectedCardId = '';
     public $copiesAmount = 1;
     public $maxCopies = 1;
@@ -85,24 +84,17 @@ class AddCardPopUp extends Component
     public function open()
     {
         $this->isOpen = true;
-        $this->isLoading = true;
 
-        // Forza il rendering del loading state
-        $this->render();
+        // Simula caricamento per mostrare il loading spinner
+        sleep(1); // 1 secondo di delay per vedere il loading
 
-        // Simula un piccolo delay per mostrare il loading (opzionale)
-        usleep(500000); // 0.5 secondi - decommentare se vuoi un delay
-
-        // In realtà il caricamento avviene qui
-        $this->filteredCards = $this->availableCards; // Inizializza con tutte le carte
-
-        $this->isLoading = false;
+        // Inizializza con tutte le carte disponibili
+        $this->filteredCards = $this->availableCards;
     }
 
     public function close()
     {
         $this->isOpen = false;
-        $this->isLoading = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
     }
 
@@ -138,8 +130,6 @@ class AddCardPopUp extends Component
         if(empty($this->selectedCardId)) {
             return;
         }
-
-        $this->isLoading = true;
 
         // Emettiamo un evento con l'ID della carta e il numero di copie da aggiungere
         $this->dispatch('cardAdded', [

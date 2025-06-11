@@ -25,33 +25,36 @@
 
                 <!-- Filtri -->
                 <div class="bg-light border-bottom p-3">
-                    @if(!$isLoading)
+                    <!-- Loading per apertura popup -->
+                    <div wire:loading wire:target="open" class="text-center py-2">
+                        <small class="text-muted">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Caricamento filtri...
+                        </small>
+                    </div>
+
+                    <!-- Filtri normali -->
+                    <div wire:loading.remove wire:target="open">
                         @livewire('search-filter', ['mode' => 'popup'])
-                    @else
-                        <div class="text-center py-2">
-                            <small class="text-muted">
-                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                Caricamento filtri...
-                            </small>
-                        </div>
-                    @endif
+                    </div>
                 </div>
 
                 <!-- Body -->
                 <div class="card-body">
-                    @if($isLoading)
-                        <!-- Loading Spinner -->
-                        <div class="d-flex justify-content-center align-items-center py-5">
-                            <div class="text-center">
-                                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                                    <span class="visually-hidden">Caricamento...</span>
-                                </div>
-                                <p class="text-muted mb-0">
-                                    <i class="fas fa-search me-2"></i>Caricamento carte disponibili...
-                                </p>
+                    <!-- Loading Spinner per apertura popup -->
+                    <div wire:loading wire:target="open" class="d-flex justify-content-center align-items-center py-5">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="visually-hidden">Caricamento...</span>
                             </div>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-search me-2"></i>Caricamento carte disponibili...
+                            </p>
                         </div>
-                    @else
+                    </div>
+
+                    <!-- Contenuto normale -->
+                    <div wire:loading.remove wire:target="open">
                     <!-- Contatore carte disponibili -->
                     <div class="mb-3">
                         <small class="text-muted">
@@ -99,7 +102,7 @@
                             </button>
                         </div>
                     @endif
-                    @endif
+                    </div>
                 </div>
             </div>
         </div>
