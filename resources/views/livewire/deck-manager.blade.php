@@ -257,6 +257,23 @@
             initializeCharts();
         });
 
+        function getAspectColor(aspect) {
+            // Mappa degli aspetti ai loro colori caratteristici
+            const aspectColors = {
+                'Aggression': '#dc3545',     // Rosso
+                'Command': '#ffc107',        // Giallo
+                'Cunning': '#6f42c1',        // Viola
+                'Heroism': '#007bff',        // Blu
+                'Vigilance': '#28a745',      // Verde
+                'Villainy': '#343a40',       // Nero/Grigio scuro
+                'Nessuno': '#6c757d'         // Grigio
+            };
+
+            // Per aspetti combinati (es. "Command / Villainy"), usa il colore del primo aspetto
+            const primaryAspect = aspect.split(' / ')[0];
+            return aspectColors[primaryAspect] || '#6c757d'; // Default grigio
+        }
+
         function initializeCharts() {
             // Grafico Statistiche (Linee)
             const statisticsCanvas = document.getElementById('statisticsChart');
@@ -327,10 +344,7 @@
 
                 const aspectLabels = Object.keys(aspectData);
                 const aspectValues = Object.values(aspectData);
-                const aspectColors = [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-                    '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
-                ];
+                const aspectColors = aspectLabels.map(aspect => getAspectColor(aspect));
 
                 new Chart(aspectCtx, {
                     type: 'pie',
@@ -338,7 +352,7 @@
                         labels: aspectLabels,
                         datasets: [{
                             data: aspectValues,
-                            backgroundColor: aspectColors.slice(0, aspectLabels.length)
+                            backgroundColor: aspectColors
                         }]
                     },
                     options: {

@@ -250,16 +250,31 @@ class DeckManager extends Component
             ->sortDesc()
             ->toArray();
 
-        // Calcola statistiche per costo
-        $this->statistichePerCosto = [];
-        foreach ($statisticheCosto as $costo => $stats) {
-            $this->statistichePerCosto[$costo] = [
-                'vita_media' => round($stats['vita_totale'] / $stats['unita'], 1),
-                'potenza_media' => round($stats['potenza_totale'] / $stats['unita'], 1),
-                'unita' => $stats['unita']
-            ];
+        // Calcola statistiche per costo (con tutti i punti tra min e max)
+        if (!empty($statisticheCosto)) {
+            $minCosto = min(array_keys($statisticheCosto));
+            $maxCosto = max(array_keys($statisticheCosto));
+
+            $this->statistichePerCosto = [];
+            for ($i = $minCosto; $i <= $maxCosto; $i++) {
+                if (isset($statisticheCosto[$i])) {
+                    $stats = $statisticheCosto[$i];
+                    $this->statistichePerCosto[$i] = [
+                        'vita_media' => round($stats['vita_totale'] / $stats['unita'], 1),
+                        'potenza_media' => round($stats['potenza_totale'] / $stats['unita'], 1),
+                        'unita' => $stats['unita']
+                    ];
+                } else {
+                    $this->statistichePerCosto[$i] = [
+                        'vita_media' => 0,
+                        'potenza_media' => 0,
+                        'unita' => 0
+                    ];
+                }
+            }
+        } else {
+            $this->statistichePerCosto = [];
         }
-        ksort($this->statistichePerCosto);
 
         // Calcola distribuzione per tipo
         $this->distribuzionePerTipo = collect($carteDettagliate)
@@ -270,14 +285,25 @@ class DeckManager extends Component
             ->sortDesc()
             ->toArray();
 
-        // Calcola distribuzione per costo
-        $this->distribuzionePerCosto = collect($carteDettagliate)
+        // Calcola distribuzione per costo (con tutti i punti tra min e max)
+        $costiPresenti = collect($carteDettagliate)
             ->groupBy('costo')
             ->map(function($gruppo) {
                 return $gruppo->count();
             })
-            ->sortKeys()
             ->toArray();
+
+        if (!empty($costiPresenti)) {
+            $minCosto = min(array_keys($costiPresenti));
+            $maxCosto = max(array_keys($costiPresenti));
+
+            $this->distribuzionePerCosto = [];
+            for ($i = $minCosto; $i <= $maxCosto; $i++) {
+                $this->distribuzionePerCosto[$i] = $costiPresenti[$i] ?? 0;
+            }
+        } else {
+            $this->distribuzionePerCosto = [];
+        }
 
         // Calcola distribuzione per aspetto (correlazione primario-secondario)
         $this->distribuzionePerAspetto = collect($carteDettagliate)
