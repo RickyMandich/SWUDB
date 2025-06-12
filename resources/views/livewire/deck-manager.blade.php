@@ -133,8 +133,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Costo</th>
-                                                    <th class="text-end">Vita Media</th>
                                                     <th class="text-end">Potenza Media</th>
+                                                    <th class="text-end">Vita Media</th>
                                                     <th class="text-end">Unità</th>
                                                 </tr>
                                             </thead>
@@ -142,8 +142,8 @@
                                                 @forelse($statistichePerCosto as $costo => $stats)
                                                     <tr>
                                                         <td>{{ $costo }}</td>
-                                                        <td class="text-end">{{ $stats['vita_media'] }}</td>
                                                         <td class="text-end">{{ $stats['potenza_media'] }}</td>
+                                                        <td class="text-end">{{ $stats['vita_media'] }}</td>
                                                         <td class="text-end">{{ $stats['unita'] }}</td>
                                                     </tr>
                                                 @empty
