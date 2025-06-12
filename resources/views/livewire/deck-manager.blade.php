@@ -91,9 +91,9 @@
             <div class="col-12">
                 <div class="analisi-statistiche">
                     <h3 class="mb-3">Analisi Statistiche del Mazzo</h3>
-
                     <!-- Prima riga: Tratti -->
                     <div class="row">
+                        <!-- Tratti -->
                         <div class="col-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
@@ -143,8 +143,9 @@
                         </div>
                     </div>
 
-                    <!-- Seconda riga: Statistiche per Costo -->
+                    <!-- Seconda riga: Statistiche -->
                     <div class="row">
+                        <!-- Statistiche per Costo -->
                         <div class="col-md-12 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
@@ -160,8 +161,7 @@
                     </div>
 
                     <!-- Terza riga: Distribuzioni -->
-                    <div class="row">
-                        <!-- Distribuzione per Aspetto -->
+                    <div class="row mt-3">
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body">
@@ -203,7 +203,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
                 </div>
             </div>
         </div>
