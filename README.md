@@ -25,9 +25,9 @@
 - ~~filtri di ricerca~~
 - ~~aggiustare il popup di aggiunta carte~~
 - ottimizzare il popup di aggiunta carte
-- gestione della collezione
 - analisi delle statistiche delle carte nei mazzi
     - numero carte
     - tratti
     - keyword
     - hp/vita media
+- gestione della collezione

@@ -72,20 +72,19 @@
                             @endforeach
                         </div>
                     </div>
-                        <div class="form">
-                            <form id="saveDeckForm" method="POST" action="{{ route('mazzo.save', ['user' => $user, 'mazzo' => $deck]) }}">
-                                @csrf
-                                <button type="button" wire:click="saveDeck" class="btn btn-success">Save</button>
-                                
-                                <div id="modifiche">
-                                    <!-- I campi nascosti verranno generati dinamicamente dal JavaScript -->
-                                </div>
-                            </form>
-                        </div>
+                    <div class="form">
+                        <form id="saveDeckForm" method="POST" action="{{ route('mazzo.save', ['user' => $user, 'mazzo' => $deck]) }}">
+                            @csrf
+                            <button type="button" wire:click="saveDeck" class="btn btn-success">Save</button>
+                            
+                            <div id="modifiche">
+                                <!-- I campi nascosti verranno generati dinamicamente dal JavaScript -->
+                            </div>
+                        </form>
                     </div>
                 </div>
             @endif
-        {{-- </div> --}}
+        </div>
     </div>
     
     <!-- Messaggi Toast -->
