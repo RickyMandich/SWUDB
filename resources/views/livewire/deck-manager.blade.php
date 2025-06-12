@@ -143,7 +143,7 @@
                         </div>
                         
                         <!-- Statistiche per Costo -->
-                        <div class="col-md-12 mb-3">
+                        <div class="col-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h5 class="card-title">Statistiche</h5>
