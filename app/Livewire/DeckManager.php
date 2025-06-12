@@ -26,6 +26,7 @@ class DeckManager extends Component
     public $statistichePerCosto = [];
     public $distribuzionePerTipo = [];
     public $distribuzionePerCosto = [];
+    public $totaleCarteStatistiche = 0;
     
     protected $listeners = [
         'cardAdded' => 'addCard',
@@ -183,6 +184,7 @@ class DeckManager extends Component
             $this->statistichePerCosto = [];
             $this->distribuzionePerTipo = [];
             $this->distribuzionePerCosto = [];
+            $this->totaleCarteStatistiche = 0;
             return;
         }
 
@@ -274,6 +276,9 @@ class DeckManager extends Component
             })
             ->sortKeys()
             ->toArray();
+
+        // Calcola il totale delle carte considerate nelle statistiche
+        $this->totaleCarteStatistiche = count($carteDettagliate);
     }
 
     

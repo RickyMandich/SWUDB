@@ -179,7 +179,7 @@
                                                     <tr>
                                                         <td>{{ $tipo }}</td>
                                                         <td class="text-end">{{ $count }}</td>
-                                                        <td class="text-end">{{ $size > 0 ? round(($count / $size) * 100, 1) : 0 }}%</td>
+                                                        <td class="text-end">{{ $totaleCarteStatistiche > 0 ? round(($count / $totaleCarteStatistiche) * 100, 1) : 0 }}%</td>
                                                     </tr>
                                                 @empty
                                                     <tr>
@@ -212,7 +212,7 @@
                                                     <tr>
                                                         <td>{{ $costo }}</td>
                                                         <td class="text-end">{{ $count }}</td>
-                                                        <td class="text-end">{{ $size > 0 ? round(($count / $size) * 100, 1) : 0 }}%</td>
+                                                        <td class="text-end">{{ $totaleCarteStatistiche > 0 ? round(($count / $totaleCarteStatistiche) * 100, 1) : 0 }}%</td>
                                                     </tr>
                                                 @empty
                                                     <tr>
