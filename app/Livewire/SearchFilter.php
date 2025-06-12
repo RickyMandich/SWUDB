@@ -108,8 +108,7 @@ class SearchFilter extends Component
 
     public function applyFilters()
     {
-        // Applica gli stessi filtri di base della pagina /carte
-        $query = Card::whereLike("nome", "%%")->whereLike("espansione", "%%");
+        $query = Card::query();
 
         // Filtro per nome
         if (!empty($this->nome)) {

@@ -219,14 +219,25 @@ class DecksController extends Controller{
         // Calcola il numero totale di carte
         $totalCards = $cards->sum('copie');
 
-        // Recupera tutte le carte disponibili per i filtri (stesso filtro di /carte)
-        $allCards = Card::whereLike("nome", "%%")->whereLike("espansione", "%%")->get();
+        // Recupera tutte le carte disponibili per i filtri
+        $allCards = Card::all();
+
+        // Debug: confronta con il metodo di /carte
+        $cartePageMethod = Card::whereLike("nome", "%%")->whereLike("espansione", "%%")->get();
+
+        // Aggiungi debug info
+        $debugInfo = [
+            'collezione_count' => $allCards->count(),
+            'carte_page_count' => $cartePageMethod->count(),
+            'difference' => $allCards->count() - $cartePageMethod->count()
+        ];
 
         return view('collezione.index', [
             'collezione' => $cards,
             'totalCards' => $totalCards,
             'allCards' => $allCards,
-            'collezioneId' => $collezione->id
+            'collezioneId' => $collezione->id,
+            'debugInfo' => $debugInfo
         ]);
     }
 
