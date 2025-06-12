@@ -219,8 +219,8 @@ class DecksController extends Controller{
         // Calcola il numero totale di carte
         $totalCards = $cards->sum('copie');
 
-        // Recupera tutte le carte disponibili per i filtri
-        $allCards = Card::all();
+        // Recupera tutte le carte disponibili per i filtri (stesso filtro di /carte)
+        $allCards = Card::whereLike("nome", "%%")->whereLike("espansione", "%%")->get();
 
         return view('collezione.index', [
             'collezione' => $cards,
