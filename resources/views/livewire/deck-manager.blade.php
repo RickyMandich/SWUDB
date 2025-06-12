@@ -93,11 +93,11 @@
                     <h3 class="mb-3">Analisi Statistiche del Mazzo</h3>
                     <!-- Prima riga: Tratti -->
                     <div class="row">
-                        <!-- Tratti Suddivisi -->
-                        <div class="col-md-6 mb-3">
+                        <!-- Tratti -->
+                        <div class="col-12 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h5 class="card-title">Tratti Suddivisi</h5>
+                                    <h5 class="card-title">Tratti</h5>
                                     <div class="table-responsive">
                                         <table class="table table-sm">
                                             <thead>
@@ -107,38 +107,25 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse($trattiPrincipali as $tratto => $count)
-                                                    <tr>
-                                                        <td>{{ $tratto }}</td>
-                                                        <td class="text-end">{{ $count }}</td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="2" class="text-center text-muted">Nessun tratto trovato</td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                                @php
+                                                    // Combiniamo i tratti suddivisi e completi in un unico array
+                                                    $tuttiTratti = [];
 
-                        <!-- Tratti Completi -->
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">Tratti Completi</h5>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Tratto</th>
-                                                    <th class="text-end">Carte</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @forelse($trattiCompleti as $tratto => $count)
+                                                    // Aggiungiamo i tratti suddivisi
+                                                    foreach($trattiPrincipali as $tratto => $count) {
+                                                        $tuttiTratti[$tratto] = $count;
+                                                    }
+
+                                                    // Aggiungiamo i tratti completi
+                                                    foreach($trattiCompleti as $tratto => $count) {
+                                                        $tuttiTratti[$tratto] = $count;
+                                                    }
+
+                                                    // Ordiniamo per numero di carte (decrescente)
+                                                    arsort($tuttiTratti);
+                                                @endphp
+
+                                                @forelse($tuttiTratti as $tratto => $count)
                                                     <tr>
                                                         <td>{{ $tratto }}</td>
                                                         <td class="text-end">{{ $count }}</td>
