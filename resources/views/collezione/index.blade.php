@@ -15,7 +15,18 @@
                             <strong>{{ $totalCards }}</strong> carte totali nella collezione
                         </p>
                         @if(isset($debugInfo) && Auth::check() && Auth::user()->admin)
-                        <div class="alert alert-info mt-2">
+                        <div class="mt-2">
+                            <button type="button"
+                                    class="btn btn-outline-info btn-sm"
+                                    id="toggle-debug"
+                                    onclick="toggleDebugInfo()">
+                                <i class="fas fa-bug me-1"></i>
+                                <span id="debug-toggle-text">Mostra Debug Info</span>
+                            </button>
+                        </div>
+                        @endif
+                        @if(isset($debugInfo) && Auth::check() && Auth::user()->admin)
+                        <div class="alert alert-info mt-2" id="debug-info" style="display: none;">
                             <h6>🔍 DEBUG INFO (Solo Admin)</h6>
                             <div class="row">
                                 <div class="col-md-6">
@@ -251,11 +262,30 @@
             document.querySelectorAll('.copie-input').forEach(input => {
                 total += parseInt(input.value) || 0;
             });
-            
+
             // Aggiorna il testo nell'header
             const headerText = document.querySelector('.card-text');
             if (headerText) {
                 headerText.innerHTML = `<strong>${total}</strong> carte totali nella collezione`;
+            }
+        }
+
+        // Toggle per le info di debug
+        function toggleDebugInfo() {
+            const debugInfo = document.getElementById('debug-info');
+            const toggleText = document.getElementById('debug-toggle-text');
+            const toggleBtn = document.getElementById('toggle-debug');
+
+            if (debugInfo.style.display === 'none') {
+                debugInfo.style.display = 'block';
+                toggleText.textContent = 'Nascondi Debug Info';
+                toggleBtn.classList.remove('btn-outline-info');
+                toggleBtn.classList.add('btn-info');
+            } else {
+                debugInfo.style.display = 'none';
+                toggleText.textContent = 'Mostra Debug Info';
+                toggleBtn.classList.remove('btn-info');
+                toggleBtn.classList.add('btn-outline-info');
             }
         }
         
