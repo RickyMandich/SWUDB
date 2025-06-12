@@ -324,7 +324,7 @@
                     // Crea una miscela tra i due colori
                     // Se il secondario è Bianco, schiarisci il primario
                     // Se il secondario è Nero, scurisci il primario
-                    let blendRatio = 0.3; // 30% del colore secondario
+                    let blendRatio = 0.5; // 30% del colore secondario
 
                     if (secondaryAspect === 'Bianco') {
                         // Schiarisci il colore primario mescolandolo con il bianco
