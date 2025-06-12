@@ -29,6 +29,8 @@
 - ~~analisi delle statistiche delle carte nei mazzi~~
     - ~~numero carte x costo e per tipo~~
     - ~~tratti~~
+        - ~~divisi~~
+        - non divisi
     - ~~hp/potenza media~~
     - possibilità di tirare fuori carte grazie all'effetto
 - ottimizzare il popup di aggiunta carte

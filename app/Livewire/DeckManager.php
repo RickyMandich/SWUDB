@@ -23,6 +23,7 @@ class DeckManager extends Component
 
     // Statistiche del mazzo
     public $trattiPrincipali = [];
+    public $trattiCompleti = [];
     public $statistichePerCosto = [];
     public $distribuzionePerTipo = [];
     public $distribuzionePerCosto = [];
@@ -188,6 +189,7 @@ class DeckManager extends Component
     {
         if (empty($this->mazzo)) {
             $this->trattiPrincipali = [];
+            $this->trattiCompleti = [];
             $this->statistichePerCosto = [];
             $this->distribuzionePerTipo = [];
             $this->distribuzionePerCosto = [];
@@ -198,6 +200,7 @@ class DeckManager extends Component
 
         $carteDettagliate = [];
         $tuttiTratti = [];
+        $tuttiTrattiCompleti = [];
         $statisticheCosto = [];
 
         // Raccogliamo i dettagli delle carte dal mazzo
@@ -219,6 +222,7 @@ class DeckManager extends Component
 
             // Calcola tratti (divisi per " * ")
             if (!empty($cartaMazzo['tratti'])) {
+                // Tratti suddivisi
                 $tratti = explode(' * ', $cartaMazzo['tratti']);
                 foreach ($tratti as $tratto) {
                     $tratto = trim($tratto);
@@ -226,6 +230,14 @@ class DeckManager extends Component
                         for ($i = 0; $i < $copie; $i++) {
                             $tuttiTratti[] = $tratto;
                         }
+                    }
+                }
+
+                // Tratti completi (non suddivisi)
+                $trattoCompleto = trim($cartaMazzo['tratti']);
+                if (!empty($trattoCompleto)) {
+                    for ($i = 0; $i < $copie; $i++) {
+                        $tuttiTrattiCompleti[] = $trattoCompleto;
                     }
                 }
             }
@@ -250,8 +262,14 @@ class DeckManager extends Component
             }
         }
 
-        // Calcola tratti principali
+        // Calcola tratti principali (suddivisi)
         $this->trattiPrincipali = collect($tuttiTratti)
+            ->countBy()
+            ->sortDesc()
+            ->toArray();
+
+        // Calcola tratti completi (non suddivisi)
+        $this->trattiCompleti = collect($tuttiTrattiCompleti)
             ->countBy()
             ->sortDesc()
             ->toArray();
