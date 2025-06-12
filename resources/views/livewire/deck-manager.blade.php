@@ -104,7 +104,11 @@
                                                 <tr>
                                                     <th>Tratti Divisi</th>
                                                     <th class="text-end">Carte</th>
-                                                    <th>&nbsp;</th>
+                                                    <th>
+                                                        @for($i=0;$i<5;$i++)
+                                                            &nbsp;
+                                                        @endfor
+                                                    </th>
                                                     <th>Tratti Completi</th>
                                                     <th class="text-end">Carte</th>
                                                 </tr>
