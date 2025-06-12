@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Card;
+use App\Models\Card;
 use App\Models\Composition;
 use App\Models\Deck;
 use App\Models\User;
@@ -37,11 +38,6 @@ class DecksController extends Controller{
     }
 
     public function show($user, $deck){
-        // Blocca accesso diretto alla collezione
-        if (str_replace("+", " ", $deck) === "Collezione") {
-            return redirect()->route('collezione');
-        }
-
         // Verifica esistenza dell'utente
         if(User::where("name", $user)->first() == null){
             return view("errors.406");
@@ -50,6 +46,11 @@ class DecksController extends Controller{
         // Verifica esistenza del mazzo
         if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
             return view("errors.405");
+        }
+
+        // Reindirizza accesso alla collezione verso la route dedicata
+        if (str_replace("+", " ", $deck) === "Collezione") {
+            return redirect()->route('collezione');
         }
         
         // Se utente e mazzo esistono, procedi
@@ -206,11 +207,75 @@ class DecksController extends Controller{
             $collezione->save();
         }
 
-        // Reindirizza alla visualizzazione
-        return redirect()->route('mazzo', [
-            'user' => $user->name,
-            'mazzo' => 'Collezione'
+        // Recupera le carte della collezione
+        $cards = DB::table('compositions')
+            ->leftJoin('cards', function (JoinClause $join){
+                $join->on('compositions.espansione', '=', 'cards.espansione')
+                    ->on('compositions.numero', '=', 'cards.numero');
+            })
+            ->select('cards.*', 'compositions.copie')
+            ->where('compositions.idMazzo', $collezione->id)
+            ->get();
+
+        // Calcola il numero totale di carte
+        $totalCards = $cards->sum('copie');
+
+        // Recupera tutte le carte disponibili per i filtri
+        $allCards = Card::all();
+
+        return view('collezione.index', [
+            'collezione' => $cards,
+            'totalCards' => $totalCards,
+            'allCards' => $allCards,
+            'collezioneId' => $collezione->id
         ]);
+    }
+
+    public function updateCollezione(Request $request){
+        $user = Auth::user();
+
+        // Trova la collezione dell'utente
+        $collezione = Deck::where('codUtente', $user->id)
+                         ->where('nome', 'Collezione')
+                         ->first();
+
+        if (!$collezione) {
+            return response()->json(['error' => 'Collezione non trovata'], 404);
+        }
+
+        $espansione = $request->input('espansione');
+        $numero = $request->input('numero');
+        $copie = $request->input('copie');
+
+        // Trova la composizione esistente
+        $composizione = Composition::where('idMazzo', $collezione->id)
+                                  ->where('espansione', $espansione)
+                                  ->where('numero', $numero)
+                                  ->first();
+
+        if ($copie <= 0) {
+            // Rimuovi la carta dalla collezione
+            if ($composizione) {
+                $composizione->delete();
+            }
+        } else {
+            if ($composizione) {
+                // Aggiorna il numero di copie
+                $composizione->copie = $copie;
+                $composizione->save();
+            } else {
+                // Crea nuova composizione
+                $composizione = new Composition();
+                $composizione->idMazzo = $collezione->id;
+                $composizione->espansione = $espansione;
+                $composizione->numero = $numero;
+                $composizione->copie = $copie;
+                $composizione->id = $collezione->id."-".$espansione."-".$numero;
+                $composizione->save();
+            }
+        }
+
+        return response()->json(['success' => true]);
     }
 
     public function api($user, $nome, $public){

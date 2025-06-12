@@ -40,8 +40,8 @@ class SearchFilter extends Component
     public $filteredCards = [];
     public $totalResults = 0;
 
-    // Modalità di utilizzo (per la pagina principale o per il popup)
-    public $mode = 'page'; // 'page' o 'popup'
+    // Modalità di utilizzo (per la pagina principale, popup o collezione)
+    public $mode = 'page'; // 'page', 'popup' o 'collezione'
 
     protected $listeners = [
         'resetFilters' => 'resetAllFilters',
