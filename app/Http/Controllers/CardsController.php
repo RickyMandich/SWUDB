@@ -115,7 +115,7 @@ class CardsController extends Controller
     public function sendBatch(Request $request){
         $next = intval($request->input("next", 0));
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
-        MessageCreated::dispatch("Inizio importazione batch " . $next);
+        if($next != 0) MessageCreated::dispatch("Inizio importazione batch " . $next);
         $batchSize = 5;
         JobController::fireAndForgetGet(route('carte.dispatchBatch', ['start' => $next, 'batchSize' => $batchSize]));
         $data = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
@@ -125,7 +125,7 @@ class CardsController extends Controller
             // file_put_contents(storage_path("app/to_insert.json"), "[]"); // Pulisce il file dopo l'importazione
         } else {
             echo "Batch $next dispatchato, prossima esecuzione tra 100ms...\n";
-            MessageCreated::dispatch("Batch $next dispatchato");
+            if($next != 0) MessageCreated::dispatch("Batch $next dispatchato");
             $next += $batchSize;
             usleep(100000); // 100ms delay
             JobController::fireAndForgetGet(route('carte.sendBatch', ['next' => $next]), [
