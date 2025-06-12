@@ -227,34 +227,46 @@ class DecksController extends Controller{
             $allCards = \App\Http\Controllers\CardsController::mergeSort($allCards);
         }
 
-        // Debug: confronta con Card::all()
-        $allCardsNoFilter = Card::all();
+        // Debug: analisi delle carte e filtri
+        $totalCardsInDb = Card::count();
+        $cardsInCollezione = $cards->count();
 
-        // Trova le carte escluse dai filtri
-        $excludedCards = $allCardsNoFilter->filter(function($card) {
-            return $card->costo > 20 ||
-                   ($card->potenza !== null && $card->potenza > 20) ||
-                   ($card->vita !== null && $card->vita > 20);
-        });
+        // Statistiche generali del database
+        $maxCosto = Card::max('costo');
+        $maxPotenza = Card::max('potenza');
+        $maxVita = Card::max('vita');
 
-        // Trova le carte che potrebbero essere escluse da altri filtri
-        $cardsWithHighValues = $allCardsNoFilter->filter(function($card) {
-            return $card->costo > 20 || $card->potenza > 20 || $card->vita > 20;
-        });
+        // Conta carte per range di valori
+        $carteAltoValore = Card::where('costo', '>', 10)
+                              ->orWhere('potenza', '>', 10)
+                              ->orWhere('vita', '>', 10)
+                              ->count();
 
-        // Aggiungi debug info dettagliato
+        // Esempi di carte con valori alti
+        $carteEsempio = Card::where('costo', '>', 10)
+                           ->orWhere('potenza', '>', 10)
+                           ->orWhere('vita', '>', 10)
+                           ->take(5)
+                           ->get()
+                           ->map(function($card) {
+                               return $card->snippet . " (C:{$card->costo}, P:{$card->potenza}, V:{$card->vita})";
+                           })
+                           ->toArray();
+
+        // Aggiungi debug info aggiornato
         $debugInfo = [
-            'collezione_filtered_count' => $allCards->count(),
-            'collezione_all_count' => $allCardsNoFilter->count(),
-            'difference' => $allCardsNoFilter->count() - $allCards->count(),
-            'excluded_by_filters' => $excludedCards->count(),
-            'cards_with_high_values' => $cardsWithHighValues->count(),
-            'max_costo' => $allCardsNoFilter->max('costo'),
-            'max_potenza' => $allCardsNoFilter->max('potenza'),
-            'max_vita' => $allCardsNoFilter->max('vita'),
-            'excluded_cards_sample' => $excludedCards->take(5)->map(function($card) {
-                return $card->snippet . " (C:{$card->costo}, P:{$card->potenza}, V:{$card->vita})";
-            })->toArray()
+            'total_cards_db' => $totalCardsInDb,
+            'cards_displayed' => $allCards->count(),
+            'cards_in_collezione' => $cardsInCollezione,
+            'max_values' => [
+                'costo' => $maxCosto,
+                'potenza' => $maxPotenza,
+                'vita' => $maxVita
+            ],
+            'high_value_cards_count' => $carteAltoValore,
+            'sample_high_value_cards' => $carteEsempio,
+            'livewire_status' => 'Filtri gestiti da SearchFilter component',
+            'sort_applied' => !$allCards->isEmpty() ? 'mergeSort applicato' : 'nessun ordinamento'
         ];
 
         return view('collezione.index', [

@@ -14,21 +14,37 @@
                         <p class="card-text mb-0">
                             <strong>{{ $totalCards }}</strong> carte totali nella collezione
                         </p>
-                        @if(isset($debugInfo) && Auth::check() && Auth::admin())
-                        <div class="alert alert-warning mt-2">
+                        @if(isset($debugInfo) && Auth::check() && Auth::user()->admin)
+                        <div class="alert alert-info mt-2">
                             <h6>🔍 DEBUG INFO (Solo Admin)</h6>
-                            <p class="mb-1"><strong>Carte:</strong> Filtrate {{ $debugInfo['collezione_filtered_count'] }} vs Tutte {{ $debugInfo['collezione_all_count'] }} (diff: {{ $debugInfo['difference'] }})</p>
-                            <p class="mb-1"><strong>Escluse dai filtri:</strong> {{ $debugInfo['excluded_by_filters'] }}</p>
-                            <p class="mb-1"><strong>Con valori alti:</strong> {{ $debugInfo['cards_with_high_values'] }}</p>
-                            <p class="mb-1"><strong>Valori massimi:</strong> Costo: {{ $debugInfo['max_costo'] }}, Potenza: {{ $debugInfo['max_potenza'] }}, Vita: {{ $debugInfo['max_vita'] }}</p>
-                            @if(count($debugInfo['excluded_cards_sample']) > 0)
-                            <p class="mb-0"><strong>Esempi carte escluse:</strong></p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Database:</strong> {{ $debugInfo['total_cards_db'] }} carte totali</p>
+                                    <p class="mb-1"><strong>Visualizzate:</strong> {{ $debugInfo['cards_displayed'] }} carte</p>
+                                    <p class="mb-1"><strong>In collezione:</strong> {{ $debugInfo['cards_in_collezione'] }} carte</p>
+                                    <p class="mb-1"><strong>Ordinamento:</strong> {{ $debugInfo['sort_applied'] }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-1"><strong>Valori massimi DB:</strong></p>
+                                    <ul class="mb-1">
+                                        <li>Costo: {{ $debugInfo['max_values']['costo'] }}</li>
+                                        <li>Potenza: {{ $debugInfo['max_values']['potenza'] ?? 'N/A' }}</li>
+                                        <li>Vita: {{ $debugInfo['max_values']['vita'] ?? 'N/A' }}</li>
+                                    </ul>
+                                    <p class="mb-1"><strong>Carte con valori alti (>10):</strong> {{ $debugInfo['high_value_cards_count'] }}</p>
+                                </div>
+                            </div>
+                            @if(count($debugInfo['sample_high_value_cards']) > 0)
+                            <hr>
+                            <p class="mb-1"><strong>Esempi carte con valori alti:</strong></p>
                             <ul class="mb-0">
-                                @foreach($debugInfo['excluded_cards_sample'] as $card)
+                                @foreach($debugInfo['sample_high_value_cards'] as $card)
                                 <li><small>{{ $card }}</small></li>
                                 @endforeach
                             </ul>
                             @endif
+                            <hr>
+                            <p class="mb-0"><small><strong>Filtri:</strong> {{ $debugInfo['livewire_status'] }}</small></p>
                         </div>
                         @endif
                     </div>
