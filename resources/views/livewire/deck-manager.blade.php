@@ -259,8 +259,9 @@
 
         function initializeCharts() {
             // Grafico Statistiche (Linee)
-            @if(!empty($statistichePerCosto))
-                const statisticsCtx = document.getElementById('statisticsChart').getContext('2d');
+            const statisticsCanvas = document.getElementById('statisticsChart');
+            if (statisticsCanvas) {
+                const statisticsCtx = statisticsCanvas.getContext('2d');
                 const statisticsData = @json($statistichePerCosto);
 
                 const costs = Object.keys(statisticsData).sort((a, b) => parseInt(a) - parseInt(b));
@@ -315,11 +316,12 @@
                         }
                     }
                 });
-            @endif
+            }
 
             // Grafico Aspetti (Torta)
-            @if(!empty($distribuzionePerAspetto))
-                const aspectCtx = document.getElementById('aspectChart').getContext('2d');
+            const aspectCanvas = document.getElementById('aspectChart');
+            if (aspectCanvas) {
+                const aspectCtx = aspectCanvas.getContext('2d');
                 const aspectData = @json($distribuzionePerAspetto);
                 const totalAspects = @json($totaleCarteStatistiche);
 
@@ -353,11 +355,12 @@
                         }
                     }
                 });
-            @endif
+            }
 
             // Grafico Tipi (Barre Verticali)
-            @if(!empty($distribuzionePerTipo))
-                const typeCtx = document.getElementById('typeChart').getContext('2d');
+            const typeCanvas = document.getElementById('typeChart');
+            if (typeCanvas) {
+                const typeCtx = typeCanvas.getContext('2d');
                 const typeData = @json($distribuzionePerTipo);
                 const totalTypes = @json($totaleCarteStatistiche);
 
@@ -399,11 +402,12 @@
                         }
                     }
                 });
-            @endif
+            }
 
             // Grafico Costi (Barre Verticali)
-            @if(!empty($distribuzionePerCosto))
-                const costCtx = document.getElementById('costChart').getContext('2d');
+            const costCanvas = document.getElementById('costChart');
+            if (costCanvas) {
+                const costCtx = costCanvas.getContext('2d');
                 const costData = @json($distribuzionePerCosto);
                 const totalCosts = @json($totaleCarteStatistiche);
 
@@ -445,7 +449,7 @@
                         }
                     }
                 });
-            @endif
+            }
         }
     </script>
 </div>
