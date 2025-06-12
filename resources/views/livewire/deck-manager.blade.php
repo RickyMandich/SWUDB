@@ -141,10 +141,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Seconda riga: Statistiche -->
-                    <div class="row">
+                        
                         <!-- Statistiche per Costo -->
                         <div class="col-md-12 mb-3">
                             <div class="card h-100">
