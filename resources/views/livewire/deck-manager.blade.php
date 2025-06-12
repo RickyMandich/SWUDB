@@ -260,18 +260,40 @@
         function getAspectColor(aspect) {
             // Mappa degli aspetti ai loro colori caratteristici
             const aspectColors = {
+                // Aspetti Star Wars Unlimited
                 'Aggression': '#dc3545',     // Rosso
                 'Command': '#ffc107',        // Giallo
                 'Cunning': '#6f42c1',        // Viola
                 'Heroism': '#007bff',        // Blu
                 'Vigilance': '#28a745',      // Verde
                 'Villainy': '#343a40',       // Nero/Grigio scuro
-                'Nessuno': '#6c757d'         // Grigio
+
+                // Aspetti aggiuntivi che potrebbero essere nel database
+                'Nero': '#343a40',           // Nero
+                'Bianco': '#f8f9fa',         // Bianco
+                'Rosso': '#dc3545',          // Rosso
+                'Blu': '#007bff',            // Blu
+                'Verde': '#28a745',          // Verde
+                'Giallo': '#ffc107',         // Giallo
+                'Viola': '#6f42c1',          // Viola
+
+                // Fallback
+                'Nessuno': '#6c757d',        // Grigio
+                '': '#6c757d',               // Grigio per valori vuoti
+                'null': '#6c757d'            // Grigio per null
             };
 
             // Per aspetti combinati (es. "Command / Villainy"), usa il colore del primo aspetto
             const primaryAspect = aspect.split(' / ')[0];
-            return aspectColors[primaryAspect] || '#6c757d'; // Default grigio
+            const color = aspectColors[primaryAspect];
+
+            // Debug migliorato
+            if (!color) {
+                console.warn(`Aspetto non mappato: "${primaryAspect}" (aspetto completo: "${aspect}")`);
+                return '#6c757d'; // Default grigio
+            }
+
+            return color;
         }
 
         function initializeCharts() {
