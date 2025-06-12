@@ -196,6 +196,9 @@ class SearchFilter extends Component
         } elseif ($this->mode === 'popup') {
             // Emetti evento specifico per il popup
             $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
+        } elseif ($this->mode === 'collezione') {
+            // Emetti evento per la collezione
+            $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
         }
     }
 

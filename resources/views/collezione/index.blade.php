@@ -16,7 +16,7 @@
                         </p>
                         @if(isset($debugInfo))
                         <p class="card-text mb-0 text-warning">
-                            <small>DEBUG: Collezione {{ $debugInfo['collezione_count'] }} vs Carte {{ $debugInfo['carte_page_count'] }} (diff: {{ $debugInfo['difference'] }})</small>
+                            <small>DEBUG: Filtrate {{ $debugInfo['collezione_filtered_count'] }} vs Tutte {{ $debugInfo['collezione_all_count'] }} (diff: {{ $debugInfo['difference'] }})</small>
                         </p>
                         @endif
                     </div>
