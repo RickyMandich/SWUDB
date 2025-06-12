@@ -159,6 +159,41 @@
                         </div>
                     </div>
 
+                    <!-- Distribuzione per Aspetto -->
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Distribuzione per Aspetto</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Aspetto</th>
+                                                    <th class="text-end">Carte</th>
+                                                    <th class="text-end">%</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($distribuzionePerAspetto as $aspetto => $count)
+                                                    <tr>
+                                                        <td>{{ $aspetto }}</td>
+                                                        <td class="text-end">{{ $count }}</td>
+                                                        <td class="text-end">{{ $totaleCarteStatistiche > 0 ? round(($count / $totaleCarteStatistiche) * 100, 1) : 0 }}%</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted">Nessun aspetto trovato</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Distribuzione per Tipo -->
                     <div class="row mt-3">
                         <div class="col-md-6">

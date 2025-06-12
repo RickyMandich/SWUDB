@@ -26,6 +26,7 @@ class DeckManager extends Component
     public $statistichePerCosto = [];
     public $distribuzionePerTipo = [];
     public $distribuzionePerCosto = [];
+    public $distribuzionePerAspetto = [];
     public $totaleCarteStatistiche = 0;
     
     protected $listeners = [
@@ -184,6 +185,7 @@ class DeckManager extends Component
             $this->statistichePerCosto = [];
             $this->distribuzionePerTipo = [];
             $this->distribuzionePerCosto = [];
+            $this->distribuzionePerAspetto = [];
             $this->totaleCarteStatistiche = 0;
             return;
         }
@@ -275,6 +277,22 @@ class DeckManager extends Component
                 return $gruppo->count();
             })
             ->sortKeys()
+            ->toArray();
+
+        // Calcola distribuzione per aspetto (correlazione primario-secondario)
+        $this->distribuzionePerAspetto = collect($carteDettagliate)
+            ->map(function($carta) {
+                $primario = $carta['aspettoPrimario'] ?? 'Nessuno';
+                $secondario = $carta['aspettoSecondario'] ?? null;
+
+                if ($secondario && !empty($secondario)) {
+                    return $primario . ' / ' . $secondario;
+                } else {
+                    return $primario;
+                }
+            })
+            ->countBy()
+            ->sortDesc()
             ->toArray();
 
         // Calcola il totale delle carte considerate nelle statistiche
