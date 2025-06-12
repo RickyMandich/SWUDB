@@ -112,6 +112,10 @@
                                     {{ __('custom.Dashboard') }}
                                 </a>
 
+                                <a class="dropdown-item" href="{{ route('collezione') }}">
+                                    {{ __('Collezione') }}
+                                </a>
+
                                 <a class="dropdown-item" href="{{ route('logout') }}"
                                    onclick="event.preventDefault();
                                                  document.getElementById('logout-form').submit();">

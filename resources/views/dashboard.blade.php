@@ -54,6 +54,15 @@
                             {{ Auth::user()->email }}
                         </span>
                     </div>
+
+                    <div class="row mb-3 justify-content-center">
+                        <div class="col-md-6 text-center">
+                            <a href="{{ route('collezione') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-folder-open me-2"></i>
+                                Vai alla mia Collezione
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             

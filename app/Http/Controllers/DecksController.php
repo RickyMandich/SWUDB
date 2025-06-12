@@ -19,7 +19,9 @@ class DecksController extends Controller{
     public function index(){
         $decks = [];
         if(auth()->check()){
-            $decksUser = Deck::where("codUtente", auth()->user()->id)->get();
+            $decksUser = Deck::where("codUtente", auth()->user()->id)
+                            ->where("nome", "!=", "Collezione")
+                            ->get();
             foreach($decksUser as $deck){
                 $deck->utente = User::where("id", $deck->codUtente)->first()->name;
                 $decks[$deck->id] = $deck;
@@ -35,11 +37,16 @@ class DecksController extends Controller{
     }
 
     public function show($user, $deck){
+        // Blocca accesso diretto alla collezione
+        if (str_replace("+", " ", $deck) === "Collezione") {
+            return redirect()->route('collezione');
+        }
+
         // Verifica esistenza dell'utente
         if(User::where("name", $user)->first() == null){
             return view("errors.406");
         }
-        
+
         // Verifica esistenza del mazzo
         if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
             return view("errors.405");
@@ -163,7 +170,12 @@ class DecksController extends Controller{
 
     public function create(Request $request){
         if(auth()->check()){
-                if(Deck::where("nome", $request->input("nome"))->where("codUtente", Auth::user()->id)->first() == null){
+            // Impedisce la creazione di mazzi chiamati "Collezione"
+            if($request->input("nome") === "Collezione"){
+                return redirect()->route("mazzi")->with("warning", "Il nome 'Collezione' è riservato");
+            }
+
+            if(Deck::where("nome", $request->input("nome"))->where("codUtente", Auth::user()->id)->first() == null){
                 $mazzo = new Deck();
                 $mazzo->nome = $request->input("nome");
                 $mazzo->public = $request->input("public") == true;
@@ -177,9 +189,33 @@ class DecksController extends Controller{
         return redirect()->route("login")->with("warning", "Devi essere loggato per visualizzare questa pagina");
     }
 
+    public function collezione(){
+        $user = Auth::user();
+
+        // Cerca collezione esistente
+        $collezione = Deck::where('codUtente', $user->id)
+                         ->where('nome', 'Collezione')
+                         ->first();
+
+        // Se non esiste, creala
+        if (!$collezione) {
+            $collezione = new Deck();
+            $collezione->nome = 'Collezione';
+            $collezione->public = false;
+            $collezione->codUtente = $user->id;
+            $collezione->save();
+        }
+
+        // Reindirizza alla visualizzazione
+        return redirect()->route('mazzo', [
+            'user' => $user->name,
+            'mazzo' => 'Collezione'
+        ]);
+    }
+
     public function api($user, $nome, $public){
         return Deck::where("nome", "like", "%$nome%")
-                ->where("codUtente", 
+                ->where("codUtente",
                     User::where("name", "like", "%$user%")
                     ->first()
                     ->id)

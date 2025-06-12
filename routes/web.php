@@ -6,8 +6,6 @@ use App\Http\Controllers\JobController;
 
 use App\Events\MessageCreated;
 
-use App\Models\Deck;
-
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Route;
@@ -38,6 +36,8 @@ Route::get('/dispatchBatch', [CardsController::class, 'dispatchBatch'])->name("c
 Route::get('/sendBatch', [CardsController::class, 'sendBatch'])->name("carte.sendBatch");
 
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
+
+Route::get('/collezione', [DecksController::class, 'collezione'])->name('collezione')->middleware('auth');
 
 Route::get('/mazzo/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
 
