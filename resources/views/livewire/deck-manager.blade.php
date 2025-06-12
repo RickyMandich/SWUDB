@@ -344,7 +344,15 @@
 
                 const aspectLabels = Object.keys(aspectData);
                 const aspectValues = Object.values(aspectData);
-                const aspectColors = aspectLabels.map(aspect => getAspectColor(aspect));
+
+                // Debug: mostra gli aspetti trovati
+                console.log('Aspetti trovati:', aspectLabels);
+
+                const aspectColors = aspectLabels.map(aspect => {
+                    const color = getAspectColor(aspect);
+                    console.log(`Aspetto: ${aspect} -> Colore: ${color}`);
+                    return color;
+                });
 
                 new Chart(aspectCtx, {
                     type: 'pie',
