@@ -255,6 +255,18 @@
 
             // Inizializzazione dei grafici
             initializeCharts();
+
+            // Listener per aggiornare i grafici quando cambiano le statistiche
+            Livewire.on('refreshCharts', () => {
+                // Distruggi i grafici esistenti se esistono
+                if (window.statisticsChart) window.statisticsChart.destroy();
+                if (window.aspectChart) window.aspectChart.destroy();
+                if (window.typeChart) window.typeChart.destroy();
+                if (window.costChart) window.costChart.destroy();
+
+                // Ricrea i grafici con i nuovi dati
+                initializeCharts();
+            });
         });
 
         function hexToRgb(hex) {
@@ -295,7 +307,7 @@
                 'Villainy': '#343a40',       // Nero/Grigio scuro
 
                 // Aspetti aggiuntivi che potrebbero essere nel database
-                'Nero': '#343a40',           // Nero
+                'Nero': '#000000',           // Nero
                 'Bianco': '#f8f9fa',         // Bianco
                 'Rosso': '#dc3545',          // Rosso
                 'Blu': '#007bff',            // Blu
@@ -361,7 +373,7 @@
                 const vitaData = costs.map(cost => statisticsData[cost].vita_media);
                 const potenzaData = costs.map(cost => statisticsData[cost].potenza_media);
 
-                new Chart(statisticsCtx, {
+                window.statisticsChart = new Chart(statisticsCtx, {
                     type: 'line',
                     data: {
                         labels: costs.map(cost => `Costo ${cost}`),
@@ -430,7 +442,7 @@
                     return color;
                 });
 
-                new Chart(aspectCtx, {
+                window.aspectChart = new Chart(aspectCtx, {
                     type: 'pie',
                     data: {
                         labels: aspectLabels,
@@ -465,7 +477,7 @@
                 const typeLabels = Object.keys(typeData);
                 const typeValues = Object.values(typeData);
 
-                new Chart(typeCtx, {
+                window.typeChart = new Chart(typeCtx, {
                     type: 'bar',
                     data: {
                         labels: typeLabels,
@@ -512,7 +524,7 @@
                 const costLabels = Object.keys(costData).sort((a, b) => parseInt(a) - parseInt(b));
                 const costValues = costLabels.map(cost => costData[cost]);
 
-                new Chart(costCtx, {
+                window.costChart = new Chart(costCtx, {
                     type: 'bar',
                     data: {
                         labels: costLabels.map(cost => `Costo ${cost}`),

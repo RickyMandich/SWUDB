@@ -126,7 +126,10 @@ class DeckManager extends Component
                 $this->aggiunte[$id]['copie'] = 1;
             }
         }
-        
+
+        // Aggiorna le statistiche immediatamente quando chiamato dai pulsanti
+        $this->refreshCardCount();
+
         return true;
     }
     
@@ -176,6 +179,9 @@ class DeckManager extends Component
 
         // Ricalcoliamo le statistiche
         $this->calcolaStatistiche();
+
+        // Invia evento per aggiornare i grafici JavaScript
+        $this->dispatch('refreshCharts');
     }
 
     public function calcolaStatistiche()
