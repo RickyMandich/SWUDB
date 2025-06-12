@@ -257,6 +257,32 @@
             initializeCharts();
         });
 
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function blendColors(color1, color2, ratio = 0.5) {
+            const rgb1 = hexToRgb(color1);
+            const rgb2 = hexToRgb(color2);
+
+            if (!rgb1 || !rgb2) return color1;
+
+            const r = Math.round(rgb1.r * (1 - ratio) + rgb2.r * ratio);
+            const g = Math.round(rgb1.g * (1 - ratio) + rgb2.g * ratio);
+            const b = Math.round(rgb1.b * (1 - ratio) + rgb2.b * ratio);
+
+            return rgbToHex(r, g, b);
+        }
+
         function getAspectColor(aspect) {
             // Mappa degli aspetti ai loro colori caratteristici
             const aspectColors = {
@@ -283,13 +309,41 @@
                 'null': '#6c757d'            // Grigio per null
             };
 
-            // Per aspetti combinati (es. "Command / Villainy"), usa il colore del primo aspetto
-            const primaryAspect = aspect.split(' / ')[0];
-            const color = aspectColors[primaryAspect];
+            // Controlla se è un aspetto combinato
+            if (aspect.includes(' / ')) {
+                const [primaryAspect, secondaryAspect] = aspect.split(' / ');
+                const primaryColor = aspectColors[primaryAspect];
+                const secondaryColor = aspectColors[secondaryAspect];
+
+                // Se entrambi gli aspetti sono mappati e sono diversi
+                if (primaryColor && secondaryColor && primaryAspect !== secondaryAspect) {
+                    // Crea una miscela tra i due colori
+                    // Se il secondario è Bianco, schiarisci il primario
+                    // Se il secondario è Nero, scurisci il primario
+                    let blendRatio = 0.3; // 30% del colore secondario
+
+                    if (secondaryAspect === 'Bianco') {
+                        // Schiarisci il colore primario mescolandolo con il bianco
+                        return blendColors(primaryColor, '#ffffff', blendRatio);
+                    } else if (secondaryAspect === 'Nero') {
+                        // Scurisci il colore primario mescolandolo con il nero
+                        return blendColors(primaryColor, '#000000', blendRatio);
+                    } else {
+                        // Per altri aspetti secondari, miscela normalmente
+                        return blendColors(primaryColor, secondaryColor, blendRatio);
+                    }
+                }
+
+                // Se non riesce a miscelare, usa il colore primario
+                return aspectColors[primaryAspect] || '#6c757d';
+            }
+
+            // Per aspetti singoli, usa il colore diretto
+            const color = aspectColors[aspect];
 
             // Debug migliorato
             if (!color) {
-                console.warn(`Aspetto non mappato: "${primaryAspect}" (aspetto completo: "${aspect}")`);
+                console.warn(`Aspetto non mappato: "${aspect}"`);
                 return '#6c757d'; // Default grigio
             }
 
