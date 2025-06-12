@@ -41,8 +41,6 @@ Route::get('/collezione', [DecksController::class, 'collezione'])->name('collezi
 
 Route::post('/collezione/update', [DecksController::class, 'updateCollezione'])->name('collezione.update')->middleware('auth');
 
-Route::post('/collezione/update', [DecksController::class, 'updateCollezione'])->name('collezione.update')->middleware('auth');
-
 Route::get('/mazzo/{user}/{mazzo}', [DecksController::class, 'show'])->name("mazzo");
 
 Route::post('/mazzo/{user}/{mazzo}/save', [DecksController::class, 'store'])->name("mazzo.save");
