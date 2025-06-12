@@ -123,37 +123,16 @@
                             </div>
                         </div>
 
-                        <!-- Vita e Potenza per Costo -->
+                        <!-- Statistiche per Costo -->
                         <div class="col-md-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h5 class="card-title">Vita</h5>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Costo</th>
-                                                    <th class="text-end">Potenza Media</th>
-                                                    <th class="text-end">Vita Media</th>
-                                                    <th class="text-end">Unità</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @forelse($statistichePerCosto as $costo => $stats)
-                                                    <tr>
-                                                        <td>{{ $costo }}</td>
-                                                        <td class="text-end">{{ $stats['potenza_media'] }}</td>
-                                                        <td class="text-end">{{ $stats['vita_media'] }}</td>
-                                                        <td class="text-end">{{ $stats['unita'] }}</td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="4" class="text-center text-muted">Nessuna unità trovata</td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <h5 class="card-title">Statistiche</h5>
+                                    @if(!empty($statistichePerCosto))
+                                        <canvas id="statisticsChart" width="400" height="200"></canvas>
+                                    @else
+                                        <p class="text-center text-muted">Nessuna unità trovata</p>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -161,102 +140,43 @@
 
                     <!-- Distribuzione per Aspetto -->
                     <div class="row mt-3">
-                        <div class="col-md-12">
+                        <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Aspetto</h5>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Aspetto</th>
-                                                    <th class="text-end">Carte</th>
-                                                    <th class="text-end">%</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @forelse($distribuzionePerAspetto as $aspetto => $count)
-                                                    <tr>
-                                                        <td>{{ $aspetto }}</td>
-                                                        <td class="text-end">{{ $count }}</td>
-                                                        <td class="text-end">{{ $totaleCarteStatistiche > 0 ? round(($count / $totaleCarteStatistiche) * 100, 1) : 0 }}%</td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="3" class="text-center text-muted">Nessun aspetto trovato</td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    @if(!empty($distribuzionePerAspetto))
+                                        <canvas id="aspectChart" width="300" height="300"></canvas>
+                                    @else
+                                        <p class="text-center text-muted">Nessun aspetto trovato</p>
+                                    @endif
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Distribuzione per Tipo -->
-                    <div class="row mt-3">
-                        <div class="col-md-6">
+                        <!-- Distribuzione per Tipo -->
+                        <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Tipo</h5>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Tipo</th>
-                                                    <th class="text-end">Carte</th>
-                                                    <th class="text-end">%</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @forelse($distribuzionePerTipo as $tipo => $count)
-                                                    <tr>
-                                                        <td>{{ $tipo }}</td>
-                                                        <td class="text-end">{{ $count }}</td>
-                                                        <td class="text-end">{{ $totaleCarteStatistiche > 0 ? round(($count / $totaleCarteStatistiche) * 100, 1) : 0 }}%</td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="3" class="text-center text-muted">Nessun tipo trovato</td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    @if(!empty($distribuzionePerTipo))
+                                        <canvas id="typeChart" width="300" height="300"></canvas>
+                                    @else
+                                        <p class="text-center text-muted">Nessun tipo trovato</p>
+                                    @endif
                                 </div>
                             </div>
                         </div>
 
                         <!-- Distribuzione per Costo -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Costo</h5>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Costo</th>
-                                                    <th class="text-end">Carte</th>
-                                                    <th class="text-end">%</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @forelse($distribuzionePerCosto as $costo => $count)
-                                                    <tr>
-                                                        <td>{{ $costo }}</td>
-                                                        <td class="text-end">{{ $count }}</td>
-                                                        <td class="text-end">{{ $totaleCarteStatistiche > 0 ? round(($count / $totaleCarteStatistiche) * 100, 1) : 0 }}%</td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="3" class="text-center text-muted">Nessun costo trovato</td>
-                                                    </tr>
-                                                @endforelse
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    @if(!empty($distribuzionePerCosto))
+                                        <canvas id="costChart" width="300" height="300"></canvas>
+                                    @else
+                                        <p class="text-center text-muted">Nessun costo trovato</p>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -287,6 +207,9 @@
         'availableCards' => []
     ])
     
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         document.addEventListener('livewire:initialized', () => {
             // Gestione del form di salvataggio
@@ -329,6 +252,200 @@
                 }
                 console.log(data);
             });
+
+            // Inizializzazione dei grafici
+            initializeCharts();
         });
+
+        function initializeCharts() {
+            // Grafico Statistiche (Linee)
+            @if(!empty($statistichePerCosto))
+                const statisticsCtx = document.getElementById('statisticsChart').getContext('2d');
+                const statisticsData = @json($statistichePerCosto);
+
+                const costs = Object.keys(statisticsData).sort((a, b) => parseInt(a) - parseInt(b));
+                const vitaData = costs.map(cost => statisticsData[cost].vita_media);
+                const potenzaData = costs.map(cost => statisticsData[cost].potenza_media);
+
+                new Chart(statisticsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: costs.map(cost => `Costo ${cost}`),
+                        datasets: [{
+                            label: 'Vita Media',
+                            data: vitaData,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            tension: 0.1
+                        }, {
+                            label: 'Potenza Media',
+                            data: potenzaData,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const cost = costs[context.dataIndex];
+                                        const unita = statisticsData[cost].unita;
+                                        return `${context.dataset.label}: ${context.parsed.y} (${unita} unità)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Valore Medio'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Costo'
+                                }
+                            }
+                        }
+                    }
+                });
+            @endif
+
+            // Grafico Aspetti (Torta)
+            @if(!empty($distribuzionePerAspetto))
+                const aspectCtx = document.getElementById('aspectChart').getContext('2d');
+                const aspectData = @json($distribuzionePerAspetto);
+                const totalAspects = @json($totaleCarteStatistiche);
+
+                const aspectLabels = Object.keys(aspectData);
+                const aspectValues = Object.values(aspectData);
+                const aspectColors = [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                    '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+                ];
+
+                new Chart(aspectCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: aspectLabels,
+                        datasets: [{
+                            data: aspectValues,
+                            backgroundColor: aspectColors.slice(0, aspectLabels.length)
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const percentage = ((context.parsed / totalAspects) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            @endif
+
+            // Grafico Tipi (Barre Verticali)
+            @if(!empty($distribuzionePerTipo))
+                const typeCtx = document.getElementById('typeChart').getContext('2d');
+                const typeData = @json($distribuzionePerTipo);
+                const totalTypes = @json($totaleCarteStatistiche);
+
+                const typeLabels = Object.keys(typeData);
+                const typeValues = Object.values(typeData);
+
+                new Chart(typeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: typeLabels,
+                        datasets: [{
+                            label: 'Carte',
+                            data: typeValues,
+                            backgroundColor: '#28a745',
+                            borderColor: '#1e7e34',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const percentage = ((context.parsed.y / totalTypes) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed.y} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Numero Carte'
+                                }
+                            }
+                        }
+                    }
+                });
+            @endif
+
+            // Grafico Costi (Barre Verticali)
+            @if(!empty($distribuzionePerCosto))
+                const costCtx = document.getElementById('costChart').getContext('2d');
+                const costData = @json($distribuzionePerCosto);
+                const totalCosts = @json($totaleCarteStatistiche);
+
+                const costLabels = Object.keys(costData).sort((a, b) => parseInt(a) - parseInt(b));
+                const costValues = costLabels.map(cost => costData[cost]);
+
+                new Chart(costCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: costLabels.map(cost => `Costo ${cost}`),
+                        datasets: [{
+                            label: 'Carte',
+                            data: costValues,
+                            backgroundColor: '#ffc107',
+                            borderColor: '#e0a800',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const percentage = ((context.parsed.y / totalCosts) * 100).toFixed(1);
+                                        return `Costo ${costLabels[context.dataIndex]}: ${context.parsed.y} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Numero Carte'
+                                }
+                            }
+                        }
+                    }
+                });
+            @endif
+        }
     </script>
 </div>
