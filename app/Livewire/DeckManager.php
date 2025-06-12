@@ -314,8 +314,13 @@ class DeckManager extends Component
         // Calcola distribuzione per aspetto (correlazione primario-secondario)
         $this->distribuzionePerAspetto = collect($carteDettagliate)
             ->map(function($carta) {
-                $primario = $carta['aspettoPrimario'] ?? 'Nessuno';
+                $primario = $carta['aspettoPrimario'] ?? null;
                 $secondario = $carta['aspettoSecondario'] ?? null;
+
+                // Gestisce aspetti primari vuoti o null
+                if (empty($primario)) {
+                    $primario = 'nessun aspetto';
+                }
 
                 if ($secondario && !empty($secondario)) {
                     return $primario . ' / ' . $secondario;

@@ -298,14 +298,6 @@
         function getAspectColor(aspect) {
             // Mappa degli aspetti ai loro colori caratteristici
             const aspectColors = {
-                // Aspetti Star Wars Unlimited
-                'Aggression': '#dc3545',     // Rosso
-                'Command': '#ffc107',        // Giallo
-                'Cunning': '#6f42c1',        // Viola
-                'Heroism': '#007bff',        // Blu
-                'Vigilance': '#28a745',      // Verde
-                'Villainy': '#343a40',       // Nero/Grigio scuro
-
                 // Aspetti aggiuntivi che potrebbero essere nel database
                 'Nero': '#000000',           // Nero
                 'Bianco': '#f8f9fa',         // Bianco
@@ -313,10 +305,10 @@
                 'Blu': '#007bff',            // Blu
                 'Verde': '#28a745',          // Verde
                 'Giallo': '#ffc107',         // Giallo
-                'Viola': '#6f42c1',          // Viola
 
                 // Fallback
-                'Nessuno': '#6c757d',        // Grigio
+                'nessun aspetto': '#6c757d', // Grigio per carte senza aspetto
+                'Nessuno': '#6c757d',        // Grigio (compatibilità)
                 '': '#6c757d',               // Grigio per valori vuoti
                 'null': '#6c757d'            // Grigio per null
             };
