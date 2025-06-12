@@ -104,7 +104,7 @@
                                                 <tr>
                                                     <th>Tratti Divisi</th>
                                                     <th class="text-end">Carte</th>
-                                                    <th></th>
+                                                    <th colspan="1"></th>
                                                     <th>Tratti Completi</th>
                                                     <th class="text-end">Carte</th>
                                                 </tr>
