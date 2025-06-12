@@ -222,6 +222,11 @@ class DecksController extends Controller{
         // Recupera tutte le carte disponibili (nessun filtro di default)
         $allCards = Card::all();
 
+        // Applica l'ordinamento usando il metodo del controller
+        if (!$allCards->isEmpty()) {
+            $allCards = \App\Http\Controllers\CardsController::mergeSort($allCards);
+        }
+
         // Debug: confronta con Card::all()
         $allCardsNoFilter = Card::all();
 

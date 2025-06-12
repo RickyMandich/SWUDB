@@ -122,15 +122,15 @@
                                                wire:model.live="costoMin"
                                                class="form-control"
                                                placeholder="Min"
-                                               min="0" max="20">
+                                               min="0" max="{{ $maxCostoDb }}">
                                     </div>
                                     <div class="col-auto align-self-center">-</div>
                                     <div class="col">
                                         <input type="number"
                                                wire:model.live="costoMax"
                                                class="form-control"
-                                               placeholder="Max"
-                                               min="0" max="20">
+                                               placeholder="Max ({{ $maxCostoDb }})"
+                                               min="0" max="{{ $maxCostoDb }}">
                                     </div>
                                 </div>
                             </div>
@@ -144,15 +144,15 @@
                                                wire:model.live="potenzaMin"
                                                class="form-control"
                                                placeholder="Min"
-                                               min="0" max="20">
+                                               min="0" max="{{ $maxPotenzaDb }}">
                                     </div>
                                     <div class="col-auto align-self-center">-</div>
                                     <div class="col">
                                         <input type="number"
                                                wire:model.live="potenzaMax"
                                                class="form-control"
-                                               placeholder="Max"
-                                               min="0" max="20">
+                                               placeholder="Max ({{ $maxPotenzaDb }})"
+                                               min="0" max="{{ $maxPotenzaDb }}">
                                     </div>
                                 </div>
                             </div>
@@ -166,15 +166,15 @@
                                                wire:model.live="vitaMin"
                                                class="form-control"
                                                placeholder="Min"
-                                               min="0" max="20">
+                                               min="0" max="{{ $maxVitaDb }}">
                                     </div>
                                     <div class="col-auto align-self-center">-</div>
                                     <div class="col">
                                         <input type="number"
                                                wire:model.live="vitaMax"
                                                class="form-control"
-                                               placeholder="Max"
-                                               min="0" max="20">
+                                               placeholder="Max ({{ $maxVitaDb }})"
+                                               min="0" max="{{ $maxVitaDb }}">
                                     </div>
                                 </div>
                             </div>

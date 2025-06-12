@@ -16,12 +16,17 @@ class SearchFilter extends Component
     public $aspettoPrimario = '';
     public $aspettoSecondario = '';
     public $rarita = '';
-    public $costoMin = 0;
-    public $costoMax = 999;
-    public $potenzaMin = 0;
-    public $potenzaMax = 999;
-    public $vitaMin = 0;
-    public $vitaMax = 999;
+    public $costoMin = null;
+    public $costoMax = null;
+    public $potenzaMin = null;
+    public $potenzaMax = null;
+    public $vitaMin = null;
+    public $vitaMax = null;
+
+    // Valori massimi dinamici dal database
+    public $maxCostoDb = 999;
+    public $maxPotenzaDb = 999;
+    public $maxVitaDb = 999;
     public $tratti = '';
     public $arena = '';
     public $unica = null;
@@ -104,6 +109,11 @@ class SearchFilter extends Component
             ->orderBy('artista')
             ->pluck('artista')
             ->toArray();
+
+        // Carica i valori massimi dal database
+        $this->maxCostoDb = Card::max('costo') ?? 999;
+        $this->maxPotenzaDb = Card::max('potenza') ?? 999;
+        $this->maxVitaDb = Card::max('vita') ?? 999;
     }
 
     public function applyFilters()
@@ -146,23 +156,29 @@ class SearchFilter extends Component
         }
 
         // Filtro per costo (solo se specificato)
-        if ($this->costoMin > 0 || $this->costoMax < 999) {
-            $query->whereBetween('costo', [$this->costoMin, $this->costoMax]);
+        if ($this->costoMin !== null || ($this->costoMax !== null && $this->costoMax < $this->maxCostoDb)) {
+            $minCosto = $this->costoMin ?? 0;
+            $maxCosto = $this->costoMax ?? $this->maxCostoDb;
+            $query->whereBetween('costo', [$minCosto, $maxCosto]);
         }
 
         // Filtro per potenza (solo se specificato)
-        if ($this->potenzaMin > 0 || $this->potenzaMax < 999) {
-            $query->where(function($q) {
+        if ($this->potenzaMin !== null || ($this->potenzaMax !== null && $this->potenzaMax < $this->maxPotenzaDb)) {
+            $minPotenza = $this->potenzaMin ?? 0;
+            $maxPotenza = $this->potenzaMax ?? $this->maxPotenzaDb;
+            $query->where(function($q) use ($minPotenza, $maxPotenza) {
                 $q->whereNull('potenza')
-                  ->orWhereBetween('potenza', [$this->potenzaMin, $this->potenzaMax]);
+                  ->orWhereBetween('potenza', [$minPotenza, $maxPotenza]);
             });
         }
 
         // Filtro per vita (solo se specificato)
-        if ($this->vitaMin > 0 || $this->vitaMax < 999) {
-            $query->where(function($q) {
+        if ($this->vitaMin !== null || ($this->vitaMax !== null && $this->vitaMax < $this->maxVitaDb)) {
+            $minVita = $this->vitaMin ?? 0;
+            $maxVita = $this->vitaMax ?? $this->maxVitaDb;
+            $query->where(function($q) use ($minVita, $maxVita) {
                 $q->whereNull('vita')
-                  ->orWhereBetween('vita', [$this->vitaMin, $this->vitaMax]);
+                  ->orWhereBetween('vita', [$minVita, $maxVita]);
             });
         }
 
@@ -217,12 +233,12 @@ class SearchFilter extends Component
         $this->aspettoPrimario = '';
         $this->aspettoSecondario = '';
         $this->rarita = '';
-        $this->costoMin = 0;
-        $this->costoMax = 999;
-        $this->potenzaMin = 0;
-        $this->potenzaMax = 999;
-        $this->vitaMin = 0;
-        $this->vitaMax = 999;
+        $this->costoMin = null;
+        $this->costoMax = null;
+        $this->potenzaMin = null;
+        $this->potenzaMax = null;
+        $this->vitaMin = null;
+        $this->vitaMax = null;
         $this->tratti = '';
         $this->arena = '';
         $this->unica = null;
