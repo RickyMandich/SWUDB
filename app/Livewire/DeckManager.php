@@ -163,8 +163,14 @@ class DeckManager extends Component
     
     public function refreshCardCount()
     {
-        // Aggiorniamo il conteggio totale delle carte nel mazzo
-        $this->size = collect($this->mazzo)->sum('copie');
+        // Aggiorniamo il conteggio totale delle carte nel mazzo (escludendo leader e basi)
+        $this->size = collect($this->mazzo)->filter(function($carta) {
+            if (isset($carta['tipo'])) {
+                $tipo = strtolower($carta['tipo']);
+                return $tipo !== 'leader' && $tipo !== 'base';
+            }
+            return true;
+        })->sum('copie');
 
         // Ricalcoliamo le statistiche
         $this->calcolaStatistiche();
@@ -188,9 +194,12 @@ class DeckManager extends Component
         foreach ($this->mazzo as $id => $cartaMazzo) {
             $copie = $cartaMazzo['copie'];
 
-            // Ignoriamo i leader nelle statistiche
-            if (isset($cartaMazzo['tipo']) && strtolower($cartaMazzo['tipo']) === 'leader') {
-                continue;
+            // Ignoriamo i leader e le basi nelle statistiche
+            if (isset($cartaMazzo['tipo'])) {
+                $tipo = strtolower($cartaMazzo['tipo']);
+                if ($tipo === 'leader' || $tipo === 'base') {
+                    continue;
+                }
             }
 
             // Aggiungiamo le carte ripetute per il numero di copie
