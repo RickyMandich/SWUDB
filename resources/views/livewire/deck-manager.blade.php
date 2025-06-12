@@ -91,10 +91,8 @@
             <div class="col-12">
                 <div class="analisi-statistiche">
                     <h3 class="mb-3">Analisi Statistiche del Mazzo</h3>
-                    <!-- Prima riga: Tratti -->
-                    <div class="row">
                         <!-- Tratti -->
-                        <div class="col-12 mb-3">
+                        <div class="col-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h5 class="card-title">Tratti</h5>
@@ -141,7 +139,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
 
                     <!-- Seconda riga: Statistiche -->
                     <div class="row">
