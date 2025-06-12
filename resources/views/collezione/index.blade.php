@@ -15,9 +15,21 @@
                             <strong>{{ $totalCards }}</strong> carte totali nella collezione
                         </p>
                         @if(isset($debugInfo))
-                        <p class="card-text mb-0 text-warning">
-                            <small>DEBUG: Filtrate {{ $debugInfo['collezione_filtered_count'] }} vs Tutte {{ $debugInfo['collezione_all_count'] }} (diff: {{ $debugInfo['difference'] }})</small>
-                        </p>
+                        <div class="alert alert-warning mt-2">
+                            <h6>🔍 DEBUG INFO</h6>
+                            <p class="mb-1"><strong>Carte:</strong> Filtrate {{ $debugInfo['collezione_filtered_count'] }} vs Tutte {{ $debugInfo['collezione_all_count'] }} (diff: {{ $debugInfo['difference'] }})</p>
+                            <p class="mb-1"><strong>Escluse dai filtri:</strong> {{ $debugInfo['excluded_by_filters'] }}</p>
+                            <p class="mb-1"><strong>Con valori alti:</strong> {{ $debugInfo['cards_with_high_values'] }}</p>
+                            <p class="mb-1"><strong>Valori massimi:</strong> Costo: {{ $debugInfo['max_costo'] }}, Potenza: {{ $debugInfo['max_potenza'] }}, Vita: {{ $debugInfo['max_vita'] }}</p>
+                            @if(count($debugInfo['excluded_cards_sample']) > 0)
+                            <p class="mb-0"><strong>Esempi carte escluse:</strong></p>
+                            <ul class="mb-0">
+                                @foreach($debugInfo['excluded_cards_sample'] as $card)
+                                <li><small>{{ $card }}</small></li>
+                                @endforeach
+                            </ul>
+                            @endif
+                        </div>
                         @endif
                     </div>
                 </div>

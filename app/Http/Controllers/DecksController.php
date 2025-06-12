@@ -234,11 +234,31 @@ class DecksController extends Controller{
         // Debug: confronta con Card::all()
         $allCardsNoFilter = Card::all();
 
-        // Aggiungi debug info
+        // Trova le carte escluse dai filtri
+        $excludedCards = $allCardsNoFilter->filter(function($card) {
+            return $card->costo > 20 ||
+                   ($card->potenza !== null && $card->potenza > 20) ||
+                   ($card->vita !== null && $card->vita > 20);
+        });
+
+        // Trova le carte che potrebbero essere escluse da altri filtri
+        $cardsWithHighValues = $allCardsNoFilter->filter(function($card) {
+            return $card->costo > 20 || $card->potenza > 20 || $card->vita > 20;
+        });
+
+        // Aggiungi debug info dettagliato
         $debugInfo = [
             'collezione_filtered_count' => $allCards->count(),
             'collezione_all_count' => $allCardsNoFilter->count(),
-            'difference' => $allCardsNoFilter->count() - $allCards->count()
+            'difference' => $allCardsNoFilter->count() - $allCards->count(),
+            'excluded_by_filters' => $excludedCards->count(),
+            'cards_with_high_values' => $cardsWithHighValues->count(),
+            'max_costo' => $allCardsNoFilter->max('costo'),
+            'max_potenza' => $allCardsNoFilter->max('potenza'),
+            'max_vita' => $allCardsNoFilter->max('vita'),
+            'excluded_cards_sample' => $excludedCards->take(5)->map(function($card) {
+                return $card->snippet . " (C:{$card->costo}, P:{$card->potenza}, V:{$card->vita})";
+            })->toArray()
         ];
 
         return view('collezione.index', [
