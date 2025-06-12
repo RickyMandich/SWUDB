@@ -104,6 +104,7 @@
                                                 <tr>
                                                     <th>Tratti Divisi</th>
                                                     <th class="text-end">Carte</th>
+                                                    <th></th>
                                                     <th>Tratti Completi</th>
                                                     <th class="text-end">Carte</th>
                                                 </tr>
@@ -132,7 +133,7 @@
                                                                     {{ $trattiPrincipali[$trattiDivisi[$i]] }}
                                                                 @endif
                                                             </td>
-
+                                                            <td></td>
                                                             <!-- Tratti Completi -->
                                                             <td>
                                                                 @if(isset($trattiCompleti[$i]))
