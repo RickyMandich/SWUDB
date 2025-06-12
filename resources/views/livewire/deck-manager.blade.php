@@ -102,39 +102,55 @@
                                         <table class="table table-sm">
                                             <thead>
                                                 <tr>
-                                                    <th>Tratto</th>
+                                                    <th>Tratti Divisi</th>
+                                                    <th class="text-end">Carte</th>
+                                                    <th>Tratti Completi</th>
                                                     <th class="text-end">Carte</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @php
-                                                    // Combiniamo i tratti suddivisi e completi in un unico array
-                                                    $tuttiTratti = [];
+                                                    // Convertiamo gli array in collezioni per facilitare l'iterazione
+                                                    $trattiDivisi = collect($trattiPrincipali)->keys()->toArray();
+                                                    $trattiCompleti = collect($trattiCompleti)->keys()->toArray();
 
-                                                    // Aggiungiamo i tratti suddivisi
-                                                    foreach($trattiPrincipali as $tratto => $count) {
-                                                        $tuttiTratti[$tratto] = $count;
-                                                    }
-
-                                                    // Aggiungiamo i tratti completi
-                                                    foreach($trattiCompleti as $tratto => $count) {
-                                                        $tuttiTratti[$tratto] = $count;
-                                                    }
-
-                                                    // Ordiniamo per numero di carte (decrescente)
-                                                    arsort($tuttiTratti);
+                                                    // Determiniamo il numero massimo di righe
+                                                    $maxRighe = max(count($trattiDivisi), count($trattiCompleti));
                                                 @endphp
 
-                                                @forelse($tuttiTratti as $tratto => $count)
+                                                @if($maxRighe > 0)
+                                                    @for($i = 0; $i < $maxRighe; $i++)
+                                                        <tr>
+                                                            <!-- Tratti Divisi -->
+                                                            <td>
+                                                                @if(isset($trattiDivisi[$i]))
+                                                                    {{ $trattiDivisi[$i] }}
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-end">
+                                                                @if(isset($trattiDivisi[$i]))
+                                                                    {{ $trattiPrincipali[$trattiDivisi[$i]] }}
+                                                                @endif
+                                                            </td>
+
+                                                            <!-- Tratti Completi -->
+                                                            <td>
+                                                                @if(isset($trattiCompleti[$i]))
+                                                                    {{ $trattiCompleti[$i] }}
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-end">
+                                                                @if(isset($trattiCompleti[$i]))
+                                                                    {{ $this->trattiCompleti[$trattiCompleti[$i]] }}
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endfor
+                                                @else
                                                     <tr>
-                                                        <td>{{ $tratto }}</td>
-                                                        <td class="text-end">{{ $count }}</td>
+                                                        <td colspan="4" class="text-center text-muted">Nessun tratto trovato</td>
                                                     </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="2" class="text-center text-muted">Nessun tratto trovato</td>
-                                                    </tr>
-                                                @endforelse
+                                                @endif
                                             </tbody>
                                         </table>
                                     </div>
