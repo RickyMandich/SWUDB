@@ -188,14 +188,19 @@ class DeckManager extends Component
         foreach ($this->mazzo as $id => $cartaMazzo) {
             $copie = $cartaMazzo['copie'];
 
+            // Ignoriamo i leader nelle statistiche
+            if (isset($cartaMazzo['tipo']) && strtolower($cartaMazzo['tipo']) === 'leader') {
+                continue;
+            }
+
             // Aggiungiamo le carte ripetute per il numero di copie
             for ($i = 0; $i < $copie; $i++) {
                 $carteDettagliate[] = $cartaMazzo;
             }
 
-            // Calcola tratti
+            // Calcola tratti (divisi per " * ")
             if (!empty($cartaMazzo['tratti'])) {
-                $tratti = explode(',', $cartaMazzo['tratti']);
+                $tratti = explode(' * ', $cartaMazzo['tratti']);
                 foreach ($tratti as $tratto) {
                     $tratto = trim($tratto);
                     if (!empty($tratto)) {
