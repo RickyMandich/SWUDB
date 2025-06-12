@@ -92,57 +92,67 @@
                 <div class="analisi-statistiche">
                     <h3 class="mb-3">Analisi Statistiche del Mazzo</h3>
                     <div class="row">
-                        <!-- Numero Carte -->
-                        <div class="col-md-3 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Numero Carte</h5>
-                                    <h2 class="text-primary">{{ $size }}</h2>
-                                    <small class="text-muted">carte totali</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- HP/Vita Media -->
-                        <div class="col-md-3 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">HP/Vita Media</h5>
-                                    <h2 class="text-success">{{ $vitaMedia }}</h2>
-                                    <small class="text-muted">punti vita medi</small>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Tratti -->
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h5 class="card-title">Tratti Principali</h5>
-                                    <div class="contenuto">
-                                        @foreach($trattiPrincipali as $tratto => $count)
-                                            <div class="d-flex justify-content-between">
-                                                <span class="badge bg-secondary mb-1">{{ $tratto }}</span>
-                                                <small class="text-muted">{{ $count }}</small>
-                                            </div>
-                                        @endforeach
+                                    <h5 class="card-title">Tratti</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Tratto</th>
+                                                    <th class="text-end">Carte</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($trattiPrincipali as $tratto => $count)
+                                                    <tr>
+                                                        <td>{{ $tratto }}</td>
+                                                        <td class="text-end">{{ $count }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="2" class="text-center text-muted">Nessun tratto trovato</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Keywords -->
-                        <div class="col-md-3 mb-3">
+                        <!-- Vita e Potenza per Costo -->
+                        <div class="col-md-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h5 class="card-title">Keywords Frequenti</h5>
-                                    <div class="contenuto">
-                                        @foreach($keywordsFrequenti as $keyword => $count)
-                                            <div class="d-flex justify-content-between">
-                                                <span class="badge bg-info mb-1">{{ $keyword }}</span>
-                                                <small class="text-muted">{{ $count }}</small>
-                                            </div>
-                                        @endforeach
+                                    <h5 class="card-title">Vita</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Costo</th>
+                                                    <th class="text-end">Vita Media</th>
+                                                    <th class="text-end">Potenza Media</th>
+                                                    <th class="text-end">Unità</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($statistichePerCosto as $costo => $stats)
+                                                    <tr>
+                                                        <td>{{ $costo }}</td>
+                                                        <td class="text-end">{{ $stats['vita_media'] }}</td>
+                                                        <td class="text-end">{{ $stats['potenza_media'] }}</td>
+                                                        <td class="text-end">{{ $stats['unita'] }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="4" class="text-center text-muted">Nessuna unità trovata</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -155,23 +165,29 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Tipo</h5>
-                                    <div class="contenuto">
-                                        @foreach($distribuzionePerTipo as $tipo => $count)
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span>{{ $tipo }}</span>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="progress me-2" style="width: 100px; height: 20px;">
-                                                        <div class="progress-bar" role="progressbar"
-                                                             style="width: {{ ($count / $size) * 100 }}%"
-                                                             aria-valuenow="{{ $count }}"
-                                                             aria-valuemin="0"
-                                                             aria-valuemax="{{ $size }}">
-                                                        </div>
-                                                    </div>
-                                                    <span class="badge bg-primary">{{ $count }}</span>
-                                                </div>
-                                            </div>
-                                        @endforeach
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Tipo</th>
+                                                    <th class="text-end">Carte</th>
+                                                    <th class="text-end">%</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($distribuzionePerTipo as $tipo => $count)
+                                                    <tr>
+                                                        <td>{{ $tipo }}</td>
+                                                        <td class="text-end">{{ $count }}</td>
+                                                        <td class="text-end">{{ $size > 0 ? round(($count / $size) * 100, 1) : 0 }}%</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted">Nessun tipo trovato</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -182,23 +198,29 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Costo</h5>
-                                    <div class="contenuto">
-                                        @foreach($distribuzionePerCosto as $costo => $count)
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span>Costo {{ $costo }}</span>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="progress me-2" style="width: 100px; height: 20px;">
-                                                        <div class="progress-bar bg-warning" role="progressbar"
-                                                             style="width: {{ ($count / $size) * 100 }}%"
-                                                             aria-valuenow="{{ $count }}"
-                                                             aria-valuemin="0"
-                                                             aria-valuemax="{{ $size }}">
-                                                        </div>
-                                                    </div>
-                                                    <span class="badge bg-warning">{{ $count }}</span>
-                                                </div>
-                                            </div>
-                                        @endforeach
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Costo</th>
+                                                    <th class="text-end">Carte</th>
+                                                    <th class="text-end">%</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($distribuzionePerCosto as $costo => $count)
+                                                    <tr>
+                                                        <td>{{ $costo }}</td>
+                                                        <td class="text-end">{{ $count }}</td>
+                                                        <td class="text-end">{{ $size > 0 ? round(($count / $size) * 100, 1) : 0 }}%</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted">Nessun costo trovato</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>

@@ -29,5 +29,5 @@
     - numero carte
     - tratti
     - keyword
-    - hp/vita media
+    - hp/potenza media
 - gestione della collezione

@@ -22,9 +22,8 @@ class DeckManager extends Component
     public $rimosse = [];
 
     // Statistiche del mazzo
-    public $vitaMedia = 0;
     public $trattiPrincipali = [];
-    public $keywordsFrequenti = [];
+    public $statistichePerCosto = [];
     public $distribuzionePerTipo = [];
     public $distribuzionePerCosto = [];
     
@@ -174,41 +173,75 @@ class DeckManager extends Component
     public function calcolaStatistiche()
     {
         if (empty($this->mazzo)) {
-            $this->vitaMedia = 0;
             $this->trattiPrincipali = [];
-            $this->keywordsFrequenti = [];
+            $this->statistichePerCosto = [];
             $this->distribuzionePerTipo = [];
             $this->distribuzionePerCosto = [];
             return;
         }
 
         $carteDettagliate = [];
-        $totaleCopie = 0;
-        $totaleVita = 0;
-        $carteConVita = 0;
+        $tuttiTratti = [];
+        $statisticheCosto = [];
 
         // Raccogliamo i dettagli delle carte dal mazzo
         foreach ($this->mazzo as $id => $cartaMazzo) {
-            if (isset($this->cards[$id])) {
-                $cartaDettagli = $this->cards[$id];
-                $copie = $cartaMazzo['copie'];
-                $totaleCopie += $copie;
+            $copie = $cartaMazzo['copie'];
 
-                // Aggiungiamo le carte ripetute per il numero di copie
-                for ($i = 0; $i < $copie; $i++) {
-                    $carteDettagliate[] = $cartaDettagli;
+            // Aggiungiamo le carte ripetute per il numero di copie
+            for ($i = 0; $i < $copie; $i++) {
+                $carteDettagliate[] = $cartaMazzo;
+            }
+
+            // Calcola tratti
+            if (!empty($cartaMazzo['tratti'])) {
+                $tratti = explode(',', $cartaMazzo['tratti']);
+                foreach ($tratti as $tratto) {
+                    $tratto = trim($tratto);
+                    if (!empty($tratto)) {
+                        for ($i = 0; $i < $copie; $i++) {
+                            $tuttiTratti[] = $tratto;
+                        }
+                    }
+                }
+            }
+
+            // Calcola statistiche per costo (solo per unità con vita e potenza)
+            if (isset($cartaMazzo['vita']) && isset($cartaMazzo['potenza']) &&
+                $cartaMazzo['vita'] > 0 && $cartaMazzo['potenza'] > 0) {
+
+                $costo = $cartaMazzo['costo'] ?? 0;
+
+                if (!isset($statisticheCosto[$costo])) {
+                    $statisticheCosto[$costo] = [
+                        'vita_totale' => 0,
+                        'potenza_totale' => 0,
+                        'unita' => 0
+                    ];
                 }
 
-                // Calcolo vita media (solo per carte con vita)
-                if (!empty($cartaDettagli['vita']) && $cartaDettagli['vita'] > 0) {
-                    $totaleVita += $cartaDettagli['vita'] * $copie;
-                    $carteConVita += $copie;
-                }
+                $statisticheCosto[$costo]['vita_totale'] += $cartaMazzo['vita'] * $copie;
+                $statisticheCosto[$costo]['potenza_totale'] += $cartaMazzo['potenza'] * $copie;
+                $statisticheCosto[$costo]['unita'] += $copie;
             }
         }
 
-        // Calcola vita media
-        $this->vitaMedia = $carteConVita > 0 ? round($totaleVita / $carteConVita, 1) : 0;
+        // Calcola tratti principali
+        $this->trattiPrincipali = collect($tuttiTratti)
+            ->countBy()
+            ->sortDesc()
+            ->toArray();
+
+        // Calcola statistiche per costo
+        $this->statistichePerCosto = [];
+        foreach ($statisticheCosto as $costo => $stats) {
+            $this->statistichePerCosto[$costo] = [
+                'vita_media' => round($stats['vita_totale'] / $stats['unita'], 1),
+                'potenza_media' => round($stats['potenza_totale'] / $stats['unita'], 1),
+                'unita' => $stats['unita']
+            ];
+        }
+        ksort($this->statistichePerCosto);
 
         // Calcola distribuzione per tipo
         $this->distribuzionePerTipo = collect($carteDettagliate)
@@ -227,60 +260,8 @@ class DeckManager extends Component
             })
             ->sortKeys()
             ->toArray();
-
-        // Calcola tratti principali
-        $tuttiTratti = [];
-        foreach ($carteDettagliate as $carta) {
-            if (!empty($carta['tratti'])) {
-                $tratti = explode(',', $carta['tratti']);
-                foreach ($tratti as $tratto) {
-                    $tratto = trim($tratto);
-                    if (!empty($tratto)) {
-                        $tuttiTratti[] = $tratto;
-                    }
-                }
-            }
-        }
-
-        $this->trattiPrincipali = collect($tuttiTratti)
-            ->countBy()
-            ->sortDesc()
-            ->take(5)
-            ->toArray();
-
-        // Calcola keywords frequenti dalle descrizioni
-        $tutteDescrizioni = collect($carteDettagliate)
-            ->pluck('descrizione')
-            ->implode(' ');
-
-        $this->keywordsFrequenti = $this->estraiKeywords($tutteDescrizioni);
     }
 
-    private function estraiKeywords($testo)
-    {
-        // Lista di keywords comuni di Star Wars Unlimited
-        $keywordsComuni = [
-            'Ambush', 'Bounty', 'Coordinate', 'Cunning', 'Deploy', 'Grit',
-            'Overwhelm', 'Raid', 'Restore', 'Saboteur', 'Sentinel', 'Shielded',
-            'Smuggle', 'When Played', 'When Defeated', 'Action', 'Experience',
-            'Exhaust', 'Ready', 'Attack', 'Defend', 'Heal', 'Damage', 'Shield'
-        ];
-
-        $keywords = [];
-        $testoMinuscolo = strtolower($testo);
-
-        foreach ($keywordsComuni as $keyword) {
-            $count = substr_count($testoMinuscolo, strtolower($keyword));
-            if ($count > 0) {
-                $keywords[$keyword] = $count;
-            }
-        }
-
-        return collect($keywords)
-            ->sortDesc()
-            ->take(5)
-            ->toArray();
-    }
     
     public function saveDeck()
     {
