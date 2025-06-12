@@ -17,11 +17,11 @@ class SearchFilter extends Component
     public $aspettoSecondario = '';
     public $rarita = '';
     public $costoMin = 0;
-    public $costoMax = 20;
+    public $costoMax = 999;
     public $potenzaMin = 0;
-    public $potenzaMax = 20;
+    public $potenzaMax = 999;
     public $vitaMin = 0;
-    public $vitaMax = 20;
+    public $vitaMax = 999;
     public $tratti = '';
     public $arena = '';
     public $unica = null;
@@ -145,20 +145,26 @@ class SearchFilter extends Component
             $query->where('rarita', $this->rarita);
         }
 
-        // Filtro per costo
-        $query->whereBetween('costo', [$this->costoMin, $this->costoMax]);
+        // Filtro per costo (solo se specificato)
+        if ($this->costoMin > 0 || $this->costoMax < 999) {
+            $query->whereBetween('costo', [$this->costoMin, $this->costoMax]);
+        }
 
-        // Filtro per potenza (solo se non null)
-        $query->where(function($q) {
-            $q->whereNull('potenza')
-              ->orWhereBetween('potenza', [$this->potenzaMin, $this->potenzaMax]);
-        });
+        // Filtro per potenza (solo se specificato)
+        if ($this->potenzaMin > 0 || $this->potenzaMax < 999) {
+            $query->where(function($q) {
+                $q->whereNull('potenza')
+                  ->orWhereBetween('potenza', [$this->potenzaMin, $this->potenzaMax]);
+            });
+        }
 
-        // Filtro per vita (solo se non null)
-        $query->where(function($q) {
-            $q->whereNull('vita')
-              ->orWhereBetween('vita', [$this->vitaMin, $this->vitaMax]);
-        });
+        // Filtro per vita (solo se specificato)
+        if ($this->vitaMin > 0 || $this->vitaMax < 999) {
+            $query->where(function($q) {
+                $q->whereNull('vita')
+                  ->orWhereBetween('vita', [$this->vitaMin, $this->vitaMax]);
+            });
+        }
 
         // Filtro per tratti
         if (!empty($this->tratti)) {
@@ -212,11 +218,11 @@ class SearchFilter extends Component
         $this->aspettoSecondario = '';
         $this->rarita = '';
         $this->costoMin = 0;
-        $this->costoMax = 20;
+        $this->costoMax = 999;
         $this->potenzaMin = 0;
-        $this->potenzaMax = 20;
+        $this->potenzaMax = 999;
         $this->vitaMin = 0;
-        $this->vitaMax = 20;
+        $this->vitaMax = 999;
         $this->tratti = '';
         $this->arena = '';
         $this->unica = null;

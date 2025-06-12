@@ -28,6 +28,7 @@
     - ~~numero carte x costo e per tipo~~
     - ~~tratti~~
     - ~~hp/potenza media~~
+    - possibilità di tirare fuori carte
 - ~~trasformazione delle analisi delle carte in grafici~~
 - gestione della collezione
 - ottimizzare il popup di aggiunta carte

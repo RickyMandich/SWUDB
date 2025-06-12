@@ -14,9 +14,9 @@
                         <p class="card-text mb-0">
                             <strong>{{ $totalCards }}</strong> carte totali nella collezione
                         </p>
-                        @if(isset($debugInfo))
+                        @if(isset($debugInfo) && Auth::check() && Auth::admin())
                         <div class="alert alert-warning mt-2">
-                            <h6>🔍 DEBUG INFO</h6>
+                            <h6>🔍 DEBUG INFO (Solo Admin)</h6>
                             <p class="mb-1"><strong>Carte:</strong> Filtrate {{ $debugInfo['collezione_filtered_count'] }} vs Tutte {{ $debugInfo['collezione_all_count'] }} (diff: {{ $debugInfo['difference'] }})</p>
                             <p class="mb-1"><strong>Escluse dai filtri:</strong> {{ $debugInfo['excluded_by_filters'] }}</p>
                             <p class="mb-1"><strong>Con valori alti:</strong> {{ $debugInfo['cards_with_high_values'] }}</p>

@@ -219,17 +219,8 @@ class DecksController extends Controller{
         // Calcola il numero totale di carte
         $totalCards = $cards->sum('copie');
 
-        // Recupera tutte le carte disponibili con gli stessi filtri di default di SearchFilter
-        $allCards = Card::whereBetween('costo', [0, 20])
-                       ->where(function($q) {
-                           $q->whereNull('potenza')
-                             ->orWhereBetween('potenza', [0, 20]);
-                       })
-                       ->where(function($q) {
-                           $q->whereNull('vita')
-                             ->orWhereBetween('vita', [0, 20]);
-                       })
-                       ->get();
+        // Recupera tutte le carte disponibili (nessun filtro di default)
+        $allCards = Card::all();
 
         // Debug: confronta con Card::all()
         $allCardsNoFilter = Card::all();
