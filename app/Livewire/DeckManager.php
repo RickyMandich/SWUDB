@@ -20,6 +20,13 @@ class DeckManager extends Component
     public $mazzo = [];
     public $aggiunte = [];
     public $rimosse = [];
+
+    // Statistiche del mazzo
+    public $vitaMedia = 0;
+    public $trattiPrincipali = [];
+    public $keywordsFrequenti = [];
+    public $distribuzionePerTipo = [];
+    public $distribuzionePerCosto = [];
     
     protected $listeners = [
         'cardAdded' => 'addCard',
@@ -50,6 +57,9 @@ class DeckManager extends Component
             $key = $card['espansione'] . '-' . $card['numero'];
             return [$key => $card];
         })->toArray();
+
+        // Calcola le statistiche iniziali
+        $this->calcolaStatistiche();
     }
     
     public function openAddCardPopup()
@@ -156,6 +166,120 @@ class DeckManager extends Component
     {
         // Aggiorniamo il conteggio totale delle carte nel mazzo
         $this->size = collect($this->mazzo)->sum('copie');
+
+        // Ricalcoliamo le statistiche
+        $this->calcolaStatistiche();
+    }
+
+    public function calcolaStatistiche()
+    {
+        if (empty($this->mazzo)) {
+            $this->vitaMedia = 0;
+            $this->trattiPrincipali = [];
+            $this->keywordsFrequenti = [];
+            $this->distribuzionePerTipo = [];
+            $this->distribuzionePerCosto = [];
+            return;
+        }
+
+        $carteDettagliate = [];
+        $totaleCopie = 0;
+        $totaleVita = 0;
+        $carteConVita = 0;
+
+        // Raccogliamo i dettagli delle carte dal mazzo
+        foreach ($this->mazzo as $id => $cartaMazzo) {
+            if (isset($this->cards[$id])) {
+                $cartaDettagli = $this->cards[$id];
+                $copie = $cartaMazzo['copie'];
+                $totaleCopie += $copie;
+
+                // Aggiungiamo le carte ripetute per il numero di copie
+                for ($i = 0; $i < $copie; $i++) {
+                    $carteDettagliate[] = $cartaDettagli;
+                }
+
+                // Calcolo vita media (solo per carte con vita)
+                if (!empty($cartaDettagli['vita']) && $cartaDettagli['vita'] > 0) {
+                    $totaleVita += $cartaDettagli['vita'] * $copie;
+                    $carteConVita += $copie;
+                }
+            }
+        }
+
+        // Calcola vita media
+        $this->vitaMedia = $carteConVita > 0 ? round($totaleVita / $carteConVita, 1) : 0;
+
+        // Calcola distribuzione per tipo
+        $this->distribuzionePerTipo = collect($carteDettagliate)
+            ->groupBy('tipo')
+            ->map(function($gruppo) {
+                return $gruppo->count();
+            })
+            ->sortDesc()
+            ->toArray();
+
+        // Calcola distribuzione per costo
+        $this->distribuzionePerCosto = collect($carteDettagliate)
+            ->groupBy('costo')
+            ->map(function($gruppo) {
+                return $gruppo->count();
+            })
+            ->sortKeys()
+            ->toArray();
+
+        // Calcola tratti principali
+        $tuttiTratti = [];
+        foreach ($carteDettagliate as $carta) {
+            if (!empty($carta['tratti'])) {
+                $tratti = explode(',', $carta['tratti']);
+                foreach ($tratti as $tratto) {
+                    $tratto = trim($tratto);
+                    if (!empty($tratto)) {
+                        $tuttiTratti[] = $tratto;
+                    }
+                }
+            }
+        }
+
+        $this->trattiPrincipali = collect($tuttiTratti)
+            ->countBy()
+            ->sortDesc()
+            ->take(5)
+            ->toArray();
+
+        // Calcola keywords frequenti dalle descrizioni
+        $tutteDescrizioni = collect($carteDettagliate)
+            ->pluck('descrizione')
+            ->implode(' ');
+
+        $this->keywordsFrequenti = $this->estraiKeywords($tutteDescrizioni);
+    }
+
+    private function estraiKeywords($testo)
+    {
+        // Lista di keywords comuni di Star Wars Unlimited
+        $keywordsComuni = [
+            'Ambush', 'Bounty', 'Coordinate', 'Cunning', 'Deploy', 'Grit',
+            'Overwhelm', 'Raid', 'Restore', 'Saboteur', 'Sentinel', 'Shielded',
+            'Smuggle', 'When Played', 'When Defeated', 'Action', 'Experience',
+            'Exhaust', 'Ready', 'Attack', 'Defend', 'Heal', 'Damage', 'Shield'
+        ];
+
+        $keywords = [];
+        $testoMinuscolo = strtolower($testo);
+
+        foreach ($keywordsComuni as $keyword) {
+            $count = substr_count($testoMinuscolo, strtolower($keyword));
+            if ($count > 0) {
+                $keywords[$keyword] = $count;
+            }
+        }
+
+        return collect($keywords)
+            ->sortDesc()
+            ->take(5)
+            ->toArray();
     }
     
     public function saveDeck()

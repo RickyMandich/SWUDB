@@ -85,6 +85,129 @@
                 </div>
             @endif
         </div>
+
+        <!-- Sezione Analisi Statistiche -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="analisi-statistiche">
+                    <h3 class="mb-3">Analisi Statistiche del Mazzo</h3>
+                    <div class="row">
+                        <!-- Numero Carte -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Numero Carte</h5>
+                                    <h2 class="text-primary">{{ $size }}</h2>
+                                    <small class="text-muted">carte totali</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HP/Vita Media -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">HP/Vita Media</h5>
+                                    <h2 class="text-success">{{ $vitaMedia }}</h2>
+                                    <small class="text-muted">punti vita medi</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tratti -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Tratti Principali</h5>
+                                    <div class="contenuto">
+                                        @foreach($trattiPrincipali as $tratto => $count)
+                                            <div class="d-flex justify-content-between">
+                                                <span class="badge bg-secondary mb-1">{{ $tratto }}</span>
+                                                <small class="text-muted">{{ $count }}</small>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Keywords -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Keywords Frequenti</h5>
+                                    <div class="contenuto">
+                                        @foreach($keywordsFrequenti as $keyword => $count)
+                                            <div class="d-flex justify-content-between">
+                                                <span class="badge bg-info mb-1">{{ $keyword }}</span>
+                                                <small class="text-muted">{{ $count }}</small>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distribuzione per Tipo -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Distribuzione per Tipo</h5>
+                                    <div class="contenuto">
+                                        @foreach($distribuzionePerTipo as $tipo => $count)
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span>{{ $tipo }}</span>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 100px; height: 20px;">
+                                                        <div class="progress-bar" role="progressbar"
+                                                             style="width: {{ ($count / $size) * 100 }}%"
+                                                             aria-valuenow="{{ $count }}"
+                                                             aria-valuemin="0"
+                                                             aria-valuemax="{{ $size }}">
+                                                        </div>
+                                                    </div>
+                                                    <span class="badge bg-primary">{{ $count }}</span>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Distribuzione per Costo -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Distribuzione per Costo</h5>
+                                    <div class="contenuto">
+                                        @foreach($distribuzionePerCosto as $costo => $count)
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span>Costo {{ $costo }}</span>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 100px; height: 20px;">
+                                                        <div class="progress-bar bg-warning" role="progressbar"
+                                                             style="width: {{ ($count / $size) * 100 }}%"
+                                                             aria-valuenow="{{ $count }}"
+                                                             aria-valuemin="0"
+                                                             aria-valuemax="{{ $size }}">
+                                                        </div>
+                                                    </div>
+                                                    <span class="badge bg-warning">{{ $count }}</span>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <!-- Messaggi Toast -->
