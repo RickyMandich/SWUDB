@@ -24,11 +24,11 @@
 - ~~creazione di mail alias `info@unlimiteddb.net`~~
 - ~~filtri di ricerca~~
 - ~~aggiustare il popup di aggiunta carte~~
+- ~~trasformazione delle analisi delle carte in grafici~~
+- ~~gestione della collezione~~
 - ~~analisi delle statistiche delle carte nei mazzi~~
     - ~~numero carte x costo e per tipo~~
     - ~~tratti~~
     - ~~hp/potenza media~~
-    - possibilità di tirare fuori carte
-- ~~trasformazione delle analisi delle carte in grafici~~
-- gestione della collezione
+    - possibilità di tirare fuori carte grazie all'effetto
 - ottimizzare il popup di aggiunta carte
