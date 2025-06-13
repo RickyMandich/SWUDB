@@ -665,17 +665,29 @@ class DecksController extends Controller{
             return response()->json(['error' => 'Non autorizzato'], 401);
         }
 
-        $request->validate([
-            'url' => 'required|url',
-            'deck_name' => 'required|string|max:500',
-            'public' => 'boolean'
-        ]);
+        \Log::info('Step 1: User authenticated');
 
         try {
+            $request->validate([
+                'url' => 'required|url',
+                'deck_name' => 'required|string|max:500',
+                'public' => 'boolean'
+            ]);
+            \Log::info('Step 2: Validation passed');
+        } catch (\Exception $e) {
+            \Log::error('Step 2: Validation failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Validazione fallita: ' . $e->getMessage()], 400);
+        }
+
+        try {
+            \Log::info('Step 3: Starting try block');
+
             $url = $request->input('url');
+            \Log::info('Step 4: Got URL', ['url' => $url]);
 
             // Controlla se è un URL di SWUDB e convertilo all'API
             $apiUrl = $this->convertSwudbUrl($url);
+            \Log::info('Step 5: URL converted', ['api_url' => $apiUrl]);
 
             // Debug: log degli URL
             \Log::info('Import URL Debug', [
@@ -729,18 +741,25 @@ class DecksController extends Controller{
                 $extension = 'json';
             }
 
+            \Log::info('Step 8: About to call processDeckImport');
+
             $result = $this->processDeckImport($content, $extension, $request->input('deck_name'), $request->boolean('public'));
 
+            \Log::info('Step 9: processDeckImport completed', ['result' => $result]);
+
             if ($result['success']) {
+                \Log::info('Step 10: Success, returning JSON response');
                 return response()->json([
                     'success' => true,
                     'message' => 'Mazzo importato con successo',
                     'deck_url' => route('mazzo', ['user' => Auth::user()->name, 'mazzo' => str_replace(' ', '+', $result['deck_name'])])
                 ]);
             } else {
+                \Log::info('Step 10: Error, returning error response', ['error' => $result['error']]);
                 return response()->json(['error' => $result['error']], 400);
             }
         } catch (\Exception $e) {
+            \Log::error('Step X: Exception caught', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Errore durante l\'importazione: ' . $e->getMessage()], 500);
         }
     }

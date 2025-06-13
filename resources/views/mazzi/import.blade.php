@@ -156,9 +156,8 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
 
         const formData = new FormData(this);
-        // Test temporaneo con route di test
-        importDeck('/test/import', formData, 'url');
-        // importDeck('{{ route("mazzi.import.url") }}', formData, 'url');
+        // Route originale ripristinata
+        importDeck('{{ route("mazzi.import.url") }}', formData, 'url');
     });
 
     function importDeck(url, formData, type) {
