@@ -154,9 +154,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gestione form importazione da URL
     urlForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
-        importDeck('{{ route("mazzi.import.url") }}', formData, 'url');
+        // Test temporaneo con route di test
+        importDeck('/test/import', formData, 'url');
+        // importDeck('{{ route("mazzi.import.url") }}', formData, 'url');
     });
 
     function importDeck(url, formData, type) {

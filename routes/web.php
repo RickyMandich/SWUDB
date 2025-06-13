@@ -7,6 +7,7 @@ use App\Http\Controllers\JobController;
 use App\Events\MessageCreated;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +69,21 @@ Route::get('/debug/logs', function() {
     }
     return 'Log file not found';
 })->name("debug.logs");
+
+Route::post('/test/import', function(Request $request) {
+    return response()->json([
+        'success' => true,
+        'message' => 'Test route funziona',
+        'data' => [
+            'method' => $request->method(),
+            'all_input' => $request->all(),
+            'public_input' => $request->input('public'),
+            'public_boolean' => $request->boolean('public'),
+            'has_public' => $request->has('public'),
+            'user_id' => Auth::id()
+        ]
+    ]);
+})->name("test.import");
 
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
