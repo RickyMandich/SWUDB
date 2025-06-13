@@ -6,6 +6,16 @@ use Livewire\Component;
 use App\Models\Card;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * Livewire component for card selection popup in deck management
+ * Componente Livewire per popup di selezione carte nella gestione mazzi
+ *
+ * This component provides a modal interface for adding cards to decks with:
+ * - Integration with SearchFilter component for card filtering
+ * - Real-time availability checking based on current deck state
+ * - Copy limit validation and enforcement
+ * - Event-driven communication with parent DeckManager component
+ */
 class AddCardPopUp extends Component
 {
     public $isOpen = false;
@@ -24,6 +34,16 @@ class AddCardPopUp extends Component
         'cardsFiltered' => 'updateFilteredCards'
     ];
     
+    /**
+     * Initialize the popup component with user, deck and card data
+     * Inizializza il componente popup con dati utente, mazzo e carte
+     *
+     * @param int $userId Current user ID
+     * @param int $deckId Current deck ID
+     * @param array $currentDeckCards Current cards in deck with counts
+     * @param array $availableCards Available cards from database
+     * @return void
+     */
     public function mount($userId, $deckId, $currentDeckCards = [], $availableCards = [])
     {
         $this->userId = $userId;
@@ -32,6 +52,14 @@ class AddCardPopUp extends Component
         $this->filteredCards = $this->availableCards; // Initialize filtered cards
     }
     
+    /**
+     * Load and filter available cards based on current deck state
+     * Carica e filtra le carte disponibili in base allo stato attuale del mazzo
+     *
+     * @param array $currentDeckCards Current cards in deck with their counts
+     * @param array $availableCards Available cards from database (optional)
+     * @return void
+     */
     public function loadAvailableCards($currentDeckCards = [], $availableCards = [])
     {
         if (empty($availableCards)) {
@@ -69,6 +97,12 @@ class AddCardPopUp extends Component
         })->toArray();
     }
     
+    /**
+     * Handle card selection change and update max copies limit
+     * Gestisce il cambio di selezione carta e aggiorna il limite massimo di copie
+     *
+     * @return void
+     */
     public function updatedSelectedCardId()
     {
         if(!empty($this->selectedCardId)) {
@@ -83,24 +117,50 @@ class AddCardPopUp extends Component
         }
     }
     
+    /**
+     * Open the popup modal
+     * Apre il popup modale
+     *
+     * @return void
+     */
     public function open()
     {
         $this->isOpen = true;
         $this->filteredCards = []; // Inizializza con nessuna carta
     }
 
+    /**
+     * Close the popup modal and reset form state
+     * Chiude il popup modale e reimposta lo stato del form
+     *
+     * @return void
+     */
     public function close()
     {
         $this->isOpen = false;
         $this->reset(['selectedCardId', 'copiesAmount']);
     }
 
+    /**
+     * Update available cards based on current deck state
+     * Aggiorna le carte disponibili in base allo stato attuale del mazzo
+     *
+     * @param array $currentDeckCards Current deck composition with card counts
+     * @return void
+     */
     public function updateCards($currentDeckCards)
     {
         $this->loadAvailableCards($currentDeckCards);
         $this->filteredCards = $this->availableCards;
     }
 
+    /**
+     * Update filtered cards from SearchFilter component
+     * Aggiorna le carte filtrate dal componente SearchFilter
+     *
+     * @param array $cards Filtered cards from search component
+     * @return void
+     */
     public function updateFilteredCards($cards)
     {
         // Filtra le carte in base ai filtri applicati e alle carte disponibili
@@ -122,6 +182,15 @@ class AddCardPopUp extends Component
         })->toArray();
     }
     
+    /**
+     * Add selected cards to deck and close popup
+     * Aggiunge le carte selezionate al mazzo e chiude il popup
+     *
+     * Dispatches an event to the parent DeckManager component with
+     * the selected card ID and number of copies to add.
+     *
+     * @return void
+     */
     public function addCardsToDeck()
     {
         if(empty($this->selectedCardId)) {

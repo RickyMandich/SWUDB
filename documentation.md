@@ -233,6 +233,106 @@ Gli script utilizzano credenziali FTP configurate per Altervista:
 - [ ] Variabili ambiente configurate
 - [ ] SSL certificato valido
 
+## Documentazione del Codice
+
+### Standard PHPDoc
+
+Il progetto implementa una **documentazione PHPDoc completa** per tutti i metodi non nativi e non ovvi, seguendo questi principi:
+
+#### Caratteristiche della Documentazione
+- **Formato PHPDoc standard** con tag `@param`, `@return`, `@throws`
+- **Commenti bilingue**: Inglese (tecnico) + Italiano (comprensibile)
+- **Livello di dettaglio proporzionale** alla complessità del metodo
+- **Spiegazioni contestuali** per ambienti non esclusivamente tecnici
+
+#### Struttura Commenti
+```php
+/**
+ * English technical description of the method
+ * Descrizione italiana "alla buona" del metodo
+ *
+ * Detailed explanation of functionality, use cases, and important notes.
+ * Complex methods include comprehensive documentation of algorithms and logic.
+ *
+ * @param Type $parameter Description of parameter
+ * @param array $options Optional configuration array
+ * @return ReturnType Description of return value
+ * @throws ExceptionType When this exception occurs
+ */
+public function methodName($parameter, $options = [])
+```
+
+### Classi Documentate
+
+#### Models (`app/Models/`)
+- **Card.php**: Attributi personalizzati, cache management, eventi
+- **Deck.php**: Gestione mazzi base (metodi nativi Laravel)
+- **Composition.php**: Relazioni carte-mazzi (metodi nativi Laravel)
+- **User.php**: Autenticazione utenti (metodi nativi Laravel)
+
+#### Controllers (`app/Http/Controllers/`)
+- **CardsController.php**: Algoritmi complessi di ordinamento e import
+- **DecksController.php**: CRUD mazzi, export/import, statistiche
+- **HomeController.php**: Dashboard utenti autenticati
+- **JobController.php**: Operazioni asincrone e integrazioni esterne
+
+#### Livewire Components (`app/Livewire/`)
+- **SearchFilter.php**: Sistema filtri avanzato con cache
+- **DeckManager.php**: Gestione mazzi con statistiche real-time
+- **AddCardPopUp.php**: Popup selezione carte con validazione
+
+#### Jobs, Events, Listeners (`app/Jobs/`, `app/Events/`, `app/Listeners/`)
+- **ExecuteArtisanCommand.php**: Job per comandi Artisan asincroni
+- **CardReceived.php**: Evento ricezione nuove carte
+- **MessageCreated.php**: Evento creazione messaggi sistema
+- **AddCard.php**: Listener per aggiunta carte
+- **SendMessage.php**: Listener per invio messaggi Telegram
+
+#### Mail Classes (`app/Mail/`)
+- **NewCardsEmail.php**: Email notifica nuove carte
+- **WelcomeEmail.php**: Email benvenuto nuovi utenti
+
+#### Providers (`app/Providers/`)
+- **AppServiceProvider.php**: Configurazione servizi applicazione
+
+### Metodi Complessi Documentati
+
+#### Algoritmi di Ordinamento
+```php
+// CardsController::compareElements()
+// Algoritmo complesso per ordinamento carte con 9 criteri gerarchici
+// Documentazione dettagliata di ogni fase di confronto
+
+// CardsController::mergeSort()
+// Implementazione merge sort per Laravel Collections
+// Spiegazione ricorsione e integrazione con compareElements
+```
+
+#### Gestione Import Asincrono
+```php
+// CardsController::startImport()
+// Processo completo import carte da API esterna
+// Gestione batch, email notifiche, error handling
+
+// CardsController::sendBatch() / dispatchBatch()
+// Sistema batch processing per evitare timeout
+// Documentazione del flusso asincrono
+```
+
+#### Statistiche Mazzi Real-time
+```php
+// DeckManager::calcolaStatistiche()
+// Calcolo statistiche complete mazzi
+// Analisi tratti, costi, tipi, aspetti con esclusioni specifiche
+```
+
+#### Sistema Fire-and-Forget
+```php
+// JobController::fireAndForgetGet() / fireAndForgetPost()
+// Richieste HTTP asincrone con socket raw
+// Documentazione implementazione low-level
+```
+
 ## Componenti Livewire
 
 ### SearchFilter
@@ -325,8 +425,54 @@ Popup per aggiunta carte ai mazzi con:
 - **PSR-12** per PHP
 - **ESLint** per JavaScript
 - **Blade formatting** consistente
-- **Commenti** per logica complessa
+- **PHPDoc completo** per tutti i metodi non nativi
+- **Documentazione bilingue** (EN/IT) per accessibilità
 - **Test coverage** per nuove feature
+
+### Pattern di Documentazione
+
+#### Metodi Semplici
+```php
+/**
+ * Simple method description
+ * Descrizione semplice del metodo
+ *
+ * @param Type $param Parameter description
+ * @return Type Return description
+ */
+```
+
+#### Metodi Complessi
+```php
+/**
+ * Complex method with detailed algorithm explanation
+ * Metodo complesso con spiegazione dettagliata dell'algoritmo
+ *
+ * This method handles multiple complex operations:
+ * 1. Data validation and preprocessing
+ * 2. Algorithm execution with specific rules
+ * 3. Result formatting and error handling
+ *
+ * @param array $data Input data with specific format requirements
+ * @param bool $verbose Enable detailed output for debugging
+ * @return Collection Processed results with metadata
+ * @throws InvalidArgumentException When data format is invalid
+ */
+```
+
+#### Componenti Livewire
+```php
+/**
+ * Livewire component for specific functionality
+ * Componente Livewire per funzionalità specifica
+ *
+ * This component provides comprehensive functionality including:
+ * - Real-time data processing
+ * - Event-driven communication
+ * - State management and validation
+ */
+class ComponentName extends Component
+```
 
 ### Testing
 

@@ -8,7 +8,28 @@ use Illuminate\Support\Facades\Http;
 use App\Events\MessageCreated;
 use App\Events\CardReceived;
 
+/**
+ * Controller for handling background job operations and external integrations
+ * Controller per gestire operazioni di job in background e integrazioni esterne
+ *
+ * This controller provides endpoints for:
+ * - Adding cards to the database from import processes
+ * - Sending messages via Telegram bot integration
+ * - Fire-and-forget HTTP requests for asynchronous operations
+ */
 class JobController extends Controller{
+
+    /**
+     * Add a single card to the database from JSON data
+     * Aggiunge una singola carta al database da dati JSON
+     *
+     * This method handles the complex process of creating a new card record
+     * with comprehensive field mapping, validation, and error handling.
+     * Includes special logic for max copies based on card type.
+     *
+     * @param Request $request HTTP request containing 'card' JSON parameter
+     * @return void Outputs debug information or error messages
+     */
     public function addCard(Request $request){
         $card = json_decode($request->input('card'), true);
         // return $card;
@@ -92,6 +113,16 @@ class JobController extends Controller{
         }
     }
 
+    /**
+     * Send a message via Telegram bot integration
+     * Invia un messaggio tramite integrazione bot Telegram
+     *
+     * This method sends status messages and notifications to a configured
+     * Telegram chat using the bot API. Includes token validation for security.
+     *
+     * @param Request $request HTTP request containing 'message' and 'token' parameters
+     * @return void Sends message to Telegram or logs errors
+     */
     public function sendMessage(Request $request){
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
@@ -113,7 +144,19 @@ class JobController extends Controller{
 
     }
 
-    static function fireAndForgetGet($url, $data = []) {
+    /**
+     * Execute a fire-and-forget GET request without waiting for response
+     * Esegue una richiesta GET "fire-and-forget" senza aspettare la risposta
+     *
+     * This method sends an HTTP GET request asynchronously using raw sockets,
+     * allowing the calling process to continue without waiting for the response.
+     * Useful for triggering background processes.
+     *
+     * @param string $url The target URL for the GET request
+     * @param array $data Query parameters to append to the URL
+     * @return bool True if request was sent successfully, false on error
+     */
+    public static function fireAndForgetGet($url, $data = []) {
         $query = http_build_query($data);
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget: $url?$query" . "\n\n", FILE_APPEND);
         $parts = parse_url($url);
@@ -146,7 +189,19 @@ class JobController extends Controller{
         return true;
     }
 
-    static function fireAndForgetPost($url, $data = []) {
+    /**
+     * Execute a fire-and-forget POST request without waiting for response
+     * Esegue una richiesta POST "fire-and-forget" senza aspettare la risposta
+     *
+     * This method sends an HTTP POST request asynchronously using raw sockets,
+     * allowing the calling process to continue without waiting for the response.
+     * Useful for triggering background processes with form data.
+     *
+     * @param string $url The target URL for the POST request
+     * @param array $data Form data to send in the POST body
+     * @return bool True if request was sent successfully, false on error
+     */
+    public static function fireAndForgetPost($url, $data = []) {
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST: $url, " . http_build_query($data) . "\n\n", FILE_APPEND);
         $parts = parse_url($url);
 

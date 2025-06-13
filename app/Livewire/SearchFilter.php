@@ -7,6 +7,17 @@ use App\Models\Card;
 use Illuminate\Support\Facades\Cache;
 
 
+/**
+ * Livewire component for advanced card search and filtering functionality
+ * Componente Livewire per funzionalità avanzate di ricerca e filtro carte
+ *
+ * This component provides comprehensive card filtering capabilities with:
+ * - Real-time search across multiple card attributes
+ * - Dynamic filter options loaded from database with caching
+ * - Support for multiple modes (page, popup, collection)
+ * - Automatic sorting using CardsController merge sort algorithm
+ * - Event-driven communication with parent components
+ */
 class SearchFilter extends Component
 {
     // Proprietà per i filtri
@@ -54,6 +65,14 @@ class SearchFilter extends Component
         'applyFiltersForPopup' => 'getFilteredCardsForPopup'
     ];
 
+    /**
+     * Initialize the component with mode and initial filters
+     * Inizializza il componente con modalità e filtri iniziali
+     *
+     * @param string $mode Component mode: 'page', 'popup', or 'collezione'
+     * @param string $initialEspansione Initial expansion filter value
+     * @return void
+     */
     public function mount($mode = 'page', $initialEspansione = '')
     {
         $this->mode = $mode;
@@ -62,6 +81,15 @@ class SearchFilter extends Component
         $this->applyFilters();
     }
 
+    /**
+     * Load all filter options from database with caching for performance
+     * Carica tutte le opzioni di filtro dal database con cache per le prestazioni
+     *
+     * This method populates all filter dropdown options and maximum values
+     * using cached queries to improve performance. Cache expires after 1 hour.
+     *
+     * @return void
+     */
     public function loadFilterOptions()
     {
         // Carica tutte le opzioni uniche per i filtri dalla cache
@@ -139,6 +167,16 @@ class SearchFilter extends Component
         $this->maxVitaDb = $maxValues['vita'];
     }
 
+    /**
+     * Apply all active filters to build the filtered card query and results
+     * Applica tutti i filtri attivi per costruire la query filtrata e i risultati
+     *
+     * This method builds a comprehensive database query based on all active filters,
+     * applies the custom sorting algorithm, and dispatches events to update the UI.
+     * Handles null values and empty filters appropriately.
+     *
+     * @return void
+     */
     public function applyFilters()
     {
         $query = Card::query();
@@ -247,6 +285,12 @@ class SearchFilter extends Component
         }
     }
 
+    /**
+     * Reset all filter values to their default state and reapply filters
+     * Reimposta tutti i valori dei filtri al loro stato predefinito e riapplica i filtri
+     *
+     * @return void
+     */
     public function resetAllFilters()
     {
         $this->nome = '';
@@ -270,13 +314,20 @@ class SearchFilter extends Component
         $this->applyFilters();
     }
 
+    /**
+     * Get filtered cards specifically for popup mode
+     * Ottiene le carte filtrate specificamente per la modalità popup
+     *
+     * @return \Illuminate\Support\Collection The filtered cards collection
+     */
     public function getFilteredCardsForPopup()
     {
         $this->applyFilters();
         return $this->filteredCards;
     }
 
-    // Metodi per aggiornare i filtri in tempo reale
+    // Real-time filter update methods - automatically trigger when properties change
+    // Metodi di aggiornamento filtri in tempo reale - si attivano automaticamente quando cambiano le proprietà
     public function updatedNome() { $this->applyFilters(); }
     public function updatedTitolo() { $this->applyFilters(); }
     public function updatedEspansione() { $this->applyFilters(); }

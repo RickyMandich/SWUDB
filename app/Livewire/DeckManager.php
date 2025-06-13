@@ -6,6 +6,17 @@ use Livewire\Component;
 use App\Models\Card;
 use Illuminate\Support\Collection;
 
+/**
+ * Livewire component for comprehensive deck management and statistics
+ * Componente Livewire per gestione completa mazzi e statistiche
+ *
+ * This component provides full deck management functionality including:
+ * - Real-time card addition/removal with validation
+ * - Comprehensive deck statistics calculation
+ * - Integration with popup card selection
+ * - Automatic statistics updates and chart refresh
+ * - Support for different card types (Leaders, Bases, Units, etc.)
+ */
 class DeckManager extends Component
 {
     public $nome;
@@ -35,6 +46,19 @@ class DeckManager extends Component
         'refreshDeck' => '$refresh'
     ];
     
+    /**
+     * Initialize the deck manager component with deck data and available cards
+     * Inizializza il componente gestore mazzo con dati del mazzo e carte disponibili
+     *
+     * @param string $nome Deck name
+     * @param string $user Deck owner username
+     * @param string $deck Deck URL identifier
+     * @param int $size Current deck size (card count)
+     * @param bool $proprietario Whether current user owns this deck
+     * @param array $carte Available cards from database
+     * @param array $mazzo Current deck composition
+     * @return void
+     */
     public function mount($nome, $user, $deck, $size, $proprietario, $carte, $mazzo)
     {
         $this->nome = $nome;
@@ -64,6 +88,12 @@ class DeckManager extends Component
         $this->calcolaStatistiche();
     }
     
+    /**
+     * Open the add card popup and prepare current deck state
+     * Apre il popup di aggiunta carte e prepara lo stato attuale del mazzo
+     *
+     * @return void
+     */
     public function openAddCardPopup()
     {
         // Prepariamo un array con le carte attualmente nel mazzo e il loro conteggio
@@ -76,6 +106,13 @@ class DeckManager extends Component
         $this->dispatch('openAddCardPopup');
     }
     
+    /**
+     * Add multiple copies of a card to the deck from popup selection
+     * Aggiunge più copie di una carta al mazzo dalla selezione popup
+     *
+     * @param array $data Array containing 'cardId' and 'copies' keys
+     * @return void
+     */
     public function addCard($data)
     {
         $cardId = $data['cardId'];
@@ -90,6 +127,13 @@ class DeckManager extends Component
         $this->refreshCardCount();
     }
     
+    /**
+     * Increase the copy count of a specific card in the deck
+     * Aumenta il numero di copie di una carta specifica nel mazzo
+     *
+     * @param string $id Card identifier in format "expansion-number"
+     * @return bool True if successful, false if max copies reached
+     */
     public function aumentaCopia($id)
     {
         $aggiungi = true;
@@ -134,6 +178,13 @@ class DeckManager extends Component
         return true;
     }
     
+    /**
+     * Decrease the copy count of a specific card in the deck
+     * Diminuisce il numero di copie di una carta specifica nel mazzo
+     *
+     * @param string $id Card identifier in format "expansion-number"
+     * @return bool True if successful, false if card not in deck
+     */
     public function diminuisciCopia($id)
     {
         if (isset($this->mazzo[$id])) {
@@ -167,6 +218,15 @@ class DeckManager extends Component
         }
     }
     
+    /**
+     * Refresh the total card count and recalculate all deck statistics
+     * Aggiorna il conteggio totale delle carte e ricalcola tutte le statistiche del mazzo
+     *
+     * This method excludes Leaders and Bases from the count and triggers
+     * chart refresh events for the frontend.
+     *
+     * @return void
+     */
     public function refreshCardCount()
     {
         // Aggiorniamo il conteggio totale delle carte nel mazzo (escludendo leader e basi)
@@ -185,6 +245,19 @@ class DeckManager extends Component
         $this->dispatch('refreshCharts');
     }
 
+    /**
+     * Calculate comprehensive deck statistics including traits, costs, types and aspects
+     * Calcola statistiche complete del mazzo inclusi tratti, costi, tipi e aspetti
+     *
+     * This complex method generates detailed statistics for the deck:
+     * - Trait analysis (both split and complete traits)
+     * - Cost-based statistics with averages for units
+     * - Type and cost distribution charts
+     * - Aspect correlation analysis
+     * - Excludes Leaders and Bases from calculations
+     *
+     * @return void
+     */
     public function calcolaStatistiche()
     {
         if (empty($this->mazzo)) {
@@ -355,6 +428,15 @@ class DeckManager extends Component
     }
 
     
+    /**
+     * Save the current deck changes by preparing form data and dispatching save event
+     * Salva le modifiche attuali del mazzo preparando i dati del form e inviando l'evento di salvataggio
+     *
+     * This method formats the additions and removals into the expected format
+     * for the backend controller and triggers the save form submission.
+     *
+     * @return void
+     */
     public function saveDeck()
     {
         // Prepariamo i dati per il form

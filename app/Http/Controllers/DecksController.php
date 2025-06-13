@@ -7,7 +7,7 @@ use App\Models\Composition;
 use App\Models\Deck;
 use App\Models\User;
 
-use DB;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Database\Query\JoinClause;
 
@@ -17,6 +17,15 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
 class DecksController extends Controller{
+    /**
+     * Display a listing of all accessible decks (user's own + public decks)
+     * Mostra l'elenco di tutti i mazzi accessibili (propri dell'utente + mazzi pubblici)
+     *
+     * This method retrieves and displays both the authenticated user's private decks
+     * and all public decks from other users, excluding collection decks.
+     *
+     * @return \Illuminate\View\View The decks index view with all accessible decks
+     */
     public function index(){
         $decks = [];
         if(auth()->check()){
@@ -37,6 +46,21 @@ class DecksController extends Controller{
         return view("mazzi.index", ["decks" => $decks]);
     }
 
+    /**
+     * Display a specific deck with its cards and management interface
+     * Mostra un mazzo specifico con le sue carte e l'interfaccia di gestione
+     *
+     * This method handles deck viewing with comprehensive validation:
+     * - Verifies user and deck existence
+     * - Redirects collection access to dedicated route
+     * - Determines ownership permissions
+     * - Retrieves deck cards with composition data
+     * - Calculates total card count and prepares data for Livewire components
+     *
+     * @param string $user The username of the deck owner
+     * @param string $deck The deck name (URL encoded with + for spaces)
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse The deck view or error/redirect
+     */
     public function show($user, $deck){
         // Verifica esistenza dell'utente
         if(User::where("name", $user)->first() == null){
@@ -96,11 +120,27 @@ class DecksController extends Controller{
         ]);
     }
 
+    /**
+     * Store/update deck composition by processing card addition/removal operations
+     * Salva/aggiorna la composizione del mazzo elaborando operazioni di aggiunta/rimozione carte
+     *
+     * This method processes bulk card operations for deck management:
+     * - Validates user and deck existence
+     * - Processes card operations in format: "operation-count" for each card
+     * - Supports "A" (Add) and "R" (Remove) operations
+     * - Handles composition creation, updates, and deletion
+     * - Provides comprehensive error handling and user feedback
+     *
+     * @param Request $request HTTP request containing 'carte' array with card operations
+     * @param string $user The username of the deck owner
+     * @param string $deck The deck name (URL encoded)
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
     public function store(Request $request, $user, $deck){
         if(User::where("name", $user)->first() == null){
-            return view("errors.406");
+            return redirect()->route("mazzi")->with("error", "Utente non trovato");
         }else if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
-            return view("errors.405");
+            return redirect()->route("mazzi")->with("error", "Mazzo non trovato");
         }else if($request->input("carte") != null){
             $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
                         ->where("codUtente", 
@@ -157,8 +197,7 @@ class DecksController extends Controller{
                         }
                     }
                 }catch(\Exception $e){
-                    $vars["error"] = "Errore durante il salvataggio del mazzo: ".$e->getMessage();
-                    return $vars;
+                    return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("error", "Errore durante il salvataggio del mazzo: ".$e->getMessage());
                 }finally{
                     $vars["msg"] = "sono arrivato alla fine";
                 }
@@ -169,6 +208,19 @@ class DecksController extends Controller{
         }
     }
 
+    /**
+     * Create a new deck for the authenticated user
+     * Crea un nuovo mazzo per l'utente autenticato
+     *
+     * This method handles deck creation with validation:
+     * - Requires user authentication
+     * - Prevents creation of decks named "Collezione" (reserved)
+     * - Checks for duplicate deck names per user
+     * - Creates deck with specified name and visibility
+     *
+     * @param Request $request HTTP request containing 'nome' and 'public' parameters
+     * @return \Illuminate\Http\RedirectResponse Redirect to deck view or error page
+     */
     public function create(Request $request){
         if(auth()->check()){
             // Impedisce la creazione di mazzi chiamati "Collezione"
@@ -190,6 +242,19 @@ class DecksController extends Controller{
         return redirect()->route("login")->with("warning", "Devi essere loggato per visualizzare questa pagina");
     }
 
+    /**
+     * Display and manage the user's personal collection as a special deck
+     * Mostra e gestisce la collezione personale dell'utente come mazzo speciale
+     *
+     * This method handles the collection management system:
+     * - Auto-creates collection deck if it doesn't exist
+     * - Retrieves all cards in the collection with composition data
+     * - Provides comprehensive statistics and debug information
+     * - Applies sorting using the CardsController merge sort algorithm
+     * - Calculates database statistics for filter optimization
+     *
+     * @return \Illuminate\View\View The collection view with cards, statistics and debug info
+     */
     public function collezione(){
         $user = Auth::user();
 
@@ -279,6 +344,19 @@ class DecksController extends Controller{
         ]);
     }
 
+    /**
+     * Update the user's collection by adding/removing/updating card quantities
+     * Aggiorna la collezione dell'utente aggiungendo/rimuovendo/modificando quantità carte
+     *
+     * This AJAX endpoint handles real-time collection updates:
+     * - Validates collection existence for authenticated user
+     * - Updates or creates composition entries for cards
+     * - Removes cards when quantity is set to 0 or less
+     * - Provides JSON response for frontend integration
+     *
+     * @param Request $request HTTP request with 'espansione', 'numero', 'copie' parameters
+     * @return \Illuminate\Http\JsonResponse JSON response indicating success or error
+     */
     public function updateCollezione(Request $request){
         $user = Auth::user();
 
@@ -326,6 +404,15 @@ class DecksController extends Controller{
         return response()->json(['success' => true]);
     }
 
+    /**
+     * API endpoint to search decks by user and name with visibility filter
+     * Endpoint API per cercare mazzi per utente e nome con filtro di visibilità
+     *
+     * @param string $user Username pattern to search for
+     * @param string $nome Deck name pattern to search for
+     * @param bool $public Whether to search only public decks
+     * @return \Illuminate\Database\Eloquent\Collection Collection of matching decks
+     */
     public function api($user, $nome, $public){
         return Deck::where("nome", "like", "%$nome%")
                 ->where("codUtente",
@@ -337,7 +424,16 @@ class DecksController extends Controller{
     }
 
     /**
-     * Esporta un mazzo in formato TXT
+     * Export a deck in official TXT format for Star Wars Unlimited
+     * Esporta un mazzo nel formato TXT ufficiale per Star Wars Unlimited
+     *
+     * This method generates a downloadable TXT file following the official format
+     * used by all Star Wars Unlimited programs. The format includes sections for
+     * Leaders, Base, Deck, and Sideboard with proper card formatting.
+     *
+     * @param string $user The username of the deck owner
+     * @param string $deck The deck name (URL encoded)
+     * @return \Illuminate\Http\Response File download response or error
      */
     public function exportTxt($user, $deck)
     {
@@ -361,7 +457,16 @@ class DecksController extends Controller{
     }
 
     /**
-     * Esporta un mazzo in formato JSON
+     * Export a deck in official JSON format for Star Wars Unlimited
+     * Esporta un mazzo nel formato JSON ufficiale per Star Wars Unlimited
+     *
+     * This method generates a downloadable JSON file following the official format
+     * used by all Star Wars Unlimited programs. The format includes metadata,
+     * leader, base, deck, and sideboard sections with proper card ID formatting.
+     *
+     * @param string $user The username of the deck owner
+     * @param string $deck The deck name (URL encoded)
+     * @return \Illuminate\Http\Response File download response or error
      */
     public function exportJson($user, $deck)
     {

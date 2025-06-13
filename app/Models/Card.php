@@ -40,9 +40,22 @@ class Card extends Model{
         'id',
         'snippet'
     ];
+    /**
+     * Get the card's formatted ID attribute (expansion-number format)
+     * Ottiene l'ID formattato della carta nel formato espansione-numero
+     *
+     * @return string The formatted card ID
+     */
     public function getIdAttribute(){
         return "$this->espansione-$this->numero";
     }
+
+    /**
+     * Get the card's snippet attribute for display purposes
+     * Ottiene il testo di anteprima della carta per la visualizzazione
+     *
+     * @return string The formatted snippet with ID, name and title (if present)
+     */
     public function getSnippetAttribute(){
         return "$this->id - ".$this->nome.(strlen($this->titolo) > 0 ? ", ". strtoupper($this->titolo) : "");
     }
@@ -66,12 +79,22 @@ class Card extends Model{
         'artista' => 'string',
         'uscita' => 'datetime:Y-m-d H:i'
     ];
+    /**
+     * Get the fillable attributes array
+     * Ottiene l'array degli attributi che possono essere assegnati in massa
+     *
+     * @return array The fillable attributes
+     */
     public function getFillable(){
         return $this->fillable;
     }
 
     /**
-     * Invalida la cache delle carte quando viene salvata una carta
+     * Boot the model and register event listeners for cache invalidation
+     * Avvia il modello e registra i listener per invalidare la cache automaticamente
+     *
+     * This method automatically clears the cache when cards are saved or deleted
+     * to ensure data consistency across the application.
      */
     protected static function booted()
     {
@@ -85,7 +108,13 @@ class Card extends Model{
     }
 
     /**
-     * Metodo statico per invalidare manualmente la cache delle carte
+     * Static method to manually invalidate all card-related cache entries
+     * Metodo statico per invalidare manualmente tutte le cache relative alle carte
+     *
+     * This method clears all cached data related to cards including popup data
+     * and filter options. Use this when you need to force cache refresh.
+     *
+     * @return void
      */
     public static function clearCache()
     {

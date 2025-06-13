@@ -17,7 +17,15 @@ use Illuminate\Support\Facades\Mail;
 class CardsController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of cards with optional filtering by expansion and name
+     * Mostra l'elenco delle carte con filtri opzionali per espansione e nome
+     *
+     * This method handles the main cards listing page with search functionality.
+     * It supports filtering by expansion code and card name, with automatic sorting.
+     *
+     * @param Request $request The HTTP request containing search parameters
+     * @param string|null $espansione Optional expansion code to filter by
+     * @return \Illuminate\View\View The cards index view with filtered results
      */
     public function index(Request $request, ?string $espansione = ""){
         $espansione = strtoupper($espansione);
@@ -44,6 +52,19 @@ class CardsController extends Controller
         ]);
     }
 
+    /**
+     * Compare two specific cards and return detailed comparison output
+     * Confronta due carte specifiche e restituisce un output dettagliato del confronto
+     *
+     * This method is primarily used for debugging the card sorting algorithm.
+     * It retrieves two cards and runs them through the comparison logic with verbose output.
+     *
+     * @param string $espansione1 First card's expansion code
+     * @param int $numero1 First card's number
+     * @param string $espansione2 Second card's expansion code
+     * @param int $numero2 Second card's number
+     * @return string Debug output showing comparison details or error message
+     */
     public function compare($espansione1, $numero1, $espansione2, $numero2) {
         if(isset($espansione1) and isset($numero1) and isset($espansione2) and isset($numero2)){
             $cards = Card::where(function($query) use ($espansione1, $numero1) {
@@ -56,21 +77,44 @@ class CardsController extends Controller
             ob_start();
             CardsController::mergeSort($cards, true);
             $output = ob_get_clean();
-            return var_dump($output);
+            return view("carte.update", ["output" => $output]);
         }else{
             return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
         }
     }
 
+    /**
+     * API endpoint to retrieve a single card by expansion and number
+     * Endpoint API per recuperare una singola carta tramite espansione e numero
+     *
+     * @param string $espansione The expansion code
+     * @param int $numero The card number
+     * @return \App\Models\Card|null The card model or null if not found
+     */
     public function api($espansione, $numero){
         return Card::where('numero', $numero)->where('espansione', $espansione)->first();
     }
 
+    /**
+     * API endpoint to retrieve all cards from a specific expansion with count
+     * Endpoint API per recuperare tutte le carte di una specifica espansione con conteggio
+     *
+     * @param string $espansione The expansion code
+     * @return array Array containing [count, collection] of cards
+     */
     public function apis($espansione){
         $ret = Card::where('espansione', $espansione)->get();
         return [$ret->count(), $ret];
     }
 
+    /**
+     * Display a single card with navigation to previous/next cards
+     * Mostra una singola carta con navigazione verso carte precedenti/successive
+     *
+     * @param string $espansione The expansion code
+     * @param int $numero The card number
+     * @return \Illuminate\View\View The card detail view with navigation
+     */
     public function show($espansione, $numero){
         $carta = Card::where('numero', $numero)->where('espansione', $espansione)->first();
         $next = Card::where('numero', '>', $numero)->where('espansione', $espansione)->orderBy('numero')->first();
@@ -78,6 +122,19 @@ class CardsController extends Controller
         return view('carte.show', ["carta" => $carta, "numero" => $numero, "espansione" => $espansione, "next" => $next, "back" => $back]);
     }
     
+    /**
+     * Start the card import process from external JSON source
+     * Avvia il processo di importazione delle carte da sorgente JSON esterna
+     *
+     * This method handles the complete card import workflow:
+     * 1. Fetches card data from external JSON API
+     * 2. Compares with existing database cards
+     * 3. Identifies new cards to import
+     * 4. Saves them to temporary file and triggers batch processing
+     * 5. Sends email notifications to all users about new cards
+     *
+     * @return \Illuminate\View\View The update result view with import statistics
+     */
     public function startImport(){
         MessageCreated::dispatch("Inizio Update");
         $url = 'http://swudb.altervista.org/collezione.json';
@@ -111,6 +168,18 @@ class CardsController extends Controller
         return view("carte.update", ["result" => true, "count" => count($toInsert), "data" => $toInsert]);
     }
 
+    /**
+     * Process card import in batches to avoid timeout and memory issues
+     * Elabora l'importazione delle carte in lotti per evitare timeout e problemi di memoria
+     *
+     * This method handles the batch processing of card imports by:
+     * 1. Reading the next batch position from request
+     * 2. Triggering the dispatch of current batch
+     * 3. Recursively calling itself for next batch or completing import
+     *
+     * @param Request $request HTTP request containing 'next' parameter for batch position
+     * @return void Outputs status messages directly
+     */
     public function sendBatch(Request $request){
         $next = intval($request->input("next", 0));
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
@@ -133,6 +202,16 @@ class CardsController extends Controller
         }
     }
 
+    /**
+     * Dispatch individual card import jobs for a specific batch
+     * Invia i job individuali di importazione carte per un lotto specifico
+     *
+     * This method takes a slice of cards from the import queue and creates
+     * individual background jobs for each card to be processed asynchronously.
+     *
+     * @param Request $request HTTP request containing 'start' and 'batchSize' parameters
+     * @return \Illuminate\Http\JsonResponse JSON response with next batch info or completion status
+     */
     public function dispatchBatch(Request $request){
         $cards = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
         $start = intval($request->input("start", 0));
@@ -157,12 +236,17 @@ class CardsController extends Controller
     }
 
     /**
-     * control if the card is contained by the array
-     * @param mixed $array
-     * @param mixed $element
-     * @return bool
+     * Check if a card is already contained in the given array
+     * Controlla se una carta è già contenuta nell'array fornito
+     *
+     * This method compares cards by expansion and number to determine if
+     * a card already exists in the database array during import process.
+     *
+     * @param array $array Array of existing cards from database
+     * @param array $element Card element to check for existence
+     * @return bool True if card exists, false otherwise
      */
-    static function contain($array, $element){
+    public static function contain($array, $element){
         foreach($array as $el){
             if($el["espansione"] === $element["espansione"] && $el["numero"] === $element["numero"]){
                 return true;
@@ -171,7 +255,27 @@ class CardsController extends Controller
         return false;
     }
 
-    static function compareElements(&$el1, &$el2, $verbose) {
+    /**
+     * Compare two card elements for sorting purposes with detailed priority rules
+     * Confronta due elementi carta per l'ordinamento con regole di priorità dettagliate
+     *
+     * This is a complex comparison function that sorts cards by multiple criteria in order:
+     * 1. User code (codUtente) - for deck ownership
+     * 2. Deck name (mazzo) - for deck grouping
+     * 3. Generic type (Leader, Base vs others)
+     * 4. Primary aspect (Blu, Verde, Rosso, Giallo, Nero, Bianco)
+     * 5. Secondary aspect (Nero, Bianco, same as primary, others)
+     * 6. Specific type (Unità, Miglioria, Evento)
+     * 7. Cost (costo) - ascending order, except for Leaders
+     * 8. Release date (uscita) - for different expansions
+     * 9. Card number (numero) - final tie-breaker
+     *
+     * @param array &$el1 First card element (passed by reference)
+     * @param array &$el2 Second card element (passed by reference)
+     * @param bool $verbose Whether to output detailed comparison steps
+     * @return int -1 if el1 < el2, 1 if el1 > el2, 0 if equal
+     */
+    public static function compareElements(&$el1, &$el2, $verbose) {
         //definisco l'ordine dei mazzi
         $mazzoOrder = [];
         $result = Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
@@ -432,7 +536,22 @@ class CardsController extends Controller
         return 0;
     }
 
-    static function mergeSort(&$array, $verbose = false) {
+    /**
+     * Recursive merge sort implementation for card collections
+     * Implementazione ricorsiva del merge sort per collezioni di carte
+     *
+     * This method implements the merge sort algorithm specifically designed for
+     * Laravel collections. It uses the compareElements method to determine
+     * the sorting order based on complex card comparison rules.
+     *
+     * The algorithm divides the collection recursively until single elements,
+     * then merges them back in sorted order using the custom comparison logic.
+     *
+     * @param \Illuminate\Support\Collection &$array Collection of cards to sort (passed by reference)
+     * @param bool $verbose Whether to enable verbose output during comparison
+     * @return \Illuminate\Support\Collection The sorted collection
+     */
+    public static function mergeSort(&$array, $verbose = false) {
         // Caso base: se la collezione ha 0 o 1 elemento, è già ordinata
         if ($array->count() <= 1) {
             return $array;

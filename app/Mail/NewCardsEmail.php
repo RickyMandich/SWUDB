@@ -9,14 +9,24 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Address;
 
+/**
+ * Mailable class for sending new cards notification emails
+ * Classe Mailable per inviare email di notifica nuove carte
+ *
+ * This email is sent to all registered users when new cards are imported
+ * into the system, providing them with a list of newly available cards.
+ */
 class NewCardsEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $message;
-    
+
     /**
-     * Create a new message instance.
+     * Create a new message instance
+     * Crea una nuova istanza del messaggio
+     *
+     * @param string $message The formatted message containing new cards information
      */
     public function __construct($message)
     {
@@ -24,7 +34,10 @@ class NewCardsEmail extends Mailable
     }
 
     /**
-     * Get the message envelope.
+     * Get the message envelope with subject and sender information
+     * Ottiene la busta del messaggio con oggetto e informazioni mittente
+     *
+     * @return Envelope The email envelope configuration
      */
     public function envelope(): Envelope
     {
@@ -34,7 +47,10 @@ class NewCardsEmail extends Mailable
     }
 
     /**
-     * Get the message content definition.
+     * Get the message content definition with view and data
+     * Ottiene la definizione del contenuto del messaggio con vista e dati
+     *
+     * @return Content The email content configuration
      */
     public function content(): Content
     {
@@ -47,9 +63,10 @@ class NewCardsEmail extends Mailable
     }
 
     /**
-     * Get the attachments for the message.
+     * Get the attachments for the message (none for this email type)
+     * Ottiene gli allegati per il messaggio (nessuno per questo tipo di email)
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, \Illuminate\Mail\Mailables\Attachment> Empty array as no attachments
      */
     public function attachments(): array
     {
