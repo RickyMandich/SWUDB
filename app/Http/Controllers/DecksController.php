@@ -586,4 +586,480 @@ class DecksController extends Controller{
 
         return false;
     }
+
+    /**
+     * Mostra la pagina di importazione mazzi
+     */
+    public function showImport()
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('warning', 'Devi essere loggato per importare mazzi');
+        }
+
+        return view('mazzi.import');
+    }
+
+    /**
+     * Importa un mazzo da file
+     */
+    public function importFromFile(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Non autorizzato'], 401);
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:txt,json|max:2048',
+            'deck_name' => 'required|string|max:500',
+            'public' => 'boolean'
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $content = file_get_contents($file->getRealPath());
+            $extension = $file->getClientOriginalExtension();
+
+            $result = $this->processDeckImport($content, $extension, $request->input('deck_name'), $request->boolean('public'));
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Mazzo importato con successo',
+                    'deck_url' => route('mazzo', ['user' => Auth::user()->name, 'mazzo' => str_replace(' ', '+', $result['deck_name'])])
+                ]);
+            } else {
+                return response()->json(['error' => $result['error']], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Errore durante l\'importazione: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Importa un mazzo da URL
+     */
+    public function importFromUrl(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'Non autorizzato'], 401);
+        }
+
+        $request->validate([
+            'url' => 'required|url',
+            'deck_name' => 'required|string|max:500',
+            'public' => 'boolean'
+        ]);
+
+        try {
+            $url = $request->input('url');
+
+            // Controlla se è un URL di SWUDB e convertilo all'API
+            $apiUrl = $this->convertSwudbUrl($url);
+
+            // Scarica il contenuto dall'URL
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'user_agent' => 'UnlimitedDB.net Deck Importer'
+                ]
+            ]);
+
+            $content = file_get_contents($apiUrl, false, $context);
+
+            if ($content === false) {
+                return response()->json(['error' => 'Impossibile scaricare il file dall\'URL fornito'], 400);
+            }
+
+            // Determina il formato dal contenuto o dall'URL
+            $extension = $this->detectFileFormat($content, $apiUrl);
+
+            // Se è formato SWUDB, convertilo al formato ufficiale
+            if ($this->isSwudbFormat($content)) {
+                $content = $this->convertSwudbToOfficial($content);
+                $extension = 'json';
+            }
+
+            $result = $this->processDeckImport($content, $extension, $request->input('deck_name'), $request->boolean('public'));
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Mazzo importato con successo',
+                    'deck_url' => route('mazzo', ['user' => Auth::user()->name, 'mazzo' => str_replace(' ', '+', $result['deck_name'])])
+                ]);
+            } else {
+                return response()->json(['error' => $result['error']], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Errore durante l\'importazione: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Processa l'importazione del mazzo
+     */
+    private function processDeckImport($content, $format, $deckName, $isPublic)
+    {
+        try {
+            // Verifica che il mazzo non esista già
+            if (Deck::where('nome', $deckName)->where('codUtente', Auth::user()->id)->exists()) {
+                return ['success' => false, 'error' => 'Un mazzo con questo nome esiste già'];
+            }
+
+            // Impedisce la creazione di mazzi chiamati "Collezione"
+            if ($deckName === "Collezione") {
+                return ['success' => false, 'error' => 'Il nome "Collezione" è riservato'];
+            }
+
+            // Parse del contenuto in base al formato
+            if ($format === 'json') {
+                $parsedData = $this->parseJsonDeck($content);
+            } else {
+                $parsedData = $this->parseTxtDeck($content);
+            }
+
+            if (!$parsedData['success']) {
+                return $parsedData;
+            }
+
+            // Crea il mazzo
+            $deck = new Deck();
+            $deck->nome = $deckName;
+            $deck->public = $isPublic;
+            $deck->codUtente = Auth::user()->id;
+            $deck->save();
+
+            // Aggiunge le carte al mazzo
+            $addedCards = 0;
+            $errors = [];
+
+            foreach ($parsedData['cards'] as $cardData) {
+                $result = $this->addCardToDeck($deck->id, $cardData);
+                if ($result['success']) {
+                    $addedCards++;
+                } else {
+                    $errors[] = $result['error'];
+                }
+            }
+
+            if ($addedCards === 0) {
+                // Se nessuna carta è stata aggiunta, elimina il mazzo
+                $deck->delete();
+                return ['success' => false, 'error' => 'Nessuna carta valida trovata nel file. Errori: ' . implode(', ', $errors)];
+            }
+
+            return [
+                'success' => true,
+                'deck_name' => $deckName,
+                'added_cards' => $addedCards,
+                'errors' => $errors
+            ];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Errore durante il processing: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Rileva il formato del file dal contenuto o URL
+     */
+    private function detectFileFormat($content, $url = '')
+    {
+        // Prova a decodificare come JSON
+        $jsonData = json_decode($content, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($jsonData)) {
+            return 'json';
+        }
+
+        // Controlla l'estensione dell'URL
+        if (str_ends_with(strtolower($url), '.json')) {
+            return 'json';
+        }
+
+        // Default a TXT
+        return 'txt';
+    }
+
+    /**
+     * Parse di un mazzo in formato JSON
+     */
+    private function parseJsonDeck($content)
+    {
+        $data = json_decode($content, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return ['success' => false, 'error' => 'File JSON non valido'];
+        }
+
+        $cards = [];
+
+        try {
+            // Parse leader
+            if (isset($data['leader'])) {
+                $cards[] = $this->parseCardFromId($data['leader']['id'], $data['leader']['count']);
+            }
+
+            // Parse base
+            if (isset($data['base'])) {
+                $cards[] = $this->parseCardFromId($data['base']['id'], $data['base']['count']);
+            }
+
+            // Parse deck
+            if (isset($data['deck']) && is_array($data['deck'])) {
+                foreach ($data['deck'] as $card) {
+                    $cards[] = $this->parseCardFromId($card['id'], $card['count']);
+                }
+            }
+
+            // Parse sideboard (se presente)
+            if (isset($data['sideboard']) && is_array($data['sideboard'])) {
+                foreach ($data['sideboard'] as $card) {
+                    $cards[] = $this->parseCardFromId($card['id'], $card['count']);
+                }
+            }
+
+            // Filtra le carte non valide
+            $validCards = array_filter($cards, function($card) {
+                return $card !== null;
+            });
+
+            return ['success' => true, 'cards' => $validCards];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Errore nel parsing JSON: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Parse di un mazzo in formato TXT
+     */
+    private function parseTxtDeck($content)
+    {
+        $lines = explode("\n", $content);
+        $cards = [];
+        $currentSection = null;
+
+        try {
+            foreach ($lines as $line) {
+                $line = trim($line);
+
+                // Salta righe vuote
+                if (empty($line)) {
+                    continue;
+                }
+
+                // Identifica le sezioni
+                if (in_array($line, ['Leaders', 'Base', 'Deck', 'Sideboard'])) {
+                    $currentSection = $line;
+                    continue;
+                }
+
+                // Parse delle carte
+                if ($currentSection && preg_match('/^(\d+)\s*\|\s*([^|]+)(?:\s*\|\s*(.+))?$/', $line, $matches)) {
+                    $count = (int) $matches[1];
+                    $name = trim($matches[2]);
+                    $title = isset($matches[3]) ? trim($matches[3]) : '';
+
+                    $card = $this->findCardByNameAndTitle($name, $title);
+                    if ($card) {
+                        $cards[] = [
+                            'espansione' => $card->espansione,
+                            'numero' => $card->numero,
+                            'count' => $count
+                        ];
+                    }
+                }
+            }
+
+            return ['success' => true, 'cards' => $cards];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Errore nel parsing TXT: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Parse di una carta dall'ID formato {espansione}_{numero}
+     */
+    private function parseCardFromId($cardId, $count)
+    {
+        if (preg_match('/^([A-Z0-9]+)_(\d+)$/', $cardId, $matches)) {
+            $espansione = $matches[1];
+            $numero = (int) $matches[2];
+
+            // Verifica che la carta esista nel database
+            $card = Card::where('espansione', $espansione)->where('numero', $numero)->first();
+            if ($card) {
+                return [
+                    'espansione' => $espansione,
+                    'numero' => $numero,
+                    'count' => (int) $count
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Trova una carta per nome e titolo
+     */
+    private function findCardByNameAndTitle($name, $title = '')
+    {
+        $query = Card::where('nome', $name);
+
+        if (!empty($title)) {
+            $query->where('titolo', $title);
+        } else {
+            $query->where(function($q) {
+                $q->where('titolo', '')->orWhereNull('titolo');
+            });
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Aggiunge una carta al mazzo
+     */
+    private function addCardToDeck($deckId, $cardData)
+    {
+        try {
+            $espansione = $cardData['espansione'];
+            $numero = $cardData['numero'];
+            $count = $cardData['count'];
+
+            // Verifica che la carta esista
+            $card = Card::where('espansione', $espansione)->where('numero', $numero)->first();
+            if (!$card) {
+                return ['success' => false, 'error' => "Carta {$espansione}-{$numero} non trovata"];
+            }
+
+            // Verifica il limite di copie
+            if ($count > $card->maxCopie) {
+                $count = $card->maxCopie;
+            }
+
+            // Crea o aggiorna la composizione
+            $compositionId = $deckId . '-' . $espansione . '-' . $numero;
+
+            $composition = Composition::where('id', $compositionId)->first();
+            if ($composition) {
+                $composition->copie += $count;
+                if ($composition->copie > $card->maxCopie) {
+                    $composition->copie = $card->maxCopie;
+                }
+                $composition->save();
+            } else {
+                $composition = new Composition();
+                $composition->id = $compositionId;
+                $composition->idMazzo = $deckId;
+                $composition->espansione = $espansione;
+                $composition->numero = $numero;
+                $composition->copie = $count;
+                $composition->save();
+            }
+
+            return ['success' => true];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Errore aggiunta carta: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Converte un URL di SWUDB in URL API
+     */
+    private function convertSwudbUrl($url)
+    {
+        // Pattern per URL SWUDB: https://swudb.com/deck/{deckId}
+        if (preg_match('/swudb\.com\/deck\/([a-zA-Z0-9]+)/', $url, $matches)) {
+            $deckId = $matches[1];
+            return "https://swudb.com/api/deck/{$deckId}";
+        }
+
+        return $url;
+    }
+
+    /**
+     * Verifica se il contenuto è in formato SWUDB
+     */
+    private function isSwudbFormat($content)
+    {
+        $data = json_decode($content, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return false;
+        }
+
+        // Controlla se ha la struttura tipica di SWUDB
+        return isset($data['deckId']) && isset($data['leader']) && isset($data['shuffledDeck']);
+    }
+
+    /**
+     * Converte il formato SWUDB al formato ufficiale
+     */
+    private function convertSwudbToOfficial($content)
+    {
+        $swudbData = json_decode($content, true);
+
+        $officialFormat = [
+            'metadata' => [
+                'name' => $swudbData['deckName'] ?? 'Imported Deck',
+                'author' => $swudbData['authorName'] ?? 'Unknown'
+            ]
+        ];
+
+        // Converte leader
+        if (isset($swudbData['leader'])) {
+            $officialFormat['leader'] = [
+                'id' => $swudbData['leader']['defaultExpansionAbbreviation'] . '_' . $swudbData['leader']['defaultCardNumber'],
+                'count' => 1
+            ];
+        }
+
+        // Converte base
+        if (isset($swudbData['base'])) {
+            $officialFormat['base'] = [
+                'id' => $swudbData['base']['defaultExpansionAbbreviation'] . '_' . $swudbData['base']['defaultCardNumber'],
+                'count' => 1
+            ];
+        }
+
+        // Converte deck
+        $deck = [];
+        if (isset($swudbData['shuffledDeck'])) {
+            foreach ($swudbData['shuffledDeck'] as $cardEntry) {
+                if ($cardEntry['count'] > 0) { // Solo carte nel deck principale
+                    $deck[] = [
+                        'id' => $cardEntry['card']['defaultExpansionAbbreviation'] . '_' . $cardEntry['card']['defaultCardNumber'],
+                        'count' => $cardEntry['count']
+                    ];
+                }
+            }
+        }
+
+        if (!empty($deck)) {
+            $officialFormat['deck'] = $deck;
+        }
+
+        // Converte sideboard (se presente)
+        $sideboard = [];
+        if (isset($swudbData['shuffledDeck'])) {
+            foreach ($swudbData['shuffledDeck'] as $cardEntry) {
+                if ($cardEntry['sideboardCount'] > 0) {
+                    $sideboard[] = [
+                        'id' => $cardEntry['card']['defaultExpansionAbbreviation'] . '_' . $cardEntry['card']['defaultCardNumber'],
+                        'count' => $cardEntry['sideboardCount']
+                    ];
+                }
+            }
+        }
+
+        if (!empty($sideboard)) {
+            $officialFormat['sideboard'] = $sideboard;
+        }
+
+        return json_encode($officialFormat, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
 }

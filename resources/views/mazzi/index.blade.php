@@ -1,10 +1,14 @@
 @extends('layouts.app')
 @section('content')
     @if(Auth::check())
-        <button class="btn btn-primary" onclick="openCreaMazzo()">
-            Crea Mazzo
-        </button>
-        <br>
+        <div class="mb-3">
+            <button class="btn btn-primary me-2" onclick="openCreaMazzo()">
+                <i class="fas fa-plus me-1"></i>Crea Mazzo
+            </button>
+            <a href="{{ route('mazzi.import') }}" class="btn btn-outline-primary">
+                <i class="fas fa-file-import me-1"></i>Importa Mazzo
+            </a>
+        </div>
     @endif
     @if(count($decks) != 0)
         <ul>
