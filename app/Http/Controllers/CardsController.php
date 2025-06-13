@@ -79,6 +79,7 @@ class CardsController extends Controller
     }
     
     public function startImport(){
+        MessageCreated::dispatch("Inizio Update");
         $url = 'http://swudb.altervista.org/collezione.json';
         $json = file_get_contents($url);
         $fullSet = json_decode($json, true);
