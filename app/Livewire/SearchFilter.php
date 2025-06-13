@@ -60,6 +60,9 @@ class SearchFilter extends Component
     // Modalità di utilizzo (per la pagina principale, popup o collezione)
     public $mode = 'page'; // 'page', 'popup' o 'collezione'
 
+    // Stato dei filtri avanzati (aperto/chiuso)
+    public $advancedFiltersOpen = false;
+
     protected $listeners = [
         'resetFilters' => 'resetAllFilters',
         'applyFiltersForPopup' => 'getFilteredCardsForPopup'
@@ -345,6 +348,17 @@ class SearchFilter extends Component
     public function updatedArena() { $this->applyFilters(); }
     public function updatedUnica() { $this->applyFilters(); }
     public function updatedArtista() { $this->applyFilters(); }
+
+    /**
+     * Toggle the advanced filters section open/closed state
+     * Attiva/disattiva lo stato aperto/chiuso della sezione filtri avanzati
+     *
+     * @return void
+     */
+    public function toggleAdvancedFilters()
+    {
+        $this->advancedFiltersOpen = !$this->advancedFiltersOpen;
+    }
 
     public function render()
     {

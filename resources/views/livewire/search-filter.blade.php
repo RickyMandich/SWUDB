@@ -107,11 +107,12 @@
 
                 <!-- Filtri avanzati (collassabili) -->
                 <div class="mt-4">
-                    <button class="btn btn-outline-secondary btn-sm mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                    <button wire:click="toggleAdvancedFilters" class="btn btn-outline-secondary btn-sm mb-3" type="button">
                         <i class="fas fa-cogs me-1"></i>Filtri Avanzati
+                        <i class="fas {{ $advancedFiltersOpen ? 'fa-chevron-up' : 'fa-chevron-down' }} ms-1"></i>
                     </button>
 
-                    <div class="collapse" id="advancedFilters">
+                    <div class="collapse {{ $advancedFiltersOpen ? 'show' : '' }}" id="advancedFilters">
                         <div class="row g-3">
                             <!-- Costo -->
                             <div class="col-md-6">
@@ -236,5 +237,15 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleIcon.classList.add('fa-chevron-right');
         });
     }
+
+    // Gestione ESC per chiudere i filtri avanzati
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const advancedFilters = document.getElementById('advancedFilters');
+            if (advancedFilters && advancedFilters.classList.contains('show')) {
+                @this.call('toggleAdvancedFilters');
+            }
+        }
+    });
 });
 </script>
