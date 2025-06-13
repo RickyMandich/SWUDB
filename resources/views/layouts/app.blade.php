@@ -184,7 +184,7 @@
                             <br>
                             {{ __("custom.documentazione") }}
                             <small class="text-muted text-uppercase">
-                                <a href="{{ route('documentazione') }}">documentazione</a>
+                                <a href="{{ route('documentazione') }}">{{__("custom.Documentazione")}}</a>
                             </small>
                         </p>
                     </div>
