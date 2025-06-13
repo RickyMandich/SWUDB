@@ -592,6 +592,14 @@ class DecksController extends Controller{
      */
     public function showImport()
     {
+        // Debug: log che showImport è stato chiamato
+        \Log::info('showImport called', [
+            'method' => request()->method(),
+            'url' => request()->url(),
+            'user_id' => Auth::id(),
+            'is_authenticated' => Auth::check()
+        ]);
+
         if (!Auth::check()) {
             return redirect()->route('login')->with('warning', 'Devi essere loggato per importare mazzi');
         }
@@ -640,7 +648,17 @@ class DecksController extends Controller{
      */
     public function importFromUrl(Request $request)
     {
+        // Debug: log che il metodo è stato chiamato
+        \Log::info('importFromUrl called', [
+            'method' => $request->method(),
+            'url' => $request->url(),
+            'user_id' => Auth::id(),
+            'is_authenticated' => Auth::check(),
+            'input' => $request->all()
+        ]);
+
         if (!Auth::check()) {
+            \Log::warning('User not authenticated for import');
             return response()->json(['error' => 'Non autorizzato'], 401);
         }
 
