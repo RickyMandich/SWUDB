@@ -654,7 +654,10 @@ class DecksController extends Controller{
             'url' => $request->url(),
             'user_id' => Auth::id(),
             'is_authenticated' => Auth::check(),
-            'input' => $request->all()
+            'input' => $request->all(),
+            'public_input' => $request->input('public'),
+            'public_boolean' => $request->boolean('public'),
+            'has_public' => $request->has('public')
         ]);
 
         if (!Auth::check()) {
@@ -748,6 +751,15 @@ class DecksController extends Controller{
     private function processDeckImport($content, $format, $deckName, $isPublic)
     {
         try {
+            // Debug: log dei parametri ricevuti
+            \Log::info('processDeckImport called', [
+                'deck_name' => $deckName,
+                'is_public' => $isPublic,
+                'is_public_type' => gettype($isPublic),
+                'format' => $format,
+                'content_length' => strlen($content)
+            ]);
+
             // Verifica che il mazzo non esista già
             if (Deck::where('nome', $deckName)->where('codUtente', Auth::user()->id)->exists()) {
                 return ['success' => false, 'error' => 'Un mazzo con questo nome esiste già'];
@@ -774,7 +786,24 @@ class DecksController extends Controller{
             $deck->nome = $deckName;
             $deck->public = $isPublic;
             $deck->codUtente = Auth::user()->id;
+
+            // Debug: log prima del salvataggio
+            \Log::info('Creating deck', [
+                'nome' => $deck->nome,
+                'public' => $deck->public,
+                'public_type' => gettype($deck->public),
+                'codUtente' => $deck->codUtente
+            ]);
+
             $deck->save();
+
+            // Debug: log dopo il salvataggio
+            \Log::info('Deck created', [
+                'id' => $deck->id,
+                'nome' => $deck->nome,
+                'public' => $deck->public,
+                'public_from_db' => $deck->fresh()->public
+            ]);
 
             // Aggiunge le carte al mazzo
             $addedCards = 0;
