@@ -85,6 +85,10 @@ Route::get('/docs/privacy', function(){
     return view("docs.privacy");
 })->name("docs.privacy");
 
+Route::get('/documentazione', function(){
+    return view("documentazione");
+})->name("documentazione");
+
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 
 Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");
