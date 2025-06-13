@@ -24,7 +24,7 @@
 - ~~sistemare l'esistenza dei link next/back nelle carte~~
 - ~~creazione di mail alias `info@unlimiteddb.net`~~
 - ~~filtri di ricerca~~
-    - fare in modo che se io apro i filtri avanzati e modifico qualcosa nel caricamento non venga richiusa in automatico la sezione filtri avanzati
+    - ~~fare in modo che se io apro i filtri avanzati e modifico qualcosa nel caricamento non venga richiusa in automatico la sezione filtri avanzati~~
 - ~~aggiustare il popup di aggiunta carte~~
 - ~~trasformazione delle analisi delle carte in grafici~~
 - ~~gestione della collezione~~
