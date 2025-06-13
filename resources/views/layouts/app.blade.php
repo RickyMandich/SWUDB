@@ -158,9 +158,6 @@
                             {{ __("custom.lowerFooter") }}
                             <small class="text-muted text-uppercase">
                                 <a href="/docs/tos">Terms of Service</a>
-                            </small> -
-                            <small class="text-muted text-uppercase">
-                                <a href="{{ route('documentazione') }}">Documentazione</a>
                             </small>.
                         </p>
                     </div>
@@ -184,6 +181,10 @@
                     <div class="col-6 text-center">
                         <p>
                             {!! __("custom.contactMail") !!}
+                            <br>
+                            <small class="text-muted text-uppercase">
+                                <a href="{{ route('documentazione') }}">documentazione</a>
+                            </small>
                         </p>
                     </div>
                 </div>
