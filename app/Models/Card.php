@@ -3,6 +3,7 @@ namespace App\Models;
 
 use App\Events\MessageCreated;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class Card extends Model{
@@ -67,5 +68,38 @@ class Card extends Model{
     ];
     public function getFillable(){
         return $this->fillable;
+    }
+
+    /**
+     * Invalida la cache delle carte quando viene salvata una carta
+     */
+    protected static function booted()
+    {
+        static::saved(function () {
+            self::clearCache();
+        });
+
+        static::deleted(function () {
+            self::clearCache();
+        });
+    }
+
+    /**
+     * Metodo statico per invalidare manualmente la cache delle carte
+     */
+    public static function clearCache()
+    {
+        // Cache del popup
+        Cache::forget('cards_popup_basic');
+
+        // Cache dei filtri
+        Cache::forget('cards_filter_espansioni');
+        Cache::forget('cards_filter_tipi');
+        Cache::forget('cards_filter_aspetti_primari');
+        Cache::forget('cards_filter_aspetti_secondari');
+        Cache::forget('cards_filter_rarita');
+        Cache::forget('cards_filter_arene');
+        Cache::forget('cards_filter_artisti');
+        Cache::forget('cards_filter_max_values');
     }
 }

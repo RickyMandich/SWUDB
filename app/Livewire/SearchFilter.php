@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Card;
+use Illuminate\Support\Facades\Cache;
 
 
 class SearchFilter extends Component
@@ -63,57 +64,79 @@ class SearchFilter extends Component
 
     public function loadFilterOptions()
     {
-        // Carica tutte le opzioni uniche per i filtri
-        $this->espansioni = Card::select('espansione')
-            ->selectRaw('MIN(uscita) as prima_uscita')
-            ->groupBy('espansione')
-            ->orderBy('prima_uscita')
-            ->pluck('espansione')
-            ->toArray();
+        // Carica tutte le opzioni uniche per i filtri dalla cache
+        $this->espansioni = Cache::remember('cards_filter_espansioni', 3600, function () {
+            return Card::select('espansione')
+                ->selectRaw('MIN(uscita) as prima_uscita')
+                ->groupBy('espansione')
+                ->orderBy('prima_uscita')
+                ->pluck('espansione')
+                ->toArray();
+        });
 
-        $this->tipi = Card::select('tipo')
-            ->distinct()
-            ->orderBy('tipo')
-            ->pluck('tipo')
-            ->toArray();
+        $this->tipi = Cache::remember('cards_filter_tipi', 3600, function () {
+            return Card::select('tipo')
+                ->distinct()
+                ->orderBy('tipo')
+                ->pluck('tipo')
+                ->toArray();
+        });
 
-        $this->aspettiPrimari = Card::select('aspettoPrimario')
-            ->distinct()
-            ->whereNotNull('aspettoPrimario')
-            ->orderBy('aspettoPrimario')
-            ->pluck('aspettoPrimario')
-            ->toArray();
+        $this->aspettiPrimari = Cache::remember('cards_filter_aspetti_primari', 3600, function () {
+            return Card::select('aspettoPrimario')
+                ->distinct()
+                ->whereNotNull('aspettoPrimario')
+                ->orderBy('aspettoPrimario')
+                ->pluck('aspettoPrimario')
+                ->toArray();
+        });
 
-        $this->aspettiSecondari = Card::select('aspettoSecondario')
-            ->distinct()
-            ->whereNotNull('aspettoSecondario')
-            ->orderBy('aspettoSecondario')
-            ->pluck('aspettoSecondario')
-            ->toArray();
+        $this->aspettiSecondari = Cache::remember('cards_filter_aspetti_secondari', 3600, function () {
+            return Card::select('aspettoSecondario')
+                ->distinct()
+                ->whereNotNull('aspettoSecondario')
+                ->orderBy('aspettoSecondario')
+                ->pluck('aspettoSecondario')
+                ->toArray();
+        });
 
-        $this->rarita_options = Card::select('rarita')
-            ->distinct()
-            ->orderBy('rarita')
-            ->pluck('rarita')
-            ->toArray();
+        $this->rarita_options = Cache::remember('cards_filter_rarita', 3600, function () {
+            return Card::select('rarita')
+                ->distinct()
+                ->orderBy('rarita')
+                ->pluck('rarita')
+                ->toArray();
+        });
 
-        $this->arene = Card::select('arena')
-            ->distinct()
-            ->whereNotNull('arena')
-            ->orderBy('arena')
-            ->pluck('arena')
-            ->toArray();
+        $this->arene = Cache::remember('cards_filter_arene', 3600, function () {
+            return Card::select('arena')
+                ->distinct()
+                ->whereNotNull('arena')
+                ->orderBy('arena')
+                ->pluck('arena')
+                ->toArray();
+        });
 
-        $this->artisti = Card::select('artista')
-            ->distinct()
-            ->orderBy('artista')
-            ->pluck('artista')
-            ->toArray();
+        $this->artisti = Cache::remember('cards_filter_artisti', 3600, function () {
+            return Card::select('artista')
+                ->distinct()
+                ->orderBy('artista')
+                ->pluck('artista')
+                ->toArray();
+        });
 
-        // Carica i valori massimi dal database
-        $this->maxCostoDb = Card::max('costo') ?? 999;
-        $this->maxPotenzaDb = Card::max('potenza') ?? 999;
-        $this->maxVitaDb = Card::max('vita') ?? 999;
+        // Carica i valori massimi dal database dalla cache
+        $maxValues = Cache::remember('cards_filter_max_values', 3600, function () {
+            return [
+                'costo' => Card::max('costo') ?? 999,
+                'potenza' => Card::max('potenza') ?? 999,
+                'vita' => Card::max('vita') ?? 999,
+            ];
+        });
+
+        $this->maxCostoDb = $maxValues['costo'];
+        $this->maxPotenzaDb = $maxValues['potenza'];
+        $this->maxVitaDb = $maxValues['vita'];
     }
 
     public function applyFilters()

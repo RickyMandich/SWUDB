@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Card;
+use Illuminate\Support\Facades\Cache;
 
 class AddCardPopUp extends Component
 {
@@ -34,9 +35,10 @@ class AddCardPopUp extends Component
     public function loadAvailableCards($currentDeckCards = [], $availableCards = [])
     {
         if (empty($availableCards)) {
-            // Se non sono state fornite le carte disponibili, caricale dal database
-            // MessageCreated::dispatch("get card from DB");
-            $cards = Card::select("espansione", "numero", "nome", "titolo", "maxCopie")->get();
+            // Se non sono state fornite le carte disponibili, caricale dalla cache o dal database
+            $cards = Cache::remember('cards_popup_basic', 3600, function () {
+                return Card::select("espansione", "numero", "nome", "titolo", "maxCopie")->get();
+            });
         } else {
             // MessageCreated::dispatch("get card from array");
             $cards = collect($availableCards);

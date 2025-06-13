@@ -34,7 +34,6 @@
         - ~~divisi~~
         - ~~non divisi~~
     - ~~hp/potenza media~~
-    - possibilità di tirare fuori carte grazie all'effetto
 - Implementazione di cache per migliorare le performance
     - ottimizzare il popup di aggiunta carte
 - Funzionalità di esportazione mazzi in formato TXT e JSON
@@ -49,6 +48,7 @@
 - Sistema di wishlist per carte desiderate
 - Funzionalità di deck-building guidato per principianti
 - Sistema di proxy printing per playtest (stampa carte di prova)
+- aggiungere alle statistiche del mazzo qual è la percentuale che una carte trovi una carta che soddisfi i requisiti per giocare o pescare carte
 
 # Documentazione
 
