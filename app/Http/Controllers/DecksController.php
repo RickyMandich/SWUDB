@@ -619,7 +619,7 @@ class DecksController extends Controller{
         $request->validate([
             'file' => 'required|file|mimes:txt,json|max:2048',
             'deck_name' => 'required|string|max:500',
-            'public' => 'boolean'
+            'public' => 'nullable|in:on,1,true,0,false'
         ]);
 
         try {
@@ -671,7 +671,7 @@ class DecksController extends Controller{
             $request->validate([
                 'url' => 'required|url',
                 'deck_name' => 'required|string|max:500',
-                'public' => 'boolean'
+                'public' => 'nullable|in:on,1,true,0,false'
             ]);
             \Log::info('Step 2: Validation passed');
         } catch (\Exception $e) {
