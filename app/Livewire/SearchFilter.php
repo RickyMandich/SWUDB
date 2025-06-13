@@ -292,6 +292,9 @@ class SearchFilter extends Component
      * Reset all filter values to their default state and reapply filters
      * Reimposta tutti i valori dei filtri al loro stato predefinito e riapplica i filtri
      *
+     * Note: This method preserves the advanced filters open/closed state
+     * Nota: Questo metodo preserva lo stato aperto/chiuso dei filtri avanzati
+     *
      * @return void
      */
     public function resetAllFilters()
@@ -313,6 +316,9 @@ class SearchFilter extends Component
         $this->arena = '';
         $this->unica = null;
         $this->artista = '';
+
+        // Note: $advancedFiltersOpen is intentionally NOT reset to preserve UI state
+        // Nota: $advancedFiltersOpen non viene intenzionalmente resettato per preservare lo stato dell'UI
 
         $this->applyFilters();
     }

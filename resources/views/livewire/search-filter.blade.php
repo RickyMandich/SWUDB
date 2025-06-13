@@ -112,7 +112,7 @@
                         <i class="fas {{ $advancedFiltersOpen ? 'fa-chevron-up' : 'fa-chevron-down' }} ms-1"></i>
                     </button>
 
-                    <div class="collapse {{ $advancedFiltersOpen ? 'show' : '' }}" id="advancedFilters">
+                    <div class="{{ $advancedFiltersOpen ? 'd-block' : 'd-none' }}" id="advancedFilters" style="transition: all 0.3s ease;">
                         <div class="row g-3">
                             <!-- Costo -->
                             <div class="col-md-6">
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             const advancedFilters = document.getElementById('advancedFilters');
-            if (advancedFilters && advancedFilters.classList.contains('show')) {
+            if (advancedFilters && !advancedFilters.classList.contains('d-none')) {
                 @this.call('toggleAdvancedFilters');
             }
         }
