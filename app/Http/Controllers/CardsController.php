@@ -93,13 +93,11 @@ class CardsController extends Controller
         }
 
         // Salva su file temporaneo sul server
-        if(env("APP_DEBUG")){
-            file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
-        }
-        JobController::fireAndForgetGet(route('carte.sendBatch'), [
-            "token" => env('JOB_TOKEN')
-        ]);
+        file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
         if(count($toInsert) > 0){
+            JobController::fireAndForgetGet(route('carte.sendBatch'), [
+                "token" => env('JOB_TOKEN')
+            ]);
             $message = "Sono disponibili queste nuove carte:\n";
             foreach($toInsert as $card){
                 $message .= $card["espansione"] . "-" . $card["numero"] . " - " . $card["nome"] . (" " . $card["titolo"] ?? "") . "\n";
@@ -115,17 +113,17 @@ class CardsController extends Controller
     public function sendBatch(Request $request){
         $next = intval($request->input("next", 0));
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
-        if($next != 0) MessageCreated::dispatch("Inizio importazione batch " . $next);
+        $data = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
+        MessageCreated::dispatch("Inizio importazione batch " . $next);
         $batchSize = 5;
         JobController::fireAndForgetGet(route('carte.dispatchBatch', ['start' => $next, 'batchSize' => $batchSize]));
-        $data = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
         if ($next + $batchSize >= count($data)) {
             echo "Import completato!\n";
-            if($next != 0) MessageCreated::dispatch("Import completato!");
+            MessageCreated::dispatch("Import completato!");
             // file_put_contents(storage_path("app/to_insert.json"), "[]"); // Pulisce il file dopo l'importazione
         } else {
             echo "Batch $next dispatchato, prossima esecuzione tra 100ms...\n";
-            if($next != 0) MessageCreated::dispatch("Batch $next dispatchato");
+            MessageCreated::dispatch("Batch $next dispatchato");
             $next += $batchSize;
             usleep(100000); // 100ms delay
             JobController::fireAndForgetGet(route('carte.sendBatch', ['next' => $next]), [
