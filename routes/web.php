@@ -59,6 +59,16 @@ Route::post('/mazzi/import/url', [DecksController::class, 'importFromUrl'])->nam
 
 Route::get('/test/swudb', [DecksController::class, 'testSwudbConnection'])->name("test.swudb");
 
+Route::get('/debug/logs', function() {
+    $logFile = storage_path('logs/laravel.log');
+    if (file_exists($logFile)) {
+        $logs = file_get_contents($logFile);
+        $lastLogs = substr($logs, -10000); // Ultimi 10KB di log
+        return '<pre>' . htmlspecialchars($lastLogs) . '</pre>';
+    }
+    return 'Log file not found';
+})->name("debug.logs");
+
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
 Route::get("/api/carte/{espansione}", [CardsController::class, 'apis'])->name("api.carte");

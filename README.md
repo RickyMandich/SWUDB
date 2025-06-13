@@ -37,7 +37,7 @@
 - ~~Implementazione di cache per migliorare le performance~~
     - ottimizzare il popup di aggiunta carte
 - ~~Funzionalità di esportazione mazzi in formato TXT e JSON~~
-- Funzionalità di importazione mazzi da URL o file
+- ~~Funzionalità di importazione mazzi da URL o file~~
 
 ## Funzionalità Future
 - Funzionalità di condivisione social
