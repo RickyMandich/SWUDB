@@ -103,7 +103,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <h6 class="text-muted">Formato TXT:</h6>
-                                <pre class="bg-dark p-2 small"><code>Leaders
+                                <pre class="bg-dark-subtle p-2 small"><code>Leaders
 1 | Darth Revan | Scourge of the Old Republic
 
 Base
@@ -115,7 +115,7 @@ Deck
                             </div>
                             <div class="col-md-6">
                                 <h6 class="text-muted">Formato JSON:</h6>
-                                <pre class="bg-dark p-2 small"><code>{
+                                <pre class="bg-dark-subtle p-2 small"><code>{
   "metadata": {
     "name": "Deck Name",
     "author": "Author"
