@@ -656,22 +656,46 @@ class DecksController extends Controller{
             // Controlla se è un URL di SWUDB e convertilo all'API
             $apiUrl = $this->convertSwudbUrl($url);
 
+            // Debug: log degli URL
+            \Log::info('Import URL Debug', [
+                'original_url' => $url,
+                'api_url' => $apiUrl,
+                'is_swudb' => str_contains($url, 'swudb.com')
+            ]);
+
             // Scarica il contenuto dall'URL usando cURL
             $content = $this->downloadFromUrl($apiUrl);
 
             if ($content === false) {
+                \Log::error('Download failed', ['url' => $apiUrl]);
                 return response()->json([
                     'error' => 'Impossibile scaricare il file dall\'URL fornito. ' .
-                              'Verifica che l\'URL sia corretto e accessibile.'
+                              'Verifica che l\'URL sia corretto e accessibile.',
+                    'debug' => [
+                        'original_url' => $url,
+                        'api_url' => $apiUrl
+                    ]
                 ], 400);
             }
+
+            // Debug: log del contenuto ricevuto
+            \Log::info('Content received', [
+                'content_length' => strlen($content),
+                'content_start' => substr($content, 0, 100),
+                'is_html' => str_starts_with(trim($content), '<!doctype') || str_starts_with(trim($content), '<html')
+            ]);
 
             // Debug: controlla se il contenuto è HTML invece di JSON
             if (str_starts_with(trim($content), '<!doctype') || str_starts_with(trim($content), '<html')) {
                 return response()->json([
                     'error' => 'L\'URL ha restituito una pagina HTML invece dei dati del mazzo. ' .
                               'Verifica che l\'URL sia corretto.',
-                    'debug' => 'Received HTML content instead of JSON/TXT'
+                    'debug' => [
+                        'content_type' => 'HTML',
+                        'content_preview' => substr($content, 0, 200),
+                        'original_url' => $url,
+                        'api_url' => $apiUrl
+                    ]
                 ], 400);
             }
 
@@ -1135,10 +1159,26 @@ class DecksController extends Controller{
 
         $content = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
         $error = curl_error($ch);
         curl_close($ch);
 
+        // Debug: log delle informazioni cURL
+        \Log::info('cURL Debug', [
+            'url' => $url,
+            'http_code' => $httpCode,
+            'content_type' => $contentType,
+            'error' => $error,
+            'content_length' => $content ? strlen($content) : 0,
+            'content_start' => $content ? substr($content, 0, 100) : 'No content'
+        ]);
+
         if ($content === false || !empty($error) || $httpCode >= 400) {
+            \Log::error('cURL failed', [
+                'url' => $url,
+                'http_code' => $httpCode,
+                'error' => $error
+            ]);
             return false;
         }
 

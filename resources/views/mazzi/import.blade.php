@@ -174,22 +174,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showMessage('success', `<i class="fas fa-check me-1"></i>${data.message}`);
-                
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            console.log('Response ok:', response.ok);
+
+            // Clona la response per poterla leggere due volte
+            return response.clone().text().then(text => {
+                console.log('Raw response text:', text);
+
+                // Prova a parsare come JSON
+                try {
+                    const data = JSON.parse(text);
+                    console.log('Parsed JSON data:', data);
+                    return { success: true, data: data, rawText: text };
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    console.log('Response is not valid JSON, content preview:', text.substring(0, 500));
+                    return { success: false, error: 'Invalid JSON response', rawText: text };
+                }
+            });
+        })
+        .then(result => {
+            if (result.success && result.data.success) {
+                showMessage('success', `<i class="fas fa-check me-1"></i>${result.data.message}`);
+
                 // Redirect al mazzo dopo 2 secondi
                 setTimeout(() => {
-                    window.location.href = data.deck_url;
+                    window.location.href = result.data.deck_url;
                 }, 2000);
+            } else if (result.success && result.data.error) {
+                console.log('Server returned error:', result.data.error);
+                if (result.data.debug) {
+                    console.log('Debug info:', result.data.debug);
+                }
+                showMessage('danger', `<i class="fas fa-exclamation-triangle me-1"></i>${result.data.error}`);
             } else {
-                showMessage('danger', `<i class="fas fa-exclamation-triangle me-1"></i>${data.error}`);
+                console.log('Response parsing failed:', result);
+                showMessage('danger', `<i class="fas fa-exclamation-triangle me-1"></i>Errore: risposta non valida dal server`);
+
+                // Mostra un'anteprima della risposta per debug
+                if (result.rawText) {
+                    console.log('Full response for debugging:', result.rawText);
+                    const preview = result.rawText.substring(0, 200);
+                    showMessage('warning', `Debug: ${preview}...`);
+                }
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showMessage('danger', '<i class="fas fa-exclamation-triangle me-1"></i>Errore durante l\'importazione');
+            console.error('Fetch error:', error);
+            showMessage('danger', '<i class="fas fa-exclamation-triangle me-1"></i>Errore di rete durante l\'importazione');
         })
         .finally(() => {
             // Riabilita il form
