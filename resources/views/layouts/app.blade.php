@@ -113,7 +113,7 @@
                                 </a>
 
                                 <a class="dropdown-item" href="{{ route('collezione') }}">
-                                    {{ __('Collezione') }}
+                                    {{ __('custom.Collezione') }}
                                 </a>
 
                                 <a class="dropdown-item" href="{{ route('logout') }}"
@@ -182,6 +182,7 @@
                         <p>
                             {!! __("custom.contactMail") !!}
                             <br>
+                            {{ __("custom.documentazione") }}
                             <small class="text-muted text-uppercase">
                                 <a href="{{ route('documentazione') }}">documentazione</a>
                             </small>
