@@ -1,7 +1,7 @@
 <div>
     <div class="header text-center mb-4">
         <h1>
-            {{ $nome }} 
+            {{ $nome }}
             @if($proprietario)
                 <button wire:click="openAddCardPopup" class="btn btn-primary"> + </button>
             @endif
@@ -16,6 +16,20 @@
                 in questo mazzo sono presenti {{ $size }} carte
             @endif
         </h6>
+
+        <!-- Pulsanti di esportazione -->
+        <div class="export-buttons mt-3">
+            <div class="btn-group" role="group" aria-label="Esporta mazzo">
+                <a href="{{ route('mazzo.export.txt', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-file-alt me-1"></i>Esporta TXT
+                </a>
+                <a href="{{ route('mazzo.export.json', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
+                   class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-file-code me-1"></i>Esporta JSON
+                </a>
+            </div>
+        </div>
     </div>
     <div class="container">
         <div class="row">

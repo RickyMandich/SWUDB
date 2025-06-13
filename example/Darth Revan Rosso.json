@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "name": "Darth Revan Rosso",
+    "author": "Ssppoocckk"
+  },
+  "leader": {
+    "id": "LOF_017",
+    "count": 1
+  },
+  "base": {
+    "id": "LOF_025",
+    "count": 1
+  },
+  "deck": [
+    {
+      "id": "LOF_238",
+      "count": 2
+    },
+    {
+      "id": "SOR_134",
+      "count": 3
+    },
+    {
+      "id": "SHD_234",
+      "count": 3
+    },
+    {
+      "id": "JTL_142",
+      "count": 1
+    },
+    {
+      "id": "LOF_234",
+      "count": 2
+    },
+    {
+      "id": "JTL_137",
+      "count": 3
+    },
+    {
+      "id": "SOR_131",
+      "count": 3
+    },
+    {
+      "id": "JTL_237",
+      "count": 3
+    },
+    {
+      "id": "JTL_163",
+      "count": 3
+    },
+    {
+      "id": "LOF_137",
+      "count": 2
+    },
+    {
+      "id": "SOR_167",
+      "count": 2
+    },
+    {
+      "id": "SOR_137",
+      "count": 2
+    },
+    {
+      "id": "JTL_144",
+      "count": 3
+    },
+    {
+      "id": "JTL_139",
+      "count": 2
+    },
+    {
+      "id": "SHD_143",
+      "count": 3
+    },
+    {
+      "id": "SOR_130",
+      "count": 3
+    },
+    {
+      "id": "SHD_140",
+      "count": 2
+    },
+    {
+      "id": "SHD_237",
+      "count": 3
+    },
+    {
+      "id": "TWI_170",
+      "count": 3
+    },
+    {
+      "id": "JTL_161",
+      "count": 3
+    },
+    {
+      "id": "JTL_141",
+      "count": 2
+    },
+    {
+      "id": "SHD_179",
+      "count": 3
+    }
+  ],
+  "sideboard": [
+    {
+      "id": "TWI_138",
+      "count": 2
+    }
+  ]
+}

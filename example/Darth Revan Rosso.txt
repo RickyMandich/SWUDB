@@ -1,0 +1,32 @@
+Leaders
+1 | Darth Revan | Scourge of the Old Republic
+
+Base
+1 | Temple of Destruction
+
+Deck
+3 | Daring Raid
+3 | Desperate Attack
+2 | Force Throw
+3 | Ruthlessness
+3 | First Legion Snowtrooper
+3 | Incinerator Trooper
+3 | TIE Bomber
+2 | Darth Revan's Lightsabers
+3 | Black Sun Starfighter
+3 | Captain Tarkin | Full Forward Assault
+3 | Fifth Brother | Fear Hunter
+3 | Vonreg's TIE Interceptor | Ace of the First Order
+3 | No Disintegrations
+2 | Fallen Lightsaber
+3 | AT-DP Occupier
+2 | Dengar | Crude and Slovenly
+2 | Darth Malak | Covetous Apprentice
+2 | IG-88 | Murderous Phlutdroid
+2 | Trandoshan Hunters
+1 | Darth Vader | Scourge of Squadrons
+3 | Ruthless Raider
+2 | Savage Opress | Imbued With Hate
+
+Sideboard
+2 | Count Dooku | Fallen Jedi

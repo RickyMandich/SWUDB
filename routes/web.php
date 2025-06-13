@@ -47,6 +47,10 @@ Route::post('/mazzo/{user}/{mazzo}/save', [DecksController::class, 'store'])->na
 
 Route::post('/mazzo/create', [DecksController::class, 'create'])->name("mazzo.create");
 
+Route::get('/mazzo/{user}/{mazzo}/export/txt', [DecksController::class, 'exportTxt'])->name("mazzo.export.txt");
+
+Route::get('/mazzo/{user}/{mazzo}/export/json', [DecksController::class, 'exportJson'])->name("mazzo.export.json");
+
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
 Route::get("/api/carte/{espansione}", [CardsController::class, 'apis'])->name("api.carte");

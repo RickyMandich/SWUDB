@@ -12,6 +12,7 @@ use DB;
 use Illuminate\Database\Query\JoinClause;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 use Illuminate\Support\Facades\Auth;
 
@@ -333,5 +334,256 @@ class DecksController extends Controller{
                     ->id)
                 ->where("public", $public)
                 ->get();
+    }
+
+    /**
+     * Esporta un mazzo in formato TXT
+     */
+    public function exportTxt($user, $deck)
+    {
+        $deckData = $this->getDeckData($user, $deck);
+        if (!$deckData) {
+            return response('Mazzo non trovato', 404);
+        }
+
+        // Controllo autorizzazione
+        if (!$this->canExportDeck($deckData['deck'])) {
+            return response('Non autorizzato ad esportare questo mazzo', 403);
+        }
+
+        $content = $this->generateTxtContent($deckData);
+
+        $filename = $this->sanitizeFilename($deckData['deck']->nome . '_' . $deckData['user']->name) . '.txt';
+
+        return response($content)
+            ->header('Content-Type', 'text/plain')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * Esporta un mazzo in formato JSON
+     */
+    public function exportJson($user, $deck)
+    {
+        $deckData = $this->getDeckData($user, $deck);
+        if (!$deckData) {
+            return response()->json(['error' => 'Mazzo non trovato'], 404);
+        }
+
+        // Controllo autorizzazione
+        if (!$this->canExportDeck($deckData['deck'])) {
+            return response()->json(['error' => 'Non autorizzato ad esportare questo mazzo'], 403);
+        }
+
+        $content = $this->generateJsonContent($deckData);
+
+        $filename = $this->sanitizeFilename($deckData['deck']->nome . '_' . $deckData['user']->name) . '.json';
+
+        return response($content)
+            ->header('Content-Type', 'application/json')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * Recupera i dati del mazzo per l'esportazione
+     */
+    private function getDeckData($user, $deck)
+    {
+        $userModel = User::where("name", $user)->first();
+        if (!$userModel) {
+            return null;
+        }
+
+        $deckModel = Deck::where("nome", str_replace("+", " ", $deck))
+                         ->where("codUtente", $userModel->id)
+                         ->first();
+        if (!$deckModel) {
+            return null;
+        }
+
+        // Recupera le carte del mazzo con le informazioni complete
+        $cards = DB::table('compositions')
+            ->leftJoin('cards', function (JoinClause $join) {
+                $join->on('compositions.espansione', '=', 'cards.espansione')
+                     ->on('compositions.numero', '=', 'cards.numero');
+            })
+            ->select('cards.*', 'compositions.copie')
+            ->where('compositions.idMazzo', $deckModel->id)
+            ->get();
+
+        return [
+            'user' => $userModel,
+            'deck' => $deckModel,
+            'cards' => $cards
+        ];
+    }
+
+    /**
+     * Genera il contenuto in formato TXT secondo il formato ufficiale
+     */
+    private function generateTxtContent($deckData)
+    {
+        $content = "";
+
+        // Raggruppa le carte per tipo
+        $leaders = [];
+        $bases = [];
+        $deck = [];
+        $sideboard = []; // Per ora vuoto, ma preparato per future implementazioni
+
+        foreach ($deckData['cards'] as $card) {
+            $cardLine = $card->copie . " | " . $card->nome;
+            if (!empty($card->titolo)) {
+                $cardLine .= " | " . $card->titolo;
+            }
+
+            switch ($card->tipo) {
+                case 'Leader':
+                    $leaders[] = $cardLine;
+                    break;
+                case 'Base':
+                    $bases[] = $cardLine;
+                    break;
+                default:
+                    $deck[] = $cardLine;
+                    break;
+            }
+        }
+
+        // Sezione Leaders
+        if (!empty($leaders)) {
+            $content .= "Leaders\n";
+            foreach ($leaders as $leader) {
+                $content .= $leader . "\n";
+            }
+            $content .= "\n";
+        }
+
+        // Sezione Base
+        if (!empty($bases)) {
+            $content .= "Base\n";
+            foreach ($bases as $base) {
+                $content .= $base . "\n";
+            }
+            $content .= "\n";
+        }
+
+        // Sezione Deck
+        if (!empty($deck)) {
+            $content .= "Deck\n";
+            foreach ($deck as $deckCard) {
+                $content .= $deckCard . "\n";
+            }
+            $content .= "\n";
+        }
+
+        // Sezione Sideboard (per ora vuota ma preparata)
+        if (!empty($sideboard)) {
+            $content .= "Sideboard\n";
+            foreach ($sideboard as $sideboardCard) {
+                $content .= $sideboardCard . "\n";
+            }
+        }
+
+        return trim($content);
+    }
+
+    /**
+     * Genera il contenuto in formato JSON secondo il formato ufficiale
+     */
+    private function generateJsonContent($deckData)
+    {
+        $leader = null;
+        $base = null;
+        $deck = [];
+        $sideboard = []; // Per ora vuoto, ma preparato per future implementazioni
+
+        foreach ($deckData['cards'] as $card) {
+            $cardData = [
+                'id' => $card->espansione . '_' . $card->numero,
+                'count' => (int) $card->copie
+            ];
+
+            switch ($card->tipo) {
+                case 'Leader':
+                    $leader = $cardData;
+                    break;
+                case 'Base':
+                    $base = $cardData;
+                    break;
+                default:
+                    $deck[] = $cardData;
+                    break;
+            }
+        }
+
+        $deckExport = [
+            'metadata' => [
+                'name' => $deckData['deck']->nome,
+                'author' => $deckData['user']->name
+            ]
+        ];
+
+        // Aggiungi leader se presente
+        if ($leader) {
+            $deckExport['leader'] = $leader;
+        }
+
+        // Aggiungi base se presente
+        if ($base) {
+            $deckExport['base'] = $base;
+        }
+
+        // Aggiungi deck se presente
+        if (!empty($deck)) {
+            $deckExport['deck'] = $deck;
+        }
+
+        // Aggiungi sideboard se presente (per ora vuoto ma preparato)
+        if (!empty($sideboard)) {
+            $deckExport['sideboard'] = $sideboard;
+        }
+
+        return json_encode($deckExport, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Sanitizza il nome del file per l'esportazione
+     */
+    private function sanitizeFilename($filename)
+    {
+        // Rimuove caratteri non validi per i nomi file
+        $filename = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $filename);
+        // Sostituisce spazi con underscore
+        $filename = str_replace(' ', '_', $filename);
+        // Rimuove underscore multipli
+        $filename = preg_replace('/_+/', '_', $filename);
+        // Rimuove underscore all'inizio e alla fine
+        $filename = trim($filename, '_');
+
+        return $filename;
+    }
+
+    /**
+     * Verifica se l'utente corrente può esportare il mazzo
+     */
+    private function canExportDeck($deck)
+    {
+        // Se il mazzo è pubblico, chiunque può esportarlo
+        if ($deck->public) {
+            return true;
+        }
+
+        // Se l'utente non è autenticato, non può esportare mazzi privati
+        if (!Auth::check()) {
+            return false;
+        }
+
+        // Se l'utente è il proprietario del mazzo, può esportarlo
+        if (Auth::user()->id === $deck->codUtente) {
+            return true;
+        }
+
+        return false;
     }
 }
