@@ -35,19 +35,17 @@
         - ~~non divisi~~
     - ~~hp/potenza media~~
     - possibilità di tirare fuori carte grazie all'effetto
-- ottimizzare il popup di aggiunta carte
-- Sistema di backup automatico del database
 - Implementazione di cache per migliorare le performance
+    - ottimizzare il popup di aggiunta carte
 - Funzionalità di esportazione mazzi in formato TXT e JSON
 - Funzionalità di importazione mazzi da URL o file
-- Sistema di tag personalizzati per i mazzi (etichette come "Aggro", "Control", "Budget", "Meta")
-- Modalità offline/PWA per consultazione carte (Progressive Web App)
-- Sistema di versionamento per i mazzi
-- Funzionalità di condivisione social
-- Dashboard amministratore avanzato con analytics
-- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
 
 ## Funzionalità Future
+- Funzionalità di condivisione social
+- Sistema di versionamento per i mazzi
+- Sistema di tag personalizzati per i mazzi (etichette come "Aggro", "Control", "Budget", "Meta")
+- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
+- Modalità offline/PWA per consultazione carte (Progressive Web App)
 - Sistema di wishlist per carte desiderate
 - Funzionalità di deck-building guidato per principianti
 - Sistema di proxy printing per playtest (stampa carte di prova)
