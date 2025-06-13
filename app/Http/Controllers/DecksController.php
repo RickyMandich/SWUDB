@@ -656,18 +656,23 @@ class DecksController extends Controller{
             // Controlla se è un URL di SWUDB e convertilo all'API
             $apiUrl = $this->convertSwudbUrl($url);
 
-            // Scarica il contenuto dall'URL
-            $context = stream_context_create([
-                'http' => [
-                    'timeout' => 10,
-                    'user_agent' => 'UnlimitedDB.net Deck Importer'
-                ]
-            ]);
-
-            $content = file_get_contents($apiUrl, false, $context);
+            // Scarica il contenuto dall'URL usando cURL
+            $content = $this->downloadFromUrl($apiUrl);
 
             if ($content === false) {
-                return response()->json(['error' => 'Impossibile scaricare il file dall\'URL fornito'], 400);
+                return response()->json([
+                    'error' => 'Impossibile scaricare il file dall\'URL fornito. ' .
+                              'Verifica che l\'URL sia corretto e accessibile.'
+                ], 400);
+            }
+
+            // Debug: controlla se il contenuto è HTML invece di JSON
+            if (str_starts_with(trim($content), '<!doctype') || str_starts_with(trim($content), '<html')) {
+                return response()->json([
+                    'error' => 'L\'URL ha restituito una pagina HTML invece dei dati del mazzo. ' .
+                              'Verifica che l\'URL sia corretto.',
+                    'debug' => 'Received HTML content instead of JSON/TXT'
+                ], 400);
             }
 
             // Determina il formato dal contenuto o dall'URL
@@ -982,6 +987,48 @@ class DecksController extends Controller{
     }
 
     /**
+     * Testa la connessione a SWUDB
+     */
+    public function testSwudbConnection()
+    {
+        try {
+            $testUrl = 'https://swudb.com/api/deck/HBzjsPUBBGYTt';
+
+            $content = $this->downloadFromUrl($testUrl);
+
+            if ($content === false) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Connessione fallita',
+                    'details' => 'Impossibile scaricare da SWUDB'
+                ]);
+            }
+
+            $data = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Risposta non JSON',
+                    'content_preview' => substr($content, 0, 200)
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Connessione SWUDB OK',
+                'deck_name' => $data['deckName'] ?? 'N/A',
+                'content_length' => strlen($content)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Eccezione: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Verifica se il contenuto è in formato SWUDB
      */
     private function isSwudbFormat($content)
@@ -1061,5 +1108,40 @@ class DecksController extends Controller{
         }
 
         return json_encode($officialFormat, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Scarica contenuto da URL usando cURL
+     */
+    private function downloadFromUrl($url)
+    {
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_USERAGENT => 'UnlimitedDB.net Deck Importer',
+            CURLOPT_HTTPHEADER => [
+                'Accept: application/json, text/plain, */*',
+                'Accept-Language: en-US,en;q=0.9',
+                'Cache-Control: no-cache'
+            ]
+        ]);
+
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($content === false || !empty($error) || $httpCode >= 400) {
+            return false;
+        }
+
+        return $content;
     }
 }

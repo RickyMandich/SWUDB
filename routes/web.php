@@ -57,6 +57,8 @@ Route::post('/mazzi/import/file', [DecksController::class, 'importFromFile'])->n
 
 Route::post('/mazzi/import/url', [DecksController::class, 'importFromUrl'])->name("mazzi.import.url")->middleware('auth');
 
+Route::get('/test/swudb', [DecksController::class, 'testSwudbConnection'])->name("test.swudb");
+
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
 Route::get("/api/carte/{espansione}", [CardsController::class, 'apis'])->name("api.carte");
