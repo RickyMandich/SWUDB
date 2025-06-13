@@ -30,7 +30,7 @@
     - ~~numero carte x costo e per tipo~~
     - ~~tratti~~
         - ~~divisi~~
-        - non divisi
+        - ~~non divisi~~
     - ~~hp/potenza media~~
     - possibilità di tirare fuori carte grazie all'effetto
 - ottimizzare il popup di aggiunta carte
