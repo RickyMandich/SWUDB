@@ -132,10 +132,6 @@
                                     </a>
                                 @endif
 
-                                <a class="dropdown-item" href="{{ route('documentazione') }}">
-                                    {{ __('Documentazione') }}
-                                </a>
-
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                     @csrf
                                 </form>
@@ -159,9 +155,12 @@
                     <div class="col text-center">
                         <p>{{ __("custom.upperFooter") }}</p>
                         <p>
-                            {{ __("custom.lowerFooter") }} 
+                            {{ __("custom.lowerFooter") }}
                             <small class="text-muted text-uppercase">
-                                <a href="/docs/tos">Terms of Service<a>
+                                <a href="/docs/tos">Terms of Service</a>
+                            </small> -
+                            <small class="text-muted text-uppercase">
+                                <a href="{{ route('documentazione') }}">Documentazione</a>
                             </small>.
                         </p>
                     </div>
