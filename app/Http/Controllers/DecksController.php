@@ -89,7 +89,7 @@ class DecksController extends Controller{
                     ->first();
         
         // Recupera le carte del mazzo
-        $cards = DB::table('compositions')
+        $cardsRaw = DB::table('compositions')
             ->leftJoin('cards', function (JoinClause $join){
                 $join->on('compositions.espansione', '=', 'cards.espansione')
                     ->on('compositions.numero', '=', 'cards.numero');
@@ -97,12 +97,41 @@ class DecksController extends Controller{
             ->select('cards.*', 'compositions.copie')
             ->where('compositions.idMazzo', $mazzo->id)
             ->get();
-        
-        // Calcola il numero totale di carte e aggiunge gli snippet
+
+        // Converte i risultati raw in una Collection di oggetti compatibili con mergeSort
+        $cards = collect();
         $copie = 0;
-        foreach($cards as $card){
-            $card->snippet = "$card->espansione-$card->numero - ".$card->nome.(strlen($card->titolo) > 0 ? ", ". strtoupper($card->titolo) : "");
-            $copie += $card->copie;
+
+        foreach($cardsRaw as $cardRaw){
+            // Crea un oggetto compatibile con mergeSort
+            $card = (object) [
+                'cid' => $cardRaw->cid,
+                'espansione' => $cardRaw->espansione,
+                'numero' => $cardRaw->numero,
+                'aspettoPrimario' => $cardRaw->aspettoPrimario,
+                'aspettoSecondario' => $cardRaw->aspettoSecondario,
+                'unica' => $cardRaw->unica,
+                'nome' => $cardRaw->nome,
+                'titolo' => $cardRaw->titolo,
+                'tipo' => $cardRaw->tipo,
+                'rarita' => $cardRaw->rarita,
+                'costo' => $cardRaw->costo,
+                'vita' => $cardRaw->vita,
+                'potenza' => $cardRaw->potenza,
+                'descrizione' => $cardRaw->descrizione,
+                'tratti' => $cardRaw->tratti,
+                'arena' => $cardRaw->arena,
+                'artista' => $cardRaw->artista,
+                'uscita' => $cardRaw->uscita,
+                'frontArt' => $cardRaw->frontArt,
+                'backArt' => $cardRaw->backArt,
+                'maxCopie' => $cardRaw->maxCopie,
+                'copie' => $cardRaw->copie,
+                'snippet' => "$cardRaw->espansione-$cardRaw->numero - ".$cardRaw->nome.(strlen($cardRaw->titolo) > 0 ? ", ". strtoupper($cardRaw->titolo) : "")
+            ];
+
+            $cards->push($card);
+            $copie += $cardRaw->copie;
         }
 
         // Applica l'ordinamento usando il metodo del controller
