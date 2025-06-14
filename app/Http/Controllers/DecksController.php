@@ -89,7 +89,7 @@ class DecksController extends Controller{
                     ->first();
         
         // Recupera le carte del mazzo
-        $cardsRaw = DB::table('compositions')
+        $cards = DB::table('compositions')
             ->leftJoin('cards', function (JoinClause $join){
                 $join->on('compositions.espansione', '=', 'cards.espansione')
                     ->on('compositions.numero', '=', 'cards.numero');
@@ -98,45 +98,19 @@ class DecksController extends Controller{
             ->where('compositions.idMazzo', $mazzo->id)
             ->get();
 
-        // Converte i risultati raw in una Collection di oggetti compatibili con mergeSort
-        $cards = collect();
+        // Calcola il numero totale di carte e aggiunge gli snippet
         $copie = 0;
-
-        foreach($cardsRaw as $cardRaw){
-            // Crea un oggetto compatibile con mergeSort
-            $card = (object) [
-                'cid' => $cardRaw->cid,
-                'espansione' => $cardRaw->espansione,
-                'numero' => $cardRaw->numero,
-                'aspettoPrimario' => $cardRaw->aspettoPrimario,
-                'aspettoSecondario' => $cardRaw->aspettoSecondario,
-                'unica' => $cardRaw->unica,
-                'nome' => $cardRaw->nome,
-                'titolo' => $cardRaw->titolo,
-                'tipo' => $cardRaw->tipo,
-                'rarita' => $cardRaw->rarita,
-                'costo' => $cardRaw->costo,
-                'vita' => $cardRaw->vita,
-                'potenza' => $cardRaw->potenza,
-                'descrizione' => $cardRaw->descrizione,
-                'tratti' => $cardRaw->tratti,
-                'arena' => $cardRaw->arena,
-                'artista' => $cardRaw->artista,
-                'uscita' => $cardRaw->uscita,
-                'frontArt' => $cardRaw->frontArt,
-                'backArt' => $cardRaw->backArt,
-                'maxCopie' => $cardRaw->maxCopie,
-                'copie' => $cardRaw->copie,
-                'snippet' => "$cardRaw->espansione-$cardRaw->numero - ".$cardRaw->nome.(strlen($cardRaw->titolo) > 0 ? ", ". strtoupper($cardRaw->titolo) : "")
-            ];
-
-            $cards->push($card);
-            $copie += $cardRaw->copie;
+        foreach($cards as $card){
+            $card->snippet = "$card->espansione-$card->numero - ".$card->nome.(strlen($card->titolo) > 0 ? ", ". strtoupper($card->titolo) : "");
+            $copie += $card->copie;
         }
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$cards->isEmpty()) {
-            $cards = \App\Http\Controllers\CardsController::mergeSort($cards);
+            // Converte la Collection in array per compatibilità con mergeSort
+            $cardsArray = $cards->toArray();
+            $sortedArray = \App\Http\Controllers\CardsController::mergeSort(collect($cardsArray));
+            $cards = $sortedArray;
         }
 
         // Recupera tutte le carte disponibili
