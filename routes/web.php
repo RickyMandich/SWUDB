@@ -109,7 +109,7 @@ Route::get("/migrate", function(){
     if(!Auth::admin()){
         return view("errors.403");
     }
-    Artisan::call("migrate:fresh");
+    Artisan::call("migrate");
     return "Migrated";
 });
 
