@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\CardsController;
+
 use App\Models\Card;
 use App\Models\Composition;
 use App\Models\Deck;
 use App\Models\User;
 
-use Illuminate\Support\Facades\DB;
-
 use Illuminate\Database\Query\JoinClause;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DecksController extends Controller{
     /**
@@ -109,8 +109,8 @@ class DecksController extends Controller{
         if (!$cards->isEmpty()) {
             // Converte la Collection in array per compatibilità con mergeSort
             $cardsArray = $cards->toArray();
-            $sortedArray = collect($cardsArray);
-            \App\Http\Controllers\CardsController::mergeSort($sortedArray);
+            $sortedArray = collect($cardsArray)->toArray();
+            CardsController::mergeSort($sortedArray);
             $cards = $sortedArray;
         }
 
