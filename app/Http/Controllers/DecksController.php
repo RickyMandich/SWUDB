@@ -104,7 +104,12 @@ class DecksController extends Controller{
             $card->snippet = "$card->espansione-$card->numero - ".$card->nome.(strlen($card->titolo) > 0 ? ", ". strtoupper($card->titolo) : "");
             $copie += $card->copie;
         }
-        
+
+        // Applica l'ordinamento usando il metodo del controller
+        if (!$cards->isEmpty()) {
+            $cards = \App\Http\Controllers\CardsController::mergeSort($cards);
+        }
+
         // Recupera tutte le carte disponibili
         $carte = Card::select("espansione", "numero", "nome", "titolo", "maxCopie")->get();
         // return $carte;
