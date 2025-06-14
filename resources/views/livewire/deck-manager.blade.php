@@ -1,11 +1,6 @@
 <div>
     <div class="header text-center mb-4">
-        <h1>
-            {{ $nome }}
-            @if($proprietario)
-                <button wire:click="openAddCardPopup" class="btn btn-primary"> + </button>
-            @endif
-        </h1>
+        <h1>{{ $nome }}</h1>
         <h4>
             <small class="text-muted">di {{ $user }}</small>
         </h4>
@@ -56,6 +51,16 @@
             <!-- Colonna destra -->
             @if ($proprietario)
                 <div class="col-12 col-lg-6">
+                    <!-- Sezione aggiunta carte sempre visibile -->
+                    @livewire('add-card-section', [
+                        'userId' => $user,
+                        'deckId' => $deck,
+                        'currentDeckCards' => collect($mazzo)->mapWithKeys(function($card, $key) {
+                            return [$key => $card['copie']];
+                        })->toArray(),
+                        'availableCards' => $cards
+                    ])
+
                     <div class="aggiunte mb-4">
                         <h3>Carte aggiunte</h3>
                         <div class="mb-4 contenuto">
@@ -253,13 +258,7 @@
         <p x-text="message"></p>
     </div>
     
-    <!-- Inclusione del popup per l'aggiunta di carte -->
-    @livewire('add-card-pop-up', [
-        'userId' => $user,
-        'deckId' => $deck,
-        'currentDeckCards' => [],
-        'availableCards' => []
-    ])
+
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

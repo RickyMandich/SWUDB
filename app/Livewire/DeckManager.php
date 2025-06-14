@@ -86,24 +86,26 @@ class DeckManager extends Component
 
         // Calcola le statistiche iniziali
         $this->calcolaStatistiche();
+
+        // Inizializza la sezione aggiunta carte
+        $this->updateAddCardSection();
     }
     
     /**
-     * Open the add card popup and prepare current deck state
-     * Apre il popup di aggiunta carte e prepara lo stato attuale del mazzo
+     * Update the add card section with current deck state
+     * Aggiorna la sezione aggiunta carte con lo stato attuale del mazzo
      *
      * @return void
      */
-    public function openAddCardPopup()
+    public function updateAddCardSection()
     {
         // Prepariamo un array con le carte attualmente nel mazzo e il loro conteggio
         $currentDeckCards = collect($this->mazzo)->mapWithKeys(function($card, $key) {
             return [$key => $card['copie']];
         })->toArray();
-        
-        // Aggiorniamo il componente popup con le carte disponibili
+
+        // Aggiorniamo il componente sezione aggiunta carte con le carte disponibili
         $this->dispatch('updateAvailableCards', $currentDeckCards);
-        $this->dispatch('openAddCardPopup');
     }
     
     /**
@@ -123,8 +125,9 @@ class DeckManager extends Component
             $continua = $this->aumentaCopia($cardId);
         }
         
-        // Aggiorniamo il conteggio totale delle carte
+        // Aggiorniamo il conteggio totale delle carte e la sezione aggiunta carte
         $this->refreshCardCount();
+        $this->updateAddCardSection();
     }
     
     /**
@@ -174,6 +177,7 @@ class DeckManager extends Component
 
         // Aggiorna le statistiche immediatamente quando chiamato dai pulsanti
         $this->refreshCardCount();
+        $this->updateAddCardSection();
 
         return true;
     }
@@ -208,6 +212,7 @@ class DeckManager extends Component
             }
             
             $this->refreshCardCount();
+            $this->updateAddCardSection();
             return true;
         } else {
             $this->dispatch('showMessage', [
