@@ -573,7 +573,7 @@ class CardsController extends Controller
         
         while ($leftIndex < $left->count() && $rightIndex < $right->count()) {
             // Uso la funzione compareElements per confrontare
-            if (CardsController::compareElements($left[$leftIndex]->toArray(), $right[$rightIndex]->toArray(), $verbose) <= 0) {
+            if (CardsController::compareElements($left->toArray()[$leftIndex], $right->toArray()[$rightIndex], $verbose) <= 0) {
             $result->push($left[$leftIndex]);
             $leftIndex++;
             } else {
