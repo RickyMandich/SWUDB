@@ -3,113 +3,59 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Card;
 use Illuminate\Support\Facades\Http;
-use App\Events\MessageCreated;
-use App\Events\CardReceived;
 
 /**
- * Controller for handling background job operations and external integrations
- * Controller per gestire operazioni di job in background e integrazioni esterne
+ * Controller for handling background job operations and Telegram notifications
+ * Controller per gestire operazioni di job in background e notifiche Telegram
  *
- * This controller provides endpoints for:
- * - Adding cards to the database from import processes
- * - Sending messages via Telegram bot integration
- * - Fire-and-forget HTTP requests for asynchronous operations
+ * This controller provides endpoints for background processing tasks,
+ * including card imports and Telegram message sending for status updates.
  */
-class JobController extends Controller{
-
+class JobController extends Controller
+{
     /**
-     * Add a single card to the database from JSON data
-     * Aggiunge una singola carta al database da dati JSON
+     * Add a new card to the database from external API data
+     * Aggiunge una nuova carta al database da dati API esterni
      *
-     * This method handles the complex process of creating a new card record
-     * with comprehensive field mapping, validation, and error handling.
-     * Includes special logic for max copies based on card type.
+     * This method processes card data from the request and creates a new
+     * Card record in the database with all the provided attributes.
      *
-     * @param Request $request HTTP request containing 'card' JSON parameter
-     * @return void Outputs debug information or error messages
+     * @param Request $request HTTP request containing card data and authentication token
+     * @return void Outputs success/error messages directly
      */
     public function addCard(Request $request){
-        $card = json_decode($request->input('card'), true);
-        // return $card;
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-start.log", "start addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
-        if(Card::where('espansione', $card["espansione"])->where('numero',$card["numero"])->get()->isEmpty()){
-            $last = "prima di new";
-            try{
-                $carta = new Card();
-                $last = "new-cid";
-                $carta->cid = $card["cid"];
-                $last = "cid-espansione";
-                $carta->espansione = $card["espansione"];
-                $last = "espansione-numero";
-                $carta->numero = $card["numero"];
-                $last = "numero-aspettoPrimario";
-                $carta->aspettoPrimario = $card["aspettoPrimario"] ?? "";
-                $last = "aspettoPrimario-aspettoSecondario";
-                $carta->aspettoSecondario = $card["aspettoSecondario"] ?? "";
-                $last = "aspettoSecondario-unica";
-                $carta->unica = $card["unica"] ?? "";
-                $last = "unica-nome";
-                $carta->nome = $card["nome"];
-                $last = "nome-titolo";
-                $carta->titolo = $card["titolo"] ?? "";
-                $last = "titolo-tipo";
-                $carta->tipo = $card["tipo"];
-                $last = "tipo-rarita";
-                $carta->rarita = $card["rarita"];
-                $last = "rarita-costo";
-                $carta->costo = $card["costo"];
-                $last = "costo-vita";
-                $carta->vita = $card["vita"] ?? "";
-                $last = "vita-potenza"; 
-                $carta->potenza = $card["potenza"] ?? "";
-                $last = "potenza-descrizione";
-                $carta->descrizione = $card["descrizione"] ?? "";
-                $last = "descrizione-tratti";
-                if(gettype($card["tratti"]) == "string"){
-                    $carta->tratti = $card["tratti"];
-                }else{
-                    $carta->tratti = implode(" * ", $card["tratti"]);
-                }
-                $last = "tratti-arena";
-                $carta->arena = $card["arena"] ?? "";
-                $last = "arena-artista";
-                $carta->artista = $card["artista"];
-                $last = "artista-uscita";
-                $carta->uscita = $card["uscita"];
-                $last = "uscita-frontArt";
-                $carta->frontArt = $card["frontArt"];
-                $last = "frontArt-backArt";
-                $carta->backArt = $card["backArt"] ?? "";
-                $last = "backArt-maxCopie3";
-                $carta->maxCopie = 3;
-                $last = "maxCopie3-maxCopie1";
-                if(str_contains(strtolower($carta->tipo), 'leader')){
-                    $carta->maxCopie = 1;
-                }
-                $last = "maxCopie1leader-maxCopie1base";
-                if(str_contains(strtolower($carta->tipo), 'base')){
-                    $carta->maxCopie = 1;
-                }
-                $last = "maxCopie1-maxCopie15";
-                if(strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256){
-                    $carta->maxCopie = 15;
-                }
-                $last = "maxCopie15-maxCopie0";
-                if(str_contains(strtolower($carta->tipo), "segnalino")){
-                    $carta->maxCopie = 0;
-                }
-                $last = "maxCopie-creazione";
-                unset($carta->creazione);
-                $last = "creazione-save";
-                $carta->save();
-            }catch(\Exception $e){
-                echo "eccezione ".$e->getMessage() . " <strong>at</strong> " . $last;
-                if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
-                // MessageCreated::dispatch("eccezione ".$e->getMessage());
-            }
-            if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "end addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
+        if ($request->input('token') !== env('JOB_TOKEN')) {
+            abort(403);
+        }
+
+        $card = new \App\Models\Card();
+        $card->nome = $request->input('nome');
+        $card->costo = $request->input('costo');
+        $card->vita = $request->input('vita');
+        $card->potenza = $request->input('potenza');
+        $card->tipo = $request->input('tipo');
+        $card->sottotipo = $request->input('sottotipo');
+        $card->tratti = $request->input('tratti');
+        $card->testo = $request->input('testo');
+        $card->aspetto_primario = $request->input('aspetto_primario');
+        $card->aspetto_secondario = $request->input('aspetto_secondario');
+        $card->rarita = $request->input('rarita');
+        $card->numero_carta = $request->input('numero_carta');
+        $card->espansione = $request->input('espansione');
+        $card->artista = $request->input('artista');
+        $card->variante = $request->input('variante');
+        $card->immagine_carta = $request->input('immagine_carta');
+        $card->immagine_artista = $request->input('immagine_artista');
+        $card->arena = $request->input('arena');
+        $card->epicness = $request->input('epicness');
+        $card->unique = $request->input('unique');
+
+        try {
+            $card->save();
+            echo "Carta '{$card->nome}' aggiunta con successo!\n";
+        } catch (\Exception $e) {
+            echo "Errore nell'aggiunta della carta: " . $e->getMessage() . "\n";
         }
     }
 
@@ -132,7 +78,7 @@ class JobController extends Controller{
 
         $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
         $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
-
+        
         try {
             Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
                 'chat_id' => $chatId,
@@ -150,7 +96,7 @@ class JobController extends Controller{
      *
      * This method handles threaded messages that can replace previous messages
      * within the same execution context. It uses Telegram's message editing
-     * capabilities when possible to avoid notification spam.
+     * capabilities to avoid notification spam by editing existing messages.
      *
      * @param Request $request HTTP request containing 'threadId', 'message', 'isComplete', and 'token' parameters
      * @return void Sends or edits message in Telegram or logs errors
@@ -168,24 +114,46 @@ class JobController extends Controller{
         $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
 
         try {
-            // For now, we'll send a new message each time
-            // In a more advanced implementation, you could store message IDs
-            // and use editMessageText to replace previous messages
-            Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
-                'chat_id' => $chatId,
-                'text' => $message
-            ]);
-
-            if(env("APP_DEBUG")) {
-                file_put_contents(__DIR__ . "/debug-threadMessage.log",
-                    "Sent thread message [{$threadId}]: {$message}" .
-                    ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
+            // Check if we have an existing message to edit
+            $existingMessageId = \App\Services\ThreadManager::getTelegramMessageId($threadId);
+            
+            if ($existingMessageId) {
+                // Edit the existing message
+                $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/editMessageText", [
+                    'chat_id' => $chatId,
+                    'message_id' => $existingMessageId,
+                    'text' => $message
+                ]);
+                
+                if(env("APP_DEBUG")) {
+                    file_put_contents(__DIR__ . "/debug-threadMessage.log", 
+                        "Edited thread message [{$threadId}] ID {$existingMessageId}: {$message}" . 
+                        ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
+                }
+            } else {
+                // Send a new message and store its ID
+                $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                    'chat_id' => $chatId,
+                    'text' => $message
+                ]);
+                
+                $responseData = $response->json();
+                if (isset($responseData['result']['message_id'])) {
+                    $messageId = $responseData['result']['message_id'];
+                    \App\Services\ThreadManager::setTelegramMessageId($threadId, $messageId);
+                    
+                    if(env("APP_DEBUG")) {
+                        file_put_contents(__DIR__ . "/debug-threadMessage.log", 
+                            "Sent new thread message [{$threadId}] ID {$messageId}: {$message}" . 
+                            ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
+                    }
+                }
             }
-
+            
         } catch (\Exception $e) {
             \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
             if(env("APP_DEBUG")) {
-                file_put_contents(__DIR__ . "/debug-threadMessage.log",
+                file_put_contents(__DIR__ . "/debug-threadMessage.log", 
                     "Error in thread message [{$threadId}]: " . $e->getMessage() . "\n", FILE_APPEND);
             }
         }
