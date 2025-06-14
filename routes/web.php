@@ -162,6 +162,23 @@ Route::get("/thread-debug", function(){
     return $output;
 })->name("thread.debug");
 
+Route::get("/thread-simple-test", function(){
+    $threadId = \App\Services\ThreadManager::generateThreadId('simple');
+
+    // Test 1: Send first message
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Primo messaggio");
+
+    // Test 2: Wait and send second message (should replace first)
+    sleep(3);
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Secondo messaggio (dovrebbe sostituire il primo)");
+
+    // Test 3: Wait and send final message
+    sleep(3);
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Messaggio finale completato!", true);
+
+    return "Simple test completed. Check Telegram - you should see only the final message.";
+})->name("thread.simple.test");
+
 Route::fallback(function () {
     return view('errors.404');
 });
