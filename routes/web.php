@@ -48,6 +48,10 @@ Route::post('/mazzo/{user}/{mazzo}/save', [DecksController::class, 'store'])->na
 
 Route::post('/mazzo/create', [DecksController::class, 'create'])->name("mazzo.create");
 
+Route::delete('/mazzo/{user}/{mazzo}', [DecksController::class, 'destroy'])->name("mazzo.delete")->middleware('auth');
+
+Route::patch('/mazzo/{user}/{mazzo}/visibility', [DecksController::class, 'toggleVisibility'])->name("mazzo.toggle.visibility")->middleware('auth');
+
 Route::get('/mazzo/{user}/{mazzo}/export/txt', [DecksController::class, 'exportTxt'])->name("mazzo.export.txt");
 
 Route::get('/mazzo/{user}/{mazzo}/export/json', [DecksController::class, 'exportJson'])->name("mazzo.export.json");

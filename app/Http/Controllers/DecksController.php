@@ -243,6 +243,114 @@ class DecksController extends Controller{
     }
 
     /**
+     * Delete a deck owned by the authenticated user
+     * Elimina un mazzo di proprietà dell'utente autenticato
+     *
+     * This method handles deck deletion with proper authorization:
+     * - Verifies user authentication
+     * - Validates deck ownership
+     * - Prevents deletion of collection decks
+     * - Removes deck and all associated compositions
+     *
+     * @param string $user The username of the deck owner
+     * @param string $deck The deck name (URL encoded)
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
+    public function destroy($user, $deck)
+    {
+        if (!auth()->check()) {
+            return redirect()->route("login")->with("warning", "Devi essere loggato per eseguire questa azione");
+        }
+
+        $deckName = str_replace("+", " ", $deck);
+
+        // Verifica che l'utente esista
+        $targetUser = User::where("name", $user)->first();
+        if (!$targetUser) {
+            return redirect()->route("mazzi")->with("error", "Utente non trovato");
+        }
+
+        // Verifica che il mazzo esista e appartenga all'utente autenticato
+        $mazzo = Deck::where("nome", $deckName)
+                    ->where("codUtente", auth()->user()->id)
+                    ->first();
+
+        if (!$mazzo) {
+            return redirect()->route("mazzi")->with("error", "Mazzo non trovato o non hai i permessi per eliminarlo");
+        }
+
+        // Impedisce l'eliminazione della collezione
+        if ($deckName === "Collezione") {
+            return redirect()->route("mazzi")->with("warning", "Non puoi eliminare la collezione");
+        }
+
+        try {
+            // Elimina tutte le composizioni associate al mazzo
+            Composition::where("idMazzo", $mazzo->id)->delete();
+
+            // Elimina il mazzo
+            $mazzo->delete();
+
+            return redirect()->route("mazzi")->with("success", "Mazzo '$deckName' eliminato con successo");
+        } catch (\Exception $e) {
+            return redirect()->route("mazzi")->with("error", "Errore durante l'eliminazione del mazzo: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Toggle deck visibility between public and private
+     * Cambia la visibilità del mazzo tra pubblico e privato
+     *
+     * This method handles deck visibility changes with proper authorization:
+     * - Verifies user authentication and deck ownership
+     * - Toggles the public/private status
+     * - Prevents modification of collection decks
+     *
+     * @param string $user The username of the deck owner
+     * @param string $deck The deck name (URL encoded)
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
+    public function toggleVisibility($user, $deck)
+    {
+        if (!auth()->check()) {
+            return redirect()->route("login")->with("warning", "Devi essere loggato per eseguire questa azione");
+        }
+
+        $deckName = str_replace("+", " ", $deck);
+
+        // Verifica che l'utente esista
+        $targetUser = User::where("name", $user)->first();
+        if (!$targetUser) {
+            return redirect()->route("mazzi")->with("error", "Utente non trovato");
+        }
+
+        // Verifica che il mazzo esista e appartenga all'utente autenticato
+        $mazzo = Deck::where("nome", $deckName)
+                    ->where("codUtente", auth()->user()->id)
+                    ->first();
+
+        if (!$mazzo) {
+            return redirect()->route("mazzi")->with("error", "Mazzo non trovato o non hai i permessi per modificarlo");
+        }
+
+        // Impedisce la modifica della visibilità della collezione
+        if ($deckName === "Collezione") {
+            return redirect()->route("mazzi")->with("warning", "Non puoi modificare la visibilità della collezione");
+        }
+
+        try {
+            // Cambia la visibilità
+            $mazzo->public = !$mazzo->public;
+            $mazzo->save();
+
+            $status = $mazzo->public ? "pubblico" : "privato";
+            return redirect()->route("mazzi")->with("success", "Mazzo '$deckName' ora è $status");
+        } catch (\Exception $e) {
+            return redirect()->route("mazzi")->with("error", "Errore durante la modifica della visibilità: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Display and manage the user's personal collection as a special deck
      * Mostra e gestisce la collezione personale dell'utente come mazzo speciale
      *

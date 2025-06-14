@@ -34,7 +34,7 @@
     <div class="container">
         <div class="row">
             <!-- Colonna sinistra -->
-            <div class="col-md-6">
+            <div class="col-12 col-lg-6">
                 <div class="mazzo">
                     <h3 class="mb-3">Mazzo</h3>
                     <div class="contenuto">
@@ -55,7 +55,7 @@
             </div>
             <!-- Colonna destra -->
             @if ($proprietario)
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                     <div class="aggiunte mb-4">
                         <h3>Carte aggiunte</h3>
                         <div class="mb-4 contenuto">
@@ -108,7 +108,7 @@
                     <!-- Prima riga: Tratti -->
                     <div class="row">
                         <!-- Tratti -->
-                        <div class="col-6 mb-3">
+                        <div class="col-12 col-lg-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h5 class="card-title">Tratti</h5>
@@ -178,7 +178,7 @@
                         </div>
                         
                         <!-- Statistiche per Costo -->
-                        <div class="col-6 mb-3">
+                        <div class="col-12 col-lg-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h5 class="card-title">Statistiche</h5>
@@ -194,7 +194,7 @@
 
                     <!-- Terza riga: Distribuzioni -->
                     <div class="row mt-3">
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Aspetto</h5>
@@ -208,7 +208,7 @@
                         </div>
 
                         <!-- Distribuzione per Tipo -->
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Tipo</h5>
@@ -222,7 +222,7 @@
                         </div>
 
                         <!-- Distribuzione per Costo -->
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Distribuzione per Costo</h5>

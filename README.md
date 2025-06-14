@@ -34,11 +34,13 @@
         - ~~divisi~~
         - ~~non divisi~~
     - ~~hp/potenza media~~
+    - sistemare la larghezza dei card su mobile
 - ~~Implementazione di cache per migliorare le performance~~
     - ottimizzare il popup di aggiunta carte
 - ~~Funzionalità di esportazione mazzi in formato TXT e JSON~~
 - ~~Funzionalità di importazione mazzi da URL o file~~
     - ~~import da url rotto~~
+- aggiornare l'index dei mazzi
 
 ## Funzionalità Future
 - Funzionalità di condivisione social
