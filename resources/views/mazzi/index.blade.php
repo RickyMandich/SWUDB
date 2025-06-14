@@ -76,7 +76,7 @@
                                                         <button type="submit" class="btn btn-outline-warning btn-sm w-100"
                                                                 title="{{ $deck->public ? 'Rendi privato' : 'Rendi pubblico' }}">
                                                             <i class="fas {{ $deck->public ? 'fa-lock' : 'fa-globe' }} me-1"></i>
-                                                            {{ $deck->public ? 'Privato' : 'Pubblico' }}
+                                                            Rendi {{ $deck->public ? 'Privato' : 'Pubblico' }}
                                                         </button>
                                                     </form>
 
