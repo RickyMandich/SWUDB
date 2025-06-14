@@ -109,8 +109,8 @@ class DecksController extends Controller{
         if (!$cards->isEmpty()) {
             // Converte la Collection in array per compatibilità con mergeSort
             $cardsArray = $cards->toArray();
-            $sortedArray = \App\Http\Controllers\CardsController::mergeSort(collect($cardsArray));
-            $cards = $sortedArray;
+            $cardsCollection = collect($cardsArray);
+            $cards = \App\Http\Controllers\CardsController::mergeSort($cardsCollection);
         }
 
         // Recupera tutte le carte disponibili
