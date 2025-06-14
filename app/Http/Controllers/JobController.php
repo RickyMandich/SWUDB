@@ -29,34 +29,83 @@ class JobController extends Controller
             abort(403);
         }
 
-        $card = new \App\Models\Card();
-        $card->nome = $request->input('nome');
-        $card->costo = $request->input('costo');
-        $card->vita = $request->input('vita');
-        $card->potenza = $request->input('potenza');
-        $card->tipo = $request->input('tipo');
-        $card->sottotipo = $request->input('sottotipo');
-        $card->tratti = $request->input('tratti');
-        $card->testo = $request->input('testo');
-        $card->aspetto_primario = $request->input('aspetto_primario');
-        $card->aspetto_secondario = $request->input('aspetto_secondario');
-        $card->rarita = $request->input('rarita');
-        $card->numero_carta = $request->input('numero_carta');
-        $card->espansione = $request->input('espansione');
-        $card->artista = $request->input('artista');
-        $card->variante = $request->input('variante');
-        $card->immagine_carta = $request->input('immagine_carta');
-        $card->immagine_artista = $request->input('immagine_artista');
-        $card->arena = $request->input('arena');
-        $card->epicness = $request->input('epicness');
-        $card->unique = $request->input('unique');
+        $last = "inizio";
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard.log", "inizio addCard \n\n", FILE_APPEND);
 
         try {
-            $card->save();
-            echo "Carta '{$card->nome}' aggiunta con successo!\n";
-        } catch (\Exception $e) {
-            echo "Errore nell'aggiunta della carta: " . $e->getMessage() . "\n";
+            // Check if card data is passed as JSON
+            $cardJson = $request->input('card');
+            if ($cardJson) {
+                $card = json_decode($cardJson, true);
+                if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
+            } else {
+                // Fallback to individual parameters
+                $card = $request->all();
+                if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
+            }
+
+            $last = "creazione-carta";
+            $carta = new \App\Models\Card();
+            $carta->nome = $card['nome'] ?? '';
+            $carta->costo = $card['costo'] ?? null;
+            $carta->vita = $card['vita'] ?? null;
+            $carta->potenza = $card['potenza'] ?? null;
+            $carta->tipo = $card['tipo'] ?? '';
+            $carta->sottotipo = $card['sottotipo'] ?? '';
+            $carta->tratti = $card['tratti'] ?? '';
+            $carta->testo = $card['testo'] ?? '';
+            $carta->aspetto_primario = $card['aspetto_primario'] ?? '';
+            $carta->aspetto_secondario = $card['aspetto_secondario'] ?? '';
+            $carta->rarita = $card['rarita'] ?? '';
+            $carta->numero = $card['numero'] ?? null;
+            $carta->espansione = $card['espansione'] ?? '';
+            $carta->artista = $card['artista'] ?? '';
+            $carta->variante = $card['variante'] ?? '';
+            $carta->immagine_carta = $card['immagine_carta'] ?? '';
+            $carta->immagine_artista = $card['immagine_artista'] ?? '';
+            $carta->arena = $card['arena'] ?? '';
+            $carta->epicness = $card['epicness'] ?? '';
+            $carta->unique = $card['unique'] ?? '';
+            $carta->titolo = $card['titolo'] ?? '';
+
+            $last = "maxCopie3";
+            $carta->maxCopie = 3;
+
+            $last = "maxCopie1leader";
+            if(str_contains(strtolower($carta->tipo), 'leader')){
+                $carta->maxCopie = 1;
+            }
+
+            $last = "maxCopie1leader-maxCopie1base";
+            if(str_contains(strtolower($carta->tipo), 'base')){
+                $carta->maxCopie = 1;
+            }
+
+            $last = "maxCopie1-maxCopie15";
+            if(strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256){
+                $carta->maxCopie = 15;
+            }
+
+            $last = "maxCopie15-maxCopie0";
+            if(str_contains(strtolower($carta->tipo), "segnalino")){
+                $carta->maxCopie = 0;
+            }
+
+            $last = "maxCopie-creazione";
+            unset($carta->creazione);
+
+            $last = "creazione-save";
+            $carta->save();
+
+            echo "Carta '{$carta->nome}' aggiunta con successo!\n";
+            if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "success addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
+
+        } catch(\Exception $e){
+            echo "eccezione ".$e->getMessage() . " <strong>at</strong> " . $last;
+            if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
         }
+
+        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown'). " \n\n", FILE_APPEND);
     }
 
     /**
