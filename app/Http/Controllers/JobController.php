@@ -184,6 +184,10 @@ class JobController extends Controller{
 
         } catch (\Exception $e) {
             \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
+            if(env("APP_DEBUG")) {
+                file_put_contents(__DIR__ . "/debug-threadMessage.log",
+                    "Error in thread message [{$threadId}]: " . $e->getMessage() . "\n", FILE_APPEND);
+            }
         }
     }
 

@@ -16,7 +16,7 @@ class ThreadManager
      * Storage for active thread states
      * Memorizzazione degli stati dei thread attivi
      *
-     * @var array<string, array{message: string, timestamp: int, isComplete: bool}>
+     * @var array<string, array{message: string, timestamp: int, isComplete: bool, telegramMessageId: int|null}>
      */
     private static array $threads = [];
 
@@ -27,14 +27,18 @@ class ThreadManager
      * @param string $threadId Unique identifier for the thread
      * @param string $message Initial or updated message content
      * @param bool $isComplete Whether this message marks the thread as complete
+     * @param int|null $telegramMessageId Optional Telegram message ID for editing
      * @return void
      */
-    public static function updateThread(string $threadId, string $message, bool $isComplete = false): void
+    public static function updateThread(string $threadId, string $message, bool $isComplete = false, ?int $telegramMessageId = null): void
     {
+        $existingThread = self::$threads[$threadId] ?? null;
+
         self::$threads[$threadId] = [
             'message' => $message,
             'timestamp' => time(),
-            'isComplete' => $isComplete
+            'isComplete' => $isComplete,
+            'telegramMessageId' => $telegramMessageId ?? ($existingThread['telegramMessageId'] ?? null)
         ];
 
         // Clean up completed threads after a short delay to allow final message delivery
@@ -42,6 +46,33 @@ class ThreadManager
             // In a real application, you might want to use a queue job for cleanup
             // For now, we'll mark it as complete and clean up old completed threads
             self::cleanupCompletedThreads();
+        }
+    }
+
+    /**
+     * Get the Telegram message ID for a thread
+     * Ottiene l'ID del messaggio Telegram per un thread
+     *
+     * @param string $threadId The thread identifier
+     * @return int|null The Telegram message ID or null if not set
+     */
+    public static function getTelegramMessageId(string $threadId): ?int
+    {
+        return self::$threads[$threadId]['telegramMessageId'] ?? null;
+    }
+
+    /**
+     * Set the Telegram message ID for a thread
+     * Imposta l'ID del messaggio Telegram per un thread
+     *
+     * @param string $threadId The thread identifier
+     * @param int $telegramMessageId The Telegram message ID
+     * @return void
+     */
+    public static function setTelegramMessageId(string $threadId, int $telegramMessageId): void
+    {
+        if (isset(self::$threads[$threadId])) {
+            self::$threads[$threadId]['telegramMessageId'] = $telegramMessageId;
         }
     }
 
