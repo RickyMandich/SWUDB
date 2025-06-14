@@ -20,6 +20,7 @@ class JobController extends Controller
      *
      * This method processes card data from the request and creates a new
      * Card record in the database with all the provided attributes.
+     * Handles both individual parameters and JSON card data.
      *
      * @param Request $request HTTP request containing card data and authentication token
      * @return void Outputs success/error messages directly
@@ -31,7 +32,7 @@ class JobController extends Controller
 
         $last = "inizio";
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard.log", "inizio addCard \n\n", FILE_APPEND);
-
+        
         try {
             // Check if card data is passed as JSON
             $cardJson = $request->input('card');
@@ -67,44 +68,44 @@ class JobController extends Controller
             $carta->epicness = $card['epicness'] ?? '';
             $carta->unique = $card['unique'] ?? '';
             $carta->titolo = $card['titolo'] ?? '';
-
+            
             $last = "maxCopie3";
             $carta->maxCopie = 3;
-
+            
             $last = "maxCopie1leader";
             if(str_contains(strtolower($carta->tipo), 'leader')){
                 $carta->maxCopie = 1;
             }
-
+            
             $last = "maxCopie1leader-maxCopie1base";
             if(str_contains(strtolower($carta->tipo), 'base')){
                 $carta->maxCopie = 1;
             }
-
+            
             $last = "maxCopie1-maxCopie15";
             if(strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256){
                 $carta->maxCopie = 15;
             }
-
+            
             $last = "maxCopie15-maxCopie0";
             if(str_contains(strtolower($carta->tipo), "segnalino")){
                 $carta->maxCopie = 0;
             }
-
+            
             $last = "maxCopie-creazione";
             unset($carta->creazione);
-
+            
             $last = "creazione-save";
             $carta->save();
-
+            
             echo "Carta '{$carta->nome}' aggiunta con successo!\n";
             if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "success addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
-
+            
         } catch(\Exception $e){
             echo "eccezione ".$e->getMessage() . " <strong>at</strong> " . $last;
             if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
         }
-
+        
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown'). " \n\n", FILE_APPEND);
     }
 
