@@ -35,7 +35,9 @@ class CardsController extends Controller
         }
         $model = Card::whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
         $empty = $model->isEmpty();
-        $model = CardsController::mergeSort($model);
+        $modelArray = $model->toArray();
+        $sortedArray = CardsController::mergeSort($modelArray);
+        $model = collect($sortedArray);
         if($espansione == ""){
             $title = "Carte";
         }else{
@@ -75,7 +77,8 @@ class CardsController extends Controller
                     ->where('numero', $numero2);
             })->get();
             ob_start();
-            CardsController::mergeSort($cards, true);
+            $cardsArray = $cards->toArray();
+            CardsController::mergeSort($cardsArray, true);
             $output = ob_get_clean();
             return view("carte.update", ["output" => $output]);
         }else{
@@ -537,63 +540,63 @@ class CardsController extends Controller
     }
 
     /**
-     * Recursive merge sort implementation for card collections
-     * Implementazione ricorsiva del merge sort per collezioni di carte
+     * Recursive merge sort implementation for card arrays
+     * Implementazione ricorsiva del merge sort per array di carte
      *
      * This method implements the merge sort algorithm specifically designed for
-     * Laravel collections. It uses the compareElements method to determine
+     * arrays of cards. It uses the compareElements method to determine
      * the sorting order based on complex card comparison rules.
      *
-     * The algorithm divides the collection recursively until single elements,
+     * The algorithm divides the array recursively until single elements,
      * then merges them back in sorted order using the custom comparison logic.
      *
-     * @param \Illuminate\Support\Collection &$array Collection of cards to sort (passed by reference)
+     * @param array &$array Array of cards to sort (passed by reference)
      * @param bool $verbose Whether to enable verbose output during comparison
-     * @return \Illuminate\Support\Collection The sorted collection
+     * @return array The sorted array
      */
     public static function mergeSort(&$array, $verbose = false) {
-        // Caso base: se la collezione ha 0 o 1 elemento, è già ordinata
-        if ($array->count() <= 1) {
+        // Caso base: se l'array ha 0 o 1 elemento, è già ordinato
+        if (count($array) <= 1) {
             return $array;
         }
-        
-        // Divido la collezione in due metà
-        $mid = floor($array->count() / 2);
-        $left = $array->slice(0, $mid)->values();
-        $right = $array->slice($mid)->values();
-        
+
+        // Divido l'array in due metà
+        $mid = floor(count($array) / 2);
+        $left = array_slice($array, 0, $mid);
+        $right = array_slice($array, $mid);
+
         // Richiamo ricorsivamente mergeSort sulle due metà
         $left = CardsController::mergeSort($left);
         $right = CardsController::mergeSort($right);
-        
+
         // Fondo le due metà
-        $result = collect();
+        $result = [];
         $leftIndex = 0;
         $rightIndex = 0;
-        
-        while ($leftIndex < $left->count() && $rightIndex < $right->count()) {
+
+        while ($leftIndex < count($left) && $rightIndex < count($right)) {
             // Uso la funzione compareElements per confrontare
-            if (CardsController::compareElements($left->toArray()[$leftIndex], $right->toArray()[$rightIndex], $verbose) <= 0) {
-            $result->push($left[$leftIndex]);
-            $leftIndex++;
+            if (CardsController::compareElements($left[$leftIndex], $right[$rightIndex], $verbose) <= 0) {
+                $result[] = $left[$leftIndex];
+                $leftIndex++;
             } else {
-            $result->push($right[$rightIndex]);
-            $rightIndex++;
+                $result[] = $right[$rightIndex];
+                $rightIndex++;
             }
         }
-        
+
         // Aggiungo gli eventuali elementi rimanenti di left
-        while ($leftIndex < $left->count()) {
-            $result->push($left[$leftIndex]);
+        while ($leftIndex < count($left)) {
+            $result[] = $left[$leftIndex];
             $leftIndex++;
         }
-        
+
         // Aggiungo gli eventuali elementi rimanenti di right
-        while ($rightIndex < $right->count()) {
-            $result->push($right[$rightIndex]);
+        while ($rightIndex < count($right)) {
+            $result[] = $right[$rightIndex];
             $rightIndex++;
         }
-        
+
         return $result;
     }
 }

@@ -270,7 +270,9 @@ class SearchFilter extends Component
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$results->isEmpty()) {
-            $results = \App\Http\Controllers\CardsController::mergeSort($results);
+            $resultsArray = $results->toArray();
+            $sortedArray = \App\Http\Controllers\CardsController::mergeSort($resultsArray);
+            $results = collect($sortedArray);
         }
 
         $this->filteredCards = $results;
