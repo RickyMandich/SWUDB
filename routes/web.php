@@ -102,24 +102,65 @@ Route::get("/message/{message}", function($message){
 Route::get("/thread-message-test", function(){
     $threadId = \App\Services\ThreadManager::generateThreadId('test');
 
-    // Simulate a process with multiple updates
+    // Send first message
     \App\Events\ThreadMessageCreated::dispatch($threadId, "Avvio processo di test...");
 
-    // In a real scenario, these would be separate requests/jobs
-    sleep(1);
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 25%...");
+    // Schedule subsequent messages using fire-and-forget with delays
+    \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 1]), [
+        "token" => env('JOB_TOKEN')
+    ]);
 
-    sleep(1);
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 50%...");
-
-    sleep(1);
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 75%...");
-
-    sleep(1);
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Processo completato con successo!", true);
-
-    return "Test threaded messages completed. Check your Telegram for the message thread.";
+    return "Test threaded messages started. Check your Telegram for the message thread.";
 })->name("thread.message.test");
+
+Route::get("/thread-message-step/{threadId}/{step}", function($threadId, $step){
+    if (request()->input('token') !== env('JOB_TOKEN')) {
+        abort(403);
+    }
+
+    switch($step) {
+        case 1:
+            sleep(2); // Wait for first message to be processed
+            \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 25%...");
+            \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 2]), [
+                "token" => env('JOB_TOKEN')
+            ]);
+            break;
+        case 2:
+            sleep(2);
+            \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 50%...");
+            \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 3]), [
+                "token" => env('JOB_TOKEN')
+            ]);
+            break;
+        case 3:
+            sleep(2);
+            \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 75%...");
+            \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 4]), [
+                "token" => env('JOB_TOKEN')
+            ]);
+            break;
+        case 4:
+            sleep(2);
+            \App\Events\ThreadMessageCreated::dispatch($threadId, "Processo completato con successo!", true);
+            break;
+    }
+
+    return "Step $step completed";
+})->name("thread.message.step");
+
+Route::get("/thread-debug", function(){
+    $stats = \App\Services\ThreadManager::getThreadStats();
+    $threads = \App\Services\ThreadManager::getAllThreads();
+
+    $output = "<h2>Thread Manager Debug</h2>";
+    $output .= "<h3>Statistics:</h3>";
+    $output .= "<pre>" . json_encode($stats, JSON_PRETTY_PRINT) . "</pre>";
+    $output .= "<h3>Active Threads:</h3>";
+    $output .= "<pre>" . json_encode($threads, JSON_PRETTY_PRINT) . "</pre>";
+
+    return $output;
+})->name("thread.debug");
 
 Route::fallback(function () {
     return view('errors.404');
