@@ -107,9 +107,12 @@ class DecksController extends Controller{
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$cards->isEmpty()) {
-            // Converte la Collection in array per compatibilità con mergeSort
-            $cardsArray = $cards->toArray();
-            $sortedArray = \App\Http\Controllers\CardsController::mergeSort($cardsArray);
+            // Converte la Collection di oggetti stdClass in array associativi
+            $cardsArray = [];
+            foreach ($cards as $card) {
+                $cardsArray[] = (array) $card; // Converte stdClass in array associativo
+            }
+            $sortedArray = CardsController::mergeSort($cardsArray);
             $cards = collect($sortedArray);
         }
 
