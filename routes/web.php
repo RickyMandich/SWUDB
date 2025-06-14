@@ -99,6 +99,28 @@ Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
 })->name("message");
 
+Route::get("/thread-message-test", function(){
+    $threadId = \App\Services\ThreadManager::generateThreadId('test');
+
+    // Simulate a process with multiple updates
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Avvio processo di test...");
+
+    // In a real scenario, these would be separate requests/jobs
+    sleep(1);
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 25%...");
+
+    sleep(1);
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 50%...");
+
+    sleep(1);
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 75%...");
+
+    sleep(1);
+    \App\Events\ThreadMessageCreated::dispatch($threadId, "Processo completato con successo!", true);
+
+    return "Test threaded messages completed. Check your Telegram for the message thread.";
+})->name("thread.message.test");
+
 Route::fallback(function () {
     return view('errors.404');
 });
@@ -134,6 +156,8 @@ Route::get('/documentazione', function(){
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 
 Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job.sendMessage");
+
+Route::get("/job/SendThreadMessage", [JobController::class, 'sendThreadMessage'])->name("job.sendThreadMessage");
 
 route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', [CardsController::class, 'compare'])->name("compare");
 

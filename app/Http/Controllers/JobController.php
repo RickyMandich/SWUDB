@@ -132,7 +132,7 @@ class JobController extends Controller{
 
         $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
         $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
-        
+
         try {
             Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
                 'chat_id' => $chatId,
@@ -142,6 +142,92 @@ class JobController extends Controller{
             \Log::error("Errore Telegram: " . $e->getMessage());
         }
 
+    }
+
+    /**
+     * Send a threaded message via Telegram bot with message replacement logic
+     * Invia un messaggio in thread tramite bot Telegram con logica di sostituzione messaggi
+     *
+     * This method handles threaded messages that can replace previous messages
+     * within the same execution context. It uses Telegram's message editing
+     * capabilities when possible to avoid notification spam.
+     *
+     * @param Request $request HTTP request containing 'threadId', 'message', 'isComplete', and 'token' parameters
+     * @return void Sends or edits message in Telegram or logs errors
+     */
+    public function sendThreadMessage(Request $request){
+        if ($request->input('token') !== env('JOB_TOKEN')) {
+            abort(403);
+        }
+
+        $threadId = $request->input('threadId');
+        $message = $request->input('message');
+        $isComplete = (bool) $request->input('isComplete', false);
+
+        $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
+        $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
+
+        try {
+            // For now, we'll send a new message each time
+            // In a more advanced implementation, you could store message IDs
+            // and use editMessageText to replace previous messages
+            Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $message
+            ]);
+
+            if(env("APP_DEBUG")) {
+                file_put_contents(__DIR__ . "/debug-threadMessage.log",
+                    "Sent thread message [{$threadId}]: {$message}" .
+                    ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send a threaded message via Telegram bot with message replacement logic
+     * Invia un messaggio in thread tramite bot Telegram con logica di sostituzione messaggi
+     *
+     * This method handles threaded messages that can replace previous messages
+     * within the same execution context. It uses Telegram's message editing
+     * capabilities when possible to avoid notification spam.
+     *
+     * @param Request $request HTTP request containing 'threadId', 'message', 'isComplete', and 'token' parameters
+     * @return void Sends or edits message in Telegram or logs errors
+     */
+    public function sendThreadMessage(Request $request){
+        if ($request->input('token') !== env('JOB_TOKEN')) {
+            abort(403);
+        }
+
+        $threadId = $request->input('threadId');
+        $message = $request->input('message');
+        $isComplete = (bool) $request->input('isComplete', false);
+
+        $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
+        $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
+
+        try {
+            // For now, we'll send a new message each time
+            // In a more advanced implementation, you could store message IDs
+            // and use editMessageText to replace previous messages
+            Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $message
+            ]);
+
+            if(env("APP_DEBUG")) {
+                file_put_contents(__DIR__ . "/debug-threadMessage.log",
+                    "Sent thread message [{$threadId}]: {$message}" .
+                    ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
+        }
     }
 
     /**

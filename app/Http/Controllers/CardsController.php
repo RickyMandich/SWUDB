@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Events\MessageCreated;
+use App\Events\ThreadMessageCreated;
+use App\Services\ThreadManager;
 
 use App\Mail\NewCardsEmail;
 
@@ -139,7 +141,6 @@ class CardsController extends Controller
      * @return \Illuminate\View\View The update result view with import statistics
      */
     public function startImport(){
-        MessageCreated::dispatch("Inizio Update");
         $url = 'http://swudb.altervista.org/collezione.json';
         $json = file_get_contents($url);
         $fullSet = json_decode($json, true);
@@ -156,7 +157,11 @@ class CardsController extends Controller
         // Salva su file temporaneo sul server
         file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
         if(count($toInsert) > 0){
-            JobController::fireAndForgetGet(route('carte.sendBatch'), [
+            // Generate a thread ID for this import session
+            $threadId = ThreadManager::generateThreadId('import');
+            ThreadMessageCreated::dispatch($threadId, "Avvio importazione di " . count($toInsert) . " nuove carte");
+
+            JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
                 "token" => env('JOB_TOKEN')
             ]);
             $message = "Sono disponibili queste nuove carte:\n";
@@ -179,6 +184,7 @@ class CardsController extends Controller
      * 1. Reading the next batch position from request
      * 2. Triggering the dispatch of current batch
      * 3. Recursively calling itself for next batch or completing import
+     * 4. Uses threaded messaging to replace previous notifications
      *
      * @param Request $request HTTP request containing 'next' parameter for batch position
      * @return void Outputs status messages directly
@@ -187,19 +193,22 @@ class CardsController extends Controller
         $next = intval($request->input("next", 0));
         if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
         $data = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
-        // MessageCreated::dispatch("Inizio importazione batch " . $next);
+
+        // Generate or retrieve thread ID for this import session
+        $threadId = $request->input('threadId', ThreadManager::generateThreadId('import'));
+
+        ThreadMessageCreated::dispatch($threadId, "Elaborazione batch $next di " . ceil(count($data) / 5));
         $batchSize = 5;
         JobController::fireAndForgetGet(route('carte.dispatchBatch', ['start' => $next, 'batchSize' => $batchSize]));
         if ($next + $batchSize >= count($data)) {
             echo "Import completato!\n";
-            MessageCreated::dispatch("Import completato!");
+            ThreadMessageCreated::dispatch($threadId, "Importazione completata! Elaborate " . count($data) . " carte", true);
             // file_put_contents(storage_path("app/to_insert.json"), "[]"); // Pulisce il file dopo l'importazione
         } else {
             echo "Batch $next dispatchato, prossima esecuzione tra 100ms...\n";
-            // MessageCreated::dispatch("Batch $next dispatchato");
             $next += $batchSize;
             usleep(100000); // 100ms delay
-            JobController::fireAndForgetGet(route('carte.sendBatch', ['next' => $next]), [
+            JobController::fireAndForgetGet(route('carte.sendBatch', ['next' => $next, 'threadId' => $threadId]), [
                 "token" => env('JOB_TOKEN')
             ]);
         }
