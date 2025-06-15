@@ -578,15 +578,20 @@ class CardsController extends Controller
 
             while ($leftIndex < count($leftArray) && $rightIndex < count($rightArray)) {
                 // Converto temporaneamente in array per compareElements
-                $leftElement = (array) $leftArray[$leftIndex];
-                $rightElement = (array) $rightArray[$rightIndex];
+                $leftElement = $leftArray[$leftIndex];
+                $rightElement = $rightArray[$rightIndex];
 
-                if (CardsController::compareElements($leftElement, $rightElement, $verbose) <= 0) {
-                    $result->push($leftArray[$leftIndex]);
-                    $leftIndex++;
-                } else {
-                    $result->push($rightArray[$rightIndex]);
-                    $rightIndex++;
+                try{
+                    if (CardsController::compareElements($leftElement, $rightElement, $verbose) <= 0) {
+                        $result->push($leftArray[$leftIndex]);
+                        $leftIndex++;
+                    } else {
+                        $result->push($rightArray[$rightIndex]);
+                        $rightIndex++;
+                    }
+                }catch(\Error $e){
+                    MessageCreated::dispatch(var_dump($leftElement));
+                    throw $e;
                 }
             }
 
