@@ -23,41 +23,27 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->renderable(function (Throwable $e, $request) {
-            // Se l'utente è admin, mostra la pagina di errore dettagliata di Laravel
+            // Se l'utente è admin, mostra la pagina di errore di default di Laravel con debug
             if (Auth::admin()) {
-                // Per gli admin, usa il renderer di debug di Laravel/Whoops
+                // Usa il renderer di default di Laravel forzando il debug
+                $handler = app(\Illuminate\Contracts\Debug\ExceptionHandler::class);
+
+                // Forza temporaneamente il debug per questo rendering
+                $originalDebug = config('app.debug');
+                config(['app.debug' => true]);
+
                 try {
-                    // Usa Whoops per il rendering dettagliato dell'errore
-                    if (class_exists(\Whoops\Run::class)) {
-                        $whoops = new \Whoops\Run;
-                        $whoops->allowQuit(false);
-                        $whoops->writeToOutput(false);
+                    // Usa il metodo interno di Laravel per preparare la risposta con debug attivo
+                    $method = new \ReflectionMethod($handler, 'prepareResponse');
+                    $method->setAccessible(true);
 
-                        $handler = new \Whoops\Handler\PrettyPageHandler;
-                        $handler->setPageTitle("Errore per Admin - SWUDB");
-                        $whoops->pushHandler($handler);
-
-                        $content = $whoops->handleException($e);
-                        return response($content, 500, ['Content-Type' => 'text/html']);
-                    } else {
-                        // Fallback: mostra errore con dettagli base
-                        $content = '<h1>Errore per Admin</h1>';
-                        $content .= '<h2>' . get_class($e) . '</h2>';
-                        $content .= '<p><strong>Messaggio:</strong> ' . htmlspecialchars($e->getMessage()) . '</p>';
-                        $content .= '<p><strong>File:</strong> ' . htmlspecialchars($e->getFile()) . '</p>';
-                        $content .= '<p><strong>Linea:</strong> ' . $e->getLine() . '</p>';
-                        $content .= '<h3>Stack Trace:</h3>';
-                        $content .= '<pre>' . htmlspecialchars($e->getTraceAsString()) . '</pre>';
-
-                        return response($content, 500, ['Content-Type' => 'text/html']);
-                    }
+                    return $method->invoke($handler, $request, $e);
                 } catch (\Exception $renderException) {
-                    // Se anche il rendering fallisce, mostra almeno l'errore base
-                    $content = '<h1>Errore per Admin (Rendering Failed)</h1>';
-                    $content .= '<p>Errore originale: ' . htmlspecialchars($e->getMessage()) . '</p>';
-                    $content .= '<p>Errore di rendering: ' . htmlspecialchars($renderException->getMessage()) . '</p>';
-
-                    return response($content, 500, ['Content-Type' => 'text/html']);
+                    // Se il rendering fallisce, usa un fallback semplice
+                    return response()->view('errors.500', ['exception' => $e], 500);
+                } finally {
+                    // Ripristina il valore originale
+                    config(['app.debug' => $originalDebug]);
                 }
             }
 
