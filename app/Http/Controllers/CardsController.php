@@ -29,28 +29,20 @@ class CardsController extends Controller
      * @param string|null $espansione Optional expansion code to filter by
      * @return \Illuminate\View\View The cards index view with filtered results
      */
-    public function index(Request $request, ?string $espansione = ""){
-        $espansione = strtoupper($espansione);
+    public function index(Request $request){
         $get = $request->all();
         if(!isset($get["nome"])){
             $get["nome"] = "";
         }
-        $model = Card::whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
+        $model = Card::whereLike("nome", "%".$get["nome"]."%")->get();
         $empty = $model->isEmpty();
         $model = CardsController::mergeSort($model);
-        if($espansione == ""){
-            $title = "Carte";
-        }else{
-            $title = "Carte ".strtoupper($espansione);
-        }
-        $espansioni = Card::select('espansione')->selectRaw('MIN(uscita) as prima_uscita')->groupBy('espansione')->orderBy('prima_uscita')->get();
+        $title = "Carte";
         return view('carte.index', [
             "content" => $model,
             "empty" => $empty,
             "nome" => $get["nome"],
             "title" => $title,
-            "espansioni" => $espansioni,
-            "espansione" => $espansione,
         ]);
     }
 

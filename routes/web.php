@@ -26,7 +26,7 @@ Route::get("query", function(Request $request){
     return view("query", ["result" => DB::select($query), "query"=>$query]);
 })->name("query");
 
-Route::get('/carte/{espansione?}', [CardsController::class, 'index'])->name("carte");
+Route::get('/carte', [CardsController::class, 'index'])->name("carte");
 
 Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->name("carta");
 
@@ -64,31 +64,6 @@ Route::post('/mazzi/import/url', [DecksController::class, 'importFromUrl'])->nam
 
 Route::get('/test/swudb', [DecksController::class, 'testSwudbConnection'])->name("test.swudb");
 
-Route::get('/debug/logs', function() {
-    $logFile = storage_path('logs/laravel.log');
-    if (file_exists($logFile)) {
-        $logs = file_get_contents($logFile);
-        $lastLogs = substr($logs, -10000); // Ultimi 10KB di log
-        return '<pre>' . htmlspecialchars($lastLogs) . '</pre>';
-    }
-    return 'Log file not found';
-})->name("debug.logs");
-
-Route::post('/test/import', function(Request $request) {
-    return response()->json([
-        'success' => true,
-        'message' => 'Test route funziona',
-        'data' => [
-            'method' => $request->method(),
-            'all_input' => $request->all(),
-            'public_input' => $request->input('public'),
-            'public_boolean' => $request->boolean('public'),
-            'has_public' => $request->has('public'),
-            'user_id' => Auth::id()
-        ]
-    ]);
-})->name("test.import");
-
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
 Route::get("/api/carte/{espansione}", [CardsController::class, 'apis'])->name("api.carte");
@@ -98,56 +73,6 @@ Route::get("/api/mazzi/{user}/{nome}/{public}", [DecksController::class, 'api'])
 Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
 })->name("message");
-
-Route::get("/thread-message-test", function(){
-    $threadId = \App\Services\ThreadManager::generateThreadId('test');
-
-    // Send first message
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Avvio processo di test...");
-
-    // Schedule subsequent messages using fire-and-forget with delays
-    \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 1]), [
-        "token" => env('JOB_TOKEN')
-    ]);
-
-    return "Test threaded messages started. Check your Telegram for the message thread.";
-})->name("thread.message.test");
-
-Route::get("/thread-message-step/{threadId}/{step}", function($threadId, $step){
-    if (request()->input('token') !== env('JOB_TOKEN')) {
-        abort(403);
-    }
-
-    switch($step) {
-        case 1:
-            sleep(2); // Wait for first message to be processed
-            \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 25%...");
-            \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 2]), [
-                "token" => env('JOB_TOKEN')
-            ]);
-            break;
-        case 2:
-            sleep(2);
-            \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 50%...");
-            \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 3]), [
-                "token" => env('JOB_TOKEN')
-            ]);
-            break;
-        case 3:
-            sleep(2);
-            \App\Events\ThreadMessageCreated::dispatch($threadId, "Elaborazione al 75%...");
-            \App\Http\Controllers\JobController::fireAndForgetGet(route('thread.message.step', ['threadId' => $threadId, 'step' => 4]), [
-                "token" => env('JOB_TOKEN')
-            ]);
-            break;
-        case 4:
-            sleep(2);
-            \App\Events\ThreadMessageCreated::dispatch($threadId, "Processo completato con successo!", true);
-            break;
-    }
-
-    return "Step $step completed";
-})->name("thread.message.step");
 
 Route::get("/thread-debug", function(){
     $stats = \App\Services\ThreadManager::getThreadStats();

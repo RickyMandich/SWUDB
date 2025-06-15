@@ -101,16 +101,14 @@ class SearchFilter extends Component
                 ->selectRaw('MIN(uscita) as prima_uscita')
                 ->groupBy('espansione')
                 ->orderBy('prima_uscita')
-                ->pluck('espansione')
-                ->toArray();
+                ->pluck('espansione');
         });
 
         $this->tipi = Cache::remember('cards_filter_tipi', 3600, function () {
             return Card::select('tipo')
                 ->distinct()
                 ->orderBy('tipo')
-                ->pluck('tipo')
-                ->toArray();
+                ->pluck('tipo');
         });
 
         $this->aspettiPrimari = Cache::remember('cards_filter_aspetti_primari', 3600, function () {
@@ -118,8 +116,7 @@ class SearchFilter extends Component
                 ->distinct()
                 ->whereNotNull('aspettoPrimario')
                 ->orderBy('aspettoPrimario')
-                ->pluck('aspettoPrimario')
-                ->toArray();
+                ->pluck('aspettoPrimario');
         });
 
         $this->aspettiSecondari = Cache::remember('cards_filter_aspetti_secondari', 3600, function () {
@@ -127,16 +124,14 @@ class SearchFilter extends Component
                 ->distinct()
                 ->whereNotNull('aspettoSecondario')
                 ->orderBy('aspettoSecondario')
-                ->pluck('aspettoSecondario')
-                ->toArray();
+                ->pluck('aspettoSecondario');
         });
 
         $this->rarita_options = Cache::remember('cards_filter_rarita', 3600, function () {
             return Card::select('rarita')
                 ->distinct()
                 ->orderBy('rarita')
-                ->pluck('rarita')
-                ->toArray();
+                ->pluck('rarita');
         });
 
         $this->arene = Cache::remember('cards_filter_arene', 3600, function () {
@@ -144,16 +139,14 @@ class SearchFilter extends Component
                 ->distinct()
                 ->whereNotNull('arena')
                 ->orderBy('arena')
-                ->pluck('arena')
-                ->toArray();
+                ->pluck('arena');
         });
 
         $this->artisti = Cache::remember('cards_filter_artisti', 3600, function () {
             return Card::select('artista')
                 ->distinct()
                 ->orderBy('artista')
-                ->pluck('artista')
-                ->toArray();
+                ->pluck('artista');
         });
 
         // Carica i valori massimi dal database dalla cache
