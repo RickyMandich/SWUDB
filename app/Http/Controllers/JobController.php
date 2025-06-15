@@ -47,6 +47,7 @@ class JobController extends Controller
 
             $last = "creazione-carta";
             $carta = new \App\Models\Card();
+            $carta->cid = $card['cid'];
             $carta->nome = $card['nome'] ?? '';
             $carta->espansione = $card['espansione'] ?? '';
             $carta->numero = $card['numero'] ?? null;
