@@ -48,27 +48,28 @@ class JobController extends Controller
             $last = "creazione-carta";
             $carta = new \App\Models\Card();
             $carta->nome = $card['nome'] ?? '';
+            $carta->espansione = $card['espansione'] ?? '';
+            $carta->numero = $card['numero'] ?? null;
+            $carta->aspettoPrimario = $card['aspettoPrimario'] ?? '';
+            $carta->aspettoSecondario = $card['aspettoSecondario'] ?? '';
+            $carta->unica = $card['unica'] ?? false;
+            $carta->titolo = $card['titolo'] ?? '';
+            $carta->tipo = $card['tipo'] ?? '';
+            $carta->rarita = $card['rarita'] ?? '';
             $carta->costo = $card['costo'] ?? null;
             $carta->vita = $card['vita'] ?? null;
             $carta->potenza = $card['potenza'] ?? null;
-            $carta->tipo = $card['tipo'] ?? '';
-            $carta->sottotipo = $card['sottotipo'] ?? '';
+            $carta->descrizione = $card['descrizione'] ?? '';
             $carta->tratti = $card['tratti'] ?? '';
-            $carta->testo = $card['testo'] ?? '';
-            $carta->aspetto_primario = $card['aspetto_primario'] ?? '';
-            $carta->aspetto_secondario = $card['aspetto_secondario'] ?? '';
-            $carta->rarita = $card['rarita'] ?? '';
-            $carta->numero = $card['numero'] ?? null;
-            $carta->espansione = $card['espansione'] ?? '';
-            $carta->artista = $card['artista'] ?? '';
-            $carta->variante = $card['variante'] ?? '';
-            $carta->immagine_carta = $card['immagine_carta'] ?? '';
-            $carta->immagine_artista = $card['immagine_artista'] ?? '';
             $carta->arena = $card['arena'] ?? '';
-            $carta->epicness = $card['epicness'] ?? '';
-            $carta->unique = $card['unique'] ?? '';
-            $carta->titolo = $card['titolo'] ?? '';
-            
+            $carta->artista = $card['artista'] ?? '';
+            $carta->frontArt = $card['frontArt'] ?? '';
+            $carta->backArt = $card['backArt'] ?? '';
+            $carta->uscita = $card['uscita'] ?? '';
+
+            // Set required CID
+            $carta->cid = $card['cid'] ?? ($carta->espansione . '-' . $carta->numero);
+
             $last = "maxCopie3";
             $carta->maxCopie = 3;
             
