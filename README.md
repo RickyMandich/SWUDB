@@ -41,7 +41,7 @@
 - ~~Funzionalità di importazione mazzi da URL o file~~
     - ~~import da url rotto~~
 - ~~aggiornare l'index dei mazzi~~
-- limitar le notifiche telegram durante l'invio dei batch
+- ~~limitare le notifiche telegram durante l'invio dei batch~~
 
 ## Funzionalità Future
 - Funzionalità di condivisione social

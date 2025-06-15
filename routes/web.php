@@ -74,36 +74,6 @@ Route::get("/message/{message}", function($message){
     MessageCreated::dispatch($message);
 })->name("message");
 
-Route::get("/thread-debug", function(){
-    $stats = \App\Services\ThreadManager::getThreadStats();
-    $threads = \App\Services\ThreadManager::getAllThreads();
-
-    $output = "<h2>Thread Manager Debug</h2>";
-    $output .= "<h3>Statistics:</h3>";
-    $output .= "<pre>" . json_encode($stats, JSON_PRETTY_PRINT) . "</pre>";
-    $output .= "<h3>Active Threads:</h3>";
-    $output .= "<pre>" . json_encode($threads, JSON_PRETTY_PRINT) . "</pre>";
-
-    return $output;
-})->name("thread.debug");
-
-Route::get("/thread-simple-test", function(){
-    $threadId = \App\Services\ThreadManager::generateThreadId('simple');
-
-    // Test 1: Send first message
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Primo messaggio");
-
-    // Test 2: Wait and send second message (should replace first)
-    sleep(3);
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Secondo messaggio (dovrebbe sostituire il primo)");
-
-    // Test 3: Wait and send final message
-    sleep(3);
-    \App\Events\ThreadMessageCreated::dispatch($threadId, "Messaggio finale completato!", true);
-
-    return "Simple test completed. Check Telegram - you should see only the final message.";
-})->name("thread.simple.test");
-
 Route::fallback(function () {
     return view('errors.404');
 });
@@ -145,10 +115,5 @@ Route::get("/job/SendThreadMessage", [JobController::class, 'sendThreadMessage']
 route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', [CardsController::class, 'compare'])->name("compare");
 
 route::get('test', function(){
-    $data = [
-        'name' => 'Ricky',
-        'email' => 'ricky.mandich@gmail.com',
-    ];
-    Mail::to($data['email'])->send(new \App\Mail\WelcomeEmail($data['name']));
-    return view("emails.welcome", ["name" => $data['name']]);
+    return \App\Models\Card::first()->name;
 });
