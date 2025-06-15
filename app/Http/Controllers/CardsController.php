@@ -37,9 +37,7 @@ class CardsController extends Controller
         }
         $model = Card::whereLike("nome", "%".$get["nome"]."%")->whereLike("espansione", "%$espansione%")->get();
         $empty = $model->isEmpty();
-        $modelArray = $model->toArray();
-        $sortedArray = CardsController::mergeSort($modelArray);
-        $model = collect($sortedArray);
+        $model = CardsController::mergeSort($model);
         if($espansione == ""){
             $title = "Carte";
         }else{
@@ -79,8 +77,7 @@ class CardsController extends Controller
                     ->where('numero', $numero2);
             })->get();
             ob_start();
-            $cardsArray = $cards->toArray();
-            CardsController::mergeSort($cardsArray, true);
+            CardsController::mergeSort($cards, true);
             $output = ob_get_clean();
             return view("carte.update", ["output" => $output]);
         }else{
@@ -550,24 +547,36 @@ class CardsController extends Controller
     }
 
     /**
-     * Recursive merge sort implementation for card arrays
-     * Implementazione ricorsiva del merge sort per array di carte
+     * Recursive merge sort implementation for card arrays or collections
+     * Implementazione ricorsiva del merge sort per array di carte o collezioni
      *
      * This method implements the merge sort algorithm specifically designed for
-     * arrays of cards. It uses the compareElements method to determine
+     * arrays of cards or Laravel Collections. It uses the compareElements method to determine
      * the sorting order based on complex card comparison rules.
      *
      * The algorithm divides the array recursively until single elements,
      * then merges them back in sorted order using the custom comparison logic.
+     * The method can handle both Laravel Collections and regular PHP arrays.
      *
-     * @param array &$array Array of cards to sort (passed by reference)
+     * @param array|\Illuminate\Support\Collection &$data Array or Collection of cards to sort (passed by reference)
      * @param bool $verbose Whether to enable verbose output during comparison
-     * @return array The sorted array
+     * @return array|\Illuminate\Support\Collection The sorted data in the same format as input
      */
-    public static function mergeSort(&$array, $verbose = false) {
+    public static function mergeSort(&$data, $verbose = false) {
+        // Determino se l'input è una collezione o un array
+        $isCollection = $data instanceof \Illuminate\Support\Collection;
+
+        // Se è una collezione, la converto in array per l'elaborazione
+        if ($isCollection) {
+            $array = $data->toArray();
+        } else {
+            $array = $data;
+        }
+
         // Caso base: se l'array ha 0 o 1 elemento, è già ordinato
         if (count($array) <= 1) {
-            return $array;
+            // Restituisco nel formato originale
+            return $isCollection ? collect($array) : $array;
         }
 
         // Divido l'array in due metà
@@ -576,8 +585,8 @@ class CardsController extends Controller
         $right = array_slice($array, $mid);
 
         // Richiamo ricorsivamente mergeSort sulle due metà
-        $left = CardsController::mergeSort($left);
-        $right = CardsController::mergeSort($right);
+        $left = CardsController::mergeSort($left, $verbose);
+        $right = CardsController::mergeSort($right, $verbose);
 
         // Fondo le due metà
         $result = [];
@@ -607,6 +616,7 @@ class CardsController extends Controller
             $rightIndex++;
         }
 
-        return $result;
+        // Restituisco nel formato originale (collezione o array)
+        return $isCollection ? collect($result) : $result;
     }
 }

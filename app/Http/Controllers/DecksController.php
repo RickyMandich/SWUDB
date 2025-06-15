@@ -107,13 +107,11 @@ class DecksController extends Controller{
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$cards->isEmpty()) {
-            // Converte la Collection di oggetti stdClass in array associativi
-            $cardsArray = [];
-            foreach ($cards as $card) {
-                $cardsArray[] = (array) $card; // Converte stdClass in array associativo
-            }
-            $sortedArray = CardsController::mergeSort($cardsArray);
-            $cards = collect($sortedArray);
+            // Converte la Collection di oggetti stdClass in array associativi per il sorting
+            $cardsArray = $cards->map(function($card) {
+                return (array) $card; // Converte stdClass in array associativo
+            });
+            $cards = CardsController::mergeSort($cardsArray);
         }
 
         // Recupera tutte le carte disponibili
@@ -409,9 +407,7 @@ class DecksController extends Controller{
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$allCards->isEmpty()) {
-            $allCardsArray = $allCards->toArray();
-            $sortedArray = \App\Http\Controllers\CardsController::mergeSort($allCardsArray);
-            $allCards = collect($sortedArray);
+            $allCards = CardsController::mergeSort($allCards);
         }
 
         // Debug: analisi delle carte e filtri
