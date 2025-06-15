@@ -34,13 +34,8 @@ class CardsController extends Controller
         if(!isset($get["nome"])){
             $get["nome"] = "";
         }
-        $model = Card::whereLike("nome", "%".$get["nome"]."%")->get();
-        $empty = $model->isEmpty();
-        $model = CardsController::mergeSort($model);
         $title = "Carte";
         return view('carte.index', [
-            "content" => $model,
-            "empty" => $empty,
             "nome" => $get["nome"],
             "title" => $title,
         ]);
@@ -546,9 +541,9 @@ class CardsController extends Controller
      * arrays of cards or Laravel Collections. It uses the compareElements method to determine
      * the sorting order based on complex card comparison rules.
      *
-     * The algorithm divides the array recursively until single elements,
+     * The algorithm divides the data recursively until single elements,
      * then merges them back in sorted order using the custom comparison logic.
-     * The method can handle both Laravel Collections and regular PHP arrays.
+     * Uses Collection methods for Collections and array functions for arrays.
      *
      * @param array|\Illuminate\Support\Collection &$data Array or Collection of cards to sort (passed by reference)
      * @param bool $verbose Whether to enable verbose output during comparison
@@ -558,57 +553,100 @@ class CardsController extends Controller
         // Determino se l'input è una collezione o un array
         $isCollection = $data instanceof \Illuminate\Support\Collection;
 
-        // Se è una collezione, la converto in array per l'elaborazione
         if ($isCollection) {
-            $array = $data->toArray();
+            // Uso le funzioni della Collection
+            // Caso base: se la collezione ha 0 o 1 elemento, è già ordinata
+            if ($data->count() <= 1) {
+                return $data;
+            }
+
+            // Divido la collezione in due metà
+            $mid = floor($data->count() / 2);
+            $left = $data->take($mid);
+            $right = $data->skip($mid);
+
+            // Richiamo ricorsivamente mergeSort sulle due metà
+            $left = CardsController::mergeSort($left, $verbose);
+            $right = CardsController::mergeSort($right, $verbose);
+
+            // Fondo le due metà usando Collection
+            $result = collect();
+            $leftIndex = 0;
+            $rightIndex = 0;
+            $leftArray = $left->values()->all();
+            $rightArray = $right->values()->all();
+
+            while ($leftIndex < count($leftArray) && $rightIndex < count($rightArray)) {
+                // Converto temporaneamente in array per compareElements
+                $leftElement = (array) $leftArray[$leftIndex];
+                $rightElement = (array) $rightArray[$rightIndex];
+
+                if (CardsController::compareElements($leftElement, $rightElement, $verbose) <= 0) {
+                    $result->push($leftArray[$leftIndex]);
+                    $leftIndex++;
+                } else {
+                    $result->push($rightArray[$rightIndex]);
+                    $rightIndex++;
+                }
+            }
+
+            // Aggiungo gli eventuali elementi rimanenti
+            while ($leftIndex < count($leftArray)) {
+                $result->push($leftArray[$leftIndex]);
+                $leftIndex++;
+            }
+
+            while ($rightIndex < count($rightArray)) {
+                $result->push($rightArray[$rightIndex]);
+                $rightIndex++;
+            }
+
+            return $result;
         } else {
-            $array = $data;
-        }
+            // Uso le funzioni degli array
+            // Caso base: se l'array ha 0 o 1 elemento, è già ordinato
+            if (count($data) <= 1) {
+                return $data;
+            }
 
-        // Caso base: se l'array ha 0 o 1 elemento, è già ordinato
-        if (count($array) <= 1) {
-            // Restituisco nel formato originale
-            return $isCollection ? collect($array) : $array;
-        }
+            // Divido l'array in due metà
+            $mid = floor(count($data) / 2);
+            $left = array_slice($data, 0, $mid);
+            $right = array_slice($data, $mid);
 
-        // Divido l'array in due metà
-        $mid = floor(count($array) / 2);
-        $left = array_slice($array, 0, $mid);
-        $right = array_slice($array, $mid);
+            // Richiamo ricorsivamente mergeSort sulle due metà
+            $left = CardsController::mergeSort($left, $verbose);
+            $right = CardsController::mergeSort($right, $verbose);
 
-        // Richiamo ricorsivamente mergeSort sulle due metà
-        $left = CardsController::mergeSort($left, $verbose);
-        $right = CardsController::mergeSort($right, $verbose);
+            // Fondo le due metà
+            $result = [];
+            $leftIndex = 0;
+            $rightIndex = 0;
 
-        // Fondo le due metà
-        $result = [];
-        $leftIndex = 0;
-        $rightIndex = 0;
+            while ($leftIndex < count($left) && $rightIndex < count($right)) {
+                // Uso la funzione compareElements per confrontare
+                if (CardsController::compareElements($left[$leftIndex], $right[$rightIndex], $verbose) <= 0) {
+                    $result[] = $left[$leftIndex];
+                    $leftIndex++;
+                } else {
+                    $result[] = $right[$rightIndex];
+                    $rightIndex++;
+                }
+            }
 
-        while ($leftIndex < count($left) && $rightIndex < count($right)) {
-            // Uso la funzione compareElements per confrontare
-            if (CardsController::compareElements($left[$leftIndex], $right[$rightIndex], $verbose) <= 0) {
+            // Aggiungo gli eventuali elementi rimanenti di left
+            while ($leftIndex < count($left)) {
                 $result[] = $left[$leftIndex];
                 $leftIndex++;
-            } else {
+            }
+
+            // Aggiungo gli eventuali elementi rimanenti di right
+            while ($rightIndex < count($right)) {
                 $result[] = $right[$rightIndex];
                 $rightIndex++;
             }
-        }
 
-        // Aggiungo gli eventuali elementi rimanenti di left
-        while ($leftIndex < count($left)) {
-            $result[] = $left[$leftIndex];
-            $leftIndex++;
+            return $result;
         }
-
-        // Aggiungo gli eventuali elementi rimanenti di right
-        while ($rightIndex < count($right)) {
-            $result[] = $right[$rightIndex];
-            $rightIndex++;
-        }
-
-        // Restituisco nel formato originale (collezione o array)
-        return $isCollection ? collect($result) : $result;
     }
 }
