@@ -31,18 +31,18 @@ class JobController extends Controller
         }
 
         $last = "inizio";
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard.log", "inizio addCard \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard.log", "inizio addCard \n\n", FILE_APPEND);
         
         try {
             // Check if card data is passed as JSON
             $cardJson = $request->input('card');
             if ($cardJson) {
                 $card = json_decode($cardJson, true);
-                if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
+                if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
             } else {
                 // Fallback to individual parameters
                 $card = $request->all();
-                if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
+                if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
             }
 
             $last = "creazione-carta";
@@ -98,14 +98,14 @@ class JobController extends Controller
             $carta->save();
             
             echo "Carta '{$carta->nome}' aggiunta con successo!\n";
-            if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "success addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "success addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
             
         } catch(\Exception $e){
             echo "eccezione ".$e->getMessage() . " <strong>at</strong> " . $last;
-            if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
         }
         
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown'). " \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown'). " \n\n", FILE_APPEND);
     }
 
     /**
@@ -174,7 +174,7 @@ class JobController extends Controller
                     'text' => $message
                 ]);
                 
-                if(env("APP_DEBUG")) {
+                if(env("APP_DEBUG_LOG")) {
                     file_put_contents(__DIR__ . "/debug-threadMessage.log", 
                         "Edited thread message [{$threadId}] ID {$existingMessageId}: {$message}" . 
                         ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
@@ -191,7 +191,7 @@ class JobController extends Controller
                     $messageId = $responseData['result']['message_id'];
                     \App\Services\ThreadManager::setTelegramMessageId($threadId, $messageId);
                     
-                    if(env("APP_DEBUG")) {
+                    if(env("APP_DEBUG_LOG")) {
                         file_put_contents(__DIR__ . "/debug-threadMessage.log", 
                             "Sent new thread message [{$threadId}] ID {$messageId}: {$message}" . 
                             ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
@@ -201,7 +201,7 @@ class JobController extends Controller
             
         } catch (\Exception $e) {
             \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
-            if(env("APP_DEBUG")) {
+            if(env("APP_DEBUG_LOG")) {
                 file_put_contents(__DIR__ . "/debug-threadMessage.log", 
                     "Error in thread message [{$threadId}]: " . $e->getMessage() . "\n", FILE_APPEND);
             }
@@ -222,7 +222,7 @@ class JobController extends Controller
      */
     public static function fireAndForgetGet($url, $data = []) {
         $query = http_build_query($data);
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget: $url?$query" . "\n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget: $url?$query" . "\n\n", FILE_APPEND);
         $parts = parse_url($url);
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
@@ -266,7 +266,7 @@ class JobController extends Controller
      * @return bool True if request was sent successfully, false on error
      */
     public static function fireAndForgetPost($url, $data = []) {
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST: $url, " . http_build_query($data) . "\n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST: $url, " . http_build_query($data) . "\n\n", FILE_APPEND);
         $parts = parse_url($url);
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
@@ -298,7 +298,7 @@ class JobController extends Controller
         fwrite($fp, $out);
         fclose($fp);
 
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug-fire.log", "fine fire post \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fine fire post \n\n", FILE_APPEND);
 
         return true;
     }

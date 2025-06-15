@@ -1,4 +1,4 @@
 @extends('errors.maintanence')
 @section('specificMessage')
-    Errore interno del server
+    errore generico 5xx
 @endsection

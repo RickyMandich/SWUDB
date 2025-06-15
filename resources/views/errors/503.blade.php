@@ -1,4 +1,4 @@
 @extends('errors.maintanence')
 @section('specificMessage')
-    Errore interno del server
+    Servizio non disponibile
 @endsection

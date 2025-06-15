@@ -176,7 +176,7 @@ class CardsController extends Controller
      */
     public function sendBatch(Request $request){
         $next = intval($request->input("next", 0));
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
         $data = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
 
         // Generate or retrieve thread ID for this import session
@@ -212,7 +212,7 @@ class CardsController extends Controller
     public function dispatchBatch(Request $request){
         $cards = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
         $start = intval($request->input("start", 0));
-        if(env("APP_DEBUG")) file_put_contents(__DIR__ . "/debug.log", "startBatch start:$start \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug.log", "startBatch start:$start \n\n", FILE_APPEND);
         $batchSize = intval($request->input("batchSize", 5));
         $slice = array_slice($cards, $start, $batchSize);
 
