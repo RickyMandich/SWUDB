@@ -22,32 +22,22 @@ return Application::configure(basePath: dirname(__DIR__))
             MessageCreated::dispatch("Errore: " . $e->getMessage());
         });
 
+        // Intercetta il rendering per modificare il comportamento in base all'utente
         $exceptions->renderable(function (Throwable $e, $request) {
-            // Se l'utente è admin, mostra la pagina di errore di default di Laravel con debug
+            // Se l'utente è admin, modifica globalmente APP_DEBUG per questa richiesta
             if (Auth::admin()) {
-                // Usa il renderer di default di Laravel forzando il debug
-                $handler = app(\Illuminate\Contracts\Debug\ExceptionHandler::class);
-
-                // Forza temporaneamente il debug per questo rendering
-                $originalDebug = config('app.debug');
+                // Forza APP_DEBUG=true per gli admin
                 config(['app.debug' => true]);
 
-                try {
-                    // Usa il metodo interno di Laravel per preparare la risposta con debug attivo
-                    $method = new \ReflectionMethod($handler, 'prepareResponse');
-                    $method->setAccessible(true);
-
-                    return $method->invoke($handler, $request, $e);
-                } catch (\Exception $renderException) {
-                    // Se il rendering fallisce, usa un fallback semplice
-                    return response()->view('errors.500', ['exception' => $e], 500);
-                } finally {
-                    // Ripristina il valore originale
-                    config(['app.debug' => $originalDebug]);
-                }
+                // Restituisce null per far procedere Laravel con il rendering di default
+                // ma ora con debug=true, quindi mostrerà la pagina dettagliata originale
+                return null;
             }
 
-            // Per gli utenti non admin, usa le view personalizzate (comportamento attuale)
+            // Per gli utenti non admin, assicurati che debug sia false
+            config(['app.debug' => false]);
+
+            // Restituisce null per usare le view personalizzate
             return null;
         });
     })->create();
