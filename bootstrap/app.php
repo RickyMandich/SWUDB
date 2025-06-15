@@ -24,14 +24,20 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Intercetta il rendering per modificare il comportamento in base all'utente
         $exceptions->renderable(function (Throwable $e, $request) {
-            // Se l'utente è admin, modifica globalmente APP_DEBUG per questa richiesta
+            // Se l'utente è admin, renderizza con layout dell'app
             if (Auth::admin()) {
                 // Forza APP_DEBUG=true per gli admin
                 config(['app.debug' => true]);
 
-                // Restituisce null per far procedere Laravel con il rendering di default
-                // ma ora con debug=true, quindi mostrerà la pagina dettagliata originale
-                return null;
+                // Renderizza usando il layout dell'app con dettagli dell'errore
+                return response()->view('errors.admin-debug', [
+                    'exception' => $e,
+                    'trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'message' => $e->getMessage(),
+                    'request' => $request
+                ], 500);
             }
 
             // Per gli utenti non admin, assicurati che debug sia false
