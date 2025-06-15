@@ -115,5 +115,6 @@ Route::get("/job/SendThreadMessage", [JobController::class, 'sendThreadMessage']
 route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', [CardsController::class, 'compare'])->name("compare");
 
 route::get('test', function(){
-    return \App\Models\Card::first()->name;
-});
+    $var = \App\Models\Card::first()->name;
+    return view("layout.app");
+})->name("test");
