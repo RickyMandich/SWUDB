@@ -69,17 +69,15 @@ class SearchFilter extends Component
     ];
 
     /**
-     * Initialize the component with mode and initial filters
-     * Inizializza il componente con modalità e filtri iniziali
+     * Initialize the component with mode
+     * Inizializza il componente con modalità
      *
      * @param string $mode Component mode: 'page', 'popup', or 'collezione'
-     * @param string $initialEspansione Initial expansion filter value
      * @return void
      */
-    public function mount($mode = 'page', $initialEspansione = '')
+    public function mount($mode = 'page')
     {
         $this->mode = $mode;
-        $this->espansione = $initialEspansione;
         $this->loadFilterOptions();
         $this->applyFilters();
     }
