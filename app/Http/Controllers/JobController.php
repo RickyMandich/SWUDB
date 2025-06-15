@@ -68,9 +68,6 @@ class JobController extends Controller
             $carta->backArt = $card['backArt'] ?? '';
             $carta->uscita = $card['uscita'] ?? '';
 
-            // Set required CID
-            $carta->cid = $card['cid'] ?? ($carta->espansione . '-' . $carta->numero);
-
             $last = "maxCopie3";
             $carta->maxCopie = 3;
             
