@@ -116,5 +116,5 @@ route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', [CardsCont
 
 route::get('test', function(){
     $var = \App\Models\Card::first()->name;
-    return view("layout.app");
+    return view("layouts.app");
 })->name("test");
