@@ -150,6 +150,7 @@ class CardsController extends Controller
 
         foreach ($fullSet as $card) {
             if (!$this::contain($dbSet, $card)) {
+                $card["tratti"] = implode(" * ", explode("\n", $card["tratti"]));
                 $toInsert[] = $card;
             }
         }
