@@ -94,6 +94,13 @@
                                         </div>
                                     </div>
                                 </a>
+                                <!-- DEBUG: Oggetto completo carta -->
+                                <div class="mt-2 p-2 bg-light border rounded">
+                                    <small class="text-muted">
+                                        <strong>DEBUG - Attributi carta:</strong><br>
+                                        <pre style="font-size: 10px; margin: 0;">${JSON.stringify(carta, null, 2)}</pre>
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
