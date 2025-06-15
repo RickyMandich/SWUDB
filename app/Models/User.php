@@ -46,4 +46,15 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get all admin users for notifications
+     * Ottiene tutti gli utenti admin per le notifiche
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, User>
+     */
+    public static function getAdmins()
+    {
+        return static::where('admin', 1)->get();
+    }
 }

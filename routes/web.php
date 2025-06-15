@@ -120,3 +120,10 @@ route::get('test', function(){
     $card->save();
     return view("layouts.app");
 })->name("test");
+
+Route::get('test-error', function(){
+    if(!Auth::admin()){
+        return view("errors.403");
+    }
+    throw new \Exception("Test errore per verificare invio email agli admin");
+})->name("test.error");
