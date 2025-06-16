@@ -24,7 +24,30 @@ Route::get("query", function(Request $request){
     }else{
         $query = "SELECT * FROM cards limit 10";
     }
-    return view("query", ["result" => DB::select($query), "query"=>$query]);
+
+    $result = DB::select($query);
+
+    // Se la query riguarda la tabella cards e non ha ORDER BY, applica mergeSort
+    $queryLower = strtolower(trim($query));
+    $isCardsQuery = strpos($queryLower, 'from cards') !== false || strpos($queryLower, 'from `cards`') !== false;
+    $hasOrderBy = strpos($queryLower, 'order by') !== false;
+
+    if ($isCardsQuery && !$hasOrderBy && !empty($result)) {
+        // Converte gli oggetti stdClass in array per il mergeSort
+        $resultArray = array_map(function($item) {
+            return (array) $item;
+        }, $result);
+
+        // Applica il mergeSort
+        $sortedResult = CardsController::mergeSort($resultArray);
+
+        // Converte di nuovo in oggetti stdClass per mantenere la compatibilità con la view
+        $result = array_map(function($item) {
+            return (object) $item;
+        }, $sortedResult);
+    }
+
+    return view("query", ["result" => $result, "query"=>$query, "sorted" => ($isCardsQuery && !$hasOrderBy && !empty($result))]);
 })->name("query");
 
 Route::get('/carte', [CardsController::class, 'index'])->name("carte");

@@ -19,11 +19,26 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-play me-1"></i>Esegui Query
                         </button>
+
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Nota:</strong> Le query sulla tabella <code>cards</code> senza <code>ORDER BY</code>
+                                verranno automaticamente ordinate usando l'algoritmo mergeSort personalizzato.
+                            </small>
+                        </div>
                     </form>
 
                     @if(isset($result) && count($result) > 0)
                         <hr>
-                        <h5>Risultati ({{ count($result) }} righe):</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Risultati ({{ count($result) }} righe):</h5>
+                            @if(isset($sorted) && $sorted)
+                                <span class="badge bg-info">
+                                    <i class="fas fa-sort me-1"></i>Ordinamento mergeSort applicato
+                                </span>
+                            @endif
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-striped table-sm">
                                 <thead class="table-dark">
