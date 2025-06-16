@@ -11,7 +11,7 @@
                 </div>
 
                 <div class="card-body">
-                    <form method="GET" action="{{ route('query') }}">
+                    <form method="GET" action="{{ route('query') }}" id="queryForm">
                         <div class="mb-3">
                             <label for="query" class="form-label">SQL Query:</label>
                             <textarea class="form-control" id="query" name="query" rows="5" placeholder="SELECT * FROM cards LIMIT 10">{{ $query ?? '' }}</textarea>
@@ -25,6 +25,9 @@
                                 <i class="fas fa-info-circle me-1"></i>
                                 <strong>Nota:</strong> Le query sulla tabella <code>cards</code> senza <code>ORDER BY</code>
                                 verranno automaticamente ordinate usando l'algoritmo mergeSort personalizzato.
+                                <br>
+                                <i class="fas fa-keyboard me-1"></i>
+                                <strong>Scorciatoia:</strong> Premi <kbd>Ctrl</kbd> + <kbd>Invio</kbd> per eseguire la query.
                             </small>
                         </div>
                     </form>
@@ -70,4 +73,36 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const queryTextarea = document.getElementById('query');
+    const queryForm = document.getElementById('queryForm');
+
+    // Aggiungi listener per Ctrl+Invio
+    queryTextarea.addEventListener('keydown', function(event) {
+        // Verifica se è stato premuto Ctrl+Invio
+        if (event.ctrlKey && event.key === 'Enter') {
+            event.preventDefault(); // Previene il comportamento di default (nuova riga)
+
+            // Aggiungi feedback visivo
+            const submitButton = queryForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Eseguendo...';
+            submitButton.disabled = true;
+
+            // Esegui il form
+            queryForm.submit();
+        }
+    });
+
+    // Focus automatico sulla textarea quando la pagina si carica
+    queryTextarea.focus();
+
+    // Posiziona il cursore alla fine del testo esistente
+    if (queryTextarea.value.length > 0) {
+        queryTextarea.setSelectionRange(queryTextarea.value.length, queryTextarea.value.length);
+    }
+});
+</script>
 @endsection
