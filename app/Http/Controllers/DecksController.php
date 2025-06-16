@@ -1386,47 +1386,7 @@ class DecksController extends Controller{
         return $url;
     }
 
-    /**
-     * Testa la connessione a SWUDB
-     */
-    public function testSwudbConnection()
-    {
-        try {
-            $testUrl = 'https://swudb.com/api/deck/HBzjsPUBBGYTt';
 
-            $content = $this->downloadFromUrl($testUrl);
-
-            if ($content === false) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Connessione fallita',
-                    'details' => 'Impossibile scaricare da SWUDB'
-                ]);
-            }
-
-            $data = json_decode($content, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Risposta non JSON',
-                    'content_preview' => substr($content, 0, 200)
-                ]);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Connessione SWUDB OK',
-                'deck_name' => $data['deckName'] ?? 'N/A',
-                'content_length' => strlen($content)
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Eccezione: ' . $e->getMessage()
-            ]);
-        }
-    }
 
     /**
      * Verifica se il contenuto è in formato SWUDB

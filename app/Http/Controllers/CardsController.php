@@ -590,7 +590,6 @@ class CardsController extends Controller
                         $rightIndex++;
                     }
                 }catch(\Error $e){
-                    MessageCreated::dispatch(var_dump($leftElement));
                     throw $e;
                 }
             }

@@ -4,7 +4,7 @@ use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
 use App\Http\Controllers\JobController;
 
-use App\Events\MessageCreated;
+
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,18 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function(){return view('index');})->name("index");
 
-Route::get("query", function(Request $request){
-    if(!Auth::admin()){
-        return view("errors.403");
-    }
-    $get = $request->all();
-    if(isset($get["query"])){
-        $query = $get["query"];
-    }else{
-        $query = "SELECT * FROM cards limit 10";
-    }
-    return view("query", ["result" => DB::select($query), "query"=>$query]);
-})->name("query");
+
 
 Route::get('/carte', [CardsController::class, 'index'])->name("carte");
 
@@ -64,31 +53,17 @@ Route::post('/mazzi/import/file', [DecksController::class, 'importFromFile'])->n
 
 Route::post('/mazzi/import/url', [DecksController::class, 'importFromUrl'])->name("mazzi.import.url")->middleware('auth');
 
-Route::get('/test/swudb', [DecksController::class, 'testSwudbConnection'])->name("test.swudb");
-
 Route::get("/api/carta/{espansione}/{numero}", [CardsController::class, 'api'])->name("api.carta");
 
 Route::get("/api/carte/{espansione}", [CardsController::class, 'apis'])->name("api.carte");
 
 Route::get("/api/mazzi/{user}/{nome}/{public}", [DecksController::class, 'api'])->name("api.mazzi");
 
-Route::get("/message/{message}", function($message){
-    MessageCreated::dispatch($message);
-})->name("message");
-
 Route::fallback(function () {
     return view('errors.404');
 });
 
 Auth::routes();
-
-Route::get("/migrate", function(){
-    if(!Auth::admin()){
-        return view("errors.403");
-    }
-    Artisan::call("migrate");
-    return "Migrated";
-});
 
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 

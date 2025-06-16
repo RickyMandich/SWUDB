@@ -42,7 +42,7 @@
     - ~~import da url rotto~~
 - ~~aggiornare l'index dei mazzi~~
 - ~~limitare le notifiche telegram durante l'invio dei batch~~
-- miglioramento pagina utenti per la gestione di admin
+- ~~miglioramento pagina utenti per la gestione di admin
 
 ## Funzionalità Future
 - Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
