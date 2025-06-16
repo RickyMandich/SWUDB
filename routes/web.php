@@ -4,52 +4,17 @@ use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
 use App\Http\Controllers\JobController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\AdminController;
 
 
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+
 
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function(){return view('index');})->name("index");
 
-Route::get("query", function(Request $request){
-    if(!Auth::admin()){
-        return view("errors.403");
-    }
-    $get = $request->all();
-    if(isset($get["query"])){
-        $query = $get["query"];
-    }else{
-        $query = "SELECT * FROM cards limit 10";
-    }
-
-    $result = DB::select($query);
-
-    // Se la query riguarda la tabella cards e non ha ORDER BY, applica mergeSort
-    $queryLower = strtolower(trim($query));
-    $isCardsQuery = strpos($queryLower, 'from cards') !== false || strpos($queryLower, 'from `cards`') !== false;
-    $hasOrderBy = strpos($queryLower, 'order by') !== false;
-
-    if ($isCardsQuery && !$hasOrderBy && !empty($result)) {
-        // Converte gli oggetti stdClass in array per il mergeSort
-        $resultArray = array_map(function($item) {
-            return (array) $item;
-        }, $result);
-
-        // Applica il mergeSort
-        $sortedResult = CardsController::mergeSort($resultArray);
-
-        // Converte di nuovo in oggetti stdClass per mantenere la compatibilità con la view
-        $result = array_map(function($item) {
-            return (object) $item;
-        }, $sortedResult);
-    }
-
-    return view("query", ["result" => $result, "query"=>$query, "sorted" => ($isCardsQuery && !$hasOrderBy && !empty($result))]);
-})->name("query");
+Route::get("query", [AdminController::class, 'query'])->name("admin.query")->middleware('auth');
 
 Route::get('/carte', [CardsController::class, 'index'])->name("carte");
 
@@ -109,17 +74,10 @@ Route::patch('/users/{id}', [UsersController::class, 'update'])->name('users.upd
 Route::patch('/users/{id}/toggle-admin', [UsersController::class, 'toggleAdmin'])->name('users.toggle-admin')->middleware('auth');
 Route::delete('/users/{id}', [UsersController::class, 'destroy'])->name('users.destroy')->middleware('auth');
 
-Route::get('/docs/tos', function(){
-    return view("docs.termOfService");
-})->name("docs.tos");
-
-Route::get('/docs/privacy', function(){
-    return view("docs.privacy");
-})->name("docs.privacy");
-
-Route::get('/documentazione', function(){
-    return view("documentazione");
-})->name("documentazione");
+Route::get('/docs/tos', [AdminController::class, 'termsOfService'])->name("docs.tos");
+Route::get('/docs/privacy', [AdminController::class, 'privacyPolicy'])->name("docs.privacy");
+Route::get('/documentazione', [AdminController::class, 'documentation'])->name("documentazione");
+Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name("admin.dashboard")->middleware('auth');
 
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 

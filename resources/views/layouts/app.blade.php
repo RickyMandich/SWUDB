@@ -84,6 +84,13 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('mazzi') }}">{{ __('custom.mazzi') }}</a>
                         </li>
+                        @auth
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('mazzi.import') }}">
+                                    <i class="fas fa-upload me-1"></i>Import Mazzi
+                                </a>
+                            </li>
+                        @endauth
                     </ul>
 
                     <!-- Right Side Of Navbar -->
@@ -127,11 +134,18 @@
                                 </a>
 
                                 @if(Auth::admin())
-                                    <a class="dropdown-item" href="{{ route('query') }}">
-                                        {{ __('custom.query') }}
+                                    <div class="dropdown-divider"></div>
+                                    <h6 class="dropdown-header">
+                                        <i class="fas fa-shield-alt me-1"></i>Amministrazione
+                                    </h6>
+                                    <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
+                                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard Admin
                                     </a>
                                     <a class="dropdown-item" href="{{ route('users.index') }}">
                                         <i class="fas fa-users me-1"></i>Gestione Utenti
+                                    </a>
+                                    <a class="dropdown-item" href="{{ route('admin.query') }}">
+                                        <i class="fas fa-database me-1"></i>{{ __('custom.query') }}
                                     </a>
                                 @endif
 
