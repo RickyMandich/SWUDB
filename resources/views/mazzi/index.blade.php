@@ -38,15 +38,21 @@
 
         <!-- Mazzi dell'utente -->
         @if(Auth::check() && count($userDecks) > 0)
-            <div class="row mb-4">
+            <div class="row mb-5">
                 <div class="col-12">
-                    <h3 class="mb-3">
-                        <i class="fas fa-user me-2"></i>I Tuoi Mazzi
-                    </h3>
+                    <div class="d-flex align-items-center mb-3">
+                        <h3 class="mb-0 me-3">
+                            <i class="fas fa-user me-2 text-primary"></i>I Tuoi Mazzi
+                        </h3>
+                        <span class="badge bg-primary">{{ count($userDecks) }}</span>
+                    </div>
                     <div class="row">
                         @foreach($userDecks as $deck)
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3">
-                                <div class="card h-100 border-primary">
+                                <div class="card h-100 border-primary shadow-sm">
+                                    <div class="card-header bg-primary text-white py-2">
+                                        <small><i class="fas fa-crown me-1"></i>Tuo Mazzo</small>
+                                    </div>
                                     <div class="card-body d-flex flex-column">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                             <h5 class="card-title mb-0 flex-grow-1">
@@ -105,18 +111,28 @@
         @if(count($publicDecks) > 0)
             <div class="row">
                 <div class="col-12">
-                    <h3 class="mb-3">
-                        <i class="fas fa-globe me-2"></i>Mazzi Pubblici
-                    </h3>
+                    <div class="d-flex align-items-center mb-3">
+                        <h3 class="mb-0 me-3">
+                            <i class="fas fa-globe me-2 text-success"></i>Mazzi Pubblici
+                        </h3>
+                        <span class="badge bg-success">{{ count($publicDecks) }}</span>
+                    </div>
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Mazzi condivisi dalla community - Solo visualizzazione
+                    </p>
                     <div class="row">
                         @foreach($publicDecks as $deck)
                             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3">
-                                <div class="card h-100 border-success">
+                                <div class="card h-100 border-success shadow-sm">
+                                    <div class="card-header bg-success text-white py-2">
+                                        <small><i class="fas fa-globe me-1"></i>Mazzo Pubblico</small>
+                                    </div>
                                     <div class="card-body d-flex flex-column">
                                         <div class="mb-2">
                                             <h5 class="card-title mb-1">{{ $deck->nome }}</h5>
                                             <p class="card-text text-muted mb-0">
-                                                <i class="fas fa-user me-1"></i>di {{ $deck->utente }}
+                                                <i class="fas fa-user me-1"></i>Creato da <strong>{{ $deck->utente }}</strong>
                                             </p>
                                         </div>
 

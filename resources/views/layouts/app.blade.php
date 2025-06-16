@@ -84,13 +84,6 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('mazzi') }}">{{ __('custom.mazzi') }}</a>
                         </li>
-                        @auth
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('mazzi.import') }}">
-                                    <i class="fas fa-upload me-1"></i>Import Mazzi
-                                </a>
-                            </li>
-                        @endauth
                     </ul>
 
                     <!-- Right Side Of Navbar -->

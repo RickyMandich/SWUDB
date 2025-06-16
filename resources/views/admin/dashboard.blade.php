@@ -100,7 +100,7 @@
                                             <i class="fas fa-sync-alt me-2"></i>Aggiorna Database Carte
                                         </a>
                                         <a href="{{ route('mazzi') }}" class="btn btn-outline-info">
-                                            <i class="fas fa-layer-group me-2"></i>Visualizza Tutti i Mazzi
+                                            <i class="fas fa-layer-group me-2"></i>Mazzi Pubblici
                                         </a>
                                     </div>
                                 </div>
