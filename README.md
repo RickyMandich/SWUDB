@@ -43,9 +43,9 @@
 - ~~aggiornare l'index dei mazzi~~
 - ~~limitare le notifiche telegram durante l'invio dei batch~~
 - ~~miglioramento pagina utenti per la gestione di admin~~
+- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
 
 ## Funzionalità Future
-- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
 - Funzionalità di condivisione social
 - Sistema di versionamento per i mazzi
 - Sistema di tag personalizzati per i mazzi (etichette come "Aggro", "Control", "Budget", "Meta")
