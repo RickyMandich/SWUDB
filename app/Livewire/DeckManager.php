@@ -3,8 +3,6 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Models\Card;
-use Illuminate\Support\Collection;
 
 /**
  * Livewire component for comprehensive deck management and statistics
