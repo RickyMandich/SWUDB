@@ -25,7 +25,7 @@
             @if(session('success'))
                 Livewire.dispatch('showMessage', {
                     type: 'success',
-                    message: '{{ session('success') }}'
+                    message: '{{!! session('success') !!}}'
                 });
             @endif
         });
