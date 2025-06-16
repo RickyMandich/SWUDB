@@ -440,7 +440,7 @@ class DecksController extends Controller{
 
             // Reindirizza al mazzo con il nuovo nome
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => str_replace(" ", "+", $nuovoNome)])
-                           ->with("success", "Mazzo rinominato da {$vecchioNome} a {$nuovoNome}");
+                           ->with("success", "Mazzo rinominato da <strong>{$vecchioNome}</strong> a <strong>{$nuovoNome}</strong>");
         } catch (\Exception $e) {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
                            ->with("error", "Errore durante la rinominazione: " . $e->getMessage());
