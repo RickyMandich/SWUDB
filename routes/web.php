@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function(){return view('index');})->name("index");
 
 Route::get("query", [AdminController::class, 'query'])->name("admin.query")->middleware('auth');
+// Alias per compatibilità
+Route::get("admin/query", [AdminController::class, 'query'])->name("query")->middleware('auth');
 
 Route::get('/carte', [CardsController::class, 'index'])->name("carte");
 

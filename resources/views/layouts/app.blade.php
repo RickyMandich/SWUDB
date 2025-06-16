@@ -144,7 +144,7 @@
                                     <a class="dropdown-item" href="{{ route('users.index') }}">
                                         <i class="fas fa-users me-1"></i>Gestione Utenti
                                     </a>
-                                    <a class="dropdown-item" href="{{ route('admin.query') }}">
+                                    <a class="dropdown-item" href="{{ route('query') }}">
                                         <i class="fas fa-database me-1"></i>{{ __('custom.query') }}
                                     </a>
                                 @endif
