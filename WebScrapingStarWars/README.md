@@ -1,0 +1,2 @@
+# to use it:
+you can go in the latest release and download the `.jar` file, if you're pc don't have java 22 installed you can install it by going on https://www.oracle.com/java/technologies/downloads/ and install it, after that you have to add to the system variable `JAVA_HOME` that contain tha path to `the newly installed version directory`/bin

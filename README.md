@@ -45,10 +45,10 @@
 - miglioramento pagina utenti per la gestione di admin
 
 ## Funzionalità Future
+- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
 - Funzionalità di condivisione social
 - Sistema di versionamento per i mazzi
 - Sistema di tag personalizzati per i mazzi (etichette come "Aggro", "Control", "Budget", "Meta")
-- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
 - Modalità offline/PWA per consultazione carte (Progressive Web App)
 - Sistema di wishlist per carte desiderate
 - Funzionalità di deck-building guidato per principianti

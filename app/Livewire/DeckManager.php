@@ -26,11 +26,15 @@ class DeckManager extends Component
     public $proprietario;
     public $cards = [];
     public $deckCards = [];
-    
+
     // Carta => numero di copie
     public $mazzo = [];
     public $aggiunte = [];
     public $rimosse = [];
+
+    // Gestione rinominazione
+    public $modalitaRinomina = false;
+    public $nuovoNome = '';
 
     // Statistiche del mazzo
     public $trattiPrincipali = [];
@@ -446,17 +450,88 @@ class DeckManager extends Component
     {
         // Prepariamo i dati per il form
         $formData = [];
-        
+
         foreach ($this->aggiunte as $id => $carta) {
             $formData[$id] = "A-" . $carta['copie'];
         }
-        
+
         foreach ($this->rimosse as $id => $carta) {
             $formData[$id] = "R-" . $carta['copie'];
         }
-        
+
         // Inviamo i dati al controller salvando il form
         $this->dispatch('submitSaveForm', ['carte' => $formData]);
+    }
+
+    /**
+     * Activate rename mode and initialize the new name field
+     * Attiva la modalità rinomina e inizializza il campo nuovo nome
+     *
+     * @return void
+     */
+    public function attivaRinomina()
+    {
+        $this->modalitaRinomina = true;
+        $this->nuovoNome = $this->nome;
+    }
+
+    /**
+     * Cancel rename mode and reset the new name field
+     * Annulla la modalità rinomina e resetta il campo nuovo nome
+     *
+     * @return void
+     */
+    public function annullaRinomina()
+    {
+        $this->modalitaRinomina = false;
+        $this->nuovoNome = '';
+    }
+
+    /**
+     * Save the new deck name by dispatching rename form submission
+     * Salva il nuovo nome del mazzo inviando il form di rinominazione
+     *
+     * This method validates the new name and triggers the rename form submission.
+     *
+     * @return void
+     */
+    public function salvaNuovoNome()
+    {
+        // Validazione base del nuovo nome
+        $nuovoNome = trim($this->nuovoNome);
+
+        if (empty($nuovoNome)) {
+            $this->dispatch('showMessage', [
+                'type' => 'error',
+                'message' => 'Il nome del mazzo non può essere vuoto'
+            ]);
+            return;
+        }
+
+        if (strlen($nuovoNome) > 500) {
+            $this->dispatch('showMessage', [
+                'type' => 'error',
+                'message' => 'Il nome del mazzo non può superare i 500 caratteri'
+            ]);
+            return;
+        }
+
+        if ($nuovoNome === "Collezione") {
+            $this->dispatch('showMessage', [
+                'type' => 'warning',
+                'message' => 'Il nome "Collezione" è riservato'
+            ]);
+            return;
+        }
+
+        // Se il nome non è cambiato, annulla semplicemente la modalità rinomina
+        if ($nuovoNome === $this->nome) {
+            $this->annullaRinomina();
+            return;
+        }
+
+        // Invia il form di rinominazione
+        $this->dispatch('submitRenameForm', ['nuovo_nome' => $nuovoNome]);
     }
     
     public function render()

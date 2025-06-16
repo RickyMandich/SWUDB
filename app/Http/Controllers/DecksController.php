@@ -360,6 +360,94 @@ class DecksController extends Controller{
     }
 
     /**
+     * Rename a deck with validation and authorization checks
+     * Rinomina un mazzo con controlli di validazione e autorizzazione
+     *
+     * This method handles deck renaming with comprehensive validation:
+     * - Verifies user authentication and deck ownership
+     * - Validates new name format and uniqueness
+     * - Prevents renaming of collection decks
+     * - Prevents use of reserved names
+     *
+     * @param Request $request HTTP request containing 'nuovo_nome' parameter
+     * @param string $user The username of the deck owner
+     * @param string $deck The current deck name (URL encoded)
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
+    public function rename(Request $request, $user, $deck)
+    {
+        if (!auth()->check()) {
+            return redirect()->route("login")->with("warning", "Devi essere loggato per eseguire questa azione");
+        }
+
+        $deckName = str_replace("+", " ", $deck);
+        $nuovoNome = trim($request->input('nuovo_nome'));
+
+        // Validazione del nuovo nome
+        if (empty($nuovoNome)) {
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
+                           ->with("error", "Il nome del mazzo non può essere vuoto");
+        }
+
+        if (strlen($nuovoNome) > 500) {
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
+                           ->with("error", "Il nome del mazzo non può superare i 500 caratteri");
+        }
+
+        // Verifica che l'utente esista
+        $targetUser = User::where("name", $user)->first();
+        if (!$targetUser) {
+            return redirect()->route("mazzi")->with("error", "Utente non trovato");
+        }
+
+        // Verifica che il mazzo esista e appartenga all'utente autenticato
+        $mazzo = Deck::where("nome", $deckName)
+                    ->where("codUtente", auth()->user()->id)
+                    ->first();
+
+        if (!$mazzo) {
+            return redirect()->route("mazzi")->with("error", "Mazzo non trovato o non hai i permessi per modificarlo");
+        }
+
+        // Impedisce la rinominazione della collezione
+        if ($deckName === "Collezione") {
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
+                           ->with("warning", "Non puoi rinominare la collezione");
+        }
+
+        // Impedisce l'uso del nome riservato "Collezione"
+        if ($nuovoNome === "Collezione") {
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
+                           ->with("warning", "Il nome 'Collezione' è riservato");
+        }
+
+        // Verifica che non esista già un mazzo con il nuovo nome
+        $mazzoEsistente = Deck::where("nome", $nuovoNome)
+                             ->where("codUtente", auth()->user()->id)
+                             ->where("id", "!=", $mazzo->id)
+                             ->first();
+
+        if ($mazzoEsistente) {
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
+                           ->with("warning", "Esiste già un mazzo con questo nome");
+        }
+
+        try {
+            // Aggiorna il nome del mazzo
+            $vecchioNome = $mazzo->nome;
+            $mazzo->nome = $nuovoNome;
+            $mazzo->save();
+
+            // Reindirizza al mazzo con il nuovo nome
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => str_replace(" ", "+", $nuovoNome)])
+                           ->with("success", "Mazzo rinominato da '$vecchioNome' a '$nuovoNome'");
+        } catch (\Exception $e) {
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
+                           ->with("error", "Errore durante la rinominazione: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Display and manage the user's personal collection as a special deck
      * Mostra e gestisce la collezione personale dell'utente come mazzo speciale
      *

@@ -1,6 +1,46 @@
 <div>
     <div class="header text-center mb-4">
-        <h1>{{ $nome }}</h1>
+        @if ($modalitaRinomina && $proprietario)
+            <!-- Modalità rinominazione -->
+            <div class="rename-section">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8 col-lg-6">
+                        <div class="input-group mb-3">
+                            <input type="text"
+                                   class="form-control"
+                                   wire:model="nuovoNome"
+                                   placeholder="Nuovo nome del mazzo"
+                                   maxlength="500"
+                                   wire:keydown.enter="salvaNuovoNome"
+                                   wire:keydown.escape="annullaRinomina">
+                            <button class="btn btn-success"
+                                    type="button"
+                                    wire:click="salvaNuovoNome">
+                                <i class="fas fa-check me-1"></i>Salva
+                            </button>
+                            <button class="btn btn-secondary"
+                                    type="button"
+                                    wire:click="annullaRinomina">
+                                <i class="fas fa-times me-1"></i>Annulla
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @else
+            <!-- Visualizzazione normale -->
+            <div class="d-flex justify-content-center align-items-center mb-2">
+                <h1 class="me-3">{{ $nome }}</h1>
+                @if ($proprietario && $nome !== 'Collezione')
+                    <button class="btn btn-outline-primary btn-sm"
+                            wire:click="attivaRinomina"
+                            title="Rinomina mazzo">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                @endif
+            </div>
+        @endif
+
         <h4>
             <small class="text-muted">di {{ $user }}</small>
         </h4>
@@ -269,7 +309,7 @@
             Livewire.on('submitSaveForm', (data) => {
                 // Rimuoviamo eventuali campi nascosti preesistenti
                 document.querySelectorAll('#modifiche input').forEach(el => el.remove());
-                
+
                 // Aggiungiamo i campi nascosti al form
                 const modificheDiv = document.getElementById('modifiche');
                 data = data[0];
@@ -281,9 +321,42 @@
                     input.value = value;
                     modificheDiv.appendChild(input);
                 });
-                
+
                 // Inviamo il form
                 document.getElementById('saveDeckForm').submit();
+            });
+
+            // Gestione del form di rinominazione
+            Livewire.on('submitRenameForm', (data) => {
+                // Crea un form temporaneo per la rinominazione
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route("mazzo.rename", ["user" => $user, "mazzo" => $deck]) }}';
+
+                // Aggiungi il token CSRF
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = '{{ csrf_token() }}';
+                form.appendChild(csrfInput);
+
+                // Aggiungi il metodo PATCH
+                const methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'PATCH';
+                form.appendChild(methodInput);
+
+                // Aggiungi il nuovo nome
+                const nameInput = document.createElement('input');
+                nameInput.type = 'hidden';
+                nameInput.name = 'nuovo_nome';
+                nameInput.value = data[0].nuovo_nome;
+                form.appendChild(nameInput);
+
+                // Aggiungi il form al body e invialo
+                document.body.appendChild(form);
+                form.submit();
             });
             
             // Gestione dei messaggi toast

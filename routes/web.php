@@ -52,6 +52,8 @@ Route::delete('/mazzo/{user}/{mazzo}', [DecksController::class, 'destroy'])->nam
 
 Route::patch('/mazzo/{user}/{mazzo}/visibility', [DecksController::class, 'toggleVisibility'])->name("mazzo.toggle.visibility")->middleware('auth');
 
+Route::patch('/mazzo/{user}/{mazzo}/rename', [DecksController::class, 'rename'])->name("mazzo.rename")->middleware('auth');
+
 Route::get('/mazzo/{user}/{mazzo}/export/txt', [DecksController::class, 'exportTxt'])->name("mazzo.export.txt");
 
 Route::get('/mazzo/{user}/{mazzo}/export/json', [DecksController::class, 'exportJson'])->name("mazzo.export.json");
