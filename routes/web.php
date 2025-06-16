@@ -3,6 +3,7 @@
 use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\UsersController;
 
 
 
@@ -102,9 +103,11 @@ Auth::routes();
 
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 
-Route::get('/users', function(){
-    return redirect()->route("query", ["query" => "SELECT * FROM users"]);
-});
+Route::get('/users', [UsersController::class, 'index'])->name('users.index')->middleware('auth');
+Route::get('/users/{id}', [UsersController::class, 'show'])->name('users.show')->middleware('auth');
+Route::patch('/users/{id}', [UsersController::class, 'update'])->name('users.update')->middleware('auth');
+Route::patch('/users/{id}/toggle-admin', [UsersController::class, 'toggleAdmin'])->name('users.toggle-admin')->middleware('auth');
+Route::delete('/users/{id}', [UsersController::class, 'destroy'])->name('users.destroy')->middleware('auth');
 
 Route::get('/docs/tos', function(){
     return view("docs.termOfService");

@@ -130,6 +130,9 @@
                                     <a class="dropdown-item" href="{{ route('query') }}">
                                         {{ __('custom.query') }}
                                     </a>
+                                    <a class="dropdown-item" href="{{ route('users.index') }}">
+                                        <i class="fas fa-users me-1"></i>Gestione Utenti
+                                    </a>
                                 @endif
 
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
