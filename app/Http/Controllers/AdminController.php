@@ -109,9 +109,10 @@ class AdminController extends Controller
             'total_cards' => DB::table('cards')->count(),
             'total_users' => DB::table('users')->count(),
             'admin_users' => DB::table('users')->where('admin', true)->count(),
-            'total_decks' => DB::table('decks')->count(),
-            'public_decks' => DB::table('decks')->where('public', true)->count(),
+            'total_decks' => DB::table('decks')->where('nome', '!=', 'collezione')->count(),
+            'public_decks' => DB::table('decks')->where('public', true)->where('nome', '!=', 'collezione')->count(),
             'recent_users' => DB::table('users')->where('created_at', '>=', now()->subDays(7))->count(),
+            'total_collections' => DB::table('decks')->where('nome', 'collezione')->count(),
         ];
 
         return view('admin.dashboard', compact('stats'));

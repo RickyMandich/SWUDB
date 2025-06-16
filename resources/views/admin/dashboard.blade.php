@@ -44,7 +44,7 @@
                                 <div class="card-body text-center">
                                     <i class="fas fa-layer-group fa-2x mb-2"></i>
                                     <h5>{{ $stats['total_decks'] }}</h5>
-                                    <small>Mazzi Totali</small>
+                                    <small>Mazzi Reali</small>
                                 </div>
                             </div>
                         </div>
@@ -60,9 +60,22 @@
                         <div class="col-md-2">
                             <div class="card bg-dark text-white">
                                 <div class="card-body text-center">
+                                    <i class="fas fa-archive fa-2x mb-2"></i>
+                                    <h5>{{ $stats['total_collections'] }}</h5>
+                                    <small>Collezioni</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Riga aggiuntiva per nuovi utenti -->
+                    <div class="row mb-4">
+                        <div class="col-md-2 offset-md-5">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
                                     <i class="fas fa-user-plus fa-2x mb-2"></i>
                                     <h5>{{ $stats['recent_users'] }}</h5>
-                                    <small>Nuovi (7gg)</small>
+                                    <small>Nuovi Utenti (7gg)</small>
                                 </div>
                             </div>
                         </div>
@@ -110,12 +123,16 @@
                                             <td>{{ round(($stats['public_decks'] / max($stats['total_decks'], 1)) * 100, 1) }}%</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Crescita Utenti (7gg):</strong></td>
-                                            <td>{{ $stats['recent_users'] }} nuovi utenti</td>
+                                            <td><strong>Utenti con Collezione:</strong></td>
+                                            <td>{{ round(($stats['total_collections'] / max($stats['total_users'], 1)) * 100, 1) }}%</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Media Mazzi per Utente:</strong></td>
-                                            <td>{{ round($stats['total_decks'] / max($stats['total_users'], 1), 1) }}</td>
+                                            <td>{{ round($stats['total_decks'] / max($stats['total_users'], 1), 1) }} (escluse collezioni)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Crescita Utenti (7gg):</strong></td>
+                                            <td>{{ $stats['recent_users'] }} nuovi utenti</td>
                                         </tr>
                                     </table>
                                 </div>
