@@ -8,12 +8,24 @@ use App\Http\Controllers\JobController;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function(){return view('index');})->name("index");
 
-
+Route::get("query", function(Request $request){
+    if(!Auth::admin()){
+        return view("errors.403");
+    }
+    $get = $request->all();
+    if(isset($get["query"])){
+        $query = $get["query"];
+    }else{
+        $query = "SELECT * FROM cards limit 10";
+    }
+    return view("query", ["result" => DB::select($query), "query"=>$query]);
+})->name("query");
 
 Route::get('/carte', [CardsController::class, 'index'])->name("carte");
 
