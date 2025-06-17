@@ -285,7 +285,7 @@
                                             <span class="m-auto text-primary align-self-end col-3">${carta.vita || '-'}</span> <br>
                                         </div>
                                         <div class="row text-center">
-                                            <span class="col-12 ${carta.rarita.toLowerCase().replaceAll(' ', '')}">${carta.rarita}</span>
+                                            <span class="col-12 ${carta.rarita.toLowerCase().split(' ').join('')}">${carta.rarita}</span>
                                         </div>
 
                                         <!-- Controlli per la collezione -->
