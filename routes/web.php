@@ -34,6 +34,8 @@ Route::get('/processNewCards', [CardsController::class, 'processNewCards'])->nam
 
 Route::get('/checkScanStatus/{threadId}', [CardsController::class, 'checkScanStatus'])->name("carte.checkScanStatus");
 
+Route::get('/cleanupCheckpoint', [CardsController::class, 'cleanupCheckpoint'])->name("carte.cleanupCheckpoint");
+
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
 Route::get('/collezione', [DecksController::class, 'collezione'])->name('collezione')->middleware('auth');

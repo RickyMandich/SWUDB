@@ -577,6 +577,7 @@ class CardsController extends Controller
      * Elabora le nuove carte trovate tramite API (job in background)
      *
      * This method runs ONLY after the API scan is completely finished
+     * Now includes checkpoint system for recovery from interruptions
      *
      * @param Request $request HTTP request containing threadId and token
      * @return void
@@ -600,16 +601,36 @@ class CardsController extends Controller
             $newCardIds = $processData['cardIds'];
             $logFile = $processData['logFile'];
 
-            $this->writeScanLog("=== INIZIO ELABORAZIONE DETTAGLI CARTE ===", $logFile);
-            $this->writeScanLog("Carte da elaborare: " . count($newCardIds), $logFile);
-
-            ThreadMessageCreated::dispatch($threadId, "Inizio elaborazione dettagli per " . count($newCardIds) . " carte");
-
+            // Check for existing checkpoint
+            $checkpointFile = storage_path("app/processing_checkpoint.json");
+            $checkpoint = [];
+            $startIndex = 0;
             $toInsert = [];
-            $processedCount = 0;
-            $batchSize = 10; // Process in smaller batches
 
-            foreach ($newCardIds as $index => $cardId) {
+            if (file_exists($checkpointFile)) {
+                $checkpoint = json_decode(file_get_contents($checkpointFile), true);
+                if ($checkpoint && $checkpoint['threadId'] === $threadId) {
+                    $startIndex = $checkpoint['lastProcessedIndex'] + 1;
+                    $toInsert = $checkpoint['processedCards'] ?? [];
+                    $this->writeScanLog("=== RIPRESA DA CHECKPOINT ===", $logFile);
+                    $this->writeScanLog("Ripresa dall'indice: {$startIndex}", $logFile);
+                    $this->writeScanLog("Carte già elaborate: " . count($toInsert), $logFile);
+                    ThreadMessageCreated::dispatch($threadId, "Ripresa elaborazione da carta " . ($startIndex + 1) . "/" . count($newCardIds));
+                }
+            }
+
+            if ($startIndex === 0) {
+                $this->writeScanLog("=== INIZIO ELABORAZIONE DETTAGLI CARTE ===", $logFile);
+                $this->writeScanLog("Carte da elaborare: " . count($newCardIds), $logFile);
+                ThreadMessageCreated::dispatch($threadId, "Inizio elaborazione dettagli per " . count($newCardIds) . " carte");
+            }
+
+            $processedCount = count($toInsert);
+            $batchSize = 50; // Increased batch size for checkpoints
+            $checkpointInterval = 100; // Save checkpoint every 100 cards
+
+            for ($index = $startIndex; $index < count($newCardIds); $index++) {
+                $cardId = $newCardIds[$index];
                 $this->writeScanLog("Elaborazione carta " . ($index + 1) . "/" . count($newCardIds) . ": {$cardId}", $logFile);
 
                 $cardData = $this->getCardDetailsFromAPI($cardId, $logFile);
@@ -619,24 +640,63 @@ class CardsController extends Controller
 
                     $cardInfo = ($cardData['espansione'] ?? 'N/A') . "-" . ($cardData['numero'] ?? 'N/A') . " " . ($cardData['nome'] ?? 'N/A');
                     $this->writeScanLog("✅ Carta elaborata: {$cardInfo}", $logFile);
-
-                    if ($processedCount % $batchSize === 0) {
-                        ThreadMessageCreated::dispatch($threadId, "Elaborate {$processedCount}/" . count($newCardIds) . " carte");
-                        $this->writeScanLog("Progresso: {$processedCount}/" . count($newCardIds) . " carte elaborate", $logFile);
-
-                        // Small delay to avoid overwhelming the API
-                        usleep(500000); // 500ms delay every 10 cards
-                    }
                 } else {
                     $this->writeScanLog("❌ Errore elaborazione carta: {$cardId}", $logFile);
                 }
 
+                // Update progress and checkpoint
+                if (($index + 1) % $batchSize === 0) {
+                    ThreadMessageCreated::dispatch($threadId, "Elaborate " . ($index + 1) . "/" . count($newCardIds) . " carte");
+                    $this->writeScanLog("Progresso: " . ($index + 1) . "/" . count($newCardIds) . " carte elaborate", $logFile);
+                }
+
+                // Save checkpoint every N cards
+                if (($index + 1) % $checkpointInterval === 0) {
+                    $checkpointData = [
+                        'threadId' => $threadId,
+                        'lastProcessedIndex' => $index,
+                        'processedCards' => $toInsert,
+                        'timestamp' => time()
+                    ];
+                    file_put_contents($checkpointFile, json_encode($checkpointData));
+                    $this->writeScanLog("Checkpoint salvato all'indice: " . ($index + 1), $logFile);
+                }
+
                 // Small delay between each card
-                usleep(100000); // 100ms delay
+                usleep(50000); // Reduced to 50ms delay
+
+                // Check execution time and break if approaching limits
+                if ((time() - ($_SERVER['REQUEST_TIME'] ?? time())) > 240) { // 4 minutes limit
+                    $this->writeScanLog("Limite tempo raggiunto, salvataggio checkpoint e riavvio...", $logFile);
+
+                    // Save final checkpoint
+                    $checkpointData = [
+                        'threadId' => $threadId,
+                        'lastProcessedIndex' => $index,
+                        'processedCards' => $toInsert,
+                        'timestamp' => time()
+                    ];
+                    file_put_contents($checkpointFile, json_encode($checkpointData));
+
+                    // Restart the process
+                    JobController::fireAndForgetGet(route('carte.processNewCards', ['threadId' => $threadId]), [
+                        "token" => env('JOB_TOKEN')
+                    ]);
+
+                    ThreadMessageCreated::dispatch($threadId, "Processo riavviato automaticamente - Elaborate " . ($index + 1) . "/" . count($newCardIds) . " carte");
+                    return;
+                }
             }
 
+            // Processing completed
             $this->writeScanLog("=== ELABORAZIONE COMPLETATA ===", $logFile);
             $this->writeScanLog("Carte elaborate con successo: " . count($toInsert) . "/" . count($newCardIds), $logFile);
+
+            // Clean up checkpoint file
+            if (file_exists($checkpointFile)) {
+                unlink($checkpointFile);
+                $this->writeScanLog("Checkpoint rimosso", $logFile);
+            }
 
             ThreadMessageCreated::dispatch($threadId, "Completata elaborazione: " . count($toInsert) . " carte pronte per importazione");
 
@@ -825,6 +885,33 @@ class CardsController extends Controller
             'isComplete' => $isComplete,
             'latestMessage' => $latestMessage,
             'threadId' => $threadId
+        ]);
+    }
+
+    /**
+     * Clean up processing checkpoint (manual recovery)
+     * Pulisce il checkpoint di elaborazione (recovery manuale)
+     *
+     * @return \Illuminate\Http\JsonResponse Status of cleanup
+     */
+    public function cleanupCheckpoint()
+    {
+        $checkpointFile = storage_path("app/processing_checkpoint.json");
+
+        if (file_exists($checkpointFile)) {
+            $checkpoint = json_decode(file_get_contents($checkpointFile), true);
+            unlink($checkpointFile);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checkpoint rimosso',
+                'checkpoint' => $checkpoint
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Nessun checkpoint trovato'
         ]);
     }
 
