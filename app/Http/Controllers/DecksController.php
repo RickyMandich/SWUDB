@@ -490,13 +490,8 @@ class DecksController extends Controller{
         // Calcola il numero totale di carte
         $totalCards = $cards->sum('copie');
 
-        // Recupera tutte le carte disponibili (nessun filtro di default)
-        $allCards = Card::all();
-
-        // Applica l'ordinamento usando il metodo del controller
-        if (!$allCards->isEmpty()) {
-            $allCards = CardsController::mergeSort($allCards);
-        }
+        // Le carte verranno caricate dinamicamente dal componente Livewire
+        // Cards will be loaded dynamically by the Livewire component
 
         // Debug: analisi delle carte e filtri
         $totalCardsInDb = Card::count();
@@ -527,7 +522,7 @@ class DecksController extends Controller{
         // Aggiungi debug info aggiornato
         $debugInfo = [
             'total_cards_db' => $totalCardsInDb,
-            'cards_displayed' => $allCards->count(),
+            'cards_displayed' => 'Caricate dinamicamente da Livewire',
             'cards_in_collezione' => $cardsInCollezione,
             'max_values' => [
                 'costo' => $maxCosto,
@@ -537,13 +532,12 @@ class DecksController extends Controller{
             'high_value_cards_count' => $carteAltoValore,
             'sample_high_value_cards' => $carteEsempio,
             'livewire_status' => 'Filtri gestiti da SearchFilter component',
-            'sort_applied' => !$allCards->isEmpty() ? 'mergeSort applicato' : 'nessun ordinamento'
+            'sort_applied' => 'mergeSort applicato dinamicamente'
         ];
 
         return view('collezione.index', [
             'collezione' => $cards,
             'totalCards' => $totalCards,
-            'allCards' => $allCards,
             'collezioneId' => $collezione->id,
             'debugInfo' => $debugInfo
         ]);

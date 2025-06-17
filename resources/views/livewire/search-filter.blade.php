@@ -5,6 +5,11 @@
                 <i class="fas fa-filter me-2"></i>Filtri di Ricerca
             </h5>
             <div class="d-flex gap-2">
+                @if($mode === 'page' || $mode === 'collezione')
+                    <button wire:click="loadAllCards" class="btn btn-outline-primary btn-sm" title="Mostra tutte le carte">
+                        <i class="fas fa-list me-1"></i>Tutte
+                    </button>
+                @endif
                 <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm" title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>

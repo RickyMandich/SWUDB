@@ -72,101 +72,20 @@
         <div class="mb-3">
             <div class="alert alert-info d-flex align-items-center" id="results-counter">
                 <i class="fas fa-info-circle me-2"></i>
-                <span>Trovate <strong id="filtered-count">{{ count($allCards) }}</strong> carte</span>
+                <span id="counter-text">Utilizza i filtri sopra per cercare le carte o clicca "Tutte" per vedere l'elenco completo</span>
             </div>
         </div>
 
         <!-- Contenitore per i risultati -->
         <div id="cards-container">
             <div class="row" id="cards-grid">
-                @foreach ($allCards as $carta)
-                    @php
-                        $carteInCollezione = $collezione->where('espansione', $carta->espansione)
-                                                      ->where('numero', $carta->numero)
-                                                      ->first();
-                        $copieAttuali = $carteInCollezione ? $carteInCollezione->copie : 0;
-                    @endphp
-                    <div class="col-12 col-sm-4 ps-4 pe-4 pt-4 pb-4 card-item" 
-                         data-card-id="{{ $carta->espansione }}-{{ $carta->numero }}"
-                         data-nome="{{ strtolower($carta->nome) }}"
-                         data-titolo="{{ strtolower($carta->titolo) }}"
-                         data-espansione="{{ $carta->espansione }}"
-                         data-tipo="{{ $carta->tipo }}"
-                         data-aspetto-primario="{{ $carta->aspettoPrimario }}"
-                         data-aspetto-secondario="{{ $carta->aspettoSecondario }}"
-                         data-rarita="{{ $carta->rarita }}"
-                         data-costo="{{ $carta->costo }}"
-                         data-potenza="{{ $carta->potenza ?? 0 }}"
-                         data-vita="{{ $carta->vita ?? 0 }}"
-                         data-tratti="{{ strtolower($carta->tratti) }}"
-                         data-arena="{{ $carta->arena }}"
-                         data-unica="{{ $carta->unica ? 1 : 0 }}"
-                         data-artista="{{ strtolower($carta->artista) }}">
-                        <div class="innerCarta row pr-10">
-                            <div class="col-12 col-sm-12 rounded-4 border-primary-subtle bg-secondary-subtle p-3">
-                                <div class="row">
-                                    <div class="col">
-                                        <a href="{{ route("carta", ["espansione" => $carta->espansione, "numero" => $carta->numero]) }}" target="_blank">
-                                            <img class="col-12" src="{{ $carta->frontArt }}" alt="immagine di {{$carta->snippet}}">
-                                        </a>
-                                    </div>
-                                    <div class="col">
-                                        <a href="{{ route("carta", ["espansione" => $carta->espansione, "numero" => $carta->numero]) }}" target="_blank" class="text-decoration-none">
-                                            <h5>{{ $carta->snippet }}</h5>
-                                        </a>
-                                        {{ $carta->tratti }} <br>
-                                        <div class="row">
-                                            <span class="col-9">costo:</span>
-                                            <span class="m-auto text-warning align-self-end col-3">{{ $carta->costo }}</span> <br>
-                                        </div>
-                                        <div class="row">
-                                            <span class="col-9">potenza:</span>
-                                            <span class="m-auto text-danger align-self-end col-3">{{ $carta->potenza ?? '-' }}</span> <br>
-                                        </div>
-                                        <div class="row">
-                                            <span class="col-9">vita:</span>
-                                            <span class="m-auto text-primary align-self-end col-3">{{ $carta->vita ?? '-' }}</span> <br>
-                                        </div>
-                                        <div class="row text-center">
-                                            <span class="col-12 {{ toCssClass($carta->rarita) }}">{{ $carta->rarita }}</span>
-                                        </div>
-                                        
-                                        <!-- Controlli per la collezione -->
-                                        <div class="row mt-3">
-                                            <div class="col-12">
-                                                <div class="d-flex align-items-center justify-content-center">
-                                                    <button type="button" 
-                                                            class="btn btn-danger btn-sm me-2 decrease-btn" 
-                                                            data-espansione="{{ $carta->espansione }}" 
-                                                            data-numero="{{ $carta->numero }}"
-                                                            {{ $copieAttuali <= 0 ? 'disabled' : '' }}>
-                                                        <i class="fas fa-minus"></i>
-                                                    </button>
-                                                    
-                                                    <input type="number" 
-                                                           class="form-control text-center mx-2 copie-input" 
-                                                           style="width: 80px;" 
-                                                           value="{{ $copieAttuali }}" 
-                                                           min="0" 
-                                                           max="999"
-                                                           data-espansione="{{ $carta->espansione }}" 
-                                                           data-numero="{{ $carta->numero }}">
-                                                    
-                                                    <button type="button" 
-                                                            class="btn btn-success btn-sm ms-2 increase-btn" 
-                                                            data-espansione="{{ $carta->espansione }}" 
-                                                            data-numero="{{ $carta->numero }}">
-                                                        <i class="fas fa-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Le carte verranno caricate dinamicamente da Livewire -->
+                <div class="col-12 text-center py-5" id="initial-message">
+                    <div class="alert alert-info">
+                        <i class="fas fa-search me-2"></i>
+                        Utilizza i filtri sopra per cercare le carte o clicca "Tutte" per vedere l'elenco completo.
                     </div>
-                @endforeach
+                </div>
             </div>
         </div>
     </div>
@@ -175,6 +94,13 @@
     <script>
         // Token CSRF per le richieste AJAX
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Dati della collezione per il controllo delle copie
+        const collezioneData = {
+            @foreach($collezione as $carta)
+                '{{ $carta->espansione }}-{{ $carta->numero }}': {{ $carta->copie }},
+            @endforeach
+        };
         
         // Gestione dei pulsanti + e -
         document.addEventListener('click', function(e) {
@@ -235,6 +161,10 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    // Aggiorna i dati locali della collezione
+                    const cardId = espansione + '-' + numero;
+                    collezioneData[cardId] = copie;
+
                     // Aggiorna lo stato dei pulsanti
                     updateButtonStates(espansione, numero, copie);
                     // Aggiorna il contatore totale
@@ -297,26 +227,112 @@
         });
 
         function updateCardsDisplay(cards) {
-            // Nascondi tutte le carte
-            document.querySelectorAll('.card-item').forEach(item => {
-                item.style.display = 'none';
+            const cardsGrid = document.getElementById('cards-grid');
+            const counterText = document.getElementById('counter-text');
+            const initialMessage = document.getElementById('initial-message');
+
+            // Rimuovi il messaggio iniziale se presente
+            if (initialMessage) {
+                initialMessage.remove();
+            }
+
+            if (counterText) {
+                counterText.innerHTML = `Trovate <strong>${cards ? cards.length : 0}</strong> carte`;
+            }
+
+            if (!cards || cards.length === 0) {
+                cardsGrid.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-search me-2"></i>
+                            Nessuna carta trovata con i filtri selezionati.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            cards.forEach(carta => {
+                // Cerca se la carta è nella collezione
+                const copieAttuali = getCardCopiesInCollection(carta.espansione, carta.numero);
+
+                html += `
+                    <div class="col-12 col-sm-4 ps-4 pe-4 pt-4 pb-4 card-item">
+                        <div class="innerCarta row pr-10">
+                            <div class="col-12 col-sm-12 rounded-4 border-primary-subtle bg-secondary-subtle p-3">
+                                <div class="row">
+                                    <div class="col">
+                                        <a href="${"{{ route('carta', ['espansione' => ':espansione:', 'numero' => ':numero:']) }}".replace(':espansione:', carta.espansione).replace(':numero:', carta.numero)}" target="_blank">
+                                            <img class="col-12" src="${carta.frontArt}" alt="immagine di ${carta.snippet}">
+                                        </a>
+                                    </div>
+                                    <div class="col">
+                                        <a href="${"{{ route('carta', ['espansione' => ':espansione:', 'numero' => ':numero:']) }}".replace(':espansione:', carta.espansione).replace(':numero:', carta.numero)}" target="_blank" class="text-decoration-none">
+                                            <h5>${carta.snippet}</h5>
+                                        </a>
+                                        ${carta.tratti} <br>
+                                        <div class="row">
+                                            <span class="col-9">costo:</span>
+                                            <span class="m-auto text-warning align-self-end col-3">${carta.costo}</span> <br>
+                                        </div>
+                                        <div class="row">
+                                            <span class="col-9">potenza:</span>
+                                            <span class="m-auto text-danger align-self-end col-3">${carta.potenza || '-'}</span> <br>
+                                        </div>
+                                        <div class="row">
+                                            <span class="col-9">vita:</span>
+                                            <span class="m-auto text-primary align-self-end col-3">${carta.vita || '-'}</span> <br>
+                                        </div>
+                                        <div class="row text-center">
+                                            <span class="col-12 ${carta.rarita.replace(/\s+/g, '-')}">${carta.rarita}</span>
+                                        </div>
+
+                                        <!-- Controlli per la collezione -->
+                                        <div class="row mt-3">
+                                            <div class="col-12">
+                                                <div class="d-flex align-items-center justify-content-center">
+                                                    <button type="button"
+                                                            class="btn btn-danger btn-sm me-2 decrease-btn"
+                                                            data-espansione="${carta.espansione}"
+                                                            data-numero="${carta.numero}"
+                                                            ${copieAttuali <= 0 ? 'disabled' : ''}>
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+
+                                                    <input type="number"
+                                                           class="form-control text-center mx-2 copie-input"
+                                                           style="width: 80px;"
+                                                           value="${copieAttuali}"
+                                                           min="0"
+                                                           max="999"
+                                                           data-espansione="${carta.espansione}"
+                                                           data-numero="${carta.numero}">
+
+                                                    <button type="button"
+                                                            class="btn btn-success btn-sm ms-2 increase-btn"
+                                                            data-espansione="${carta.espansione}"
+                                                            data-numero="${carta.numero}">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
-            
-            // Mostra solo le carte filtrate
-            if (cards && cards.length > 0) {
-                cards.forEach(carta => {
-                    const cardElement = document.querySelector(`[data-card-id="${carta.espansione}-${carta.numero}"]`);
-                    if (cardElement) {
-                        cardElement.style.display = 'block';
-                    }
-                });
-            }
-            
-            // Aggiorna il contatore
-            const filteredCount = document.getElementById('filtered-count');
-            if (filteredCount) {
-                filteredCount.textContent = cards ? cards.length : 0;
-            }
+
+            cardsGrid.innerHTML = html;
+        }
+
+        // Funzione per ottenere le copie di una carta nella collezione
+        function getCardCopiesInCollection(espansione, numero) {
+            const cardId = espansione + '-' + numero;
+            return collezioneData[cardId] || 0;
         }
     </script>
     @endpush

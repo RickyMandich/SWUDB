@@ -2,25 +2,23 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Card;
+use App\Models\Deck;
+use App\Models\Composition;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-
+use Livewire\Component;
 
 /**
- * Livewire component for advanced card search and filtering functionality
- * Componente Livewire per funzionalità avanzate di ricerca e filtro carte
+ * Livewire component for collection management with integrated search and filtering
+ * Componente Livewire per la gestione della collezione con ricerca e filtri integrati
  *
- * This component provides comprehensive card filtering capabilities with:
- * - Real-time search across multiple card attributes
- * - Dynamic filter options loaded from database with caching
- * - Support for multiple modes (page, popup, collection)
- * - Automatic sorting using CardsController merge sort algorithm
- * - Event-driven communication with parent components
+ * This component combines the functionality of SearchFilter with collection-specific
+ * features like managing card copies in the user's collection.
  */
-class SearchFilter extends Component
+class CollezioneManager extends Component
 {
-    // Proprietà per i filtri
+    // Proprietà per i filtri (ereditate da SearchFilter)
     public $nome = '';
     public $titolo = '';
     public $espansione = '';
@@ -34,17 +32,17 @@ class SearchFilter extends Component
     public $potenzaMax = null;
     public $vitaMin = null;
     public $vitaMax = null;
-
-    // Valori massimi dinamici dal database
-    public $maxCostoDb = 999;
-    public $maxPotenzaDb = 999;
-    public $maxVitaDb = 999;
     public $tratti = '';
     public $arena = '';
     public $unica = null;
     public $artista = '';
 
-    // Proprietà per le opzioni dei select
+    // Valori massimi dal database per i filtri
+    public $maxCostoDb = 999;
+    public $maxPotenzaDb = 999;
+    public $maxVitaDb = 999;
+
+    // Opzioni per i filtri dropdown
     public $espansioni = [];
     public $tipi = [];
     public $aspettiPrimari = [];
@@ -57,50 +55,48 @@ class SearchFilter extends Component
     public $filteredCards = [];
     public $totalResults = 0;
 
-    // Modalità di utilizzo (per la pagina principale, popup o collezione)
-    public $mode = 'page'; // 'page', 'popup' o 'collezione'
-
-    // Stato dei filtri avanzati (aperto/chiuso)
+    // Stato dei filtri avanzati
     public $advancedFiltersOpen = false;
+
+    // Collezione specifica
+    public $collezioneId;
+    public $collezioneData = [];
 
     protected $listeners = [
         'resetFilters' => 'resetAllFilters',
-        'applyFiltersForPopup' => 'getFilteredCardsForPopup',
         'loadAllCards' => 'loadAllCards'
     ];
 
     /**
-     * Initialize the component with mode
-     * Inizializza il componente con modalità
-     *
-     * @param string $mode Component mode: 'page', 'popup' or 'collezione'
-     * @return void
+     * Initialize the component
+     * Inizializza il componente
      */
-    public function mount($mode = 'page')
+    public function mount($collezioneId)
     {
-        $this->mode = $mode;
+        $this->collezioneId = $collezioneId;
         $this->loadFilterOptions();
-
-        // Per le modalità 'page' e 'collezione', non caricare automaticamente tutte le carte
-        // For 'page' and 'collezione' modes, don't automatically load all cards
-        if ($this->mode === 'popup') {
-            $this->applyFilters();
-        } else {
-            // Inizializza con array vuoto per le modalità page e collezione
-            // Initialize with empty array for page and collezione modes
-            $this->filteredCards = collect([]);
-            $this->totalResults = 0;
-        }
+        $this->loadCollezioneData();
+        
+        // Inizializza con array vuoto
+        $this->filteredCards = collect([]);
+        $this->totalResults = 0;
     }
 
     /**
-     * Load all filter options from database with caching for performance
-     * Carica tutte le opzioni di filtro dal database con cache per le prestazioni
-     *
-     * This method populates all filter dropdown options and maximum values
-     * using cached queries to improve performance. Cache expires after 1 hour.
-     *
-     * @return void
+     * Load collection data for copy management
+     * Carica i dati della collezione per la gestione delle copie
+     */
+    public function loadCollezioneData()
+    {
+        $compositions = Composition::where('idMazzo', $this->collezioneId)->get();
+        $this->collezioneData = $compositions->keyBy(function($item) {
+            return $item->espansione . '-' . $item->numero;
+        })->toArray();
+    }
+
+    /**
+     * Load all filter options from database with caching
+     * Carica tutte le opzioni di filtro dal database con cache
      */
     public function loadFilterOptions()
     {
@@ -175,60 +171,46 @@ class SearchFilter extends Component
     /**
      * Apply all active filters to build the filtered card query and results
      * Applica tutti i filtri attivi per costruire la query filtrata e i risultati
-     *
-     * This method builds a comprehensive database query based on all active filters,
-     * applies the custom sorting algorithm, and dispatches events to update the UI.
-     * Handles null values and empty filters appropriately.
-     *
-     * @return void
      */
     public function applyFilters()
     {
         $query = Card::query();
 
-        // Filtro per nome
+        // Applica tutti i filtri come nel componente SearchFilter
         if (!empty($this->nome)) {
             $query->where('nome', 'like', '%' . $this->nome . '%');
         }
 
-        // Filtro per titolo
         if (!empty($this->titolo)) {
             $query->where('titolo', 'like', '%' . $this->titolo . '%');
         }
 
-        // Filtro per espansione
         if (!empty($this->espansione)) {
             $query->where('espansione', $this->espansione);
         }
 
-        // Filtro per tipo
         if (!empty($this->tipo)) {
             $query->where('tipo', $this->tipo);
         }
 
-        // Filtro per aspetto primario
         if (!empty($this->aspettoPrimario)) {
             $query->where('aspettoPrimario', $this->aspettoPrimario);
         }
 
-        // Filtro per aspetto secondario
         if (!empty($this->aspettoSecondario)) {
             $query->where('aspettoSecondario', $this->aspettoSecondario);
         }
 
-        // Filtro per rarità
         if (!empty($this->rarita)) {
             $query->where('rarita', $this->rarita);
         }
 
-        // Filtro per costo (solo se specificato)
         if ($this->costoMin !== null || ($this->costoMax !== null && $this->costoMax < $this->maxCostoDb)) {
             $minCosto = $this->costoMin ?? 0;
             $maxCosto = $this->costoMax ?? $this->maxCostoDb;
             $query->whereBetween('costo', [$minCosto, $maxCosto]);
         }
 
-        // Filtro per potenza (solo se specificato)
         if ($this->potenzaMin !== null || ($this->potenzaMax !== null && $this->potenzaMax < $this->maxPotenzaDb)) {
             $minPotenza = $this->potenzaMin ?? 0;
             $maxPotenza = $this->potenzaMax ?? $this->maxPotenzaDb;
@@ -238,7 +220,6 @@ class SearchFilter extends Component
             });
         }
 
-        // Filtro per vita (solo se specificato)
         if ($this->vitaMin !== null || ($this->vitaMax !== null && $this->vitaMax < $this->maxVitaDb)) {
             $minVita = $this->vitaMin ?? 0;
             $maxVita = $this->vitaMax ?? $this->maxVitaDb;
@@ -248,22 +229,18 @@ class SearchFilter extends Component
             });
         }
 
-        // Filtro per tratti
         if (!empty($this->tratti)) {
             $query->where('tratti', 'like', '%' . $this->tratti . '%');
         }
 
-        // Filtro per arena
         if (!empty($this->arena)) {
             $query->where('arena', $this->arena);
         }
 
-        // Filtro per unica
         if ($this->unica !== null) {
             $query->where('unica', $this->unica);
         }
 
-        // Filtro per artista
         if (!empty($this->artista)) {
             $query->where('artista', $this->artista);
         }
@@ -278,18 +255,33 @@ class SearchFilter extends Component
         $this->filteredCards = $results;
         $this->totalResults = $this->filteredCards->count();
 
-        // Emetti evento per aggiornare la vista principale
+        // Emetti evento per aggiornare la vista
         $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
     }
 
     /**
-     * Reset all filter values to their default state and reapply filters
-     * Reimposta tutti i valori dei filtri al loro stato predefinito e riapplica i filtri
-     *
-     * Note: This method preserves the advanced filters open/closed state
-     * Nota: Questo metodo preserva lo stato aperto/chiuso dei filtri avanzati
-     *
-     * @return void
+     * Load all cards without filters
+     * Carica tutte le carte senza filtri
+     */
+    public function loadAllCards()
+    {
+        $results = Card::all();
+        
+        // Applica l'ordinamento usando il metodo del controller
+        if (!$results->isEmpty()) {
+            $results = \App\Http\Controllers\CardsController::mergeSort($results);
+        }
+
+        $this->filteredCards = $results;
+        $this->totalResults = $this->filteredCards->count();
+
+        // Emetti evento per aggiornare la vista
+        $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
+    }
+
+    /**
+     * Reset all filter values to their default state
+     * Reimposta tutti i valori dei filtri al loro stato predefinito
      */
     public function resetAllFilters()
     {
@@ -311,48 +303,19 @@ class SearchFilter extends Component
         $this->unica = null;
         $this->artista = '';
 
-        // Note: $advancedFiltersOpen is intentionally NOT reset to preserve UI state
-        // Nota: $advancedFiltersOpen non viene intenzionalmente resettato per preservare lo stato dell'UI
-
         $this->applyFilters();
     }
 
     /**
-     * Get filtered cards specifically for popup mode
-     * Ottiene le carte filtrate specificamente per la modalità popup
-     *
-     * @return \Illuminate\Support\Collection The filtered cards collection
+     * Toggle the advanced filters section
+     * Attiva/disattiva la sezione filtri avanzati
      */
-    public function getFilteredCardsForPopup()
+    public function toggleAdvancedFilters()
     {
-        $this->applyFilters();
-        return $this->filteredCards;
+        $this->advancedFiltersOpen = !$this->advancedFiltersOpen;
     }
 
-    /**
-     * Load all cards without filters for initial display in page mode
-     * Carica tutte le carte senza filtri per la visualizzazione iniziale in modalità page
-     *
-     * @return void
-     */
-    public function loadAllCards()
-    {
-        $results = Card::all();
-
-        // Applica l'ordinamento usando il metodo del controller
-        if (!$results->isEmpty()) {
-            $results = \App\Http\Controllers\CardsController::mergeSort($results);
-        }
-
-        $this->filteredCards = $results;
-        $this->totalResults = $this->filteredCards->count();
-
-        // Emetti evento per aggiornare la vista principale
-        $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
-    }
-
-    // Real-time filter update methods - automatically trigger when properties change
-    // Metodi di aggiornamento filtri in tempo reale - si attivano automaticamente quando cambiano le proprietà
+    // Real-time filter update methods
     public function updatedNome() { $this->applyFilters(); }
     public function updatedTitolo() { $this->applyFilters(); }
     public function updatedEspansione() { $this->applyFilters(); }
@@ -371,19 +334,8 @@ class SearchFilter extends Component
     public function updatedUnica() { $this->applyFilters(); }
     public function updatedArtista() { $this->applyFilters(); }
 
-    /**
-     * Toggle the advanced filters section open/closed state
-     * Attiva/disattiva lo stato aperto/chiuso della sezione filtri avanzati
-     *
-     * @return void
-     */
-    public function toggleAdvancedFilters()
-    {
-        $this->advancedFiltersOpen = !$this->advancedFiltersOpen;
-    }
-
     public function render()
     {
-        return view('livewire.search-filter');
+        return view('livewire.collezione-manager');
     }
 }

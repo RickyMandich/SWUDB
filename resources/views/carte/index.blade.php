@@ -3,7 +3,7 @@
 @section('content')
     <div class="container-fluid">
         <!-- Componente Livewire per i filtri di ricerca -->
-        <div class="mb-4">
+        <div class="mb-4" id="search-filter-container">
             @livewire('search-filter', ['mode' => 'page'])
         </div>
 
@@ -11,7 +11,7 @@
         <div class="mb-3">
             <div class="alert alert-info d-flex align-items-center" id="results-counter">
                 <i class="fas fa-info-circle me-2"></i>
-                <span>Caricamento carte...</span>
+                <span id="counter-text">Utilizza i filtri sopra per cercare le carte o clicca "Tutte" per vedere l'elenco completo</span>
             </div>
         </div>
 
@@ -19,10 +19,10 @@
         <div id="cards-container">
             <div class="row" id="cards-grid">
                 <!-- Le carte verranno caricate dinamicamente da Livewire -->
-                <div class="col-12 text-center py-5">
+                <div class="col-12 text-center py-5" id="initial-message">
                     <div class="alert alert-info">
                         <i class="fas fa-search me-2"></i>
-                        Utilizza i filtri sopra per cercare le carte.
+                        Utilizza i filtri sopra per cercare le carte o clicca "Mostra tutte le carte" per vedere l'elenco completo.
                     </div>
                 </div>
             </div>
@@ -38,16 +38,20 @@
             });
         });
 
+
+
         function updateCardsDisplay(cards) {
             const cardsGrid = document.getElementById('cards-grid');
-            const resultsCounter = document.getElementById('results-counter');
+            const counterText = document.getElementById('counter-text');
+            const initialMessage = document.getElementById('initial-message');
 
-            // Aggiorna il contatore dei risultati
-            if (resultsCounter) {
-                resultsCounter.innerHTML = `
-                    <i class="fas fa-info-circle me-2"></i>
-                    <span>Trovati <strong>${cards ? cards.length : 0}</strong> risultati</span>
-                `;
+            // Rimuovi il messaggio iniziale se presente
+            if (initialMessage) {
+                initialMessage.remove();
+            }
+
+            if (counterText) {
+                counterText.innerHTML = `Trovate <strong>${cards ? cards.length : 0}</strong> carte`;
             }
 
             if (!cards || cards.length === 0) {

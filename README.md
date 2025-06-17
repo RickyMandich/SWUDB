@@ -43,7 +43,7 @@
 - ~~aggiornare l'index dei mazzi~~
 - ~~limitare le notifiche telegram durante l'invio dei batch~~
 - ~~miglioramento pagina utenti per la gestione di admin~~
-- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update)
+- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update) (il progetto java si trova nella cartella WebScrapingStarWars, che è un clone del repository https://github.com/RickyMandich/WebScrapingStarWars.git)
 
 ## Funzionalità Future
 - Funzionalità di condivisione social
