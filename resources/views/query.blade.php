@@ -24,7 +24,9 @@
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i>
                                 <strong>Nota:</strong> Le query sulla tabella <code>cards</code> senza <code>ORDER BY</code>
-                                verranno automaticamente ordinate usando l'algoritmo mergeSort personalizzato.
+                                verranno automaticamente ordinate usando l'algoritmo mergeSort personalizzato,
+                                purché i risultati contengano tutti gli attributi necessari
+                                (nome, tipo, aspettoPrimario, aspettoSecondario, costo, uscita, numero, espansione).
                                 <br>
                                 <i class="fas fa-keyboard me-1"></i>
                                 <strong>Scorciatoia:</strong> Premi <kbd>Ctrl</kbd> + <kbd>Invio</kbd> per eseguire la query.

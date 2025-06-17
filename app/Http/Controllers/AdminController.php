@@ -40,22 +40,43 @@ class AdminController extends Controller
         $queryLower = strtolower(trim($query));
         $isCardsQuery = strpos($queryLower, 'from cards') !== false || strpos($queryLower, 'from `cards`') !== false;
         $hasOrderBy = strpos($queryLower, 'order by') !== false;
-        
+
+        $sortApplied = false;
         if ($isCardsQuery && !$hasOrderBy && !empty($result)) {
-            // Converte gli oggetti stdClass in array per il mergeSort
-            $resultArray = array_map(fn($item) => (array) $item, $result);
-            
-            // Applica il mergeSort
-            $sortedResult = CardsController::mergeSort($resultArray);
-            
-            // Converte di nuovo in oggetti stdClass per mantenere la compatibilità con la view
-            $result = array_map(fn($item) => (object) $item, $sortedResult);
+            // Verifica che i risultati abbiano gli attributi necessari per il mergeSort
+            $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'uscita', 'numero', 'espansione'];
+            $firstResult = (array) $result[0];
+            $hasRequiredAttributes = true;
+
+            foreach ($requiredAttributes as $attr) {
+                if (!array_key_exists($attr, $firstResult)) {
+                    $hasRequiredAttributes = false;
+                    break;
+                }
+            }
+
+            if ($hasRequiredAttributes) {
+                try {
+                    // Converte gli oggetti stdClass in array per il mergeSort
+                    $resultArray = array_map(fn($item) => (array) $item, $result);
+
+                    // Applica il mergeSort
+                    $sortedResult = CardsController::mergeSort($resultArray);
+
+                    // Converte di nuovo in oggetti stdClass per mantenere la compatibilità con la view
+                    $result = array_map(fn($item) => (object) $item, $sortedResult);
+                    $sortApplied = true;
+                } catch (\Exception $e) {
+                    // Se il mergeSort fallisce, mantieni l'ordine originale
+                    $sortApplied = false;
+                }
+            }
         }
         
         return view("query", [
-            "result" => $result, 
-            "query" => $query, 
-            "sorted" => ($isCardsQuery && !$hasOrderBy && !empty($result))
+            "result" => $result,
+            "query" => $query,
+            "sorted" => $sortApplied
         ]);
     }
 
