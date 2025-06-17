@@ -29,23 +29,23 @@
         height: 100%;
     }
     
-    .Comune{
+    .comune{
         color: #8B4513;
     }
 
-    .NonComune{
+    .noncomune{
         color: white;
     }
 
-    .Rara{
+    .rara{
         color: yellow;
     }
 
-    .Leggendaria{
+    .leggendaria{
         color: lightblue;
     }
 
-    .Speciale{
+    .speciale{
         color: #a6a594;
     }
 
