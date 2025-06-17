@@ -64,6 +64,15 @@
                                             </span>
                                         </div>
 
+                                        <div class="mb-2">
+                                            <span class="badge bg-info me-2">{{ $deck->getVersionString() }}</span>
+                                            @if($deck->updated_at)
+                                                <small class="text-muted">
+                                                    Aggiornato: {{ $deck->updated_at->format('d/m/Y') }}
+                                                </small>
+                                            @endif
+                                        </div>
+
                                         <div class="mt-auto">
                                             <div class="d-flex flex-column gap-2">
                                                 <!-- Pulsante Visualizza -->
@@ -131,9 +140,17 @@
                                     <div class="card-body d-flex flex-column">
                                         <div class="mb-2">
                                             <h5 class="card-title mb-1">{{ $deck->nome }}</h5>
-                                            <p class="card-text text-muted mb-0">
+                                            <p class="card-text text-muted mb-1">
                                                 <i class="fas fa-user me-1"></i>Creato da <strong>{{ $deck->utente }}</strong>
                                             </p>
+                                            <div class="mb-1">
+                                                <span class="badge bg-info me-2">{{ $deck->getVersionString() }}</span>
+                                                @if($deck->updated_at)
+                                                    <small class="text-muted">
+                                                        Aggiornato: {{ $deck->updated_at->format('d/m/Y') }}
+                                                    </small>
+                                                @endif
+                                            </div>
                                         </div>
 
                                         <div class="mt-auto">

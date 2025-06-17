@@ -124,6 +124,7 @@ class DecksController extends Controller{
             "user" => $user,
             "proprietario" => $proprietario,
             "deck" => $deck,
+            "deckObject" => $mazzo, // Pass the full Deck object for version info
             "carte" => $carte,
             "size" => $copie,
         ]);
@@ -211,7 +212,12 @@ class DecksController extends Controller{
                     $vars["msg"] = "sono arrivato alla fine";
                 }
             };
-            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("success", "Mazzo salvato con successo");
+
+            // Increment deck version after successful modifications
+            // Incrementa la versione del mazzo dopo modifiche riuscite
+            $mazzo->incrementVersion();
+
+            return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("success", "Mazzo salvato con successo (versione " . $mazzo->getVersionString() . ")");
         }else{
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("warning", "Non hai aggiunto o rimosso nessuna carta");
         }
@@ -578,16 +584,22 @@ class DecksController extends Controller{
                                   ->where('numero', $numero)
                                   ->first();
 
+        $hasChanges = false;
+
         if ($copie <= 0) {
             // Rimuovi la carta dalla collezione
             if ($composizione) {
                 $composizione->delete();
+                $hasChanges = true;
             }
         } else {
             if ($composizione) {
-                // Aggiorna il numero di copie
-                $composizione->copie = $copie;
-                $composizione->save();
+                // Aggiorna il numero di copie solo se è diverso
+                if ($composizione->copie != $copie) {
+                    $composizione->copie = $copie;
+                    $composizione->save();
+                    $hasChanges = true;
+                }
             } else {
                 // Crea nuova composizione
                 $composizione = new Composition();
@@ -597,7 +609,14 @@ class DecksController extends Controller{
                 $composizione->copie = $copie;
                 $composizione->id = $collezione->id."-".$espansione."-".$numero;
                 $composizione->save();
+                $hasChanges = true;
             }
+        }
+
+        // Increment collection version if there were changes
+        // Incrementa la versione della collezione se ci sono state modifiche
+        if ($hasChanges) {
+            $collezione->incrementVersion();
         }
 
         return response()->json(['success' => true]);

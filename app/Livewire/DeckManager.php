@@ -20,6 +20,7 @@ class DeckManager extends Component
     public $nome;
     public $user;
     public $deck;
+    public $deckObject;
     public $size;
     public $proprietario;
     public $cards = [];
@@ -55,17 +56,19 @@ class DeckManager extends Component
      * @param string $nome Deck name
      * @param string $user Deck owner username
      * @param string $deck Deck URL identifier
+     * @param \App\Models\Deck $deckObject Full deck object with version info
      * @param int $size Current deck size (card count)
      * @param bool $proprietario Whether current user owns this deck
      * @param array $carte Available cards from database
      * @param array $mazzo Current deck composition
      * @return void
      */
-    public function mount($nome, $user, $deck, $size, $proprietario, $carte, $mazzo)
+    public function mount($nome, $user, $deck, $deckObject, $size, $proprietario, $carte, $mazzo)
     {
         $this->nome = $nome;
         $this->user = $user;
         $this->deck = $deck;
+        $this->deckObject = $deckObject;
         $this->size = $size;
         $this->proprietario = $proprietario;
         

@@ -51,6 +51,14 @@
                 in questo mazzo sono presenti {{ $size }} carte
             @endif
         </h6>
+        <div class="version-info mb-2">
+            <span class="badge bg-secondary">{{ $deckObject->getVersionString() }}</span>
+            @if($deckObject->updated_at)
+                <small class="text-muted ms-2">
+                    Ultima modifica: {{ $deckObject->updated_at->format('d/m/Y H:i') }}
+                </small>
+            @endif
+        </div>
 
         <!-- Pulsanti di esportazione -->
         <div class="export-buttons mt-3">

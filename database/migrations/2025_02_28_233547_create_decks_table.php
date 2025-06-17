@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('nome', 500);
             $table->boolean('public')->default(0);
             $table->integer('codUtente');
+            $table->integer('versione')->default(1);
+            $table->timestamps();
         });
     }
 

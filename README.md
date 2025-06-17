@@ -43,16 +43,15 @@
 - ~~aggiornare l'index dei mazzi~~
 - ~~limitare le notifiche telegram durante l'invio dei batch~~
 - ~~miglioramento pagina utenti per la gestione di admin~~
-- Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update) (il progetto java si trova nella cartella WebScrapingStarWars, che è un clone del repository https://github.com/RickyMandich/WebScrapingStarWars.git)
+- ~~Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update) (il progetto java si trova nella cartella WebScrapingStarWars, che è un clone del repository https://github.com/RickyMandich/WebScrapingStarWars.git)~~
+- ~~Sistema di versionamento per i mazzi~~
 
 ## Funzionalità Future
 - Funzionalità di condivisione social
-- Sistema di versionamento per i mazzi
 - Sistema di tag personalizzati per i mazzi (etichette come "Aggro", "Control", "Budget", "Meta")
 - Modalità offline/PWA per consultazione carte (Progressive Web App)
 - Sistema di wishlist per carte desiderate
 - Funzionalità di deck-building guidato per principianti
-- Sistema di proxy printing per playtest (stampa carte di prova)
 - aggiungere alle statistiche del mazzo qual è la percentuale che una carte trovi una carta che soddisfi i requisiti per giocare o pescare carte
 
 # Documentazione

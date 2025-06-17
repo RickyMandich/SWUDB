@@ -1,14 +1,15 @@
 @extends('layouts.app')
 @section('title', "$nome di $user")
 @section('content')
-    <livewire:deck-manager 
-        :nome="$nome" 
-        :user="$user" 
-        :deck="$deck" 
-        :size="$size" 
-        :proprietario="$proprietario" 
-        :carte="$carte" 
-        :mazzo="$mazzo" 
+    <livewire:deck-manager
+        :nome="$nome"
+        :user="$user"
+        :deck="$deck"
+        :deckObject="$deckObject"
+        :size="$size"
+        :proprietario="$proprietario"
+        :carte="$carte"
+        :mazzo="$mazzo"
     />
 @endsection
 
