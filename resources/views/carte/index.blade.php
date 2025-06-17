@@ -11,7 +11,7 @@
         <div class="mb-3">
             <div class="alert alert-info d-flex align-items-center" id="results-counter">
                 <i class="fas fa-info-circle me-2"></i>
-                <span id="counter-text">Utilizza i filtri sopra per cercare le carte o clicca "Tutte" per vedere l'elenco completo</span>
+                <span id="counter-text">Caricamento carte...</span>
             </div>
         </div>
 
@@ -21,8 +21,8 @@
                 <!-- Le carte verranno caricate dinamicamente da Livewire -->
                 <div class="col-12 text-center py-5" id="initial-message">
                     <div class="alert alert-info">
-                        <i class="fas fa-search me-2"></i>
-                        Utilizza i filtri sopra per cercare le carte o clicca "Mostra tutte le carte" per vedere l'elenco completo.
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        Caricamento carte in corso...
                     </div>
                 </div>
             </div>
@@ -93,7 +93,7 @@
                                                 <span class="m-auto text-primary align-self-end col-3">${carta.vita || '-'}</span> <br>
                                             </div>
                                             <div class="row text-center">
-                                                <span class="col-12 ${carta.rarita.replace(/\s+/g, '-')}">${carta.rarita}</span>
+                                                <span class="col-12 ${carta.rarita.replace(/\\s+/g, '-')}">${carta.rarita}</span>
                                             </div>
                                         </div>
                                     </div>

@@ -81,16 +81,9 @@ class SearchFilter extends Component
         $this->mode = $mode;
         $this->loadFilterOptions();
 
-        // Per le modalità 'page' e 'collezione', non caricare automaticamente tutte le carte
-        // For 'page' and 'collezione' modes, don't automatically load all cards
-        if ($this->mode === 'popup') {
-            $this->applyFilters();
-        } else {
-            // Inizializza con array vuoto per le modalità page e collezione
-            // Initialize with empty array for page and collezione modes
-            $this->filteredCards = collect([]);
-            $this->totalResults = 0;
-        }
+        // Carica automaticamente tutte le carte per tutte le modalità
+        // Automatically load all cards for all modes
+        $this->loadAllCards();
     }
 
     /**
