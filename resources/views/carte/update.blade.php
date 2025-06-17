@@ -3,10 +3,39 @@
 @section('content')
     <?php use App\Http\Controllers\CardsController;?>
     @if(isset($count))
-        aggiornamento eseguito
-        <br>
-        {{ $count }} carte aggiunte
-        <br>
+        @if($count === "In elaborazione...")
+            <div class="alert alert-info">
+                <h4><i class="fas fa-spinner fa-spin"></i> Scansione in corso</h4>
+                <p><strong>{{ $message ?? 'Processo di scansione avviato in background' }}</strong></p>
+                @if(isset($apiUsed) && $apiUsed)
+                    <p>
+                        <strong>Metodo:</strong>
+                        <span class="badge bg-primary">API Star Wars Unlimited</span>
+                    </p>
+                @endif
+                <p class="mb-0">
+                    <small class="text-muted">
+                        Riceverai notifiche sui progressi tramite Telegram.
+                        Il processo continuerà in background anche se chiudi questa pagina.
+                    </small>
+                </p>
+            </div>
+        @else
+            <div class="alert alert-success">
+                <h4>Aggiornamento completato</h4>
+                <p><strong>{{ $count }}</strong> carte aggiunte</p>
+                @if(isset($apiUsed))
+                    <p>
+                        <strong>Metodo utilizzato:</strong>
+                        @if($apiUsed)
+                            <span class="badge bg-primary">API Star Wars Unlimited</span>
+                        @else
+                            <span class="badge bg-secondary">File JSON (fallback)</span>
+                        @endif
+                    </p>
+                @endif
+            </div>
+        @endif
     @endif
     <?php function printlnd($line, $deep = 0, $name, $link = false){
         if(gettype($line) == 'array' || gettype($line) == 'object'){

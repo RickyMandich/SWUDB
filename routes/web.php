@@ -28,6 +28,10 @@ Route::get('/dispatchBatch', [CardsController::class, 'dispatchBatch'])->name("c
 
 Route::get('/sendBatch', [CardsController::class, 'sendBatch'])->name("carte.sendBatch");
 
+Route::get('/scanAPI', [CardsController::class, 'scanAPI'])->name("carte.scanAPI");
+
+Route::get('/processNewCards', [CardsController::class, 'processNewCards'])->name("carte.processNewCards");
+
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
 Route::get('/collezione', [DecksController::class, 'collezione'])->name('collezione')->middleware('auth');

@@ -13,6 +13,8 @@ use App\Models\Deck;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Support\Facades\Mail;
 
@@ -112,53 +114,500 @@ class CardsController extends Controller
     }
     
     /**
-     * Start the card import process from external JSON source
-     * Avvia il processo di importazione delle carte da sorgente JSON esterna
+     * Retrieve all card IDs from the Star Wars Unlimited API
+     * Recupera tutti gli ID delle carte dall'API di Star Wars Unlimited
+     *
+     * This method calls the official API to get a complete list of all card IDs,
+     * similar to the Java implementation's scan functionality.
+     *
+     * @return array Array of card IDs (cid values)
+     */
+    private function getAllCardIdsFromAPI()
+    {
+        $allCardIds = [];
+        $page = 1;
+        $pageFinished = false;
+
+        while (!$pageFinished) {
+            $url = "https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][\$null]=true&pagination[page]={$page}&pagination[pageSize]=10";
+
+            try {
+                $response = Http::timeout(30)->get($url);
+
+                if (!$response->successful()) {
+                    Log::error("API call failed for page {$page}: " . $response->status());
+                    $this->sendTelegramAlert("Errore API alla pagina {$page}: " . $response->status());
+                    break;
+                }
+
+                $jsonData = $response->json();
+                $cards = $jsonData['data'] ?? [];
+
+                foreach ($cards as $card) {
+                    $cardId = $card['attributes']['cardUid'] ?? null;
+                    if ($cardId) {
+                        $allCardIds[] = $cardId;
+                        Log::info("Found card ID: {$cardId}");
+                    }
+                }
+
+                // Check if we've reached the last page
+                $pagination = $jsonData['meta']['pagination'] ?? [];
+                $currentPage = $pagination['page'] ?? $page;
+                $totalPages = $pagination['pageCount'] ?? $page;
+
+                $pageFinished = $currentPage >= $totalPages;
+                $page++;
+
+            } catch (\Exception $e) {
+                Log::error("Exception during API call for page {$page}: " . $e->getMessage());
+                $this->sendTelegramAlert("Errore durante chiamata API pagina {$page}: " . $e->getMessage());
+                break;
+            }
+        }
+
+        Log::info("Retrieved " . count($allCardIds) . " card IDs from API");
+        return $allCardIds;
+    }
+
+    /**
+     * Retrieve detailed card information from API using card ID
+     * Recupera informazioni dettagliate della carta dall'API usando l'ID carta
+     *
+     * @param string $cardId The card ID (cid)
+     * @return array|null Card data array or null if failed
+     */
+    private function getCardDetailsFromAPI($cardId)
+    {
+        $url = "https://admin.starwarsunlimited.com/api/card/{$cardId}?locale=it";
+
+        try {
+            $response = Http::timeout(30)->get($url);
+
+            if (!$response->successful()) {
+                Log::error("Failed to get card details for {$cardId}: " . $response->status());
+                return null;
+            }
+
+            $jsonData = $response->json();
+            $data = $jsonData['data'] ?? null;
+
+            if (!$data) {
+                Log::error("No data found for card {$cardId}");
+                return null;
+            }
+
+            return $this->parseCardDataFromAPI($data, $cardId);
+
+        } catch (\Exception $e) {
+            Log::error("Exception getting card details for {$cardId}: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Parse card data from API response into database format
+     * Analizza i dati della carta dalla risposta API nel formato del database
+     *
+     * @param array $apiData Raw API response data
+     * @param string $cardId Card ID
+     * @return array Parsed card data ready for database insertion
+     */
+    private function parseCardDataFromAPI($apiData, $cardId)
+    {
+        $attributes = $apiData['attributes'] ?? [];
+
+        // Extract basic information
+        $cardData = [
+            'cid' => $cardId,
+            'nome' => $attributes['title'] ?? null,
+            'titolo' => $attributes['subtitle'] ?? '',
+            'unica' => $attributes['unique'] ?? false,
+            'numero' => $attributes['cardNumber'] ?? 0,
+            'descrizione' => $attributes['textStyled'] ?? null,
+            'costo' => $attributes['cost'] ?? 0,
+            'vita' => $attributes['hp'] ?? 0,
+            'potenza' => $attributes['power'] ?? 0,
+            'artista' => $attributes['artist'] ?? null,
+            'uscita' => isset($attributes['publishedAt']) ? explode('T', $attributes['publishedAt'])[0] : '',
+        ];
+
+        // Extract expansion
+        $expansion = $attributes['expansion']['data']['attributes'] ?? [];
+        $cardData['espansione'] = $expansion['code'] ?? null;
+
+        // Extract arena
+        $arenas = $attributes['arenas']['data'] ?? [];
+        $cardData['arena'] = !empty($arenas) ? ($arenas[0]['attributes']['name'] ?? null) : null;
+
+        // Extract aspects
+        $aspects = $attributes['aspects']['data'] ?? [];
+        if (!empty($aspects)) {
+            $cardData['aspettoPrimario'] = $this->translateAspect($aspects[0]['attributes']['name'] ?? '');
+        }
+        if (count($aspects) > 1) {
+            $cardData['aspettoSecondario'] = $this->translateAspect($aspects[1]['attributes']['name'] ?? '');
+        }
+
+        // Handle aspect duplicates
+        $aspectDuplicates = $attributes['aspectDuplicates']['data'] ?? [];
+        if (!empty($aspectDuplicates) && !empty($aspects)) {
+            $cardData['aspettoSecondario'] = $this->translateAspect($aspects[0]['attributes']['name'] ?? '');
+        }
+
+        // Extract type
+        $type = $attributes['type']['data']['attributes'] ?? [];
+        $cardData['tipo'] = $type['name'] ?? '';
+
+        // Extract traits
+        $traits = $attributes['traits']['data'] ?? [];
+        $traitNames = [];
+        foreach ($traits as $trait) {
+            $traitNames[] = $trait['attributes']['name'] ?? '';
+        }
+        $cardData['tratti'] = implode(' * ', $traitNames);
+
+        // Extract rarity
+        $rarity = $attributes['rarity']['data']['attributes'] ?? [];
+        $cardData['rarita'] = $rarity['name'] ?? null;
+
+        // Extract art URLs
+        $frontArt = $attributes['artFront']['data']['attributes'] ?? [];
+        $cardData['frontArt'] = $frontArt['url'] ?? null;
+
+        // Handle Leader cards with back art and special description
+        if ($cardData['tipo'] === 'Leader') {
+            $backArt = $attributes['artBack']['data']['attributes'] ?? [];
+            $cardData['backArt'] = $backArt['url'] ?? null;
+
+            $deployText = $attributes['deployBoxStyled'] ?? null;
+            if ($deployText) {
+                $cardData['descrizione'] = "<strong>-----NON SCHIERATO-----</strong><br>" .
+                                         $cardData['descrizione'] .
+                                         "<strong>-----SCHIERATO-----</strong><br>" .
+                                         $deployText;
+            }
+        }
+
+        // Handle aspect ordering (secondary should be Nero/Bianco if different from primary)
+        if (isset($cardData['aspettoPrimario']) && isset($cardData['aspettoSecondario'])) {
+            if ($cardData['aspettoPrimario'] !== $cardData['aspettoSecondario'] &&
+                !in_array($cardData['aspettoSecondario'], ['Bianco', 'Nero']) &&
+                !empty($cardData['aspettoSecondario'])) {
+                // Swap primary and secondary
+                $temp = $cardData['aspettoPrimario'];
+                $cardData['aspettoPrimario'] = $cardData['aspettoSecondario'];
+                $cardData['aspettoSecondario'] = $temp;
+            }
+        }
+
+        // Add unique symbol to name if unique
+        if ($cardData['unica']) {
+            $cardData['nome'] = "⟡" . $cardData['nome'];
+        }
+
+        // Handle token cards
+        if (strpos($cardData['tipo'], 'Segnalin') !== false) {
+            $cardData['espansione'] = "T" . $cardData['espansione'];
+        }
+
+        return $cardData;
+    }
+
+    /**
+     * Translate aspect names from English to Italian
+     * Traduce i nomi degli aspetti dall'inglese all'italiano
+     *
+     * @param string $aspect English aspect name
+     * @return string Italian aspect name
+     */
+    private function translateAspect($aspect)
+    {
+        $translations = [
+            'Vigilanza' => 'Blu',
+            'Malvagità' => 'Nero',
+            'Eroismo' => 'Bianco',
+            'Autorità' => 'Verde',
+            'Offensiva' => 'Rosso',
+            'Astuzia' => 'Giallo',
+        ];
+
+        return $translations[$aspect] ?? $aspect;
+    }
+
+    /**
+     * Send alert message via Telegram
+     * Invia messaggio di avviso tramite Telegram
+     *
+     * @param string $message Message to send
+     * @return void
+     */
+    private function sendTelegramAlert($message)
+    {
+        $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
+        $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
+
+        try {
+            $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+            Http::post($url, [
+                'chat_id' => $chatId,
+                'text' => $message
+            ]);
+            Log::info("Telegram alert sent: {$message}");
+        } catch (\Exception $e) {
+            Log::error("Failed to send Telegram alert: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Start the card import process from external JSON source and API
+     * Avvia il processo di importazione delle carte da sorgente JSON esterna e API
      *
      * This method handles the complete card import workflow:
-     * 1. Fetches card data from external JSON API
-     * 2. Compares with existing database cards
-     * 3. Identifies new cards to import
-     * 4. Saves them to temporary file and triggers batch processing
-     * 5. Sends email notifications to all users about new cards
+     * 1. Fetches card IDs from Star Wars Unlimited API
+     * 2. Compares with existing database cards to find new ones
+     * 3. Retrieves detailed information for new cards via API
+     * 4. Falls back to JSON file if API fails
+     * 5. Saves them to temporary file and triggers batch processing
+     * 6. Sends email notifications to all users about new cards
      *
      * @return \Illuminate\View\View The update result view with import statistics
      */
     public function startImport(){
-        $url = 'http://swudb.altervista.org/collezione.json';
-        $json = file_get_contents($url);
-        $fullSet = json_decode($json, true);
-        $dbSet = Card::select('espansione', 'numero')->get()->toArray();
+        Log::info("Starting card import process with API integration");
+        $this->sendTelegramAlert("Inizio scansione nuove carte tramite API");
 
-        $toInsert = [];
+        // Generate a thread ID for this import session
+        $threadId = ThreadManager::generateThreadId('import');
+        ThreadMessageCreated::dispatch($threadId, "Avvio scansione carte tramite API");
 
-        foreach ($fullSet as $card) {
-            if (!$this::contain($dbSet, $card)) {
-                $card["tratti"] = implode(" * ", $card["tratti"]);
-                $toInsert[] = $card;
-            }
+        // Launch the API scan process in background
+        JobController::fireAndForgetGet(route('carte.scanAPI', ['threadId' => $threadId]), [
+            "token" => env('JOB_TOKEN')
+        ]);
+
+        return view("carte.update", [
+            "result" => true,
+            "count" => "In elaborazione...",
+            "data" => [],
+            "apiUsed" => true,
+            "message" => "Scansione API avviata in background. Riceverai notifiche sui progressi."
+        ]);
+    }
+
+    /**
+     * Scan API for new cards and process them (background job)
+     * Scansiona l'API per nuove carte e le elabora (job in background)
+     *
+     * This method runs in background and handles the time-consuming API operations:
+     * 1. Gets all card IDs from API
+     * 2. Compares with database to find new cards
+     * 3. Retrieves detailed information for new cards
+     * 4. Falls back to JSON if needed
+     * 5. Triggers the import process
+     *
+     * @param Request $request HTTP request containing threadId and token
+     * @return void Outputs status messages directly
+     */
+    public function scanAPI(Request $request){
+        if ($request->input('token') !== env('JOB_TOKEN')) {
+            abort(403);
         }
 
-        // Salva su file temporaneo sul server
-        file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
-        if(count($toInsert) > 0){
-            // Generate a thread ID for this import session
-            $threadId = ThreadManager::generateThreadId('import');
-            ThreadMessageCreated::dispatch($threadId, "Avvio importazione di " . count($toInsert) . " nuove carte");
+        $threadId = $request->input('threadId', ThreadManager::generateThreadId('import'));
+        $apiSuccess = false;
 
-            JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
-                "token" => env('JOB_TOKEN')
-            ]);
-            $message = "Sono disponibili queste nuove carte:\n";
-            foreach($toInsert as $card){
-                $message .= $card["espansione"] . "-" . $card["numero"] . " - " . $card["nome"] . (" " . $card["titolo"] ?? "") . "\n";
+        try {
+            ThreadMessageCreated::dispatch($threadId, "Recupero lista carte dall'API...");
+
+            // Step 1: Get all card IDs from API (potentially slow operation)
+            Log::info("Fetching card IDs from Star Wars Unlimited API");
+            $allCardIds = $this->getAllCardIdsFromAPI();
+
+            if (!empty($allCardIds)) {
+                Log::info("Retrieved " . count($allCardIds) . " card IDs from API");
+                ThreadMessageCreated::dispatch($threadId, "Recuperati " . count($allCardIds) . " ID carte dall'API");
+
+                // Step 2: Get existing cards from database
+                $dbCards = Card::select('cid')->whereNotNull('cid')->pluck('cid')->toArray();
+
+                // Step 3: Find new card IDs
+                $newCardIds = array_diff($allCardIds, $dbCards);
+                Log::info("Found " . count($newCardIds) . " new cards to process");
+
+                if (!empty($newCardIds)) {
+                    ThreadMessageCreated::dispatch($threadId, "Trovate " . count($newCardIds) . " nuove carte da elaborare");
+
+                    // Save new card IDs to temporary file for background processing
+                    file_put_contents(storage_path("app/new_card_ids.json"), json_encode($newCardIds));
+
+                    // Launch detailed card processing in background
+                    JobController::fireAndForgetGet(route('carte.processNewCards', ['threadId' => $threadId]), [
+                        "token" => env('JOB_TOKEN')
+                    ]);
+
+                    $apiSuccess = true;
+                } else {
+                    ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata tramite API", true);
+                }
+            } else {
+                ThreadMessageCreated::dispatch($threadId, "Errore nel recupero carte dall'API, provo con JSON");
             }
-            $users = User::select("email")->where('email', '!=', null)->get();
-            foreach($users as $user){
-                Mail::to($user['email'])->send(new NewCardsEmail($message));
-            }
+        } catch (\Exception $e) {
+            Log::error("API scan failed: " . $e->getMessage());
+            ThreadMessageCreated::dispatch($threadId, "Errore scansione API: " . $e->getMessage());
         }
-        return view("carte.update", ["result" => true, "count" => count($toInsert), "data" => $toInsert]);
+
+        // If API failed or no new cards, try JSON fallback
+        if (!$apiSuccess) {
+            $this->fallbackToJSON($threadId);
+        }
+    }
+
+    /**
+     * Process new cards found via API (background job)
+     * Elabora le nuove carte trovate tramite API (job in background)
+     *
+     * @param Request $request HTTP request containing threadId and token
+     * @return void
+     */
+    public function processNewCards(Request $request){
+        if ($request->input('token') !== env('JOB_TOKEN')) {
+            abort(403);
+        }
+
+        $threadId = $request->input('threadId', ThreadManager::generateThreadId('import'));
+
+        try {
+            // Read new card IDs from temporary file
+            $newCardIds = json_decode(file_get_contents(storage_path("app/new_card_ids.json")), true);
+
+            if (empty($newCardIds)) {
+                ThreadMessageCreated::dispatch($threadId, "Nessun ID carta da elaborare");
+                return;
+            }
+
+            ThreadMessageCreated::dispatch($threadId, "Inizio elaborazione dettagli per " . count($newCardIds) . " carte");
+
+            $toInsert = [];
+            $processedCount = 0;
+            $batchSize = 10; // Process in smaller batches
+
+            foreach ($newCardIds as $cardId) {
+                $cardData = $this->getCardDetailsFromAPI($cardId);
+                if ($cardData) {
+                    $toInsert[] = $cardData;
+                    $processedCount++;
+
+                    if ($processedCount % $batchSize === 0) {
+                        ThreadMessageCreated::dispatch($threadId, "Elaborate {$processedCount}/" . count($newCardIds) . " carte");
+                        Log::info("Processed {$processedCount}/" . count($newCardIds) . " new cards");
+
+                        // Small delay to avoid overwhelming the API
+                        usleep(500000); // 500ms delay every 10 cards
+                    }
+                }
+
+                // Small delay between each card
+                usleep(100000); // 100ms delay
+            }
+
+            Log::info("Successfully processed " . count($toInsert) . " new cards from API");
+            ThreadMessageCreated::dispatch($threadId, "Completata elaborazione: " . count($toInsert) . " carte pronte per importazione");
+
+            if (!empty($toInsert)) {
+                // Save to import file and trigger import process
+                file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
+
+                JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
+                    "token" => env('JOB_TOKEN')
+                ]);
+
+                // Send email notifications
+                $this->sendEmailNotifications($toInsert);
+                $this->sendTelegramAlert("Importazione avviata per " . count($toInsert) . " nuove carte");
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Error processing new cards: " . $e->getMessage());
+            ThreadMessageCreated::dispatch($threadId, "Errore elaborazione carte: " . $e->getMessage());
+
+            // Fallback to JSON
+            $this->fallbackToJSON($threadId);
+        }
+    }
+
+    /**
+     * Fallback to JSON file import when API fails
+     * Fallback su importazione file JSON quando l'API fallisce
+     *
+     * @param string $threadId Thread ID for messaging
+     * @return void
+     */
+    private function fallbackToJSON($threadId){
+        ThreadMessageCreated::dispatch($threadId, "Fallback su file JSON...");
+
+        try {
+            $url = 'http://swudb.altervista.org/collezione.json';
+            $json = file_get_contents($url);
+            $fullSet = json_decode($json, true);
+
+            if ($fullSet) {
+                $dbSet = Card::select('espansione', 'numero')->get()->toArray();
+                $toInsert = [];
+
+                foreach ($fullSet as $card) {
+                    if (!$this::contain($dbSet, $card)) {
+                        // Ensure tratti is a string for JSON compatibility
+                        if (is_array($card["tratti"])) {
+                            $card["tratti"] = implode(" * ", $card["tratti"]);
+                        }
+                        $toInsert[] = $card;
+                    }
+                }
+
+                Log::info("JSON fallback found " . count($toInsert) . " new cards");
+                ThreadMessageCreated::dispatch($threadId, "JSON fallback: trovate " . count($toInsert) . " nuove carte");
+
+                if (!empty($toInsert)) {
+                    file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
+
+                    JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
+                        "token" => env('JOB_TOKEN')
+                    ]);
+
+                    $this->sendEmailNotifications($toInsert);
+                } else {
+                    ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata", true);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("JSON fallback also failed: " . $e->getMessage());
+            ThreadMessageCreated::dispatch($threadId, "Errore anche nel fallback JSON: " . $e->getMessage(), true);
+        }
+    }
+
+    /**
+     * Send email notifications to all users about new cards
+     * Invia notifiche email a tutti gli utenti sulle nuove carte
+     *
+     * @param array $toInsert Array of new cards to notify about
+     * @return void
+     */
+    private function sendEmailNotifications($toInsert){
+        $message = "Sono disponibili queste nuove carte:\n";
+        foreach($toInsert as $card){
+            $espansione = $card["espansione"] ?? 'N/A';
+            $numero = $card["numero"] ?? 'N/A';
+            $nome = $card["nome"] ?? 'N/A';
+            $titolo = $card["titolo"] ?? '';
+            $message .= "{$espansione}-{$numero} - {$nome} {$titolo}\n";
+        }
+
+        $users = User::select("email")->where('email', '!=', null)->get();
+        foreach($users as $user){
+            Mail::to($user['email'])->send(new NewCardsEmail($message));
+        }
     }
 
     /**
