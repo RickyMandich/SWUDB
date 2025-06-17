@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\MessageCreated;
 use App\Events\ThreadMessageCreated;
 use App\Services\ThreadManager;
 
@@ -114,40 +113,91 @@ class CardsController extends Controller
     }
     
     /**
+     * Get the scan log file path for current session
+     * Ottiene il percorso del file di log per la sessione corrente
+     *
+     * @return string Log file path
+     */
+    private function getScanLogPath()
+    {
+        $timestamp = now()->format('Y_m_d_H_i');
+        return storage_path("logs/scansione_{$timestamp}.log");
+    }
+
+    /**
+     * Write to scan log file (equivalent to Java System.out.println)
+     * Scrive nel file di log della scansione (equivalente a Java System.out.println)
+     *
+     * @param string $message Message to log
+     * @param string|null $logFile Optional specific log file path
+     * @return void
+     */
+    private function writeScanLog($message, $logFile = null)
+    {
+        if (!$logFile) {
+            $logFile = $this->getScanLogPath();
+        }
+
+        $timestamp = now()->format('Y-m-d H:i:s');
+        $logMessage = "[{$timestamp}] {$message}\n";
+
+        // Ensure logs directory exists
+        $logDir = dirname($logFile);
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+
+        file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
+
+        // Also log to Laravel log for debugging
+        Log::info("SCAN: {$message}");
+    }
+
+    /**
      * Retrieve all card IDs from the Star Wars Unlimited API
      * Recupera tutti gli ID delle carte dall'API di Star Wars Unlimited
      *
      * This method calls the official API to get a complete list of all card IDs,
      * similar to the Java implementation's scan functionality.
      *
+     * @param string $threadId Thread ID for messaging
+     * @param string $logFile Log file path for this session
      * @return array Array of card IDs (cid values)
      */
-    private function getAllCardIdsFromAPI()
+    private function getAllCardIdsFromAPI($threadId, $logFile)
     {
         $allCardIds = [];
         $page = 1;
         $pageFinished = false;
 
+        $this->writeScanLog("Inizio recupero tutti i CID", $logFile);
+
         while (!$pageFinished) {
             $url = "https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][\$null]=true&pagination[page]={$page}&pagination[pageSize]=10";
+
+            $this->writeScanLog("Chiamata API pagina {$page}: {$url}", $logFile);
 
             try {
                 $response = Http::timeout(30)->get($url);
 
                 if (!$response->successful()) {
-                    Log::error("API call failed for page {$page}: " . $response->status());
-                    $this->sendTelegramAlert("Errore API alla pagina {$page}: " . $response->status());
+                    $errorMsg = "Errore API alla pagina {$page}: " . $response->status();
+                    $this->writeScanLog($errorMsg, $logFile);
+                    $this->sendTelegramAlert($errorMsg);
+                    ThreadMessageCreated::dispatch($threadId, $errorMsg);
                     break;
                 }
 
                 $jsonData = $response->json();
                 $cards = $jsonData['data'] ?? [];
 
+                $this->writeScanLog("Pagina {$page}: trovate " . count($cards) . " carte", $logFile);
+
                 foreach ($cards as $card) {
                     $cardId = $card['attributes']['cardUid'] ?? null;
                     if ($cardId) {
                         $allCardIds[] = $cardId;
-                        Log::info("Found card ID: {$cardId}");
+                        $this->writeScanLog("Trovato CID: {$cardId}", $logFile);
                     }
                 }
 
@@ -157,16 +207,25 @@ class CardsController extends Controller
                 $totalPages = $pagination['pageCount'] ?? $page;
 
                 $pageFinished = $currentPage >= $totalPages;
+                $this->writeScanLog("Pagina {$currentPage} di {$totalPages} completata", $logFile);
+
+                if ($page % 5 === 0) {
+                    ThreadMessageCreated::dispatch($threadId, "Elaborate {$page} pagine API...");
+                }
+
                 $page++;
 
             } catch (\Exception $e) {
-                Log::error("Exception during API call for page {$page}: " . $e->getMessage());
-                $this->sendTelegramAlert("Errore durante chiamata API pagina {$page}: " . $e->getMessage());
+                $errorMsg = "Eccezione durante chiamata API pagina {$page}: " . $e->getMessage();
+                $this->writeScanLog($errorMsg, $logFile);
+                $this->sendTelegramAlert($errorMsg);
+                ThreadMessageCreated::dispatch($threadId, $errorMsg);
                 break;
             }
         }
 
-        Log::info("Retrieved " . count($allCardIds) . " card IDs from API");
+        $finalMsg = "Completato recupero CID: " . count($allCardIds) . " carte totali";
+        $this->writeScanLog($finalMsg, $logFile);
         return $allCardIds;
     }
 
@@ -175,17 +234,26 @@ class CardsController extends Controller
      * Recupera informazioni dettagliate della carta dall'API usando l'ID carta
      *
      * @param string $cardId The card ID (cid)
+     * @param string|null $logFile Log file path for this session
      * @return array|null Card data array or null if failed
      */
-    private function getCardDetailsFromAPI($cardId)
+    private function getCardDetailsFromAPI($cardId, $logFile = null)
     {
         $url = "https://admin.starwarsunlimited.com/api/card/{$cardId}?locale=it";
+
+        if ($logFile) {
+            $this->writeScanLog("Chiamata API dettagli carta: {$url}", $logFile);
+        }
 
         try {
             $response = Http::timeout(30)->get($url);
 
             if (!$response->successful()) {
-                Log::error("Failed to get card details for {$cardId}: " . $response->status());
+                $errorMsg = "Errore recupero dettagli carta {$cardId}: " . $response->status();
+                if ($logFile) {
+                    $this->writeScanLog($errorMsg, $logFile);
+                }
+                Log::error($errorMsg);
                 return null;
             }
 
@@ -193,14 +261,30 @@ class CardsController extends Controller
             $data = $jsonData['data'] ?? null;
 
             if (!$data) {
-                Log::error("No data found for card {$cardId}");
+                $errorMsg = "Nessun dato trovato per carta {$cardId}";
+                if ($logFile) {
+                    $this->writeScanLog($errorMsg, $logFile);
+                }
+                Log::error($errorMsg);
                 return null;
             }
 
-            return $this->parseCardDataFromAPI($data, $cardId);
+            $cardData = $this->parseCardDataFromAPI($data, $cardId);
+
+            if ($logFile && $cardData) {
+                $cardInfo = ($cardData['nome'] ?? 'N/A') . " " . ($cardData['titolo'] ?? '') .
+                           " (" . ($cardData['espansione'] ?? 'N/A') . "-" . ($cardData['numero'] ?? 'N/A') . ")";
+                $this->writeScanLog("Carta elaborata con successo: {$cardInfo}", $logFile);
+            }
+
+            return $cardData;
 
         } catch (\Exception $e) {
-            Log::error("Exception getting card details for {$cardId}: " . $e->getMessage());
+            $errorMsg = "Eccezione durante recupero dettagli carta {$cardId}: " . $e->getMessage();
+            if ($logFile) {
+                $this->writeScanLog($errorMsg, $logFile);
+            }
+            Log::error($errorMsg);
             return null;
         }
     }
@@ -399,10 +483,10 @@ class CardsController extends Controller
      * Scan API for new cards and process them (background job)
      * Scansiona l'API per nuove carte e le elabora (job in background)
      *
-     * This method runs in background and handles the time-consuming API operations:
-     * 1. Gets all card IDs from API
+     * This method runs in background and handles the complete workflow:
+     * 1. Gets all card IDs from API (WAITS for completion)
      * 2. Compares with database to find new cards
-     * 3. Retrieves detailed information for new cards
+     * 3. Only AFTER scan is complete, retrieves detailed information
      * 4. Falls back to JSON if needed
      * 5. Triggers the import process
      *
@@ -415,58 +499,83 @@ class CardsController extends Controller
         }
 
         $threadId = $request->input('threadId', ThreadManager::generateThreadId('import'));
+        $logFile = $this->getScanLogPath();
         $apiSuccess = false;
+
+        $this->writeScanLog("=== INIZIO SCANSIONE API ===", $logFile);
+        $this->writeScanLog("Thread ID: {$threadId}", $logFile);
 
         try {
             ThreadMessageCreated::dispatch($threadId, "Recupero lista carte dall'API...");
 
-            // Step 1: Get all card IDs from API (potentially slow operation)
-            Log::info("Fetching card IDs from Star Wars Unlimited API");
-            $allCardIds = $this->getAllCardIdsFromAPI();
+            // Step 1: Get all card IDs from API (COMPLETE scan before proceeding)
+            $this->writeScanLog("Inizio recupero completo ID carte dall'API", $logFile);
+            $allCardIds = $this->getAllCardIdsFromAPI($threadId, $logFile);
 
             if (!empty($allCardIds)) {
-                Log::info("Retrieved " . count($allCardIds) . " card IDs from API");
-                ThreadMessageCreated::dispatch($threadId, "Recuperati " . count($allCardIds) . " ID carte dall'API");
+                $this->writeScanLog("SCANSIONE API COMPLETATA: " . count($allCardIds) . " ID carte recuperati", $logFile);
+                ThreadMessageCreated::dispatch($threadId, "✅ Scansione API completata: " . count($allCardIds) . " carte trovate");
 
                 // Step 2: Get existing cards from database
+                $this->writeScanLog("Recupero carte esistenti dal database", $logFile);
                 $dbCards = Card::select('cid')->whereNotNull('cid')->pluck('cid')->toArray();
+                $this->writeScanLog("Carte esistenti nel DB: " . count($dbCards), $logFile);
 
                 // Step 3: Find new card IDs
                 $newCardIds = array_diff($allCardIds, $dbCards);
-                Log::info("Found " . count($newCardIds) . " new cards to process");
+                $this->writeScanLog("Nuove carte da elaborare: " . count($newCardIds), $logFile);
 
                 if (!empty($newCardIds)) {
                     ThreadMessageCreated::dispatch($threadId, "Trovate " . count($newCardIds) . " nuove carte da elaborare");
 
-                    // Save new card IDs to temporary file for background processing
-                    file_put_contents(storage_path("app/new_card_ids.json"), json_encode($newCardIds));
+                    // Log each new card ID
+                    foreach ($newCardIds as $index => $cardId) {
+                        $this->writeScanLog(($index + 1) . ")\t" . $cardId, $logFile);
+                    }
 
-                    // Launch detailed card processing in background
+                    // Save new card IDs and log file path for background processing
+                    $processData = [
+                        'cardIds' => $newCardIds,
+                        'logFile' => $logFile,
+                        'threadId' => $threadId
+                    ];
+                    file_put_contents(storage_path("app/new_cards_process.json"), json_encode($processData));
+
+                    $this->writeScanLog("=== FINE SCANSIONE, INIZIO ELABORAZIONE DETTAGLI ===", $logFile);
+
+                    // NOW launch detailed card processing (only after scan is complete)
                     JobController::fireAndForgetGet(route('carte.processNewCards', ['threadId' => $threadId]), [
                         "token" => env('JOB_TOKEN')
                     ]);
 
                     $apiSuccess = true;
                 } else {
+                    $this->writeScanLog("Nessuna nuova carta trovata", $logFile);
                     ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata tramite API", true);
                 }
             } else {
+                $this->writeScanLog("ERRORE: Nessun ID carta recuperato dall'API", $logFile);
                 ThreadMessageCreated::dispatch($threadId, "Errore nel recupero carte dall'API, provo con JSON");
             }
         } catch (\Exception $e) {
+            $errorMsg = "Errore scansione API: " . $e->getMessage();
+            $this->writeScanLog("ERRORE CRITICO: " . $errorMsg, $logFile);
             Log::error("API scan failed: " . $e->getMessage());
-            ThreadMessageCreated::dispatch($threadId, "Errore scansione API: " . $e->getMessage());
+            ThreadMessageCreated::dispatch($threadId, $errorMsg);
         }
 
         // If API failed or no new cards, try JSON fallback
         if (!$apiSuccess) {
-            $this->fallbackToJSON($threadId);
+            $this->writeScanLog("Avvio fallback su file JSON", $logFile);
+            $this->fallbackToJSON($threadId, $logFile);
         }
     }
 
     /**
      * Process new cards found via API (background job)
      * Elabora le nuove carte trovate tramite API (job in background)
+     *
+     * This method runs ONLY after the API scan is completely finished
      *
      * @param Request $request HTTP request containing threadId and token
      * @return void
@@ -479,13 +588,19 @@ class CardsController extends Controller
         $threadId = $request->input('threadId', ThreadManager::generateThreadId('import'));
 
         try {
-            // Read new card IDs from temporary file
-            $newCardIds = json_decode(file_get_contents(storage_path("app/new_card_ids.json")), true);
+            // Read process data from temporary file (includes cardIds, logFile, threadId)
+            $processData = json_decode(file_get_contents(storage_path("app/new_cards_process.json")), true);
 
-            if (empty($newCardIds)) {
+            if (empty($processData) || empty($processData['cardIds'])) {
                 ThreadMessageCreated::dispatch($threadId, "Nessun ID carta da elaborare");
                 return;
             }
+
+            $newCardIds = $processData['cardIds'];
+            $logFile = $processData['logFile'];
+
+            $this->writeScanLog("=== INIZIO ELABORAZIONE DETTAGLI CARTE ===", $logFile);
+            $this->writeScanLog("Carte da elaborare: " . count($newCardIds), $logFile);
 
             ThreadMessageCreated::dispatch($threadId, "Inizio elaborazione dettagli per " . count($newCardIds) . " carte");
 
@@ -493,31 +608,41 @@ class CardsController extends Controller
             $processedCount = 0;
             $batchSize = 10; // Process in smaller batches
 
-            foreach ($newCardIds as $cardId) {
-                $cardData = $this->getCardDetailsFromAPI($cardId);
+            foreach ($newCardIds as $index => $cardId) {
+                $this->writeScanLog("Elaborazione carta " . ($index + 1) . "/" . count($newCardIds) . ": {$cardId}", $logFile);
+
+                $cardData = $this->getCardDetailsFromAPI($cardId, $logFile);
                 if ($cardData) {
                     $toInsert[] = $cardData;
                     $processedCount++;
 
+                    $cardInfo = ($cardData['espansione'] ?? 'N/A') . "-" . ($cardData['numero'] ?? 'N/A') . " " . ($cardData['nome'] ?? 'N/A');
+                    $this->writeScanLog("✅ Carta elaborata: {$cardInfo}", $logFile);
+
                     if ($processedCount % $batchSize === 0) {
                         ThreadMessageCreated::dispatch($threadId, "Elaborate {$processedCount}/" . count($newCardIds) . " carte");
-                        Log::info("Processed {$processedCount}/" . count($newCardIds) . " new cards");
+                        $this->writeScanLog("Progresso: {$processedCount}/" . count($newCardIds) . " carte elaborate", $logFile);
 
                         // Small delay to avoid overwhelming the API
                         usleep(500000); // 500ms delay every 10 cards
                     }
+                } else {
+                    $this->writeScanLog("❌ Errore elaborazione carta: {$cardId}", $logFile);
                 }
 
                 // Small delay between each card
                 usleep(100000); // 100ms delay
             }
 
-            Log::info("Successfully processed " . count($toInsert) . " new cards from API");
+            $this->writeScanLog("=== ELABORAZIONE COMPLETATA ===", $logFile);
+            $this->writeScanLog("Carte elaborate con successo: " . count($toInsert) . "/" . count($newCardIds), $logFile);
+
             ThreadMessageCreated::dispatch($threadId, "Completata elaborazione: " . count($toInsert) . " carte pronte per importazione");
 
             if (!empty($toInsert)) {
                 // Save to import file and trigger import process
                 file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
+                $this->writeScanLog("Carte salvate in to_insert.json per importazione", $logFile);
 
                 JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
                     "token" => env('JOB_TOKEN')
@@ -526,14 +651,22 @@ class CardsController extends Controller
                 // Send email notifications
                 $this->sendEmailNotifications($toInsert);
                 $this->sendTelegramAlert("Importazione avviata per " . count($toInsert) . " nuove carte");
+                $this->writeScanLog("Importazione avviata e notifiche inviate", $logFile);
+            } else {
+                $this->writeScanLog("Nessuna carta da importare", $logFile);
+                ThreadMessageCreated::dispatch($threadId, "Nessuna carta da importare", true);
             }
 
         } catch (\Exception $e) {
-            Log::error("Error processing new cards: " . $e->getMessage());
-            ThreadMessageCreated::dispatch($threadId, "Errore elaborazione carte: " . $e->getMessage());
+            $errorMsg = "Errore elaborazione carte: " . $e->getMessage();
+            Log::error($errorMsg);
+            ThreadMessageCreated::dispatch($threadId, $errorMsg);
 
-            // Fallback to JSON
-            $this->fallbackToJSON($threadId);
+            if (isset($logFile)) {
+                $this->writeScanLog("ERRORE CRITICO: " . $errorMsg, $logFile);
+                // Fallback to JSON
+                $this->fallbackToJSON($threadId, $logFile);
+            }
         }
     }
 
@@ -542,19 +675,36 @@ class CardsController extends Controller
      * Fallback su importazione file JSON quando l'API fallisce
      *
      * @param string $threadId Thread ID for messaging
+     * @param string|null $logFile Log file path for this session
      * @return void
      */
-    private function fallbackToJSON($threadId){
+    private function fallbackToJSON($threadId, $logFile = null){
+        if ($logFile) {
+            $this->writeScanLog("=== INIZIO FALLBACK SU FILE JSON ===", $logFile);
+        }
+
         ThreadMessageCreated::dispatch($threadId, "Fallback su file JSON...");
 
         try {
             $url = 'http://swudb.altervista.org/collezione.json';
+            if ($logFile) {
+                $this->writeScanLog("Download file JSON da: {$url}", $logFile);
+            }
+
             $json = file_get_contents($url);
             $fullSet = json_decode($json, true);
 
             if ($fullSet) {
+                if ($logFile) {
+                    $this->writeScanLog("File JSON scaricato: " . count($fullSet) . " carte totali", $logFile);
+                }
+
                 $dbSet = Card::select('espansione', 'numero')->get()->toArray();
                 $toInsert = [];
+
+                if ($logFile) {
+                    $this->writeScanLog("Confronto con database: " . count($dbSet) . " carte esistenti", $logFile);
+                }
 
                 foreach ($fullSet as $card) {
                     if (!$this::contain($dbSet, $card)) {
@@ -563,27 +713,57 @@ class CardsController extends Controller
                             $card["tratti"] = implode(" * ", $card["tratti"]);
                         }
                         $toInsert[] = $card;
+
+                        if ($logFile) {
+                            $cardInfo = ($card['espansione'] ?? 'N/A') . "-" . ($card['numero'] ?? 'N/A') . " " . ($card['nome'] ?? 'N/A');
+                            $this->writeScanLog("Nuova carta trovata: {$cardInfo}", $logFile);
+                        }
                     }
                 }
 
-                Log::info("JSON fallback found " . count($toInsert) . " new cards");
-                ThreadMessageCreated::dispatch($threadId, "JSON fallback: trovate " . count($toInsert) . " nuove carte");
+                $resultMsg = "JSON fallback: trovate " . count($toInsert) . " nuove carte";
+                if ($logFile) {
+                    $this->writeScanLog($resultMsg, $logFile);
+                }
+                Log::info($resultMsg);
+                ThreadMessageCreated::dispatch($threadId, $resultMsg);
 
                 if (!empty($toInsert)) {
                     file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
+
+                    if ($logFile) {
+                        $this->writeScanLog("Carte salvate per importazione", $logFile);
+                    }
 
                     JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
                         "token" => env('JOB_TOKEN')
                     ]);
 
                     $this->sendEmailNotifications($toInsert);
+
+                    if ($logFile) {
+                        $this->writeScanLog("Importazione avviata e notifiche inviate", $logFile);
+                    }
                 } else {
                     ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata", true);
+                    if ($logFile) {
+                        $this->writeScanLog("Nessuna nuova carta da importare", $logFile);
+                    }
                 }
+            } else {
+                $errorMsg = "Errore nel parsing del file JSON";
+                if ($logFile) {
+                    $this->writeScanLog($errorMsg, $logFile);
+                }
+                ThreadMessageCreated::dispatch($threadId, $errorMsg, true);
             }
         } catch (\Exception $e) {
-            Log::error("JSON fallback also failed: " . $e->getMessage());
-            ThreadMessageCreated::dispatch($threadId, "Errore anche nel fallback JSON: " . $e->getMessage(), true);
+            $errorMsg = "Errore anche nel fallback JSON: " . $e->getMessage();
+            if ($logFile) {
+                $this->writeScanLog("ERRORE CRITICO FALLBACK: " . $errorMsg, $logFile);
+            }
+            Log::error($errorMsg);
+            ThreadMessageCreated::dispatch($threadId, $errorMsg, true);
         }
     }
 
