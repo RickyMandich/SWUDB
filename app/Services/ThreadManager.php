@@ -134,6 +134,32 @@ class ThreadManager
     }
 
     /**
+     * Check if a thread is complete
+     * Controlla se un thread è completato
+     *
+     * @param string $threadId The thread identifier
+     * @return bool True if thread is completed or doesn't exist
+     */
+    public static function isThreadComplete(string $threadId): bool
+    {
+        $thread = self::getThread($threadId);
+        return $thread === null || $thread['isComplete'];
+    }
+
+    /**
+     * Get the latest message for a thread
+     * Ottiene l'ultimo messaggio per un thread
+     *
+     * @param string $threadId The thread identifier
+     * @return string|null The latest message or null if thread doesn't exist
+     */
+    public static function getLatestMessage(string $threadId): ?string
+    {
+        $thread = self::getThread($threadId);
+        return $thread['message'] ?? null;
+    }
+
+    /**
      * Mark a thread as complete
      * Marca un thread come completato
      *

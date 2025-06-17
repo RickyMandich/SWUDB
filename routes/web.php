@@ -32,6 +32,8 @@ Route::get('/scanAPI', [CardsController::class, 'scanAPI'])->name("carte.scanAPI
 
 Route::get('/processNewCards', [CardsController::class, 'processNewCards'])->name("carte.processNewCards");
 
+Route::get('/checkScanStatus/{threadId}', [CardsController::class, 'checkScanStatus'])->name("carte.checkScanStatus");
+
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
 Route::get('/collezione', [DecksController::class, 'collezione'])->name('collezione')->middleware('auth');

@@ -20,17 +20,17 @@ class NewCardsEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $message;
+    public $cards;
 
     /**
      * Create a new message instance
      * Crea una nuova istanza del messaggio
      *
-     * @param string $message The formatted message containing new cards information
+     * @param array $cards Array of card data with links
      */
-    public function __construct($message)
+    public function __construct($cards)
     {
-        $this->message = $message;
+        $this->cards = $cards;
     }
 
     /**
@@ -57,7 +57,7 @@ class NewCardsEmail extends Mailable
         return new Content(
             view: 'emails.new-cards',
             with: [
-                'messaggio' => $this->message,
+                'cards' => $this->cards,
             ]
         );
     }

@@ -475,7 +475,8 @@ class CardsController extends Controller
             "count" => "In elaborazione...",
             "data" => [],
             "apiUsed" => true,
-            "message" => "Scansione API avviata in background. Riceverai notifiche sui progressi."
+            "message" => "Scansione API avviata in background. Riceverai notifiche sui progressi.",
+            "threadId" => $threadId
         ]);
     }
 
@@ -652,6 +653,9 @@ class CardsController extends Controller
                 $this->sendEmailNotifications($toInsert);
                 $this->sendTelegramAlert("Importazione avviata per " . count($toInsert) . " nuove carte");
                 $this->writeScanLog("Importazione avviata e notifiche inviate", $logFile);
+
+                // Mark thread as complete since the scan and processing is done
+                ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Importazione di " . count($toInsert) . " carte avviata", true);
             } else {
                 $this->writeScanLog("Nessuna carta da importare", $logFile);
                 ThreadMessageCreated::dispatch($threadId, "Nessuna carta da importare", true);
@@ -744,6 +748,9 @@ class CardsController extends Controller
                     if ($logFile) {
                         $this->writeScanLog("Importazione avviata e notifiche inviate", $logFile);
                     }
+
+                    // Mark thread as complete since the scan and processing is done
+                    ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Importazione di " . count($toInsert) . " carte avviata (JSON fallback)", true);
                 } else {
                     ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata", true);
                     if ($logFile) {
@@ -775,19 +782,50 @@ class CardsController extends Controller
      * @return void
      */
     private function sendEmailNotifications($toInsert){
-        $message = "Sono disponibili queste nuove carte:\n";
+        // Prepare cards data with links for email template
+        $cardsData = [];
         foreach($toInsert as $card){
             $espansione = $card["espansione"] ?? 'N/A';
             $numero = $card["numero"] ?? 'N/A';
             $nome = $card["nome"] ?? 'N/A';
             $titolo = $card["titolo"] ?? '';
-            $message .= "{$espansione}-{$numero} - {$nome} {$titolo}\n";
+
+            $cardsData[] = [
+                'espansione' => $espansione,
+                'numero' => $numero,
+                'nome' => $nome,
+                'titolo' => $titolo,
+                'snippet' => "{$espansione}-{$numero} - {$nome}" . ($titolo ? " {$titolo}" : ""),
+                'url' => route('carta', ['espansione' => $espansione, 'numero' => $numero])
+            ];
         }
 
         $users = User::select("email")->where('email', '!=', null)->get();
         foreach($users as $user){
-            Mail::to($user['email'])->send(new NewCardsEmail($message));
+            Mail::to($user['email'])->send(new NewCardsEmail($cardsData));
         }
+    }
+
+    /**
+     * Check the status of a scan process
+     * Controlla lo stato di un processo di scansione
+     *
+     * @param string $threadId Thread ID to check
+     * @return \Illuminate\Http\JsonResponse Status information
+     */
+    public function checkScanStatus($threadId)
+    {
+        // Check if the thread is still active by looking for recent messages
+        $isComplete = \App\Services\ThreadManager::isThreadComplete($threadId);
+
+        // Get the latest message for this thread
+        $latestMessage = \App\Services\ThreadManager::getLatestMessage($threadId);
+
+        return response()->json([
+            'isComplete' => $isComplete,
+            'latestMessage' => $latestMessage,
+            'threadId' => $threadId
+        ]);
     }
 
     /**

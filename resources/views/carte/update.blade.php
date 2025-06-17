@@ -4,9 +4,9 @@
     <?php use App\Http\Controllers\CardsController;?>
     @if(isset($count))
         @if($count === "In elaborazione...")
-            <div class="alert alert-info">
-                <h4><i class="fas fa-spinner fa-spin"></i> Scansione in corso</h4>
-                <p><strong>{{ $message ?? 'Processo di scansione avviato in background' }}</strong></p>
+            <div class="alert alert-info" id="scanningAlert">
+                <h4><i class="fas fa-spinner fa-spin" id="scanSpinner"></i> <span id="scanStatus">Scansione in corso</span></h4>
+                <p><strong id="scanMessage">{{ $message ?? 'Processo di scansione avviato in background' }}</strong></p>
                 @if(isset($apiUsed) && $apiUsed)
                     <p>
                         <strong>Metodo:</strong>
@@ -20,6 +20,59 @@
                     </small>
                 </p>
             </div>
+
+            @if(isset($threadId))
+                <script>
+                    let checkInterval;
+                    let threadId = '{{ $threadId }}';
+
+                    function checkScanStatus() {
+                        fetch(`{{ route('carte.checkScanStatus', ':threadId') }}`.replace(':threadId', threadId))
+                            .then(response => response.json())
+                            .then(data => {
+                                // Update the message if we have a new one
+                                if (data.latestMessage) {
+                                    document.getElementById('scanMessage').textContent = data.latestMessage;
+                                }
+
+                                // If scan is complete, stop spinner and update UI
+                                if (data.isComplete) {
+                                    clearInterval(checkInterval);
+
+                                    // Stop spinner
+                                    const spinner = document.getElementById('scanSpinner');
+                                    spinner.classList.remove('fa-spin');
+                                    spinner.classList.remove('fa-spinner');
+                                    spinner.classList.add('fa-check-circle');
+
+                                    // Update status
+                                    document.getElementById('scanStatus').textContent = 'Scansione completata';
+
+                                    // Change alert type
+                                    const alert = document.getElementById('scanningAlert');
+                                    alert.classList.remove('alert-info');
+                                    alert.classList.add('alert-success');
+
+                                    // Add refresh button
+                                    const refreshBtn = document.createElement('button');
+                                    refreshBtn.className = 'btn btn-primary mt-2';
+                                    refreshBtn.textContent = 'Aggiorna pagina per vedere i risultati';
+                                    refreshBtn.onclick = () => window.location.reload();
+                                    alert.appendChild(refreshBtn);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Errore controllo stato scansione:', error);
+                            });
+                    }
+
+                    // Check status every 5 seconds
+                    checkInterval = setInterval(checkScanStatus, 5000);
+
+                    // Initial check after 2 seconds
+                    setTimeout(checkScanStatus, 2000);
+                </script>
+            @endif
         @else
             <div class="alert alert-success">
                 <h4>Aggiornamento completato</h4>
