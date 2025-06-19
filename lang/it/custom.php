@@ -10,7 +10,7 @@ return[
     | l'aspetto della tua applicazione.
     |
     */
-    'welcome' => 'Benvenuto su '.config("app.domain", "SWUDB.net").'!',
+    'welcome' => config("app.domain", "UnlimitedDB.net").' è un sito creato dai fan per i fan di Star Wars: Unlimited.',
     'upperFooter' => 
         config("app.domain", "SWUDB.net")." v.".env("APP_VERSION").' è un sito non ufficiale fatto dai fan. Le informazioni testuali e grafiche presenti sul sito relative a Star Wars: Unlimited, incluse immagini delle carte e simboli, hanno il copyright di Fantasy Flight Publishing Inc e Lucasfilm Ltd. '.config("app.domain", "SWUDB.net").' non è prodotto o approvato da FFG or LFL.',
     'lowerFooter' => 
