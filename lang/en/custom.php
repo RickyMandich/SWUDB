@@ -31,7 +31,7 @@ return[
     'nome' => 'Name',
     'email' => 'Email',
     'Benvenuto, ' => 'Welcome, ',
-    'contactMail' => "you can contact us at <a class='text-muted text-uppercase' href='mailto:info@unlimiteddb.net'>info@unlimiteddb.net</a>,",
+    'contactMail' => "you can contact us at <a class='text-muted' href='mailto:info@unlimiteddb.net'>info@unlimiteddb.net</a>,",
     'documentazione' => 'here you can find the',
     'Documentazione' => 'Documentation',
     'Collezione' => 'Collection'

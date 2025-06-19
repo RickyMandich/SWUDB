@@ -655,6 +655,9 @@ namespace App\Models {
     /**
      * App\Models\Deck
      *
+     * @property \Illuminate\Support\Carbon|null $updated_at
+     * @property \Illuminate\Support\Carbon|null $created_at
+     * @property integer $versione
      * @property integer $codUtente
      * @property boolean $public
      * @property string $nome
@@ -663,6 +666,9 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck whereNome($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck wherePublic($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck whereCodutente($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck whereVersione($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck whereCreatedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck whereUpdatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck query()
