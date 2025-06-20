@@ -24,13 +24,11 @@ Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->na
 
 Route::get('/update', [CardsController::class, 'startImport'])->name("carte.update");
 
-Route::get('/dispatchBatch', [CardsController::class, 'dispatchBatch'])->name("carte.dispatchBatch");
-
-Route::get('/sendBatch', [CardsController::class, 'sendBatch'])->name("carte.sendBatch");
-
 Route::get('/scanAPI', [CardsController::class, 'scanAPI'])->name("carte.scanAPI");
 
 Route::get('/processNewCards', [CardsController::class, 'processNewCards'])->name("carte.processNewCards");
+
+Route::get('/insertCards', [CardsController::class, 'insertCards'])->name("carte.insertCards");
 
 Route::get('/checkScanStatus/{threadId}', [CardsController::class, 'checkScanStatus'])->name("carte.checkScanStatus");
 

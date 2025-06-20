@@ -701,21 +701,13 @@ class CardsController extends Controller
             ThreadMessageCreated::dispatch($threadId, "Completata elaborazione: " . count($toInsert) . " carte pronte per importazione");
 
             if (!empty($toInsert)) {
-                // Save to import file and trigger import process
-                file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
-                $this->writeScanLog("Carte salvate in to_insert.json per importazione", $logFile);
+                $this->writeScanLog("Avvio inserimento asincrono nel database", $logFile);
 
-                JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
-                    "token" => env('JOB_TOKEN')
-                ]);
-
-                // Send email notifications
-                $this->sendEmailNotifications($toInsert);
-                $this->sendTelegramAlert("Importazione avviata per " . count($toInsert) . " nuove carte");
-                $this->writeScanLog("Importazione avviata e notifiche inviate", $logFile);
+                // Avvia inserimento asincrono per evitare timeout
+                $this->startAsyncCardInsertion($toInsert, $threadId, $logFile);
 
                 // Mark thread as complete since the scan and processing is done
-                ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Importazione di " . count($toInsert) . " carte avviata", true);
+                ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Avviato inserimento di " . count($toInsert) . " carte", true);
             } else {
                 $this->writeScanLog("Nessuna carta da importare", $logFile);
                 ThreadMessageCreated::dispatch($threadId, "Nessuna carta da importare", true);
@@ -772,7 +764,7 @@ class CardsController extends Controller
 
                 foreach ($fullSet as $card) {
                     if (!$this::contain($dbSet, $card)) {
-                        // Ensure tratti is a string for JSON compatibility
+                        // Ensure tratti is a string for database compatibility
                         if (is_array($card["tratti"])) {
                             $card["tratti"] = implode(" * ", $card["tratti"]);
                         }
@@ -793,24 +785,15 @@ class CardsController extends Controller
                 ThreadMessageCreated::dispatch($threadId, $resultMsg);
 
                 if (!empty($toInsert)) {
-                    file_put_contents(storage_path("app/to_insert.json"), json_encode($toInsert));
-
                     if ($logFile) {
-                        $this->writeScanLog("Carte salvate per importazione", $logFile);
+                        $this->writeScanLog("Avvio inserimento asincrono nel database", $logFile);
                     }
 
-                    JobController::fireAndForgetGet(route('carte.sendBatch', ['threadId' => $threadId]), [
-                        "token" => env('JOB_TOKEN')
-                    ]);
-
-                    $this->sendEmailNotifications($toInsert);
-
-                    if ($logFile) {
-                        $this->writeScanLog("Importazione avviata e notifiche inviate", $logFile);
-                    }
+                    // Avvia inserimento asincrono per evitare timeout
+                    $this->startAsyncCardInsertion($toInsert, $threadId, $logFile);
 
                     // Mark thread as complete since the scan and processing is done
-                    ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Importazione di " . count($toInsert) . " carte avviata (JSON fallback)", true);
+                    ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Avviato inserimento di " . count($toInsert) . " carte (JSON fallback)", true);
                 } else {
                     ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata", true);
                     if ($logFile) {
@@ -832,6 +815,210 @@ class CardsController extends Controller
             Log::error($errorMsg);
             ThreadMessageCreated::dispatch($threadId, $errorMsg, true);
         }
+    }
+
+    /**
+     * Start asynchronous card insertion to avoid timeout issues
+     * Avvia inserimento asincrono delle carte per evitare problemi di timeout
+     *
+     * @param array $cards Array of cards to insert
+     * @param string $threadId Thread ID for progress tracking
+     * @param string|null $logFile Log file path for detailed logging
+     * @return void
+     */
+    private function startAsyncCardInsertion($cards, $threadId, $logFile = null)
+    {
+        // Save cards data to temporary file for async processing
+        $insertData = [
+            'cards' => $cards,
+            'threadId' => $threadId,
+            'logFile' => $logFile,
+            'timestamp' => time()
+        ];
+
+        file_put_contents(storage_path("app/cards_to_insert.json"), json_encode($insertData));
+
+        if ($logFile) {
+            $this->writeScanLog("Dati salvati per inserimento asincrono: " . count($cards) . " carte", $logFile);
+        }
+
+        // Launch async insertion process
+        JobController::fireAndForgetGet(route('carte.insertCards', ['threadId' => $threadId]), [
+            "token" => env('JOB_TOKEN')
+        ]);
+    }
+
+    /**
+     * Process asynchronous card insertion from temporary file
+     * Elabora inserimento asincrono delle carte dal file temporaneo
+     *
+     * @param Request $request HTTP request containing threadId
+     * @return void
+     */
+    public function insertCards(Request $request)
+    {
+        $threadId = $request->input('threadId');
+
+        try {
+            // Read insertion data from temporary file
+            $insertDataFile = storage_path("app/cards_to_insert.json");
+            if (!file_exists($insertDataFile)) {
+                ThreadMessageCreated::dispatch($threadId, "Errore: file dati inserimento non trovato", true);
+                return;
+            }
+
+            $insertData = json_decode(file_get_contents($insertDataFile), true);
+            $cards = $insertData['cards'] ?? [];
+            $logFile = $insertData['logFile'] ?? null;
+
+            if (empty($cards)) {
+                ThreadMessageCreated::dispatch($threadId, "Nessuna carta da inserire", true);
+                return;
+            }
+
+            // Process cards with timeout management
+            $this->insertCardsDirectly($cards, $threadId, $logFile);
+
+            // Send notifications after successful insertion
+            $this->sendEmailNotifications($cards);
+            $this->sendTelegramAlert("Importazione completata per " . count($cards) . " nuove carte");
+
+            if ($logFile) {
+                $this->writeScanLog("Importazione completata e notifiche inviate", $logFile);
+            }
+
+            // Clean up temporary file
+            if (file_exists($insertDataFile)) {
+                unlink($insertDataFile);
+            }
+
+        } catch (\Exception $e) {
+            $errorMsg = "Errore inserimento asincrono: " . $e->getMessage();
+            Log::error($errorMsg);
+            ThreadMessageCreated::dispatch($threadId, $errorMsg, true);
+        }
+    }
+
+    /**
+     * Insert cards directly into database with timeout management
+     * Inserisce le carte direttamente nel database con gestione timeout
+     *
+     * @param array $cards Array of cards to insert
+     * @param string $threadId Thread ID for progress tracking
+     * @param string|null $logFile Log file path for detailed logging
+     * @return void
+     */
+    private function insertCardsDirectly($cards, $threadId, $logFile = null)
+    {
+        $batchSize = 5;
+        $totalCards = count($cards);
+        $insertedCount = 0;
+        $errorCount = 0;
+        $startTime = time();
+
+        if ($logFile) {
+            $this->writeScanLog("Inizio inserimento diretto di {$totalCards} carte", $logFile);
+        }
+
+        ThreadMessageCreated::dispatch($threadId, "Inizio inserimento di {$totalCards} carte nel database");
+
+        // Process cards in batches with timeout management
+        for ($i = 0; $i < $totalCards; $i += $batchSize) {
+            $batch = array_slice($cards, $i, $batchSize);
+            $batchNumber = intval($i / $batchSize) + 1;
+            $totalBatches = ceil($totalCards / $batchSize);
+
+            ThreadMessageCreated::dispatch($threadId, "Inserimento batch {$batchNumber} di {$totalBatches}");
+
+            foreach ($batch as $cardData) {
+                try {
+                    // Create new card instance
+                    $carta = new Card();
+
+                    // Set card attributes
+                    $carta->cid = $cardData["espansione"] . "-" . $cardData["numero"];
+                    $carta->espansione = $cardData["espansione"];
+                    $carta->numero = $cardData["numero"];
+                    $carta->aspettoPrimario = $cardData["aspettoPrimario"] ?? null;
+                    $carta->aspettoSecondario = $cardData["aspettoSecondario"] ?? null;
+                    $carta->unica = $cardData["unica"] ?? false;
+                    $carta->nome = $cardData["nome"];
+                    $carta->titolo = $cardData["titolo"] ?? "";
+                    $carta->tipo = $cardData["tipo"];
+                    $carta->rarita = $cardData["rarita"];
+                    $carta->costo = $cardData["costo"] ?? 0;
+                    $carta->vita = $cardData["vita"] ?? null;
+                    $carta->potenza = $cardData["potenza"] ?? null;
+                    $carta->descrizione = $cardData["descrizione"];
+                    $carta->tratti = $cardData["tratti"];
+                    $carta->arena = $cardData["arena"] ?? null;
+                    $carta->artista = $cardData["artista"];
+                    $carta->uscita = $cardData["uscita"];
+                    $carta->frontArt = $cardData["frontArt"] ?? null;
+                    $carta->backArt = $cardData["backArt"] ?? null;
+                    $carta->maxCopie = $cardData["maxCopie"] ?? 3;
+
+                    // Save card to database
+                    $carta->save();
+                    $insertedCount++;
+
+                    if ($logFile) {
+                        $this->writeScanLog("Carta inserita: {$carta->cid} - {$carta->nome}", $logFile);
+                    }
+
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $cardInfo = ($cardData['espansione'] ?? 'N/A') . "-" . ($cardData['numero'] ?? 'N/A');
+                    $errorMsg = "Errore inserimento carta {$cardInfo}: " . $e->getMessage();
+
+                    if ($logFile) {
+                        $this->writeScanLog($errorMsg, $logFile);
+                    }
+                    Log::error($errorMsg);
+                }
+            }
+
+            // Check execution time and restart if approaching limits (4 minutes)
+            if ((time() - $startTime) > 240) {
+                if ($logFile) {
+                    $this->writeScanLog("Limite tempo raggiunto, riavvio processo inserimento...", $logFile);
+                }
+
+                // Save remaining cards for next iteration
+                $remainingCards = array_slice($cards, $i + $batchSize);
+                if (!empty($remainingCards)) {
+                    $insertData = [
+                        'cards' => $remainingCards,
+                        'threadId' => $threadId,
+                        'logFile' => $logFile,
+                        'timestamp' => time()
+                    ];
+                    file_put_contents(storage_path("app/cards_to_insert.json"), json_encode($insertData));
+
+                    // Restart the process
+                    JobController::fireAndForgetGet(route('carte.insertCards', ['threadId' => $threadId]), [
+                        "token" => env('JOB_TOKEN')
+                    ]);
+
+                    ThreadMessageCreated::dispatch($threadId, "Processo riavviato automaticamente - Inserite " . ($insertedCount) . "/" . $totalCards . " carte");
+                    return;
+                }
+            }
+
+            // Small delay between batches to avoid overwhelming the database
+            usleep(100000); // 100ms delay
+        }
+
+        $finalMsg = "Inserimento completato: {$insertedCount} carte inserite";
+        if ($errorCount > 0) {
+            $finalMsg .= ", {$errorCount} errori";
+        }
+
+        if ($logFile) {
+            $this->writeScanLog($finalMsg, $logFile);
+        }
+
+        ThreadMessageCreated::dispatch($threadId, $finalMsg, true);
     }
 
     /**
@@ -915,76 +1102,7 @@ class CardsController extends Controller
         ]);
     }
 
-    /**
-     * Process card import in batches to avoid timeout and memory issues
-     * Elabora l'importazione delle carte in lotti per evitare timeout e problemi di memoria
-     *
-     * This method handles the batch processing of card imports by:
-     * 1. Reading the next batch position from request
-     * 2. Triggering the dispatch of current batch
-     * 3. Recursively calling itself for next batch or completing import
-     * 4. Uses threaded messaging to replace previous notifications
-     *
-     * @param Request $request HTTP request containing 'next' parameter for batch position
-     * @return void Outputs status messages directly
-     */
-    public function sendBatch(Request $request){
-        $next = intval($request->input("next", 0));
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug.log", "sendBatch next:$next \n\n", FILE_APPEND);
-        $data = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
 
-        // Generate or retrieve thread ID for this import session
-        $threadId = $request->input('threadId', ThreadManager::generateThreadId('import'));
-
-        ThreadMessageCreated::dispatch($threadId, "Elaborazione batch $next di " . ceil(count($data) / 5));
-        $batchSize = 5;
-        JobController::fireAndForgetGet(route('carte.dispatchBatch', ['start' => $next, 'batchSize' => $batchSize]));
-        if ($next + $batchSize >= count($data)) {
-            echo "Import completato!\n";
-            ThreadMessageCreated::dispatch($threadId, "Importazione completata! Elaborate " . count($data) . " carte", true);
-            // file_put_contents(storage_path("app/to_insert.json"), "[]"); // Pulisce il file dopo l'importazione
-        } else {
-            echo "Batch $next dispatchato, prossima esecuzione tra 100ms...\n";
-            $next += $batchSize;
-            usleep(100000); // 100ms delay
-            JobController::fireAndForgetGet(route('carte.sendBatch', ['next' => $next, 'threadId' => $threadId]), [
-                "token" => env('JOB_TOKEN')
-            ]);
-        }
-    }
-
-    /**
-     * Dispatch individual card import jobs for a specific batch
-     * Invia i job individuali di importazione carte per un lotto specifico
-     *
-     * This method takes a slice of cards from the import queue and creates
-     * individual background jobs for each card to be processed asynchronously.
-     *
-     * @param Request $request HTTP request containing 'start' and 'batchSize' parameters
-     * @return \Illuminate\Http\JsonResponse JSON response with next batch info or completion status
-     */
-    public function dispatchBatch(Request $request){
-        $cards = json_decode(file_get_contents(storage_path("app/to_insert.json")), true);
-        $start = intval($request->input("start", 0));
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug.log", "startBatch start:$start \n\n", FILE_APPEND);
-        $batchSize = intval($request->input("batchSize", 5));
-        $slice = array_slice($cards, $start, $batchSize);
-
-        foreach($slice as $card){
-            JobController::fireAndForgetGet(route('job.addCard'), [
-                "card" => json_encode($card),
-                "token" => env('JOB_TOKEN')
-            ]);
-        }
-
-        $next = $start + $batchSize;
-
-        if ($next >= count($cards)) {
-            return response()->json(["done" => true]);
-        }
-
-        return response()->json(["next" => $next]);
-    }
 
     /**
      * Check if a card is already contained in the given array
