@@ -21,6 +21,9 @@ class AdminController extends Controller
      *
      * This method provides a query interface for admin users with automatic
      * sorting applied to card queries that don't have ORDER BY clauses.
+     * Handles both SELECT queries (returns results) and modification queries
+     * (INSERT, UPDATE, DELETE - returns affected rows count).
+     * Includes proper MySQL error handling.
      *
      * @param Request $request HTTP request containing query parameter
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse Query results view or error redirect
@@ -33,50 +36,77 @@ class AdminController extends Controller
 
         $get = $request->all();
         $query = $get["query"] ?? "SELECT * FROM cards limit 10";
-        
-        $result = DB::select($query);
-        
-        // Se la query riguarda la tabella cards e non ha ORDER BY, applica mergeSort
-        $queryLower = strtolower(trim($query));
-        $isCardsQuery = strpos($queryLower, 'from cards') !== false || strpos($queryLower, 'from `cards`') !== false;
-        $hasOrderBy = strpos($queryLower, 'order by') !== false;
 
+        $result = null;
+        $affectedRows = null;
+        $error = null;
+        $isSelectQuery = false;
         $sortApplied = false;
-        if ($isCardsQuery && !$hasOrderBy && !empty($result)) {
-            // Verifica che i risultati abbiano gli attributi necessari per il mergeSort
-            $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'uscita', 'numero', 'espansione'];
-            $firstResult = (array) $result[0];
-            $hasRequiredAttributes = true;
 
-            foreach ($requiredAttributes as $attr) {
-                if (!array_key_exists($attr, $firstResult)) {
-                    $hasRequiredAttributes = false;
-                    break;
+        try {
+            // Determina se è una query SELECT o di modifica
+            $queryLower = strtolower(trim($query));
+            $isSelectQuery = strpos($queryLower, 'select') === 0 ||
+                           strpos($queryLower, 'show') === 0 ||
+                           strpos($queryLower, 'describe') === 0 ||
+                           strpos($queryLower, 'desc') === 0 ||
+                           strpos($queryLower, 'explain') === 0;
+
+            if ($isSelectQuery) {
+                // Query SELECT - restituisce risultati
+                $result = DB::select($query);
+
+                // Se la query riguarda la tabella cards e non ha ORDER BY, applica mergeSort
+                $isCardsQuery = strpos($queryLower, 'from cards') !== false || strpos($queryLower, 'from `cards`') !== false;
+                $hasOrderBy = strpos($queryLower, 'order by') !== false;
+
+                if ($isCardsQuery && !$hasOrderBy && !empty($result)) {
+                    // Verifica che i risultati abbiano gli attributi necessari per il mergeSort
+                    $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'uscita', 'numero', 'espansione'];
+                    $firstResult = (array) $result[0];
+                    $hasRequiredAttributes = true;
+
+                    foreach ($requiredAttributes as $attr) {
+                        if (!array_key_exists($attr, $firstResult)) {
+                            $hasRequiredAttributes = false;
+                            break;
+                        }
+                    }
+
+                    if ($hasRequiredAttributes) {
+                        try {
+                            // Converte gli oggetti stdClass in array per il mergeSort
+                            $resultArray = array_map(fn($item) => (array) $item, $result);
+
+                            // Applica il mergeSort
+                            $sortedResult = CardsController::mergeSort($resultArray);
+
+                            // Converte di nuovo in oggetti stdClass per mantenere la compatibilità con la view
+                            $result = array_map(fn($item) => (object) $item, $sortedResult);
+                            $sortApplied = true;
+                        } catch (\Exception $e) {
+                            // Se il mergeSort fallisce, mantieni l'ordine originale
+                            $sortApplied = false;
+                        }
+                    }
                 }
+            } else {
+                // Query di modifica (INSERT, UPDATE, DELETE) - restituisce numero righe modificate
+                $affectedRows = DB::affectingStatement($query);
             }
 
-            if ($hasRequiredAttributes) {
-                try {
-                    // Converte gli oggetti stdClass in array per il mergeSort
-                    $resultArray = array_map(fn($item) => (array) $item, $result);
-
-                    // Applica il mergeSort
-                    $sortedResult = CardsController::mergeSort($resultArray);
-
-                    // Converte di nuovo in oggetti stdClass per mantenere la compatibilità con la view
-                    $result = array_map(fn($item) => (object) $item, $sortedResult);
-                    $sortApplied = true;
-                } catch (\Exception $e) {
-                    // Se il mergeSort fallisce, mantieni l'ordine originale
-                    $sortApplied = false;
-                }
-            }
+        } catch (\Exception $e) {
+            // Gestione errori MySQL
+            $error = $e->getMessage();
         }
-        
+
         return view("query", [
             "result" => $result,
+            "affectedRows" => $affectedRows,
+            "error" => $error,
             "query" => $query,
-            "sorted" => $sortApplied
+            "sorted" => $sortApplied,
+            "isSelectQuery" => $isSelectQuery
         ]);
     }
 

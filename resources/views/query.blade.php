@@ -34,7 +34,15 @@
                         </div>
                     </form>
 
-                    @if(isset($result) && count($result) > 0)
+                    @if(isset($error))
+                        <hr>
+                        <div class="alert alert-danger">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Errore MySQL
+                            </h5>
+                            <p class="mb-0">{{ $error }}</p>
+                        </div>
+                    @elseif(isset($result) && count($result) > 0)
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="mb-0">Risultati ({{ count($result) }} righe):</h5>
@@ -68,6 +76,17 @@
                         <hr>
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-1"></i>Query eseguita con successo. Nessun risultato trovato.
+                        </div>
+                    @elseif(isset($affectedRows))
+                        <hr>
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-check-circle me-2"></i>Query eseguita con successo
+                            </h5>
+                            <p class="mb-0">
+                                <strong>{{ $affectedRows }}</strong>
+                                {{ $affectedRows === 1 ? 'riga modificata' : 'righe modificate' }}
+                            </p>
                         </div>
                     @endif
                 </div>
