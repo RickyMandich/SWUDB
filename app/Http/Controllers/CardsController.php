@@ -522,9 +522,27 @@ class CardsController extends Controller
                 $dbCards = Card::select('cid')->whereNotNull('cid')->pluck('cid')->toArray();
                 $this->writeScanLog("Carte esistenti nel DB: " . count($dbCards), $logFile);
 
+                // Debug: Log sample IDs for comparison
+                if (!empty($allCardIds) && !empty($dbCards)) {
+                    $this->writeScanLog("=== DEBUG CONFRONTO ID ===", $logFile);
+                    $this->writeScanLog("Primi 5 ID dall'API: " . implode(', ', array_slice($allCardIds, 0, 5)), $logFile);
+                    $this->writeScanLog("Primi 5 ID dal DB: " . implode(', ', array_slice($dbCards, 0, 5)), $logFile);
+
+                    // Check for format differences
+                    $apiSample = $allCardIds[0] ?? '';
+                    $dbSample = $dbCards[0] ?? '';
+                    $this->writeScanLog("Formato API: '{$apiSample}' (lunghezza: " . strlen($apiSample) . ")", $logFile);
+                    $this->writeScanLog("Formato DB: '{$dbSample}' (lunghezza: " . strlen($dbSample) . ")", $logFile);
+                }
+
                 // Step 3: Find new card IDs
                 $newCardIds = array_diff($allCardIds, $dbCards);
                 $this->writeScanLog("Nuove carte da elaborare: " . count($newCardIds), $logFile);
+
+                // Debug: Log some new card IDs if any
+                if (!empty($newCardIds)) {
+                    $this->writeScanLog("Primi 10 nuovi ID: " . implode(', ', array_slice($newCardIds, 0, 10)), $logFile);
+                }
 
                 if (!empty($newCardIds)) {
                     ThreadMessageCreated::dispatch($threadId, "Trovate " . count($newCardIds) . " nuove carte da elaborare");
@@ -932,11 +950,22 @@ class CardsController extends Controller
 
             foreach ($batch as $cardData) {
                 try {
+                    $cardCid = $cardData["cid"]; // Use the real CID from API, not espansione-numero
+
+                    // Double-check if card already exists before inserting
+                    $existingCard = Card::where('cid', $cardCid)->first();
+                    if ($existingCard) {
+                        if ($logFile) {
+                            $this->writeScanLog("Carta già esistente saltata: {$cardCid}", $logFile);
+                        }
+                        continue; // Skip this card
+                    }
+
                     // Create new card instance
                     $carta = new Card();
 
-                    // Set card attributes
-                    $carta->cid = $cardData["espansione"] . "-" . $cardData["numero"];
+                    // Set card attributes - use the real CID from API
+                    $carta->cid = $cardCid;
                     $carta->espansione = $cardData["espansione"];
                     $carta->numero = $cardData["numero"];
                     $carta->aspettoPrimario = $cardData["aspettoPrimario"] ?? null;
