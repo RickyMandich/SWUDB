@@ -11,29 +11,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('system_errors', function (Blueprint $table) {
-            $table->id();
-            $table->string('exception_class');
-            $table->text('message');
-            $table->text('file');
-            $table->integer('line');
-            $table->longText('trace');
-            $table->string('request_url')->nullable();
-            $table->string('request_method')->nullable();
-            $table->text('user_agent')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->enum('status', ['new', 'in_progress', 'resolved', 'ignored'])->default('new');
-            $table->text('admin_notes')->nullable();
-            $table->unsignedBigInteger('resolved_by')->nullable();
-            $table->timestamp('resolved_at')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('system_errors')) {
+            Schema::create('system_errors', function (Blueprint $table) {
+                $table->id();
+                $table->string('exception_class');
+                $table->text('message');
+                $table->text('file');
+                $table->integer('line');
+                $table->longText('trace');
+                $table->string('request_url')->nullable();
+                $table->string('request_method')->nullable();
+                $table->text('user_agent')->nullable();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->enum('status', ['new', 'in_progress', 'resolved', 'ignored'])->default('new');
+                $table->text('admin_notes')->nullable();
+                $table->unsignedBigInteger('resolved_by')->nullable();
+                $table->timestamp('resolved_at')->nullable();
+                $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('resolved_by')->references('id')->on('users')->onDelete('set null');
-            
-            $table->index(['status', 'created_at']);
-            $table->index('exception_class');
-        });
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+                $table->foreign('resolved_by')->references('id')->on('users')->onDelete('set null');
+                
+                $table->index(['status', 'created_at']);
+                $table->index('exception_class');
+            });
+        }
     }
 
     /**

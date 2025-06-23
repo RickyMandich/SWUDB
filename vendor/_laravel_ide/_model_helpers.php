@@ -966,11 +966,43 @@ namespace App\Models {
     /**
      * App\Models\SystemError
      *
+     * @property \Illuminate\Support\Carbon|null $updated_at
+     * @property \Illuminate\Support\Carbon|null $created_at
+     * @property \Illuminate\Support\Carbon|null $resolved_at
+     * @property int|null $resolved_by
+     * @property string|null $admin_notes
+     * @property mixed $status
+     * @property int|null $user_id
+     * @property string|null $user_agent
+     * @property string|null $request_method
+     * @property string|null $request_url
+     * @property string $trace
+     * @property int $line
+     * @property string $file
+     * @property string $message
+     * @property string $exception_class
+     * @property int $id
      * @property-read mixed $status_badge_color
      * @property-read mixed $status_display
      * @property-read mixed $short_file
      * @property-read \App\Models\User $user
      * @property-read \App\Models\User $resolvedBy
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereExceptionClass($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereMessage($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereFile($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereLine($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereTrace($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereRequestUrl($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereRequestMethod($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereUserAgent($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereUserId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereStatus($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereAdminNotes($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereResolvedBy($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereResolvedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereCreatedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError whereUpdatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError unresolved()
      * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError resolved()
      * @method static \Illuminate\Database\Eloquent\Builder<SystemError>|SystemError newModelQuery()
