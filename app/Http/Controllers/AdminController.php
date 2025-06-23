@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\SystemError;
 
 /**
  * Controller for administrative functions
@@ -167,5 +168,109 @@ class AdminController extends Controller
         ];
 
         return view('admin.dashboard', compact('stats'));
+    }
+
+    /**
+     * Display system errors management page
+     * Mostra la pagina di gestione degli errori di sistema
+     *
+     * @param Request $request HTTP request with optional filters
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse Errors management view or error redirect
+     */
+    public function errors(Request $request)
+    {
+        if (!Auth::admin()) {
+            return view("errors.403");
+        }
+
+        $query = SystemError::with(['user', 'resolvedBy'])
+            ->orderBy('created_at', 'desc');
+
+        // Apply status filter if provided
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+
+        // Apply search filter if provided
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('message', 'like', "%{$search}%")
+                  ->orWhere('exception_class', 'like', "%{$search}%")
+                  ->orWhere('file', 'like', "%{$search}%");
+            });
+        }
+
+        $errors = $query->paginate(20);
+
+        // Get statistics for dashboard
+        $stats = [
+            'total' => SystemError::count(),
+            'new' => SystemError::where('status', 'new')->count(),
+            'in_progress' => SystemError::where('status', 'in_progress')->count(),
+            'resolved' => SystemError::where('status', 'resolved')->count(),
+            'ignored' => SystemError::where('status', 'ignored')->count(),
+        ];
+
+        return view('admin.errors', compact('errors', 'stats'));
+    }
+
+    /**
+     * Show detailed view of a specific error
+     * Mostra la vista dettagliata di un errore specifico
+     *
+     * @param SystemError $error The error to display
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse Error detail view or error redirect
+     */
+    public function showError(SystemError $error)
+    {
+        if (!Auth::admin()) {
+            return view("errors.403");
+        }
+
+        return view('admin.error-detail', compact('error'));
+    }
+
+    /**
+     * Update error status and notes
+     * Aggiorna lo stato e le note dell'errore
+     *
+     * @param Request $request HTTP request with status and notes
+     * @param SystemError $error The error to update
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View Redirect back with success message or error view
+     */
+    public function updateError(Request $request, SystemError $error)
+    {
+        if (!Auth::admin()) {
+            return view("errors.403");
+        }
+
+        $request->validate([
+            'status' => 'required|in:new,in_progress,resolved,ignored',
+            'admin_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $admin = Auth::user();
+        $status = $request->status;
+        $notes = $request->admin_notes;
+
+        switch ($status) {
+            case 'resolved':
+                $error->markAsResolved($admin, $notes);
+                break;
+            case 'ignored':
+                $error->markAsIgnored($admin, $notes);
+                break;
+            case 'in_progress':
+                $error->markAsInProgress($admin, $notes);
+                break;
+            default:
+                $error->update([
+                    'status' => $status,
+                    'admin_notes' => $notes,
+                ]);
+        }
+
+        return redirect()->back()->with('success', 'Stato errore aggiornato con successo.');
     }
 }

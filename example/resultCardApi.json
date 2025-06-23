@@ -1,0 +1,525 @@
+{
+  "data": {
+    "id": 38357,
+    "attributes": {
+      "title": "Darth Tyranus",
+      "subtitle": "Servant of Sidious",
+      "cardNumber": 5,
+      "cardCount": 0,
+      "artist": "Johnny Morrow",
+      "artFrontHorizontal": false,
+      "artBackHorizontal": null,
+      "hasFoil": true,
+      "cost": 4,
+      "hp": 3,
+      "power": 4,
+      "text": "Shielded \nWhile the Force is with you, this unit gains Ambush. ",
+      "textStyled": "\u003Cp\u003E\u003Cstrong\u003EShielded\u003C/strong\u003E\u003C/p\u003E\u003Cp\u003EWhile the Force is with you, this unit gains \u003Cstrong\u003EAmbush\u003C/strong\u003E.\u003C/p\u003E",
+      "deployBox": null,
+      "deployBoxStyled": null,
+      "epicAction": "",
+      "epicActionStyled": "",
+      "linkHtml": "\u003Ca href=\"/cards?cid=7499995534\" class=\"card-tooltip\" data-card=\"7499995534\"\u003EDarth Tyranus\u003C/a\u003E",
+      "cardId": null,
+      "createdAt": "2025-04-29T21:55:26.120Z",
+      "updatedAt": "2025-05-05T14:55:03.469Z",
+      "publishedAt": "2025-05-05T14:55:02.123Z",
+      "locale": "it",
+      "hyperspace": false,
+      "unique": true,
+      "showcase": false,
+      "cardUid": "7499995534",
+      "rules": null,
+      "rulesStyled": null,
+      "serialCode": "p25050118",
+      "upgradeHp": null,
+      "upgradePower": null,
+      "artFront": {
+        "data": {
+          "id": 36535,
+          "attributes": {
+            "name": "P25051118EN_Darth_Tyranus.png",
+            "alternativeText": null,
+            "caption": null,
+            "width": 300,
+            "height": 419,
+            "formats": {
+              "card": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//card_P25051118_EN_Darth_Tyranus_25c83a60d6.png",
+                "hash": "card_P25051118_EN_Darth_Tyranus_25c83a60d6",
+                "mime": "image/png",
+                "name": "card_P25051118EN_Darth_Tyranus.png",
+                "path": null,
+                "size": 210.31,
+                "width": 286,
+                "height": 400
+              },
+              "xsmall": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//xsmall_P25051118_EN_Darth_Tyranus_25c83a60d6.png",
+                "hash": "xsmall_P25051118_EN_Darth_Tyranus_25c83a60d6",
+                "mime": "image/png",
+                "name": "xsmall_P25051118EN_Darth_Tyranus.png",
+                "path": null,
+                "size": 130.82,
+                "width": 215,
+                "height": 300
+              },
+              "xxsmall": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//xxsmall_P25051118_EN_Darth_Tyranus_25c83a60d6.png",
+                "hash": "xxsmall_P25051118_EN_Darth_Tyranus_25c83a60d6",
+                "mime": "image/png",
+                "name": "xxsmall_P25051118EN_Darth_Tyranus.png",
+                "path": null,
+                "size": 65.07,
+                "width": 143,
+                "height": 200
+              },
+              "xxxsmall": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//xxxsmall_P25051118_EN_Darth_Tyranus_25c83a60d6.png",
+                "hash": "xxxsmall_P25051118_EN_Darth_Tyranus_25c83a60d6",
+                "mime": "image/png",
+                "name": "xxxsmall_P25051118EN_Darth_Tyranus.png",
+                "path": null,
+                "size": 39.44,
+                "width": 107,
+                "height": 150
+              },
+              "thumbnail": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//thumbnail_P25051118_EN_Darth_Tyranus_25c83a60d6.png",
+                "hash": "thumbnail_P25051118_EN_Darth_Tyranus_25c83a60d6",
+                "mime": "image/png",
+                "name": "thumbnail_P25051118EN_Darth_Tyranus.png",
+                "path": null,
+                "size": 95.54,
+                "width": 179,
+                "height": 250
+              }
+            },
+            "hash": "P25051118_EN_Darth_Tyranus_25c83a60d6",
+            "ext": ".png",
+            "mime": "image/png",
+            "size": 60.93,
+            "url": "https://cdn.starwarsunlimited.com//P25051118_EN_Darth_Tyranus_25c83a60d6.png",
+            "previewUrl": null,
+            "provider": "aws-s3",
+            "provider_metadata": null,
+            "createdAt": "2025-04-29T15:06:57.079Z",
+            "updatedAt": "2025-04-29T15:06:57.079Z"
+          }
+        }
+      },
+      "artBack": {
+        "data": null
+      },
+      "artThumbnail": {
+        "data": {
+          "id": 36534,
+          "attributes": {
+            "name": "P25051118EN_Darth_Tyrannus_Thumbnail.png",
+            "alternativeText": null,
+            "caption": null,
+            "width": 300,
+            "height": 100,
+            "formats": {
+              "xxsmall": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//xxsmall_P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746.png",
+                "hash": "xxsmall_P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746",
+                "mime": "image/png",
+                "name": "xxsmall_P25051118EN_Darth_Tyrannus_Thumbnail.png",
+                "path": null,
+                "size": 29.48,
+                "width": 200,
+                "height": 67
+              },
+              "xxxsmall": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//xxxsmall_P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746.png",
+                "hash": "xxxsmall_P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746",
+                "mime": "image/png",
+                "name": "xxxsmall_P25051118EN_Darth_Tyrannus_Thumbnail.png",
+                "path": null,
+                "size": 17.8,
+                "width": 150,
+                "height": 50
+              },
+              "thumbnail": {
+                "ext": ".png",
+                "url": "https://cdn.starwarsunlimited.com//thumbnail_P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746.png",
+                "hash": "thumbnail_P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746",
+                "mime": "image/png",
+                "name": "thumbnail_P25051118EN_Darth_Tyrannus_Thumbnail.png",
+                "path": null,
+                "size": 42.28,
+                "width": 250,
+                "height": 83
+              }
+            },
+            "hash": "P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746",
+            "ext": ".png",
+            "mime": "image/png",
+            "size": 15.7,
+            "url": "https://cdn.starwarsunlimited.com//P25051118_EN_Darth_Tyrannus_Thumbnail_cb83454746.png",
+            "previewUrl": null,
+            "provider": "aws-s3",
+            "provider_metadata": null,
+            "createdAt": "2025-04-29T15:06:49.050Z",
+            "updatedAt": "2025-04-29T15:06:49.050Z"
+          }
+        }
+      },
+      "localizations": {
+        "data": [
+          {
+            "id": 38359,
+            "attributes": {
+              "title": "Darth Tyranus",
+              "subtitle": "Siervo de Sidious",
+              "cardNumber": 5,
+              "cardCount": 0,
+              "artist": "Johnny Morrow",
+              "artFrontHorizontal": false,
+              "artBackHorizontal": null,
+              "hasFoil": true,
+              "cost": 4,
+              "hp": 3,
+              "power": 4,
+              "text": "Escudado \nMientras la Fuerza te acompañe, esta unidad gana Emboscada .",
+              "textStyled": "\u003Cp\u003E\u003Cstrong\u003EEscudado\u003C/strong\u003E \u003C/p\u003E\u003Cp\u003EMientras la Fuerza te acompañe, esta unidad gana \u003Cstrong\u003EEmboscada\u003C/strong\u003E .\u003C/p\u003E",
+              "deployBox": null,
+              "deployBoxStyled": null,
+              "epicAction": "",
+              "epicActionStyled": "\u003Cp\u003E\u003C/p\u003E",
+              "linkHtml": "\u003Ca href=\"/cards?cid=7499995534\" class=\"card-tooltip\" data-card=\"7499995534\"\u003EDarth Tyranus\u003C/a\u003E",
+              "cardId": null,
+              "createdAt": "2025-04-29T21:55:28.619Z",
+              "updatedAt": "2025-05-05T14:55:04.308Z",
+              "publishedAt": "2025-05-05T14:54:54.413Z",
+              "locale": "es",
+              "hyperspace": false,
+              "unique": true,
+              "showcase": false,
+              "cardUid": "7499995534",
+              "rules": null,
+              "rulesStyled": null,
+              "serialCode": "p25050118",
+              "upgradeHp": null,
+              "upgradePower": null
+            }
+          },
+          {
+            "id": 38355,
+            "attributes": {
+              "title": "Darth Tyranus",
+              "subtitle": "Servant of Sidious",
+              "cardNumber": 5,
+              "cardCount": 0,
+              "artist": "Johnny Morrow",
+              "artFrontHorizontal": false,
+              "artBackHorizontal": null,
+              "hasFoil": true,
+              "cost": 4,
+              "hp": 3,
+              "power": 4,
+              "text": "Shielded \nWhile the Force is with you, this unit gains Ambush. ",
+              "textStyled": "\u003Cp\u003E\u003Cstrong\u003EShielded\u003C/strong\u003E\u003C/p\u003E\u003Cp\u003EWhile the Force is with you, this unit gains \u003Cstrong\u003EAmbush\u003C/strong\u003E.\u003C/p\u003E",
+              "deployBox": null,
+              "deployBoxStyled": "",
+              "epicAction": "",
+              "epicActionStyled": "",
+              "linkHtml": "\u003Ca href=\"/cards?cid=7499995534\" class=\"card-tooltip\" data-card=\"7499995534\"\u003EDarth Tyranus\u003C/a\u003E",
+              "cardId": null,
+              "createdAt": "2025-04-29T21:55:23.691Z",
+              "updatedAt": "2025-05-05T14:55:04.323Z",
+              "publishedAt": "2025-05-05T14:54:30.805Z",
+              "locale": "en",
+              "hyperspace": false,
+              "unique": true,
+              "showcase": false,
+              "cardUid": "7499995534",
+              "rules": null,
+              "rulesStyled": "",
+              "serialCode": "p25050118",
+              "upgradeHp": null,
+              "upgradePower": null
+            }
+          },
+          {
+            "id": 38358,
+            "attributes": {
+              "title": "Dark Tyranus",
+              "subtitle": "Serviteur De Sidious",
+              "cardNumber": 5,
+              "cardCount": 0,
+              "artist": "Johnny Morrow",
+              "artFrontHorizontal": false,
+              "artBackHorizontal": null,
+              "hasFoil": true,
+              "cost": 4,
+              "hp": 3,
+              "power": 4,
+              "text": "Protégée \nTant que la Force est avec vous, cette unité gagne Embuscade. ",
+              "textStyled": "\u003Cp\u003E\u003Cstrong\u003EProtégée\u003C/strong\u003E \u003C/p\u003E\u003Cp\u003ETant que la Force est avec vous, cette unité gagne \u003Cstrong\u003EEmbuscade\u003C/strong\u003E. \u003C/p\u003E",
+              "deployBox": null,
+              "deployBoxStyled": null,
+              "epicAction": "",
+              "epicActionStyled": "\u003Cp\u003E\u003C/p\u003E",
+              "linkHtml": "\u003Ca href=\"/cards?cid=7499995534\" class=\"card-tooltip\" data-card=\"7499995534\"\u003EDark Tyranus\u003C/a\u003E",
+              "cardId": null,
+              "createdAt": "2025-04-29T21:55:27.361Z",
+              "updatedAt": "2025-05-05T14:55:04.341Z",
+              "publishedAt": "2025-05-05T14:54:46.834Z",
+              "locale": "fr",
+              "hyperspace": false,
+              "unique": true,
+              "showcase": false,
+              "cardUid": "7499995534",
+              "rules": null,
+              "rulesStyled": null,
+              "serialCode": "p25050118",
+              "upgradeHp": null,
+              "upgradePower": null
+            }
+          },
+          {
+            "id": 38356,
+            "attributes": {
+              "title": "Darth Tyranus",
+              "subtitle": "Sidious' Diener",
+              "cardNumber": 5,
+              "cardCount": 0,
+              "artist": "Johnny Morrow",
+              "artFrontHorizontal": false,
+              "artBackHorizontal": null,
+              "hasFoil": true,
+              "cost": 4,
+              "hp": 3,
+              "power": 4,
+              "text": "Abgeschirmt (Wenn du diese Einheit spielst,\ngib ihr 1 Schild-Marker.)\nSolange die Macht mit dir ist, erhält diese Einheit Hinterhalt .",
+              "textStyled": "\u003Cp\u003E\u003Cstrong\u003EAbgeschirmt\u003C/strong\u003E \u003Ci\u003E\u003C/i\u003E\u003C/p\u003E\u003Cp\u003ESolange die Macht mit dir ist, erhält diese Einheit \u003Cstrong\u003EHinterhalt\u003C/strong\u003E \u003Ci\u003E.\u003C/i\u003E\u003C/p\u003E",
+              "deployBox": null,
+              "deployBoxStyled": null,
+              "epicAction": "",
+              "epicActionStyled": "\u003Cp\u003E\u003C/p\u003E",
+              "linkHtml": "\u003Ca href=\"/cards?cid=7499995534\" class=\"card-tooltip\" data-card=\"7499995534\"\u003EDarth Tyranus\u003C/a\u003E",
+              "cardId": null,
+              "createdAt": "2025-04-29T21:55:24.949Z",
+              "updatedAt": "2025-05-05T14:55:04.361Z",
+              "publishedAt": "2025-05-05T14:54:39.354Z",
+              "locale": "de",
+              "hyperspace": false,
+              "unique": true,
+              "showcase": false,
+              "cardUid": "7499995534",
+              "rules": null,
+              "rulesStyled": null,
+              "serialCode": "p25050118",
+              "upgradeHp": null,
+              "upgradePower": null
+            }
+          }
+        ]
+      },
+      "aspects": {
+        "data": [
+          {
+            "id": 31,
+            "attributes": {
+              "name": "Malvagità",
+              "description": "\u003Cp\u003ECombatti per il potere supremo con le carte che presentano gli antagonisti del franchise di Star Wars. Quest'aspetto è perfetto per i giocatori che vogliono comandare enormi armate o esercitare potenti effetti distruttivi e, come Eroismo, è spesso abbinato a un altro aspetto sulle carte.\u003C/p\u003E",
+              "color": "#000000",
+              "createdAt": "2023-08-10T21:56:51.676Z",
+              "updatedAt": "2024-07-15T21:40:49.728Z",
+              "publishedAt": "2024-01-02T18:25:57.514Z",
+              "locale": "it",
+              "englishName": "Villainy",
+              "sortValue": 20
+            }
+          }
+        ]
+      },
+      "aspectDuplicates": {
+        "data": []
+      },
+      "type": {
+        "data": {
+          "id": 31,
+          "attributes": {
+            "name": "Unità",
+            "description": "",
+            "value": "Unit",
+            "createdAt": "2023-08-15T18:04:42.376Z",
+            "updatedAt": "2024-04-25T13:52:29.904Z",
+            "publishedAt": "2024-01-04T21:33:34.336Z",
+            "locale": "it",
+            "sortValue": 3
+          }
+        }
+      },
+      "type2": {
+        "data": null
+      },
+      "traits": {
+        "data": [
+          {
+            "id": 36,
+            "attributes": {
+              "name": "Forza",
+              "description": "",
+              "createdAt": "2023-08-15T14:41:17.929Z",
+              "updatedAt": "2024-01-04T21:15:25.188Z",
+              "publishedAt": "2024-01-04T21:15:25.185Z",
+              "locale": "it"
+            }
+          },
+          {
+            "id": 207,
+            "attributes": {
+              "name": "Separatista",
+              "description": "",
+              "createdAt": "2023-11-21T17:07:02.713Z",
+              "updatedAt": "2024-01-04T21:23:06.216Z",
+              "publishedAt": "2024-01-04T21:23:06.213Z",
+              "locale": "it"
+            }
+          },
+          {
+            "id": 46,
+            "attributes": {
+              "name": "Sith",
+              "description": "",
+              "createdAt": "2023-08-15T14:42:25.215Z",
+              "updatedAt": "2024-01-04T21:23:28.026Z",
+              "publishedAt": "2024-01-04T21:23:28.023Z",
+              "locale": "it"
+            }
+          }
+        ]
+      },
+      "arenas": {
+        "data": [
+          {
+            "id": 6,
+            "attributes": {
+              "name": "Terrestre",
+              "description": null,
+              "createdAt": "2023-08-15T14:32:30.531Z",
+              "updatedAt": "2024-01-04T16:49:37.471Z",
+              "publishedAt": "2023-08-18T21:37:52.217Z",
+              "locale": "it"
+            }
+          }
+        ]
+      },
+      "keywords": {
+        "data": [
+          {
+            "id": 26,
+            "attributes": {
+              "name": "Schermata",
+              "description": "",
+              "createdAt": "2023-11-28T17:08:07.061Z",
+              "updatedAt": "2024-01-04T19:06:11.529Z",
+              "publishedAt": "2023-11-28T17:08:08.055Z",
+              "locale": "it"
+            }
+          },
+          {
+            "id": 16,
+            "attributes": {
+              "name": "Imboscata",
+              "description": "",
+              "createdAt": "2023-11-28T17:05:51.882Z",
+              "updatedAt": "2024-01-04T17:22:17.954Z",
+              "publishedAt": "2023-11-28T17:05:52.805Z",
+              "locale": "it"
+            }
+          }
+        ]
+      },
+      "rarity": {
+        "data": {
+          "id": 26,
+          "attributes": {
+            "name": "Speciale",
+            "character": "S",
+            "color": "#000000",
+            "createdAt": "2023-08-14T21:35:04.452Z",
+            "updatedAt": "2024-04-25T14:06:09.033Z",
+            "publishedAt": "2024-01-04T16:42:09.712Z",
+            "locale": "it",
+            "englishName": "Special",
+            "sortValue": 1
+          }
+        }
+      },
+      "expansion": {
+        "data": {
+          "id": 42,
+          "attributes": {
+            "name": "2025 Promo",
+            "description": "",
+            "code": "P25",
+            "createdAt": "2025-02-27T21:29:10.003Z",
+            "updatedAt": "2025-03-26T15:00:56.358Z",
+            "publishedAt": "2025-03-26T15:00:56.352Z",
+            "locale": "it",
+            "sortValue": 47,
+            "leaderboardStartDate": null,
+            "leaderboardEndDate": null
+          }
+        }
+      },
+      "variantTypes": {
+        "data": [
+          {
+            "id": 15,
+            "attributes": {
+              "name": "Event Exclusive",
+              "description": null,
+              "createdAt": "2024-01-12T17:34:46.034Z",
+              "updatedAt": "2024-07-15T15:09:19.612Z",
+              "publishedAt": "2024-01-12T22:45:29.398Z",
+              "locale": "it",
+              "variantId": "05",
+              "foil": null,
+              "sortValue": 50,
+              "icon": {
+                "data": {
+                  "id": 8704,
+                  "attributes": {
+                    "name": "icon_eventexclusive.png",
+                    "alternativeText": null,
+                    "caption": null,
+                    "width": 144,
+                    "height": 144,
+                    "formats": null,
+                    "hash": "icon_eventexclusive_d985cde2eb",
+                    "ext": ".png",
+                    "mime": "image/png",
+                    "size": 0.48,
+                    "url": "https://cdn.starwarsunlimited.com//icon_eventexclusive_d985cde2eb.png",
+                    "previewUrl": null,
+                    "provider": "aws-s3",
+                    "provider_metadata": null,
+                    "createdAt": "2024-07-15T14:40:17.088Z",
+                    "updatedAt": "2024-07-15T14:40:17.088Z"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "validationId": "4347039495"
+    }
+  },
+  "meta": {
+
+  }
+}

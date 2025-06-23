@@ -70,20 +70,31 @@ class SearchFilter extends Component
     ];
 
     /**
-     * Initialize the component with mode
-     * Inizializza il componente con modalità
+     * Initialize the component with mode and optional initial filters
+     * Inizializza il componente con modalità e filtri iniziali opzionali
      *
      * @param string $mode Component mode: 'page', 'popup' or 'collezione'
+     * @param string|null $initialNome Initial name filter value from URL parameter
      * @return void
      */
-    public function mount($mode = 'page')
+    public function mount($mode = 'page', $initialNome = null)
     {
         $this->mode = $mode;
         $this->loadFilterOptions();
 
-        // Carica automaticamente tutte le carte per tutte le modalità
-        // Automatically load all cards for all modes
-        $this->loadAllCards();
+        // Set initial filter values if provided
+        // Imposta i valori iniziali dei filtri se forniti
+        if (!empty($initialNome)) {
+            $this->nome = $initialNome;
+        }
+
+        // Apply filters if any initial values are set, otherwise load all cards
+        // Applica i filtri se sono impostati valori iniziali, altrimenti carica tutte le carte
+        if (!empty($this->nome)) {
+            $this->applyFilters();
+        } else {
+            $this->loadAllCards();
+        }
     }
 
     /**

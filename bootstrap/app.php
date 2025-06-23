@@ -3,6 +3,7 @@
 use App\Events\MessageCreated;
 use App\Mail\ErrorNotificationEmail;
 use App\Models\User;
+use App\Models\SystemError;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +23,27 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->reportable(function (Throwable $e) {
+            // Save error to database for admin management
+            // Salva l'errore nel database per la gestione admin
+            try {
+                SystemError::create([
+                    'exception_class' => get_class($e),
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'request_url' => request()->fullUrl() ?? null,
+                    'request_method' => request()->method() ?? null,
+                    'user_agent' => request()->userAgent() ?? null,
+                    'user_id' => Auth::id(),
+                    'status' => 'new',
+                ]);
+            } catch (\Exception $dbException) {
+                // If database save fails, log it but don't break the error handling
+                // Se il salvataggio nel database fallisce, registralo ma non interrompere la gestione errori
+                \Log::error("Failed to save error to database: " . $dbException->getMessage());
+            }
+
             // Invia messaggio Telegram
             MessageCreated::dispatch("Errore: " . $e->getMessage());
 

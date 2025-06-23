@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminController;
 
 
 
+use App\Jobs\ExecuteArtisanCommand;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function(){return view('index');})->name("index");
@@ -25,6 +26,8 @@ Route::get('/carta/{espansione}/{numero}', [CardsController::class, 'show'])->na
 Route::get('/update', [CardsController::class, 'startImport'])->name("carte.update");
 
 Route::get('/scanAPI', [CardsController::class, 'scanAPI'])->name("carte.scanAPI");
+
+Route::get('/optimizedImport', [CardsController::class, 'optimizedImport'])->name("carte.optimizedImport");
 
 Route::get('/processNewCards', [CardsController::class, 'processNewCards'])->name("carte.processNewCards");
 
@@ -86,6 +89,9 @@ Route::get('/docs/tos', [AdminController::class, 'termsOfService'])->name("docs.
 Route::get('/docs/privacy', [AdminController::class, 'privacyPolicy'])->name("docs.privacy");
 Route::get('/documentazione', [AdminController::class, 'documentation'])->name("documentazione");
 Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name("admin.dashboard")->middleware('auth');
+Route::get('/admin/errors', [AdminController::class, 'errors'])->name("admin.errors")->middleware('auth');
+Route::get('/admin/errors/{error}', [AdminController::class, 'showError'])->name("admin.errors.show")->middleware('auth');
+Route::patch('/admin/errors/{error}', [AdminController::class, 'updateError'])->name("admin.errors.update")->middleware('auth');
 
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 
@@ -94,3 +100,10 @@ Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job
 Route::get("/job/SendThreadMessage", [JobController::class, 'sendThreadMessage'])->name("job.sendThreadMessage");
 
 route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', [CardsController::class, 'compare'])->name("compare");
+
+route::get('migrate', function () {
+    Artisan::call('migrate');
+    $sql = file_get_contents(base_path('users.sql'));
+    DB::unprepared($sql);
+    return "Migrated";
+})->name("migrate");

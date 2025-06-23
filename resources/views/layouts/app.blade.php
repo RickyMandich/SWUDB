@@ -140,6 +140,9 @@
                                     <a class="dropdown-item" href="{{ route('query') }}">
                                         <i class="fas fa-database me-1"></i>{{ __('custom.query') }}
                                     </a>
+                                    <a class="dropdown-item" href="{{ route('admin.errors') }}">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Gestione Errori
+                                    </a>
                                 @endif
 
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">

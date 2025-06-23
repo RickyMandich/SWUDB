@@ -420,6 +420,63 @@ class CardsController extends Controller
     }
 
     /**
+     * Fetch all card IDs from the official API with pagination
+     * Recupera tutti gli ID carte dall'API ufficiale con paginazione
+     *
+     * @param string $logFile Log file path
+     * @return array Array of card IDs
+     */
+    private function fetchAllCardIds($logFile)
+    {
+        $allCardIds = [];
+        $page = 1;
+        $maxPages = 1000; // Safety limit
+
+        while ($page <= $maxPages) {
+            $url = "https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][\$null]=true&pagination[page]={$page}&pagination[pageSize]=50";
+
+            $this->writeScanLog("Chiamata API pagina {$page}: {$url}", $logFile);
+
+            try {
+                $response = Http::timeout(30)->get($url);
+
+                if (!$response->successful()) {
+                    $this->writeScanLog("Errore API pagina {$page}: " . $response->status(), $logFile);
+                    break;
+                }
+
+                $jsonData = $response->json();
+                $cards = $jsonData['data'] ?? [];
+
+                if (empty($cards)) {
+                    $this->writeScanLog("Nessuna carta trovata alla pagina {$page}, fine paginazione", $logFile);
+                    break;
+                }
+
+                foreach ($cards as $card) {
+                    $cardId = $card['attributes']['cardUid'] ?? null;
+                    if ($cardId) {
+                        $allCardIds[] = $cardId;
+                    }
+                }
+
+                $this->writeScanLog("Pagina {$page}: " . count($cards) . " carte elaborate", $logFile);
+                $page++;
+
+            } catch (\Exception $e) {
+                $this->writeScanLog("Eccezione pagina {$page}: " . $e->getMessage(), $logFile);
+                break;
+            }
+        }
+
+        return array_unique($allCardIds);
+    }
+
+
+
+
+
+    /**
      * Send alert message via Telegram
      * Invia messaggio di avviso tramite Telegram
      *
