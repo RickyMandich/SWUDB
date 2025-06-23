@@ -14,15 +14,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('compositions', function (Blueprint $table) {
-            $table->string('espansione', 10);
-            $table->integer('numero');
-            $table->integer('idMazzo');
-            $table->foreign('idMazzo')->references('id')->on('decks')->onDelete('cascade');
-            $table->boolean('foil')->default(0);
-            $table->integer('copie')->default(1);
-            $table->string('id', 20)->primary();
-        });
+        if (!Schema::hasTable('compositions')) {
+            Schema::create('compositions', function (Blueprint $table) {
+                $table->string('espansione', 10);
+                $table->integer('numero');
+                $table->integer('idMazzo');
+                $table->foreign('idMazzo')->references('id')->on('decks')->onDelete('cascade');
+                $table->boolean('foil')->default(0);
+                $table->integer('copie')->default(1);
+                $table->string('id', 20)->primary();
+            });
+        }
     }
 
     /**

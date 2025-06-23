@@ -14,14 +14,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('decks', function (Blueprint $table) {
-            $table->integer('id', true);
-            $table->string('nome', 500);
-            $table->boolean('public')->default(0);
-            $table->integer('codUtente');
-            $table->integer('versione')->default(1);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('decks')) {
+            Schema::create('decks', function (Blueprint $table) {
+                $table->integer('id', true);
+                $table->string('nome', 500);
+                $table->boolean('public')->default(0);
+                $table->integer('codUtente');
+                $table->integer('versione')->default(1);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
