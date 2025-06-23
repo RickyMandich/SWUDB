@@ -67,7 +67,7 @@
                     <div class="mt-3">
                         <strong>Parametri:</strong>
                         <div class="overflow-auto mt-2" style="max-height: 200px;">
-                            <pre class="bg-light p-2">{{ json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                            <pre class="p-2">{{ json_encode($request->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                         </div>
                     </div>
                     @endif
@@ -81,7 +81,7 @@
                 </div>
                 <div class="card-body">
                     <div class="overflow-auto" style="max-height: 300px;">
-                        <pre class="bg-light p-2 small">{{ json_encode($request->headers->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                        <pre class="p-2 small">{{ json_encode($request->headers->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                     </div>
                 </div>
             </div>
