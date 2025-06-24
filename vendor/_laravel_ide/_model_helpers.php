@@ -655,8 +655,8 @@ namespace App\Models {
     /**
      * App\Models\Deck
      *
-     * @property \Illuminate\Support\Carbon|null $updated_at
-     * @property \Illuminate\Support\Carbon|null $created_at
+     * @property string|null $updated_at
+     * @property string|null $created_at
      * @property integer $versione
      * @property integer $codUtente
      * @property boolean $public

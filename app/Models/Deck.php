@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Deck extends Model{
     protected $table = 'decks';
     protected $primaryKey = 'id';
-    public $timestamps = true;
+    public $timestamps = false;
     protected $fillable = [
         'id',
         'nome',
