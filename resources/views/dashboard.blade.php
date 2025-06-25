@@ -70,7 +70,7 @@
                     <div class="card-header">{{ 'README.md' }}</div>
                     <div class="card-body">
                         <div class="markdown-content">
-                            {!! Illuminate\Support\Str::markdown(file_get_contents(base_path('README.md'))) !!}
+                            {!! Illuminate\Support\Str::markdown(file_get_contents(base_path('todo list.md'))) !!}
                         </div>
                     </div>
                 </div>
