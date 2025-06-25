@@ -38,6 +38,7 @@ class CardsController extends Controller
         $title = "Carte";
         return view('carte.index', [
             "nome" => $get["nome"],
+            "initialNome" => $get["nome"],
             "title" => $title,
         ]);
     }
