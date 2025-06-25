@@ -109,5 +109,5 @@ route::get('migrate', function () {
 })->name("migrate");
 
 route::get('test', function () {
-    return file_get_contents(base_path('todo list.md'));
+    return file_get_contents('todo list.md');
 })->name("test");
