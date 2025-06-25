@@ -82,21 +82,86 @@ Il sistema di ricerca utilizza un componente Livewire avanzato (`SearchFilter`) 
 
 ### 4. Sistema di Aggiornamento
 
-#### Webscraping Automatizzato
-- **Import batch** da fonte esterna (attualmente https://github.com/RickyMandich/WebScrapingStarWars.git)
-- **Progetto di integrazione** del webscraping direttamente nel sito
-- **Processing asincrono** con job Laravel
-- **Notifiche email** per nuove carte
-- **Gestione errori** e retry automatici
+#### Integrazione API Ufficiale
+- **API diretta**: Connessione all'API ufficiale di Star Wars Unlimited
+  - Endpoint carte singole: `https://admin.starwarsunlimited.com/api/card/{cid}?locale=it`
+  - Endpoint lista carte: `https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&pagination[page]={page}&pagination[pageSize]=10`
+- **Scansione intelligente**: Rilevamento automatico nuove carte
+- **Validazione dati**: Controllo integrità prima dell'inserimento
+- **Gestione duplicati**: Prevenzione inserimenti multipli con controllo CID
+
+#### Sistema di Notifiche Avanzato
+- **Telegram integrato**: Messaggi di stato in tempo reale con aggiornamento progressivo
+- **Email automatiche**:
+  - Notifiche a tutti gli utenti per nuove carte aggiunte
+  - Notifiche agli admin per carte con errori o già presenti
+  - Template dedicati con snippet carte e link diretti
+- **Logging dettagliato**: File di log timestampati (formato: `scansione ANNO MESE GIORNO ORE:MINUTI.log`)
+
+#### Gestione Errori Avanzata
+- **Pagina admin errori**: Interfaccia dedicata per visualizzare e gestire errori
+- **Categorizzazione errori**: Classificazione per tipo e gravità
+- **Risoluzione tracking**: Possibilità di segnare errori come risolti
+- **Notifiche multiple**: Telegram, email e logging per ogni errore
+
+#### Performance e Affidabilità
+- **Job asincroni**: Operazioni lunghe gestite in background con JobController
+- **Thread management**: Gestione processi paralleli per evitare timeout
+- **Checkpoint system**: Ripristino automatico in caso di interruzioni
+- **Rate limiting**: Rispetto limiti API ufficiale
 
 #### Processo di Aggiornamento
-1. Controllo nuove carte da API esterna
-2. Confronto con database locale
-3. Import batch con processing parallelo
-4. Invio notifiche agli utenti registrati
-5. Aggiornamento cache e indici
+1. **Scansione API**: Controllo nuove carte dall'API ufficiale
+2. **Validazione**: Verifica integrità dati e controllo duplicati
+3. **Processing asincrono**: Import batch con gestione parallela
+4. **Notifiche**: Invio messaggi Telegram e email agli utenti
+5. **Logging**: Registrazione dettagliata di tutte le operazioni
+6. **Cleanup**: Aggiornamento cache e pulizia file temporanei
 
-### 5. API RESTful
+### 5. Funzionalità Avanzate Mazzi
+
+#### Export/Import Mazzi
+- **Esportazione multipla**: Formati TXT e JSON supportati
+- **Formato ufficiale**: Compatibile con tutti i programmi Star Wars Unlimited
+- **Importazione da file**: Upload di file locali TXT/JSON
+- **Importazione da URL**: Import diretto da link esterni o altri siti SWUDB
+- **Validazione automatica**: Controllo formato e carte esistenti durante l'import
+
+#### Sistema di Versionamento
+- **Cronologia completa**: Tracciamento di tutte le modifiche al mazzo
+- **Versioni automatiche**: Salvataggio automatico ad ogni modifica significativa
+- **Ripristino versioni**: Possibilità di tornare a qualsiasi versione precedente
+- **Confronto versioni**: Visualizzazione differenze tra versioni (futuro)
+- **Metadati versioni**: Timestamp e descrizione modifiche
+
+#### Gestione Avanzata
+- **Toggle visibilità**: Cambio pubblico/privato con un click
+- **Rinomina rapida**: Modifica nome direttamente dalla lista mazzi
+- **Eliminazione sicura**: Conferma prima della cancellazione definitiva
+- **Link permanenti**: URL diretti per condivisione mazzi pubblici
+
+#### Statistiche in Tempo Reale
+- **Aggiornamento automatico**: Statistiche che si aggiornano durante la modifica
+- **Grafici interattivi**: Visualizzazioni Chart.js per analisi avanzate
+- **Curve di costo**: Distribuzione carte per costo con grafici a barre
+- **Analisi aspetti**: Distribuzione con colori reali degli aspetti Star Wars
+- **Tratti separati**: Analisi tratti divisi e completi in tabelle separate
+- **Esclusione automatica**: Basi e leader esclusi dai calcoli statistici
+
+### 6. Gestione Utenti e Admin
+
+#### Pannello Amministrazione
+- **Gestione utenti**: Visualizzazione, modifica e eliminazione utenti
+- **Controlli admin**: Promozione/retrocessione privilegi amministratore
+- **Pagina errori**: Interfaccia dedicata per gestione errori di sistema
+- **Query database**: Accesso diretto al database per operazioni avanzate
+
+#### Sistema di Notifiche
+- **Email automatiche**: Template dedicati per diverse tipologie di notifiche
+- **Telegram integrato**: Bot per notifiche in tempo reale agli admin
+- **Logging avanzato**: File di log dettagliati per tutte le operazioni
+
+### 7. API RESTful
 
 #### Endpoints Disponibili
 
@@ -203,7 +268,11 @@ Il progetto include diversi script bash per il deployment e la gestione del codi
 # Commit, push su GitHub e upload/cancellazione di tutti i file modificati/eliminati sul server
 bash/all.sh
 
-# Solo commit e push su GitHub
+# Opzioni di versionamento per all.sh:
+bash/all.sh -v    # Incrementa APP_VERSION_PRIMARY e azzera APP_VERSION_TERTIARY
+bash/all.sh -p    # Incrementa APP_VERSION_SECONDARY e azzera APP_VERSION_TERTIARY
+
+# Solo commit e push su GitHub (include APP_VERSION nel messaggio di commit)
 bash/cmt.sh
 
 # Upload di tutti i file della cartella corrente sul server
@@ -215,6 +284,15 @@ bash/onlyFtpOfLastCmt.sh
 # Pull da GitHub e mostra il nome dell'ultimo commit
 bash/pull.sh
 ```
+
+#### Sistema di Versionamento Automatico
+
+Gli script di deployment includono un sistema di versionamento automatico:
+
+- **APP_VERSION_PRIMARY**: Versione principale (incrementata con `-v`)
+- **APP_VERSION_SECONDARY**: Versione secondaria (incrementata con `-p`)
+- **APP_VERSION_TERTIARY**: Versione terziaria (azzerata con `-v` o `-p`)
+- **Commit automatici**: Il messaggio di commit include sempre la versione corrente
 
 ### Configurazione FTP
 
@@ -385,6 +463,59 @@ Popup per aggiunta carte ai mazzi con:
 - Headers di sicurezza HTTP
 - Validazione file upload
 - Logging errori e accessi
+
+## Implementazioni Tecniche Avanzate
+
+### Componente SearchFilter
+
+Il componente `SearchFilter` rappresenta una delle implementazioni più avanzate del progetto:
+
+#### Architettura
+- **Livewire 3**: Utilizzo delle funzionalità più moderne per reattività
+- **Caching intelligente**: Cache delle opzioni filtro per 1 ora
+- **Debounce ottimizzato**: 300ms per input testuali, immediato per select
+- **Event-driven**: Comunicazione tramite eventi Livewire
+
+#### Caratteristiche Tecniche
+```php
+// Gestione dinamica valori massimi
+public function loadFilterOptions() {
+    $this->maxCostoDb = Cache::remember('cards_max_costo', 3600,
+        fn() => Card::max('costo') ?? 999);
+}
+
+// Filtri con gestione null values
+if ($this->vitaMin !== null || ($this->vitaMax !== null && $this->vitaMax < $this->maxVitaDb)) {
+    $query->where(function($q) use ($minVita, $maxVita) {
+        $q->whereNull('vita')->orWhereBetween('vita', [$minVita, $maxVita]);
+    });
+}
+```
+
+#### Integrazione URL Parameters
+- **GET parameter support**: URL con `?nome=` pre-popola automaticamente il filtro
+- **Livewire mount**: Gestione parametri iniziali nel metodo mount
+- **Reattività mantenuta**: Il filtro rimane reattivo anche con valori pre-popolati
+
+### Sistema di Import/Export Mazzi
+
+#### Formati Supportati
+- **TXT**: Formato standard Star Wars Unlimited compatibile con tutti i programmi
+- **JSON**: Formato strutturato per API e backup
+- **URL Import**: Parsing automatico da link esterni e altri siti SWUDB
+
+#### Validazione Import
+- **Controllo formato**: Validazione struttura file prima del processing
+- **Verifica carte**: Controllo esistenza carte nel database
+- **Gestione errori**: Report dettagliato di carte non trovate o errori formato
+
+### Sistema API Ufficiale
+
+#### Integrazione Diretta
+- **Endpoint ufficiali**: Connessione diretta all'API di Star Wars Unlimited
+- **Paginazione automatica**: Gestione automatica delle pagine API
+- **Rate limiting**: Rispetto dei limiti di richiesta dell'API ufficiale
+- **Retry logic**: Gestione automatica di errori temporanei
 
 ## Performance
 
