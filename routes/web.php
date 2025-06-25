@@ -107,3 +107,7 @@ route::get('migrate', function () {
     DB::unprepared($sql);
     return "Migrated";
 })->name("migrate");
+
+route::get('test', function () {
+    return base_path('todo list.md');
+})->name("test");
