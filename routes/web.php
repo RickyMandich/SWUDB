@@ -92,6 +92,7 @@ Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name("adm
 Route::get('/admin/errors', [AdminController::class, 'errors'])->name("admin.errors")->middleware('auth');
 Route::get('/admin/errors/{error}', [AdminController::class, 'showError'])->name("admin.errors.show")->middleware('auth');
 Route::patch('/admin/errors/{error}', [AdminController::class, 'updateError'])->name("admin.errors.update")->middleware('auth');
+Route::get('/admin/errors/quick-action/{error}/{action}', [AdminController::class, 'quickActionError'])->name("admin.errors.quick-action")->middleware('auth');
 
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 

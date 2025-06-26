@@ -25,8 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->reportable(function (Throwable $e) {
             // Save error to database for admin management
             // Salva l'errore nel database per la gestione admin
+            $systemError = null;
             try {
-                SystemError::create([
+                $systemError = SystemError::create([
                     'exception_class' => get_class($e),
                     'message' => $e->getMessage(),
                     'file' => $e->getFile(),
@@ -57,7 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
                     foreach ($admins as $admin) {
                         Mail::to($admin->email)->send(
-                            new ErrorNotificationEmail($e, $requestUrl, $requestMethod, $userAgent)
+                            new ErrorNotificationEmail($e, $requestUrl, $requestMethod, $userAgent, $systemError)
                         );
                     }
                 }

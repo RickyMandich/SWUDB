@@ -50,6 +50,7 @@
 - ~~creare un pagina admin "errori" che mostra tutti gli errori che si sono verificati e che permette di segnarli come completati, devono venire salvati quando si creano (oltre alla già presente gestione con visualizzazione dettagliata per gli admin e notifica tramite telegram e tramite mail), visto che stiamo creando una nuova pagina bisogna anche aggiungere il relativo pulsante (direi che basta nel pannello admin), decidi tu in base a cosa ti sembra più opportuno se creare una nuova entità nel DB o se gestirlo tramite file json~~
 - aggiornare la documentazione
 - generazione di una guida avanzata e comprensione completa del progetto
+- aggiungere i pulsanti "segna come ignorato" e "segna come risolto" nell'elenco degli errori e nella mail di comunicazione, nella mail metti anche il link all'errore
 
 
 ## Funzionalità Future

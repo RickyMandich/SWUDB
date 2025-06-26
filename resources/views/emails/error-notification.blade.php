@@ -40,6 +40,31 @@
         </ul>
     </div>
 
+    @if($systemError)
+    <div style="background-color: #e7f3ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center;">
+        <h3 style="color: #0056b3; margin-top: 0;">🔧 Azioni Rapide</h3>
+        <p style="margin-bottom: 15px;">Gestisci questo errore direttamente:</p>
+
+        <div style="margin-bottom: 15px;">
+            <a href="{{ route('admin.errors.show', $systemError) }}"
+               style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; margin: 0 5px;">
+                👁️ Visualizza Dettagli
+            </a>
+        </div>
+
+        <div>
+            <a href="{{ url('/admin/errors/quick-action/' . $systemError->id . '/resolved') }}"
+               style="display: inline-block; padding: 8px 16px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 0 5px; font-size: 14px;">
+                ✅ Segna come Risolto
+            </a>
+            <a href="{{ url('/admin/errors/quick-action/' . $systemError->id . '/ignored') }}"
+               style="display: inline-block; padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; margin: 0 5px; font-size: 14px;">
+                ❌ Segna come Ignorato
+            </a>
+        </div>
+    </div>
+    @endif
+
     <hr style="border: none; border-top: 1px solid #dee2e6; margin: 20px 0;">
 
     <p style="font-size: 14px; color: #6c757d; margin-bottom: 0;">

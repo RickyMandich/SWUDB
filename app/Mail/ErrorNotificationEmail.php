@@ -29,6 +29,7 @@ class ErrorNotificationEmail extends Mailable
     public $requestMethod;
     public $userAgent;
     public $timestamp;
+    public $systemError;
 
     /**
      * Create a new error notification email instance
@@ -38,8 +39,9 @@ class ErrorNotificationEmail extends Mailable
      * @param string|null $requestUrl The URL where the error occurred
      * @param string|null $requestMethod The HTTP method used
      * @param string|null $userAgent The user agent string
+     * @param \App\Models\SystemError|null $systemError The saved system error record
      */
-    public function __construct(Throwable $exception, ?string $requestUrl = null, ?string $requestMethod = null, ?string $userAgent = null)
+    public function __construct(Throwable $exception, ?string $requestUrl = null, ?string $requestMethod = null, ?string $userAgent = null, $systemError = null)
     {
         $this->exception = $exception;
         $this->errorMessage = $exception->getMessage();
@@ -49,6 +51,7 @@ class ErrorNotificationEmail extends Mailable
         $this->requestMethod = $requestMethod;
         $this->userAgent = $userAgent;
         $this->timestamp = now()->format('d/m/Y H:i:s');
+        $this->systemError = $systemError;
     }
 
     /**
@@ -83,6 +86,7 @@ class ErrorNotificationEmail extends Mailable
                 'userAgent' => $this->userAgent,
                 'timestamp' => $this->timestamp,
                 'exceptionClass' => get_class($this->exception),
+                'systemError' => $this->systemError,
             ]
         );
     }

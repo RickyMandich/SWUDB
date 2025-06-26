@@ -142,10 +142,41 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <a href="{{ route('admin.errors.show', $error) }}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye me-1"></i>Dettagli
-                                                </a>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ route('admin.errors.show', $error) }}"
+                                                       class="btn btn-sm btn-outline-primary"
+                                                       title="Visualizza dettagli">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+
+                                                    @if($error->status !== 'resolved')
+                                                        <form method="POST" action="{{ route('admin.errors.update', $error) }}" class="d-inline">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <input type="hidden" name="status" value="resolved">
+                                                            <button type="submit"
+                                                                    class="btn btn-sm btn-outline-success"
+                                                                    title="Segna come risolto"
+                                                                    onclick="return confirm('Sei sicuro di voler segnare questo errore come risolto?')">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+
+                                                    @if($error->status !== 'ignored')
+                                                        <form method="POST" action="{{ route('admin.errors.update', $error) }}" class="d-inline">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <input type="hidden" name="status" value="ignored">
+                                                            <button type="submit"
+                                                                    class="btn btn-sm btn-outline-secondary"
+                                                                    title="Segna come ignorato"
+                                                                    onclick="return confirm('Sei sicuro di voler segnare questo errore come ignorato?')">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach

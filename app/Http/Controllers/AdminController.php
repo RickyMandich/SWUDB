@@ -273,4 +273,39 @@ class AdminController extends Controller
 
         return redirect()->back()->with('success', 'Stato errore aggiornato con successo.');
     }
+
+    /**
+     * Quick action to update error status from email links
+     * Azione rapida per aggiornare lo stato dell'errore dai link email
+     *
+     * @param SystemError $error The error to update
+     * @param string $action The action to perform (resolved, ignored)
+     * @return \Illuminate\Http\RedirectResponse Redirect to error detail with success message
+     */
+    public function quickActionError(SystemError $error, string $action)
+    {
+        if (!Auth::admin()) {
+            return view("errors.403");
+        }
+
+        if (!in_array($action, ['resolved', 'ignored'])) {
+            return redirect()->route('admin.errors')->with('error', 'Azione non valida.');
+        }
+
+        $admin = Auth::user();
+        $notes = "Aggiornato tramite azione rapida email";
+
+        switch ($action) {
+            case 'resolved':
+                $error->markAsResolved($admin, $notes);
+                $message = 'Errore segnato come risolto con successo.';
+                break;
+            case 'ignored':
+                $error->markAsIgnored($admin, $notes);
+                $message = 'Errore segnato come ignorato con successo.';
+                break;
+        }
+
+        return redirect()->route('admin.errors.show', $error)->with('success', $message);
+    }
 }
