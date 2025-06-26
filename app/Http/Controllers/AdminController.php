@@ -189,6 +189,8 @@ class AdminController extends Controller
         // Apply status filter if provided
         if ($request->has('status') && $request->status !== '') {
             $query->where('status', $request->status);
+        }else{
+            $query->where('status', 'new');
         }
 
         // Apply search filter if provided
@@ -280,7 +282,7 @@ class AdminController extends Controller
      *
      * @param SystemError $error The error to update
      * @param string $action The action to perform (resolved, ignored)
-     * @return \Illuminate\Http\RedirectResponse Redirect to error detail with success message
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Contracts\View\View Redirect to error detail with success message or error view
      */
     public function quickActionError(SystemError $error, string $action)
     {
@@ -314,7 +316,7 @@ class AdminController extends Controller
      * Azione batch per aggiornare lo stato di più errori
      *
      * @param Request $request HTTP request with action and error IDs
-     * @return \Illuminate\Http\RedirectResponse Redirect back with success message
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Contracts\View\View Redirect back with success message or error view
      */
     public function batchActionErrors(Request $request)
     {
