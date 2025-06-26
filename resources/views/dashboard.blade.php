@@ -181,7 +181,7 @@
                         <div class="card-body">
                             <div class="markdown-content" style="max-height: 600px; overflow-y: auto;">
                                 @php
-                                    $todoFile = base_path('todo list.md');
+                                    $todoFile = base_path('todo lst.md');
                                     $todoExists = file_exists($todoFile);
                                 @endphp
 
