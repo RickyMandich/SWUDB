@@ -1,6 +1,56 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+.markdown-content {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+}
+
+.markdown-content h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5rem;
+}
+
+.markdown-content h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #495057;
+}
+
+.markdown-content ul {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.markdown-content li {
+    margin-bottom: 0.25rem;
+}
+
+.markdown-content del {
+    color: #6c757d;
+    text-decoration: line-through;
+}
+
+.markdown-content code {
+    background-color: #f8f9fa;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: #e83e8c;
+}
+
+.markdown-content ul ul {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+</style>
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-12">
