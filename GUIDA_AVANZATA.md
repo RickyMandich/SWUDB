@@ -776,8 +776,4 @@ La combinazione di tecnologie moderne, algoritmi ottimizzati e best practice di 
 
 ---
 
-*Guida creata il: $(date)*
-*Versione progetto: $(cat .env | grep APP_VERSION)*
-*Autore: Augment Agent*
-```
-```
+*Autore: Mandich Riccardo*
