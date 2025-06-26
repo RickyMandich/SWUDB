@@ -23,7 +23,7 @@
                     <!-- Informazioni utente -->
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <div class="card bg-light">
+                            <div class="card">
                                 <div class="card-body">
                                     <h6 class="card-title">
                                         <i class="fas fa-info-circle me-1"></i>Informazioni Generali
@@ -76,7 +76,7 @@
                         </div>
                         
                         <div class="col-md-6">
-                            <div class="card bg-light">
+                            <div class="card">
                                 <div class="card-body">
                                     <h6 class="card-title">
                                         <i class="fas fa-clock me-1"></i>Timestamp

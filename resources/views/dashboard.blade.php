@@ -180,12 +180,34 @@
                     <div class="collapse show" id="todoListCollapse">
                         <div class="card-body">
                             <div class="markdown-content" style="max-height: 600px; overflow-y: auto;">
-                                @if(file_exists(base_path('todo list.md')))
-                                    {!! Illuminate\Support\Str::markdown(file_get_contents(base_path('todo list.md'))) !!}
+                                @php
+                                    $todoFile = base_path('todo list.md');
+                                    $todoExists = file_exists($todoFile);
+                                @endphp
+
+                                @if($todoExists)
+                                    @php
+                                        try {
+                                            $todoContent = file_get_contents($todoFile);
+                                            $markdownContent = Illuminate\Support\Str::markdown($todoContent);
+                                        } catch (Exception $e) {
+                                            $markdownContent = null;
+                                        }
+                                    @endphp
+
+                                    @if($markdownContent)
+                                        {!! $markdownContent !!}
+                                    @else
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-circle me-2"></i>
+                                            Errore durante la lettura del file 'todo list.md'.
+                                        </div>
+                                    @endif
                                 @else
                                     <div class="alert alert-warning">
                                         <i class="fas fa-exclamation-triangle me-2"></i>
                                         File 'todo list.md' non trovato nella root del progetto.
+                                        <br><small class="text-muted">Percorso cercato: {{ $todoFile }}</small>
                                     </div>
                                 @endif
                             </div>
@@ -198,7 +220,20 @@
                                     Elementi con <del>testo barrato</del> sono completati.
                                     <br>
                                     <i class="fas fa-clock me-1 text-warning"></i>
-                                    Ultimo aggiornamento: {{ date('d/m/Y H:i', filemtime(base_path('todo list.md'))) }}
+                                    Ultimo aggiornamento:
+                                    @if($todoExists)
+                                        @php
+                                            try {
+                                                $lastModified = filemtime($todoFile);
+                                                $formattedDate = date('d/m/Y H:i', $lastModified);
+                                            } catch (Exception $e) {
+                                                $formattedDate = 'Non disponibile';
+                                            }
+                                        @endphp
+                                        {{ $formattedDate }}
+                                    @else
+                                        Non disponibile
+                                    @endif
                                 </small>
                             </div>
                         </div>
