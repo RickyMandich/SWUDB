@@ -666,8 +666,12 @@ class CardsController extends Controller
                 return;
             }
 
-            $newCardIds = $processData['cardIds'];
+            $newCardIds = array_values($processData['cardIds']); // Reindex array to ensure consecutive indices
             $logFile = $processData['logFile'];
+
+            // Debug logging
+            $this->writeScanLog("Array newCardIds dopo reindex: " . json_encode($newCardIds), $logFile);
+            $this->writeScanLog("Numero elementi in newCardIds: " . count($newCardIds), $logFile);
 
             // Check for existing checkpoint
             $checkpointFile = storage_path("app/processing_checkpoint.json");
@@ -698,6 +702,11 @@ class CardsController extends Controller
             $checkpointInterval = 100; // Save checkpoint every 100 cards
 
             for ($index = $startIndex; $index < count($newCardIds); $index++) {
+                if (!isset($newCardIds[$index])) {
+                    $this->writeScanLog("ERRORE: Indice {$index} non trovato nell'array newCardIds", $logFile);
+                    continue;
+                }
+
                 $cardId = $newCardIds[$index];
                 $this->writeScanLog("Elaborazione carta " . ($index + 1) . "/" . count($newCardIds) . ": {$cardId}", $logFile);
 
