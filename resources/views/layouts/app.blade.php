@@ -199,6 +199,10 @@
                             <small class="text-muted text-uppercase">
                                 <a href="{{ route('documentazione') }}">{{__("custom.Documentazione")}}</a>
                             </small>
+                            <br>
+                            <small class="text-muted text-uppercase">
+                                <a href="{{ route('guida.avanzata') }}">{{__("custom.Guida Avanzata")}}</a>
+                            </small>
                         </p>
                     </div>
                 </div>

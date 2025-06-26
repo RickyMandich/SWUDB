@@ -34,5 +34,6 @@ return[
     'contactMail' => "puoi contattarci a <a class='text-muted' href='mailto:info@unlimiteddb.net'>info@unlimiteddb.net</a>,",
     'documentazione' => 'qui puoi trovare la',
     'Documentazione' => 'Documentazione',
+    'Guida Avanzata' => 'Guida Avanzata',
     'Collezione' => 'Collezione'
 ];

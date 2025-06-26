@@ -145,6 +145,17 @@ class AdminController extends Controller
     }
 
     /**
+     * Display Advanced Guide page
+     * Mostra la pagina Guida Avanzata
+     *
+     * @return \Illuminate\View\View Advanced guide view
+     */
+    public function advancedGuide()
+    {
+        return view("guida-avanzata");
+    }
+
+    /**
      * Display admin dashboard with system overview
      * Mostra la dashboard admin con panoramica del sistema
      *
