@@ -33,4 +33,4 @@ git commit -m "$nomeCommit"
 git push -f
 
 sleep 1
-clear
+# clear
