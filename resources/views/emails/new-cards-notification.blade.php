@@ -21,12 +21,12 @@
             border-radius: 8px 8px 0 0;
         }
         .content {
-            background: #f8f9fa;
+            background: #495057;
             padding: 20px;
             border-radius: 0 0 8px 8px;
         }
         .card-item {
-            background: white;
+            background: #343a40;
             margin: 10px 0;
             padding: 15px;
             border-radius: 5px;
@@ -62,7 +62,7 @@
             font-size: 12px;
         }
         .stats {
-            background: #e9ecef;
+            background: #6c757d;
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;

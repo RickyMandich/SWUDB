@@ -39,7 +39,7 @@
 }
 
 .markdown-content code {
-    background-color: #f8f9fa;
+    background-color: #495057;
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     font-size: 0.875rem;

@@ -21,7 +21,7 @@
             border-radius: 8px 8px 0 0;
         }
         .content {
-            background: #f8f9fa;
+            background: #495057;
             padding: 20px;
             border-radius: 0 0 8px 8px;
         }
@@ -63,10 +63,10 @@
         .error-item {
             padding: 10px;
             margin: 5px 0;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
+            background: #58151c;
+            border: 1px solid #842029;
             border-radius: 3px;
-            color: #721c24;
+            color: #ea868f;
             font-size: 14px;
         }
         .footer {
@@ -78,7 +78,7 @@
             font-size: 12px;
         }
         .summary {
-            background: #e9ecef;
+            background: #6c757d;
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;
@@ -136,7 +136,7 @@
         @endif
 
         @if($duplicateCount > 0)
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin-top: 15px;">
+            <div style="background: #664d03; border: 1px solid #997404; border-radius: 5px; padding: 15px; margin-top: 15px;">
                 <h4>📋 Carte Duplicate</h4>
                 <p>{{ $duplicateCount }} carte erano già presenti nel database e sono state saltate.</p>
             </div>

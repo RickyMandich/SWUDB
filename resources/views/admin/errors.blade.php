@@ -58,10 +58,6 @@
             </div>
 
             <!-- Filters -->
-            <ul>
-                <li>{{ var_dump(request('status')) }}</li>
-                <li>{{ request('status') === NULL ? 'true' : 'false' }}</li>
-            </ul>
             <div class="card mb-4">
                 <div class="card-header">
                     <h6><i class="fas fa-filter me-1"></i>Filtri</h6>

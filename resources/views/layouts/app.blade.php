@@ -62,7 +62,7 @@
 </style>
 <body>
     <div id="app" class="d-flex flex-column justify-content-between min-vh-100">
-        <nav class="navbar navbar-expand-md shadow-sm bg-custom-light">
+        <nav class="navbar navbar-expand-md shadow-sm bg-dark">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
                     {{ config('app.domain', 'SWUDB.net') }}

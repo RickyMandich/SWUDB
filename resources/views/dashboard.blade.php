@@ -22,7 +22,7 @@
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
     color: #495057;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #495057;
     padding-bottom: 0.25rem;
 }
 
@@ -54,12 +54,12 @@
 }
 
 .markdown-content code {
-    background-color: #f8f9fa;
+    background-color: #495057;
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     font-size: 0.875rem;
     color: #e83e8c;
-    border: 1px solid #e9ecef;
+    border: 1px solid #6c757d;
 }
 
 .markdown-content ul ul {
@@ -87,12 +87,12 @@
 }
 
 .markdown-content::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #495057;
     border-radius: 4px;
 }
 
 .markdown-content::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: #6c757d;
     border-radius: 4px;
 }
 
