@@ -200,6 +200,7 @@
                                 <a href="{{ route('documentazione') }}">{{__("custom.Documentazione")}}</a>
                             </small>
                             <br>
+                            {{ __("custom.documentazione") }}
                             <small class="text-muted text-uppercase">
                                 <a href="{{ route('guida.avanzata') }}">{{__("custom.Guida Avanzata")}}</a>
                             </small>
