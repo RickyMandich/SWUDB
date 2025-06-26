@@ -628,7 +628,8 @@ class CardsController extends Controller
                     $apiSuccess = true;
                 } else {
                     $this->writeScanLog("Nessuna nuova carta trovata", $logFile);
-                    ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata tramite API", true);
+                    ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Nessuna nuova carta trovata tramite API", true);
+                    $apiSuccess = true; // Mark as successful even if no new cards
                 }
             } else {
                 $this->writeScanLog("ERRORE: Nessun ID carta recuperato dall'API", $logFile);
@@ -641,7 +642,7 @@ class CardsController extends Controller
             ThreadMessageCreated::dispatch($threadId, $errorMsg);
         }
 
-        // If API failed or no new cards, try JSON fallback
+        // If API failed (not just no new cards), try JSON fallback
         if (!$apiSuccess) {
             $this->writeScanLog("Avvio fallback su file JSON", $logFile);
             $this->fallbackToJSON($threadId, $logFile);
