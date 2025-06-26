@@ -308,4 +308,70 @@ class AdminController extends Controller
 
         return redirect()->route('admin.errors.show', $error)->with('success', $message);
     }
+
+    /**
+     * Batch action to update multiple errors status
+     * Azione batch per aggiornare lo stato di più errori
+     *
+     * @param Request $request HTTP request with action and error IDs
+     * @return \Illuminate\Http\RedirectResponse Redirect back with success message
+     */
+    public function batchActionErrors(Request $request)
+    {
+        if (!Auth::admin()) {
+            return view("errors.403");
+        }
+
+        $request->validate([
+            'action' => 'required|in:resolved,ignored,in_progress',
+            'selected_errors' => 'array|min:1',
+            'selected_errors.*' => 'exists:system_errors,id',
+            'filter_new' => 'nullable|boolean',
+        ]);
+
+        $admin = Auth::user();
+        $action = $request->action;
+        $notes = "Aggiornato tramite azione batch";
+
+        // Handle batch action for all new errors
+        if ($request->filter_new) {
+            $errors = SystemError::where('status', 'new')->get();
+        } else {
+            // Handle batch action for selected errors
+            $errorIds = $request->selected_errors ?? [];
+            if (empty($errorIds)) {
+                return redirect()->back()->with('error', 'Nessun errore selezionato.');
+            }
+            $errors = SystemError::whereIn('id', $errorIds)->get();
+        }
+
+        if ($errors->isEmpty()) {
+            return redirect()->back()->with('error', 'Nessun errore trovato per l\'azione richiesta.');
+        }
+
+        $updatedCount = 0;
+        foreach ($errors as $error) {
+            switch ($action) {
+                case 'resolved':
+                    $error->markAsResolved($admin, $notes);
+                    break;
+                case 'ignored':
+                    $error->markAsIgnored($admin, $notes);
+                    break;
+                case 'in_progress':
+                    $error->markAsInProgress($admin, $notes);
+                    break;
+            }
+            $updatedCount++;
+        }
+
+        $actionText = match($action) {
+            'resolved' => 'risolti',
+            'ignored' => 'ignorati',
+            'in_progress' => 'in lavorazione',
+            default => 'aggiornati'
+        };
+
+        return redirect()->back()->with('success', "{$updatedCount} errori segnati come {$actionText} con successo.");
+    }
 }

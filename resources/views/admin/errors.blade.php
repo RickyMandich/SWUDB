@@ -94,10 +94,64 @@
                 </div>
             </div>
 
+            <!-- Batch Actions -->
+            @if($stats['new'] > 0)
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-bolt me-1"></i>Azioni Rapide</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-auto">
+                            <form method="POST" action="{{ route('admin.errors.batch-action') }}" class="d-inline">
+                                @csrf
+                                <input type="hidden" name="action" value="resolved">
+                                <input type="hidden" name="filter_new" value="1">
+                                <button type="submit" class="btn btn-success"
+                                        onclick="return confirm('Sei sicuro di voler segnare tutti i {{ $stats['new'] }} errori nuovi come risolti?')">
+                                    <i class="fas fa-check-double me-1"></i>Segna tutti i nuovi come risolti ({{ $stats['new'] }})
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-auto">
+                            <form method="POST" action="{{ route('admin.errors.batch-action') }}" class="d-inline">
+                                @csrf
+                                <input type="hidden" name="action" value="ignored">
+                                <input type="hidden" name="filter_new" value="1">
+                                <button type="submit" class="btn btn-secondary"
+                                        onclick="return confirm('Sei sicuro di voler segnare tutti i {{ $stats['new'] }} errori nuovi come ignorati?')">
+                                    <i class="fas fa-times-circle me-1"></i>Segna tutti i nuovi come ignorati ({{ $stats['new'] }})
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Errors Table -->
             <div class="card">
-                <div class="card-header">
-                    <h6><i class="fas fa-list me-1"></i>Errori ({{ $errors->total() }} totali)</h6>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-list me-1"></i>Errori ({{ $errors->total() }} totali)</h6>
+                    <div class="batch-actions" style="display: none;">
+                        <form method="POST" action="{{ route('admin.errors.batch-action') }}" class="d-inline" id="batchForm">
+                            @csrf
+                            <div class="input-group input-group-sm">
+                                <select name="action" class="form-select" required>
+                                    <option value="">Seleziona azione...</option>
+                                    <option value="resolved">Segna come risolti</option>
+                                    <option value="ignored">Segna come ignorati</option>
+                                    <option value="in_progress">Segna come in lavorazione</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-play me-1"></i>Applica
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
+                                    <i class="fas fa-times me-1"></i>Annulla
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
                 <div class="card-body">
                     @if($errors->count() > 0)
@@ -105,6 +159,10 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
+                                        <th width="40">
+                                            <input type="checkbox" id="selectAll" class="form-check-input"
+                                                   onchange="toggleSelectAll(this)">
+                                        </th>
                                         <th>Data</th>
                                         <th>Stato</th>
                                         <th>Tipo Eccezione</th>
@@ -116,6 +174,11 @@
                                 <tbody>
                                     @foreach($errors as $error)
                                         <tr>
+                                            <td>
+                                                <input type="checkbox" name="selected_errors[]" value="{{ $error->id }}"
+                                                       class="form-check-input error-checkbox"
+                                                       onchange="updateBatchActions()">
+                                            </td>
                                             <td>
                                                 <small class="text-muted">
                                                     {{ $error->created_at->format('d/m/Y H:i') }}
@@ -215,4 +278,71 @@
         </div>
     </div>
 @endif
+
+<script>
+function toggleSelectAll(selectAllCheckbox) {
+    const checkboxes = document.querySelectorAll('.error-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    updateBatchActions();
+}
+
+function updateBatchActions() {
+    const selectedCheckboxes = document.querySelectorAll('.error-checkbox:checked');
+    const batchActions = document.querySelector('.batch-actions');
+    const selectAllCheckbox = document.getElementById('selectAll');
+
+    if (selectedCheckboxes.length > 0) {
+        batchActions.style.display = 'block';
+        // Update form with selected IDs
+        const existingInputs = document.querySelectorAll('#batchForm input[name="selected_errors[]"]');
+        existingInputs.forEach(input => input.remove());
+
+        selectedCheckboxes.forEach(checkbox => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'selected_errors[]';
+            hiddenInput.value = checkbox.value;
+            document.getElementById('batchForm').appendChild(hiddenInput);
+        });
+    } else {
+        batchActions.style.display = 'none';
+    }
+
+    // Update select all checkbox state
+    const totalCheckboxes = document.querySelectorAll('.error-checkbox');
+    if (selectedCheckboxes.length === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (selectedCheckboxes.length === totalCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+        selectAllCheckbox.checked = false;
+    }
+}
+
+function clearSelection() {
+    const checkboxes = document.querySelectorAll('.error-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('selectAll').checked = false;
+    document.getElementById('selectAll').indeterminate = false;
+    updateBatchActions();
+}
+
+// Add confirmation to batch form
+document.getElementById('batchForm').addEventListener('submit', function(e) {
+    const selectedCount = document.querySelectorAll('.error-checkbox:checked').length;
+    const action = this.querySelector('select[name="action"]').value;
+    const actionText = this.querySelector('select[name="action"] option:checked').textContent;
+
+    if (!confirm(`Sei sicuro di voler ${actionText.toLowerCase()} ${selectedCount} errori selezionati?`)) {
+        e.preventDefault();
+    }
+});
+</script>
 @endsection
