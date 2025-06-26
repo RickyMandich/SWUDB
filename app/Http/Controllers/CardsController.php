@@ -559,7 +559,6 @@ class CardsController extends Controller
 
         $threadId = $request->input('threadId', ThreadManager::generateThreadId('import'));
         $logFile = $this->getScanLogPath();
-        $apiSuccess = false;
 
         $this->writeScanLog("=== INIZIO SCANSIONE API ===", $logFile);
         $this->writeScanLog("Thread ID: {$threadId}", $logFile);
@@ -625,27 +624,19 @@ class CardsController extends Controller
                         "token" => env('JOB_TOKEN')
                     ]);
 
-                    $apiSuccess = true;
                 } else {
                     $this->writeScanLog("Nessuna nuova carta trovata", $logFile);
                     ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Nessuna nuova carta trovata tramite API", true);
-                    $apiSuccess = true; // Mark as successful even if no new cards
                 }
             } else {
                 $this->writeScanLog("ERRORE: Nessun ID carta recuperato dall'API", $logFile);
-                ThreadMessageCreated::dispatch($threadId, "Errore nel recupero carte dall'API, provo con JSON");
+                ThreadMessageCreated::dispatch($threadId, "❌ Errore nel recupero carte dall'API", true);
             }
         } catch (\Exception $e) {
             $errorMsg = "Errore scansione API: " . $e->getMessage();
             $this->writeScanLog("ERRORE CRITICO: " . $errorMsg, $logFile);
             Log::error("API scan failed: " . $e->getMessage());
-            ThreadMessageCreated::dispatch($threadId, $errorMsg);
-        }
-
-        // If API failed (not just no new cards), try JSON fallback
-        if (!$apiSuccess) {
-            $this->writeScanLog("Avvio fallback su file JSON", $logFile);
-            $this->fallbackToJSON($threadId, $logFile);
+            ThreadMessageCreated::dispatch($threadId, "❌ " . $errorMsg, true);
         }
     }
 
@@ -797,102 +788,12 @@ class CardsController extends Controller
 
             if (isset($logFile)) {
                 $this->writeScanLog("ERRORE CRITICO: " . $errorMsg, $logFile);
-                // Fallback to JSON
-                $this->fallbackToJSON($threadId, $logFile);
             }
+            ThreadMessageCreated::dispatch($threadId, "❌ " . $errorMsg, true);
         }
     }
 
-    /**
-     * Fallback to JSON file import when API fails
-     * Fallback su importazione file JSON quando l'API fallisce
-     *
-     * @param string $threadId Thread ID for messaging
-     * @param string|null $logFile Log file path for this session
-     * @return void
-     */
-    private function fallbackToJSON($threadId, $logFile = null){
-        if ($logFile) {
-            $this->writeScanLog("=== INIZIO FALLBACK SU FILE JSON ===", $logFile);
-        }
 
-        ThreadMessageCreated::dispatch($threadId, "Fallback su file JSON...");
-
-        try {
-            $url = 'http://swudb.altervista.org/collezione.json';
-            if ($logFile) {
-                $this->writeScanLog("Download file JSON da: {$url}", $logFile);
-            }
-
-            $json = file_get_contents($url);
-            $fullSet = json_decode($json, true);
-
-            if ($fullSet) {
-                if ($logFile) {
-                    $this->writeScanLog("File JSON scaricato: " . count($fullSet) . " carte totali", $logFile);
-                }
-
-                $dbSet = Card::select('espansione', 'numero')->get()->toArray();
-                $toInsert = [];
-
-                if ($logFile) {
-                    $this->writeScanLog("Confronto con database: " . count($dbSet) . " carte esistenti", $logFile);
-                }
-
-                foreach ($fullSet as $card) {
-                    if (!$this::contain($dbSet, $card)) {
-                        // Ensure tratti is a string for database compatibility
-                        if (is_array($card["tratti"])) {
-                            $card["tratti"] = implode(" * ", $card["tratti"]);
-                        }
-                        $toInsert[] = $card;
-
-                        if ($logFile) {
-                            $cardInfo = ($card['espansione'] ?? 'N/A') . "-" . ($card['numero'] ?? 'N/A') . " " . ($card['nome'] ?? 'N/A');
-                            $this->writeScanLog("Nuova carta trovata: {$cardInfo}", $logFile);
-                        }
-                    }
-                }
-
-                $resultMsg = "JSON fallback: trovate " . count($toInsert) . " nuove carte";
-                if ($logFile) {
-                    $this->writeScanLog($resultMsg, $logFile);
-                }
-                Log::info($resultMsg);
-                ThreadMessageCreated::dispatch($threadId, $resultMsg);
-
-                if (!empty($toInsert)) {
-                    if ($logFile) {
-                        $this->writeScanLog("Avvio inserimento asincrono nel database", $logFile);
-                    }
-
-                    // Avvia inserimento asincrono per evitare timeout
-                    $this->startAsyncCardInsertion($toInsert, $threadId, $logFile);
-
-                    // Mark thread as complete since the scan and processing is done
-                    ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Avviato inserimento di " . count($toInsert) . " carte (JSON fallback)", true);
-                } else {
-                    ThreadMessageCreated::dispatch($threadId, "Nessuna nuova carta trovata", true);
-                    if ($logFile) {
-                        $this->writeScanLog("Nessuna nuova carta da importare", $logFile);
-                    }
-                }
-            } else {
-                $errorMsg = "Errore nel parsing del file JSON";
-                if ($logFile) {
-                    $this->writeScanLog($errorMsg, $logFile);
-                }
-                ThreadMessageCreated::dispatch($threadId, $errorMsg, true);
-            }
-        } catch (\Exception $e) {
-            $errorMsg = "Errore anche nel fallback JSON: " . $e->getMessage();
-            if ($logFile) {
-                $this->writeScanLog("ERRORE CRITICO FALLBACK: " . $errorMsg, $logFile);
-            }
-            Log::error($errorMsg);
-            ThreadMessageCreated::dispatch($threadId, $errorMsg, true);
-        }
-    }
 
     /**
      * Start asynchronous card insertion to avoid timeout issues
