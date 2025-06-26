@@ -15,7 +15,7 @@
                 </div>
                 <div class="card-body">
                     <div class="markdown-content">
-                        {!! Illuminate\Support\Str::markdown(file_get_contents(base_path('guida-avanzata.md'))) !!}
+                        {!! Illuminate\Support\Str::markdown(file_get_contents(base_path('GUIDA_AVANZATA.md'))) !!}
                     </div>
                 </div>
             </div>
