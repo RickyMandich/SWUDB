@@ -58,6 +58,10 @@
             </div>
 
             <!-- Filters -->
+            <ul>
+                <li>{{ var_dump(request('status')) }}</li>
+                <li>{{ request('status') === NULL ? 'true' : 'false' }}</li>
+            </ul>
             <div class="card mb-4">
                 <div class="card-header">
                     <h6><i class="fas fa-filter me-1"></i>Filtri</h6>
@@ -69,7 +73,7 @@
                                 <label for="status" class="form-label">Stato</label>
                                 <select name="status" id="status" class="form-select">
                                     <option value="">Tutti gli stati</option>
-                                    <option value="new" {{ request('status') === 'new' or request('status') === NULL ? 'selected' : '' }}>Nuovo</option>
+                                    <option value="new" {{ request('status') === 'new' or request('status') === '' ? 'selected' : '' }}>Nuovo</option>
                                     <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Lavorazione</option>
                                     <option value="resolved" {{ request('status') === 'resolved' ? 'selected' : '' }}>Risolto</option>
                                     <option value="ignored" {{ request('status') === 'ignored' ? 'selected' : '' }}>Ignorato</option>
