@@ -323,20 +323,20 @@ class CardsController extends Controller
 
         // Extract arena
         $arenas = $attributes['arenas']['data'] ?? [];
-        $cardData['arena'] = !empty($arenas) ? ($arenas[0]['attributes']['name'] ?? null) : null;
+        $cardData['arena'] = (!empty($arenas) && isset($arenas[0])) ? ($arenas[0]['attributes']['name'] ?? null) : null;
 
         // Extract aspects
         $aspects = $attributes['aspects']['data'] ?? [];
-        if (!empty($aspects)) {
+        if (!empty($aspects) && isset($aspects[0])) {
             $cardData['aspettoPrimario'] = $this->translateAspect($aspects[0]['attributes']['name'] ?? '');
         }
-        if (count($aspects) > 1) {
+        if (count($aspects) > 1 && isset($aspects[1])) {
             $cardData['aspettoSecondario'] = $this->translateAspect($aspects[1]['attributes']['name'] ?? '');
         }
 
         // Handle aspect duplicates
         $aspectDuplicates = $attributes['aspectDuplicates']['data'] ?? [];
-        if (!empty($aspectDuplicates) && !empty($aspects)) {
+        if (!empty($aspectDuplicates) && !empty($aspects) && isset($aspects[0])) {
             $cardData['aspettoSecondario'] = $this->translateAspect($aspects[0]['attributes']['name'] ?? '');
         }
 
@@ -784,10 +784,10 @@ class CardsController extends Controller
         } catch (\Exception $e) {
             $errorMsg = "Errore elaborazione carte: " . $e->getMessage();
             Log::error($errorMsg);
-            ThreadMessageCreated::dispatch($threadId, $errorMsg);
 
             if (isset($logFile)) {
                 $this->writeScanLog("ERRORE CRITICO: " . $errorMsg, $logFile);
+                $this->writeScanLog("Stack trace: " . $e->getTraceAsString(), $logFile);
             }
             ThreadMessageCreated::dispatch($threadId, "❌ " . $errorMsg, true);
         }
