@@ -58,7 +58,7 @@
             </div>
 
             <!-- Filters -->
-            <span>{{ request('status') }}</span>
+            <span>{{ var_dump(request('status')) }}</span>
             <div class="card mb-4">
                 <div class="card-header">
                     <h6><i class="fas fa-filter me-1"></i>Filtri</h6>
