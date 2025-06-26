@@ -58,6 +58,7 @@
             </div>
 
             <!-- Filters -->
+            <span class="d-none">{{ request('status') }}</span>
             <div class="card mb-4">
                 <div class="card-header">
                     <h6><i class="fas fa-filter me-1"></i>Filtri</h6>
