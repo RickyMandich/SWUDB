@@ -259,129 +259,11 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Aggiungi syntax highlighting dinamico
-    const codeBlocks = document.querySelectorAll('.markdown-content pre code');
-
-    codeBlocks.forEach(function(block) {
-        const code = block.textContent;
-        let language = 'CODE';
-
-        // Rileva il linguaggio
-        if (code.indexOf('<?php') !== -1 || code.indexOf('class ') !== -1 || code.indexOf('function ') !== -1 || code.indexOf('public ') !== -1) {
-            language = 'PHP';
-            highlightPHP(block);
-        } else if (code.indexOf('CREATE TABLE') !== -1 || code.indexOf('SELECT') !== -1 || code.indexOf('INSERT') !== -1 || code.indexOf('UPDATE') !== -1) {
-            language = 'SQL';
-            highlightSQL(block);
-        } else if (code.indexOf('export default') !== -1 || code.indexOf('function(') !== -1 || code.indexOf('const ') !== -1 || code.indexOf('let ') !== -1) {
-            language = 'JS';
-            highlightJS(block);
-        } else if (code.indexOf('#!/bin/bash') !== -1 || code.indexOf('git ') !== -1 || code.indexOf('echo ') !== -1) {
-            language = 'BASH';
-            highlightBash(block);
-        }
-
-        // Aggiorna il label del linguaggio
-        const pre = block.parentElement;
-        if (pre.tagName === 'PRE') {
-            const existingLabel = pre.querySelector('::after');
-            pre.style.setProperty('--lang-label', `"${language}"`);
-            pre.style.setProperty('content', `var(--lang-label)`, 'important');
-        }
-    });
-
-    function highlightPHP(block) {
-        let html = block.innerHTML;
-
-        // Keywords PHP
-        const phpKeywords = ['class', 'function', 'public', 'private', 'protected', 'static', 'return', 'if', 'else', 'foreach', 'while', 'for', 'try', 'catch', 'throw', 'new', 'extends', 'implements', 'use', 'namespace'];
-        phpKeywords.forEach(keyword => {
-            const regex = new RegExp(`\\b${keyword}\\b`, 'g');
-            html = html.replace(regex, `<span style="color: #569cd6;">${keyword}</span>`);
-        });
-
-        // Strings
-        html = html.replace(/(["'])((?:\\.|(?!\1)[^\\])*?)\1/g, '<span style="color: #ce9178;">$1$2$1</span>');
-
-        // Comments
-        html = html.replace(/\/\*[\s\S]*?\*\//g, '<span style="color: #6a9955;">$&</span>');
-        html = html.replace(/\/\/.*$/gm, '<span style="color: #6a9955;">$&</span>');
-
-        // Variables
-        html = html.replace(/\$\w+/g, '<span style="color: #9cdcfe;">$&</span>');
-
-        // Functions
-        html = html.replace(/(\w+)(\s*\()/g, '<span style="color: #dcdcaa;">$1</span>$2');
-
-        block.innerHTML = html;
-    }
-
-    function highlightSQL(block) {
-        let html = block.innerHTML;
-
-        // SQL Keywords
-        const sqlKeywords = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'TABLE', 'INDEX', 'ALTER', 'DROP', 'JOIN', 'INNER', 'LEFT', 'RIGHT', 'ON', 'GROUP', 'BY', 'ORDER', 'HAVING', 'UNION', 'AND', 'OR', 'NOT', 'NULL', 'PRIMARY', 'KEY', 'FOREIGN', 'REFERENCES', 'UNIQUE', 'AUTO_INCREMENT', 'DEFAULT', 'TIMESTAMP', 'VARCHAR', 'INT', 'BIGINT', 'TEXT', 'BOOLEAN', 'ENUM'];
-        sqlKeywords.forEach(keyword => {
-            const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-            html = html.replace(regex, `<span style="color: #569cd6;">${keyword.toUpperCase()}</span>`);
-        });
-
-        // Strings
-        html = html.replace(/(["'])((?:\\.|(?!\1)[^\\])*?)\1/g, '<span style="color: #ce9178;">$1$2$1</span>');
-
-        // Comments
-        html = html.replace(/--.*$/gm, '<span style="color: #6a9955;">$&</span>');
-
-        block.innerHTML = html;
-    }
-
-    function highlightJS(block) {
-        let html = block.innerHTML;
-
-        // JS Keywords
-        const jsKeywords = ['function', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return', 'export', 'import', 'default', 'class', 'extends', 'constructor', 'async', 'await', 'try', 'catch', 'throw', 'new'];
-        jsKeywords.forEach(keyword => {
-            const regex = new RegExp(`\\b${keyword}\\b`, 'g');
-            html = html.replace(regex, `<span style="color: #569cd6;">${keyword}</span>`);
-        });
-
-        // Strings
-        html = html.replace(/(["'`])((?:\\.|(?!\1)[^\\])*?)\1/g, '<span style="color: #ce9178;">$1$2$1</span>');
-
-        // Comments
-        html = html.replace(/\/\*[\s\S]*?\*\//g, '<span style="color: #6a9955;">$&</span>');
-        html = html.replace(/\/\/.*$/gm, '<span style="color: #6a9955;">$&</span>');
-
-        block.innerHTML = html;
-    }
-
-    function highlightBash(block) {
-        let html = block.innerHTML;
-
-        // Bash Keywords
-        const bashKeywords = ['if', 'then', 'else', 'elif', 'fi', 'for', 'while', 'do', 'done', 'function', 'echo', 'git', 'npm', 'cd', 'ls', 'mkdir', 'rm', 'cp', 'mv'];
-        bashKeywords.forEach(keyword => {
-            const regex = new RegExp(`\\b${keyword}\\b`, 'g');
-            html = html.replace(regex, `<span style="color: #569cd6;">${keyword}</span>`);
-        });
-
-        // Strings
-        html = html.replace(/(["'])((?:\\.|(?!\1)[^\\])*?)\1/g, '<span style="color: #ce9178;">$1$2$1</span>');
-
-        // Comments
-        html = html.replace(/#.*$/gm, '<span style="color: #6a9955;">$&</span>');
-
-        // Variables
-        html = html.replace(/\$\w+/g, '<span style="color: #9cdcfe;">$&</span>');
-
-        block.innerHTML = html;
-    }
-
     // Aggiungi smooth scrolling per i link interni
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
+            var target = document.querySelector(this.getAttribute('href'));
             if (target) {
                 target.scrollIntoView({
                     behavior: 'smooth',
@@ -389,6 +271,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
+    });
+
+    // Aggiungi indicatori di linguaggio ai code blocks
+    var codeBlocks = document.querySelectorAll('.markdown-content pre code');
+    codeBlocks.forEach(function(block) {
+        var code = block.textContent;
+        var pre = block.parentElement;
+        var language = 'CODE';
+
+        // Rileva il linguaggio in modo sicuro
+        if (code.indexOf('php') !== -1 && code.indexOf('function') !== -1) {
+            language = 'PHP';
+        } else if (code.indexOf('CREATE') !== -1 || code.indexOf('SELECT') !== -1) {
+            language = 'SQL';
+        } else if (code.indexOf('export') !== -1 || code.indexOf('const') !== -1) {
+            language = 'JS';
+        } else if (code.indexOf('bash') !== -1 || code.indexOf('git') !== -1) {
+            language = 'BASH';
+        }
+
+        // Aggiungi badge del linguaggio
+        var badge = document.createElement('span');
+        badge.textContent = language;
+        badge.style.cssText = 'position: absolute; top: 0.5rem; right: 0.5rem; background-color: #0d6efd; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; opacity: 0.8; z-index: 10;';
+        pre.style.position = 'relative';
+        pre.appendChild(badge);
     });
 });
 </script>
