@@ -1,528 +1,189 @@
-# Guida Avanzata SWUDB - Comprensione Completa del Progetto
+# SWUDB - Guida Avanzata per Esame di Maturità
 
 ## Indice
 
-1. [Panoramica Architetturale](#panoramica-architetturale)
-2. [Flussi di Dati Principali](#flussi-di-dati-principali)
-3. [Componenti Chiave](#componenti-chiave)
-4. [Algoritmi e Logiche Complesse](#algoritmi-e-logiche-complesse)
-5. [Integrazione Sistemi Esterni](#integrazione-sistemi-esterni)
-6. [Gestione Stati e Performance](#gestione-stati-e-performance)
-7. [Sicurezza e Validazione](#sicurezza-e-validazione)
-8. [Deployment e DevOps](#deployment-e-devops)
-9. [Troubleshooting Avanzato](#troubleshooting-avanzato)
-10. [Roadmap e Sviluppi Futuri](#roadmap-e-sviluppi-futuri)
+1. [Panoramica del Progetto](#panoramica-del-progetto)
+2. [Architettura e Design Pattern](#architettura-e-design-pattern)
+3. [Stack Tecnologico Dettagliato](#stack-tecnologico-dettagliato)
+4. [Database Design e Ottimizzazioni](#database-design-e-ottimizzazioni)
+5. [Componenti Livewire Personalizzati](#componenti-livewire-personalizzati)
+6. [Algoritmi di Ordinamento Avanzati](#algoritmi-di-ordinamento-avanzati)
+7. [Sistema di Gestione Errori Personalizzato](#sistema-di-gestione-errori-personalizzato)
+8. [Integrazione API e Web Scraping](#integrazione-api-e-web-scraping)
+9. [Performance e Caching](#performance-e-caching)
+10. [Sicurezza e Autenticazione](#sicurezza-e-autenticazione)
+11. [Deployment e DevOps](#deployment-e-devops)
+12. [Testing e Quality Assurance](#testing-e-quality-assurance)
 
 ---
 
-## Panoramica Architetturale
+## Panoramica del Progetto
 
-### Stack Tecnologico Completo
+**SWUDB (Star Wars Unlimited Database)** è un database non ufficiale completo per il gioco di carte collezionabili **Star Wars: Unlimited** sviluppato da Fantasy Flight Games. Il progetto rappresenta una piattaforma web moderna e complessa che integra multiple tecnologie avanzate per offrire un'esperienza utente ottimale.
 
-**Backend Core:**
-- **Laravel 12**: Framework PHP con architettura MVC
-- **PHP 8.1+**: Linguaggio con tipizzazione forte e performance ottimizzate
-- **MySQL 8.0+**: Database relazionale con supporto JSON e full-text search
-- **Composer**: Dependency manager per PHP
+### Obiettivi del Progetto
 
-**Frontend e UI:**
-- **Blade Templates**: Template engine nativo Laravel
-- **Livewire 3**: Framework full-stack per componenti reattivi
-- **Bootstrap 5.3**: Framework CSS responsive
-- **Chart.js**: Libreria per grafici interattivi
-- **FontAwesome**: Icone vettoriali
+**1. Database Completo delle Carte:**
+- Catalogazione di tutte le carte del gioco con metadati completi
+- Ricerca avanzata con filtri multipli e ordinamento personalizzato
+- Integrazione automatica con API ufficiali per aggiornamenti
 
-**Build e Asset Management:**
-- **Vite**: Build tool moderno per asset bundling
-- **NPM**: Package manager per dipendenze JavaScript
-- **Sass**: Preprocessore CSS per styling avanzato
+**2. Gestione Mazzi e Collezioni:**
+- Sistema completo di deck building con validazione regole
+- Gestione collezioni personali con tracking delle carte possedute
+- Export/import in formati standard del gioco
 
-**Hosting e Deployment:**
-- **Altervista.org**: Hosting condiviso con supporto PHP/MySQL
-- **FTP Deployment**: Upload automatizzato tramite script bash
-- **GitHub**: Version control e repository centrale
+**3. Analisi e Statistiche:**
+- Calcolo statistiche avanzate per mazzi (distribuzione costi, aspetti, tipi)
+- Grafici interattivi per visualizzazione dati
+- Analisi meta-game e tendenze
 
-### Architettura a Livelli
+**4. Community Features:**
+- Condivisione mazzi pubblici
+- Sistema di notifiche per nuove carte
+- Dashboard personalizzate per utenti
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                       │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   Blade Views   │  │ Livewire Comps  │  │  Bootstrap  │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                     BUSINESS LAYER                          │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   Controllers   │  │      Jobs       │  │   Events    │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                      DATA LAYER                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │   Eloquent ORM  │  │     Models      │  │   MySQL     │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                   EXTERNAL SERVICES                         │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │  SW:U API       │  │    Telegram     │  │    Email    │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
+### Caratteristiche Tecniche Distintive
+
+**1. Architettura Ibrida:**
+- Backend Laravel robusto per logica di business
+- Frontend reattivo con Livewire per UX moderna
+- Integrazione seamless senza SPA complexity
+
+**2. Algoritmi Personalizzati:**
+- Merge sort ottimizzato per ordinamento carte con 9 criteri gerarchici
+- Sistema di import asincrono con gestione batch intelligente
+- Algoritmi di matching per rilevamento carte duplicate
+
+**3. Sistema di Gestione Errori Avanzato:**
+- Tracking automatico errori con notifiche multi-canale
+- Dashboard admin per gestione errori
+- Logging strutturato con context awareness
 
 ---
 
-## Flussi di Dati Principali
+## Architettura e Design Pattern
 
-### 1. Flusso di Ricerca Carte
+### Pattern Architetturali Implementati
 
-```mermaid
-graph TD
-    A[User Input] --> B[SearchFilter Component]
-    B --> C[Livewire Processing]
-    C --> D[Query Builder]
-    D --> E[Database Query]
-    E --> F[Results Collection]
-    F --> G[mergeSort Algorithm]
-    G --> H[Cached Results]
-    H --> I[Frontend Display]
-
-    J[URL Parameters] --> B
-    K[Filter Cache] --> B
+**1. Model-View-Controller (MVC) Esteso:**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     Models      │    │   Controllers   │    │   Views/Blade   │
+│                 │    │                 │    │                 │
+│ • Card          │◄──►│ • CardsCtrl     │◄──►│ • Templates     │
+│ • Deck          │    │ • DecksCtrl     │    │ • Layouts       │
+│ • User          │    │ • AdminCtrl     │    │ • Components    │
+│ • SystemError   │    │ • JobCtrl       │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         ▲                       ▲                       ▲
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │ Livewire Layer  │
+                    │                 │
+                    │ • SearchFilter  │
+                    │ • DeckManager   │
+                    │ • AddCardSection│
+                    │ • CollezioneMan │
+                    └─────────────────┘
 ```
 
-**Dettaglio Tecnico:**
-1. **Input Utente**: Digitazione con debounce 300ms
-2. **Livewire Processing**: Validazione e sanitizzazione input
-3. **Query Building**: Costruzione query dinamica con filtri multipli
-4. **Database Execution**: Esecuzione query ottimizzata con indici
-5. **Result Processing**: Applicazione algoritmo di ordinamento personalizzato
-6. **Caching**: Salvataggio risultati per performance
-7. **Frontend Update**: Aggiornamento DOM senza refresh pagina
-
-### 2. Flusso di Aggiornamento Database
-
-```mermaid
-graph TD
-    A[Admin Trigger] --> B[API Scan Job]
-    B --> C[SW:U API Call]
-    C --> D[Data Validation]
-    D --> E[Duplicate Check]
-    E --> F[Database Insert]
-    F --> G[Email Notifications]
-    G --> H[Telegram Updates]
-    H --> I[Log Generation]
-
-    J[Error Handling] --> K[Admin Notification]
-    J --> L[Error Page Update]
-```
-
-**Componenti Coinvolti:**
-- **CardsController::scanAPI()**: Orchestrazione processo
-- **JobController**: Gestione job asincroni
-- **ThreadManager**: Gestione processi paralleli
-- **Email Templates**: Notifiche strutturate
-- **Telegram Bot**: Messaggi real-time
-
-### 3. Flusso di Gestione Mazzi
-
-```mermaid
-graph TD
-    A[User Action] --> B[Deck Controller]
-    B --> C[Validation Layer]
-    C --> D[Database Transaction]
-    D --> E[Version Creation]
-    E --> F[Statistics Update]
-    F --> G[Cache Invalidation]
-    G --> H[Frontend Refresh]
-
-    I[Export Request] --> J[Format Selection]
-    J --> K[Data Serialization]
-    K --> L[File Generation]
-```
-
----
-
-## Componenti Chiave
-
-### SearchFilter Component (Livewire)
-
-**Responsabilità:**
-- Gestione filtri multipli con validazione
-- Caching intelligente delle opzioni
-- Comunicazione event-driven con parent components
-- Gestione URL parameters per deep linking
-
-**Architettura Interna:**
+**2. Event-Driven Architecture:**
 ```php
+// Esempio di comunicazione event-driven tra componenti
 class SearchFilter extends Component
 {
-    // Properties per filtri
-    public $nome = '';
-    public $espansione = '';
-    // ... altri filtri
+    public function applyFilters()
+    {
+        // Elaborazione filtri complessa...
+        $results = $this->buildFilteredQuery()->get();
 
-    // Cache e performance
-    public $filteredCards = [];
-    public $totalResults = 0;
+        // Applicazione algoritmo di ordinamento personalizzato
+        if (!$results->isEmpty()) {
+            $results = CardsController::mergeSort($results);
+        }
 
-    // Modalità operative
-    public $mode = 'page'; // 'page', 'popup', 'collezione'
+        // Dispatch evento per aggiornamento UI
+        $this->dispatch('cardsFiltered', $results->toArray());
+    }
+}
 
+// Listener nel componente parent
+class DeckManager extends Component
+{
     protected $listeners = [
-        'resetFilters' => 'resetAllFilters',
-        'applyFiltersForPopup' => 'getFilteredCardsForPopup'
+        'cardsFiltered' => 'updateAvailableCards',
+        'cardAdded' => 'addCardToDeck'
     ];
 }
 ```
 
-**Metodi Chiave:**
-- `mount()`: Inizializzazione con parametri URL
-- `applyFilters()`: Costruzione query dinamica
-- `loadFilterOptions()`: Caricamento opzioni con cache
-- `resetAllFilters()`: Reset stato componente
+**3. Repository Pattern (Implicito):**
+- Eloquent Models fungono da repository
+- Query scopes per logiche di business riutilizzabili
+- Caching layer per performance ottimizzate
 
-### CardsController
-
-**Algoritmo mergeSort:**
+**4. Observer Pattern:**
 ```php
-public static function mergeSort($cards) {
-    // Implementazione merge sort ottimizzata per Laravel Collections
-    // Gestisce sia Collection che array nativi
-    // Utilizza compareElements per logica di confronto
-}
-
-private static function compareElements($a, $b) {
-    // 9 criteri di confronto gerarchici:
-    // 1. Espansione (per data uscita)
-    // 2. Tipo (Leader > Base > Unità > Upgrade > Evento)
-    // 3. Aspetto primario
-    // 4. Costo
-    // 5. Nome
-    // 6. Aspetto secondario
-    // 7. Rarità
-    // 8. Numero carta
-    // 9. CID (fallback)
-}
-```
-
-### JobController e Sistema Asincrono
-
-**Gestione Job Lunghi:**
-```php
-class JobController extends Controller
+// Event/Listener system per notifiche
+class MessageCreated
 {
-    public function addCard(Request $request) {
-        // Validazione token sicurezza
-        // Dispatch job asincrono
-        // Gestione timeout con thread management
-        // Logging operazioni
-    }
-}
-```
+    use Dispatchable;
 
-**Thread Management:**
-```php
-class ThreadManager
+    public function __construct(public $message) {}
+}
+
+class SendMessage
 {
-    public static function isThreadComplete($threadId) {
-        // Controllo stato thread tramite file system
-        // Gestione timeout automatici
-        // Cleanup risorse
+    public function handle(MessageCreated $event): void
+    {
+        // Invio notifica Telegram
+        JobController::fireAndForgetGet(route("job.sendMessage"), [
+            "message" => $event->message,
+            "token" => env("JOB_TOKEN")
+        ]);
     }
 }
 ```
 
 ---
 
-## Algoritmi e Logiche Complesse
+## Stack Tecnologico Dettagliato
 
-### Algoritmo di Ordinamento Carte
+### Backend Framework: Laravel 12
 
-L'algoritmo di ordinamento è il cuore del sistema di visualizzazione carte:
+**Caratteristiche Utilizzate:**
 
-**Criteri di Ordinamento (in ordine di priorità):**
-
-1. **Espansione**: Ordinamento per data di uscita
-   ```php
-   $espansioniOrdinate = [
-       'SOR' => 1, 'SHD' => 2, 'TWI' => 3, // ... ordine cronologico
-   ];
-   ```
-
-2. **Tipo Carta**: Gerarchia strategica
-   ```php
-   $tipiOrdine = [
-       'Leader' => 1, 'Base' => 2, 'Unità' => 3,
-       'Upgrade' => 4, 'Evento' => 5
-   ];
-   ```
-
-3. **Aspetto Primario**: Ordinamento per colore
-4. **Costo**: Crescente (0-9+)
-5. **Nome**: Alfabetico
-6. **Aspetto Secondario**: Per carte multi-aspetto
-7. **Rarità**: Common < Uncommon < Rare < Legendary < Special
-8. **Numero**: Numerico crescente
-9. **CID**: Fallback per garantire ordinamento deterministico
-
-**Implementazione Merge Sort:**
+**1. Eloquent ORM Avanzato:**
 ```php
-private static function merge($left, $right) {
-    $result = [];
-    $i = $j = 0;
-
-    while ($i < count($left) && $j < count($right)) {
-        if (self::compareElements($left[$i], $right[$j]) <= 0) {
-            $result[] = $left[$i++];
-        } else {
-            $result[] = $right[$j++];
-        }
-    }
-
-    // Merge rimanenti elementi
-    return array_merge($result, array_slice($left, $i), array_slice($right, $j));
-}
-```
-
-### Sistema di Validazione Mazzi
-
-**Regole di Validazione:**
-```php
-class DeckValidator
+// Relazioni complesse con pivot personalizzati
+class Deck extends Model
 {
-    public function validate($cards) {
-        $errors = [];
+    public function cards()
+    {
+        return $this->belongsToMany(Card::class, 'compositions')
+                    ->withPivot('copie')
+                    ->withTimestamps();
+    }
 
-        // 1. Controllo numero carte (50 esatte)
-        if (count($cards) !== 50) {
-            $errors[] = "Il mazzo deve contenere esattamente 50 carte";
-        }
+    // Query scopes per logiche di business
+    public function scopePublic($query)
+    {
+        return $query->where('public', 1);
+    }
 
-        // 2. Controllo Leader unico
-        $leaders = array_filter($cards, fn($c) => $c->tipo === 'Leader');
-        if (count($leaders) !== 1) {
-            $errors[] = "Il mazzo deve contenere esattamente 1 Leader";
-        }
-
-        // 3. Controllo Base unica
-        $bases = array_filter($cards, fn($c) => $c->tipo === 'Base');
-        if (count($bases) !== 1) {
-            $errors[] = "Il mazzo deve contenere esattamente 1 Base";
-        }
-
-        // 4. Controllo aspetti compatibili
-        $this->validateAspects($cards, $errors);
-
-        // 5. Controllo copie multiple (max 3 per carta non-unica)
-        $this->validateCopies($cards, $errors);
-
-        return $errors;
+    public function scopeByUser($query, $username)
+    {
+        return $query->where('codUtente', $username);
     }
 }
 ```
 
-### Sistema di Statistiche Real-time
-
-**Calcolo Statistiche Mazzi:**
+**2. Middleware Stack Personalizzato:**
 ```php
-class DeckStatistics
-{
-    public function calculateStats($cards) {
-        $stats = [
-            'distribuzione_costo' => $this->calculateCostDistribution($cards),
-            'distribuzione_aspetti' => $this->calculateAspectDistribution($cards),
-            'analisi_tratti' => $this->analyzeTraits($cards),
-            'medie_hp_potenza' => $this->calculateAverages($cards)
-        ];
-
-        return $stats;
-    }
-
-    private function calculateCostDistribution($cards) {
-        // Esclude Leader e Base dai calcoli
-        $playableCards = array_filter($cards,
-            fn($c) => !in_array($c->tipo, ['Leader', 'Base']));
-
-        $distribution = [];
-        foreach ($playableCards as $card) {
-            $cost = $card->costo ?? 0;
-            $distribution[$cost] = ($distribution[$cost] ?? 0) + 1;
-        }
-
-        return $distribution;
-    }
-}
-```
-
----
-
-## Integrazione Sistemi Esterni
-
-### API Star Wars Unlimited
-
-**Endpoint Principali:**
-```php
-class SWUApiClient
-{
-    private const BASE_URL = 'https://admin.starwarsunlimited.com/api';
-
-    public function getCard($cid) {
-        $url = self::BASE_URL . "/card/{$cid}?locale=it";
-        return $this->makeRequest($url);
-    }
-
-    public function getCardList($page = 1, $pageSize = 10) {
-        $url = self::BASE_URL . "/card-list";
-        $params = [
-            'locale' => 'it',
-            'filters[variantOf][id][$null]' => 'true',
-            'pagination[page]' => $page,
-            'pagination[pageSize]' => $pageSize
-        ];
-
-        return $this->makeRequest($url . '?' . http_build_query($params));
-    }
-}
-```
-
-**Gestione Rate Limiting:**
-```php
-class ApiRateLimiter
-{
-    private static $lastRequest = 0;
-    private const MIN_INTERVAL = 100; // ms tra richieste
-
-    public static function throttle() {
-        $now = microtime(true) * 1000;
-        $elapsed = $now - self::$lastRequest;
-
-        if ($elapsed < self::MIN_INTERVAL) {
-            usleep((self::MIN_INTERVAL - $elapsed) * 1000);
-        }
-
-        self::$lastRequest = microtime(true) * 1000;
-    }
-}
-```
-
-### Sistema di Notifiche
-
-**Telegram Bot Integration:**
-```php
-class TelegramNotifier
-{
-    public function sendProgressUpdate($chatId, $messageId, $progress) {
-        $text = "🔄 Scansione in corso...\n";
-        $text .= "📊 Progresso: {$progress['current']}/{$progress['total']}\n";
-        $text .= "✅ Aggiunte: {$progress['added']}\n";
-        $text .= "⚠️ Errori: {$progress['errors']}\n";
-        $text .= "⏱️ Tempo: {$progress['elapsed']}s";
-
-        return $this->editMessage($chatId, $messageId, $text);
-    }
-}
-```
-
-**Email Templates:**
-```php
-class NewCardsEmail extends Mailable
-{
-    public function build() {
-        return $this->subject('Nuove carte aggiunte a SWUDB')
-                   ->view('emails.new-cards')
-                   ->with([
-                       'cards' => $this->cards,
-                       'totalAdded' => count($this->cards),
-                       'scanDate' => now()->format('d/m/Y H:i')
-                   ]);
-    }
-}
-```
-
----
-
-## Gestione Stati e Performance
-
-### Caching Strategy
-
-**Livelli di Cache:**
-1. **Application Cache**: Laravel Cache per dati frequenti
-2. **Query Cache**: Cache risultati database
-3. **Component Cache**: Livewire component caching
-4. **Browser Cache**: Asset caching con versioning
-
-```php
-class CacheManager
-{
-    public static function getFilterOptions() {
-        return Cache::remember('filter_options', 3600, function() {
-            return [
-                'espansioni' => Espansione::orderBy('data_uscita')->get(),
-                'tipi' => Card::distinct()->pluck('tipo')->filter(),
-                'aspetti' => Card::distinct()->pluck('aspetto_primario')->filter(),
-                'rarita' => Card::distinct()->pluck('rarita')->filter()
-            ];
-        });
-    }
-
-    public static function invalidateCardCache() {
-        Cache::forget('filter_options');
-        Cache::forget('cards_max_costo');
-        Cache::forget('cards_max_vita');
-        Cache::forget('cards_max_potenza');
-    }
-}
-```
-
-### Database Optimization
-
-**Indici Strategici:**
-```sql
--- Indici per ricerca rapida
-CREATE INDEX idx_cards_search ON cards(nome, espansione, tipo);
-CREATE INDEX idx_cards_filters ON cards(aspetto_primario, aspetto_secondario, rarita);
-CREATE INDEX idx_cards_stats ON cards(costo, vita, potenza);
-
--- Indici per ordinamento
-CREATE INDEX idx_cards_sort ON cards(espansione, tipo, aspetto_primario, costo, nome);
-
--- Indici per mazzi
-CREATE INDEX idx_deck_cards ON deck_cards(deck_id, card_id);
-CREATE INDEX idx_decks_user ON decks(user_id, public, created_at);
-```
-
-**Query Optimization:**
-```php
-// Eager loading per evitare N+1 queries
-$decks = Deck::with(['user', 'cards.card'])
-             ->where('public', true)
-             ->orderBy('created_at', 'desc')
-             ->paginate(20);
-
-// Query ottimizzata per statistiche
-$stats = DB::table('cards')
-           ->select(
-               'costo',
-               DB::raw('COUNT(*) as count'),
-               DB::raw('AVG(vita) as avg_vita'),
-               DB::raw('AVG(potenza) as avg_potenza')
-           )
-           ->whereNotIn('tipo', ['Leader', 'Base'])
-           ->groupBy('costo')
-           ->get();
-```
-
----
-
-## Sicurezza e Validazione
-
-### Autenticazione e Autorizzazione
-
-**Middleware Stack:**
-```php
-// routes/web.php
+// Middleware per autenticazione admin
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::get('/admin/errors', [AdminController::class, 'errors']);
@@ -530,250 +191,1613 @@ Route::middleware(['auth', 'admin'])->group(function () {
 });
 ```
 
-**Admin Check Helper:**
+**3. Job Queue per Operazioni Asincrone:**
 ```php
-// Helper per controlli admin
+// Gestione import carte con job asincroni
+public function startImport()
+{
+    // Preparazione dati...
+    JobController::fireAndForgetGet(route('carte.insertCards'), [
+        "token" => env('JOB_TOKEN')
+    ]);
+}
+```
+
+### Frontend Reattivo: Livewire 3
+
+**Vantaggi Architetturali:**
+
+**1. Componenti Stateful:**
+```php
+class DeckManager extends Component
+{
+    // State management automatico
+    public $mazzo = [];
+    public $statistichePerCosto = [];
+    public $modalitaRinomina = false;
+
+    // Reattività automatica
+    public function updatedMazzo()
+    {
+        $this->calcolaStatistiche();
+    }
+}
+```
+
+**2. Binding Bidirezionale:**
+```blade
+{{-- Filtri con aggiornamento real-time --}}
+<input type="text" wire:model.live="nome" class="form-control"
+       placeholder="Nome carta...">
+
+{{-- Automaticamente triggera updatedNome() --}}
+```
+
+**3. Event System Avanzato:**
+```php
+// Comunicazione tra componenti
+$this->dispatch('cardAdded', [
+    'cardId' => $this->selectedCardId,
+    'copies' => $this->copiesAmount
+]);
+```
+
+### Database: MySQL 8.0+ con Ottimizzazioni
+
+**Schema Ottimizzato:**
+```sql
+-- Indici composti per query complesse
+CREATE INDEX idx_cards_search ON cards (tipo, aspettoPrimario, costo, rarita);
+CREATE INDEX idx_compositions_deck ON compositions (deck_id, card_id);
+
+-- Indici per ordinamento personalizzato
+CREATE INDEX idx_cards_sort ON cards (espansione, uscita, numero);
+```
+
+### Styling: Bootstrap 5.3 con Tema Dark
+
+**Approccio CSS:**
+- Utilizzo esclusivo di classi Bootstrap
+- Tema dark nativo con variabili CSS personalizzate
+- Componenti responsive per mobile-first design
+- Eccezioni controllate per classi custom (bg-custom-light, rarity classes)
+
+---
+
+## Database Design e Ottimizzazioni
+
+### Schema Relazionale Avanzato
+
+**Tabelle Principali:**
+
+```sql
+-- Carte del gioco con metadati completi
+CREATE TABLE cards (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    cid VARCHAR(255) UNIQUE,           -- ID unico da API
+    nome VARCHAR(255) NOT NULL,        -- Nome carta
+    titolo VARCHAR(255),               -- Titolo/sottotitolo
+    espansione VARCHAR(100) NOT NULL,  -- Set di appartenenza
+    numero INT NOT NULL,               -- Numero nel set
+    tipo ENUM('Leader', 'Base', 'Unità', 'Miglioria', 'Evento') NOT NULL,
+    aspettoPrimario ENUM('Blu', 'Verde', 'Rosso', 'Giallo', 'Nero', 'Bianco'),
+    aspettoSecondario ENUM('Nero', 'Bianco'),
+    costo INT DEFAULT 0,               -- Costo in risorse
+    potenza INT,                       -- Potenza di attacco
+    vita INT,                          -- Punti vita
+    tratti TEXT,                       -- Tratti separati da ' * '
+    arena ENUM('Ground', 'Space'),     -- Arena di gioco
+    unica BOOLEAN DEFAULT 0,           -- Carta unica
+    rarita ENUM('Common', 'Uncommon', 'Rare', 'Legendary', 'Special') NOT NULL,
+    artista VARCHAR(255),              -- Nome artista
+    uscita DATE NOT NULL,              -- Data rilascio
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- Indici ottimizzati per performance
+    UNIQUE KEY unique_espansione_numero (espansione, numero),
+    INDEX idx_tipo_aspetto (tipo, aspettoPrimario),
+    INDEX idx_costo_rarita (costo, rarita),
+    INDEX idx_search_nome (nome),
+    INDEX idx_uscita (uscita),
+    FULLTEXT idx_fulltext_search (nome, titolo, tratti)
+);
+
+-- Mazzi degli utenti con metadati
+CREATE TABLE decks (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(255) NOT NULL,        -- Nome del mazzo
+    codUtente VARCHAR(255) NOT NULL,   -- Username proprietario
+    public BOOLEAN DEFAULT 0,          -- Visibilità pubblica
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    UNIQUE KEY unique_user_deck (codUtente, nome),
+    INDEX idx_public_user (public, codUtente),
+    INDEX idx_created_at (created_at)
+);
+
+-- Composizione mazzi (relazione many-to-many ottimizzata)
+CREATE TABLE compositions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    deck_id BIGINT NOT NULL,           -- FK verso decks
+    card_id BIGINT NOT NULL,           -- FK verso cards
+    copie INT DEFAULT 1,               -- Numero copie
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE,
+    FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_deck_card (deck_id, card_id),
+    INDEX idx_deck_compositions (deck_id),
+    INDEX idx_card_usage (card_id)
+);
+
+-- Gestione errori di sistema
+CREATE TABLE system_errors (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    exception_class VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    file VARCHAR(500),
+    line INT,
+    trace LONGTEXT,
+    request_url TEXT,
+    request_method VARCHAR(10),
+    user_agent TEXT,
+    user_id BIGINT,
+    status ENUM('new', 'investigating', 'resolved', 'ignored') DEFAULT 'new',
+    admin_notes TEXT,
+    resolved_by BIGINT,
+    resolved_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_status_created (status, created_at),
+    INDEX idx_exception_class (exception_class),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
+);
+```
+
+### Relazioni Eloquent Avanzate
+
+```php
+// Model Card con relazioni ottimizzate
+class Card extends Model
+{
+    protected $fillable = [
+        'cid', 'nome', 'titolo', 'espansione', 'numero', 'tipo',
+        'aspettoPrimario', 'aspettoSecondario', 'costo', 'potenza', 'vita',
+        'tratti', 'arena', 'unica', 'rarita', 'artista', 'uscita'
+    ];
+
+    protected $casts = [
+        'uscita' => 'date',
+        'unica' => 'boolean',
+        'costo' => 'integer',
+        'potenza' => 'integer',
+        'vita' => 'integer',
+        'numero' => 'integer'
+    ];
+
+    // Relazione con composizioni mazzi
+    public function compositions()
+    {
+        return $this->hasMany(Composition::class);
+    }
+
+    // Relazione many-to-many con mazzi
+    public function decks()
+    {
+        return $this->belongsToMany(Deck::class, 'compositions')
+                    ->withPivot('copie')
+                    ->withTimestamps();
+    }
+
+    // Scope per filtri avanzati
+    public function scopeByType($query, $type)
+    {
+        return $query->where('tipo', $type);
+    }
+
+    public function scopeByAspect($query, $aspect)
+    {
+        return $query->where('aspettoPrimario', $aspect)
+                    ->orWhere('aspettoSecondario', $aspect);
+    }
+
+    public function scopeByCost($query, $min, $max)
+    {
+        return $query->whereBetween('costo', [$min, $max]);
+    }
+}
+```
+
+---
+
+## Componenti Livewire Personalizzati
+
+### SearchFilter Component - Filtri Avanzati
+
+**Architettura del Componente:**
+
+Il componente `SearchFilter` rappresenta uno dei pezzi più complessi del sistema, gestendo filtri multipli con caching intelligente e comunicazione event-driven.
+
+```php
+class SearchFilter extends Component
+{
+    // Properties per filtri base
+    public $nome = '';
+    public $titolo = '';
+    public $espansione = '';
+    public $tipo = '';
+    public $aspettoPrimario = '';
+    public $aspettoSecondario = '';
+    public $rarita = '';
+
+    // Properties per filtri numerici
+    public $costoMin = null;
+    public $costoMax = null;
+    public $potenzaMin = null;
+    public $potenzaMax = null;
+    public $vitaMin = null;
+    public $vitaMax = null;
+
+    // Properties per filtri avanzati
+    public $tratti = '';
+    public $arena = '';
+    public $unica = null;
+    public $artista = '';
+
+    // Valori massimi dinamici dal database
+    public $maxCostoDb = 999;
+    public $maxPotenzaDb = 999;
+    public $maxVitaDb = 999;
+
+    // Opzioni per select dinamiche
+    public $espansioni = [];
+    public $tipi = [];
+    public $aspettiPrimari = [];
+    public $aspettiSecondari = [];
+    public $rarita_options = [];
+    public $arene = [];
+    public $artisti = [];
+
+    // Risultati e stato
+    public $filteredCards = [];
+    public $totalResults = 0;
+    public $mode = 'page'; // 'page', 'popup', 'collezione'
+    public $advancedFiltersOpen = false;
+
+    // Event listeners per comunicazione inter-componente
+    protected $listeners = [
+        'resetFilters' => 'resetAllFilters',
+        'applyFiltersForPopup' => 'getFilteredCardsForPopup',
+        'loadAllCards' => 'loadAllCards'
+    ];
+}
+```
+
+**Funzionalità Chiave:**
+
+**1. Caching Intelligente delle Opzioni:**
+```php
+public function loadFilterOptions()
+{
+    // Cache delle espansioni ordinate per data di uscita
+    $this->espansioni = Cache::remember('cards_filter_espansioni', 3600, function () {
+        return Card::select('espansione')
+            ->selectRaw('MIN(uscita) as prima_uscita')
+            ->groupBy('espansione')
+            ->orderBy('prima_uscita')
+            ->pluck('espansione');
+    });
+
+    // Cache dei valori massimi per filtri numerici
+    $maxValues = Cache::remember('cards_max_values', 3600, function () {
+        return Card::selectRaw('MAX(costo) as max_costo, MAX(potenza) as max_potenza, MAX(vita) as max_vita')
+                   ->first();
+    });
+
+    $this->maxCostoDb = $maxValues->max_costo ?? 999;
+    $this->maxPotenzaDb = $maxValues->max_potenza ?? 999;
+    $this->maxVitaDb = $maxValues->max_vita ?? 999;
+}
+```
+
+**2. Query Building Dinamico:**
+```php
+public function applyFilters()
+{
+    $query = Card::query();
+
+    // Filtri testuali con LIKE
+    if (!empty($this->nome)) {
+        $query->where('nome', 'like', '%' . $this->nome . '%');
+    }
+
+    // Filtri esatti
+    if (!empty($this->espansione)) {
+        $query->where('espansione', $this->espansione);
+    }
+
+    // Filtri numerici con range
+    if ($this->costoMin !== null && $this->costoMin !== '') {
+        $query->where('costo', '>=', $this->costoMin);
+    }
+    if ($this->costoMax !== null && $this->costoMax !== '') {
+        $query->where('costo', '<=', $this->costoMax);
+    }
+
+    // Filtri booleani con gestione null
+    if ($this->unica !== null) {
+        $query->where('unica', $this->unica);
+    }
+
+    $results = $query->get();
+
+    // Applicazione algoritmo di ordinamento personalizzato
+    if (!$results->isEmpty()) {
+        $results = CardsController::mergeSort($results);
+    }
+
+    $this->filteredCards = $results;
+    $this->totalResults = $this->filteredCards->count();
+
+    // Event dispatch per aggiornamento UI
+    $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
+}
+```
+
+**3. Reattività Real-time:**
+```php
+// Metodi automatici per aggiornamento filtri
+public function updatedNome() { $this->applyFilters(); }
+public function updatedTitolo() { $this->applyFilters(); }
+public function updatedEspansione() { $this->applyFilters(); }
+public function updatedTipo() { $this->applyFilters(); }
+// ... altri metodi updated per ogni property
+```
+
+### DeckManager Component - Gestione Mazzi Completa
+
+**Responsabilità del Componente:**
+
+Il `DeckManager` gestisce l'intero ciclo di vita di un mazzo, dalle modifiche alle statistiche in tempo reale.
+
+```php
+class DeckManager extends Component
+{
+    // Dati del mazzo
+    public $nome;
+    public $user;
+    public $deck;
+    public $deckObject;
+    public $size;
+    public $proprietario;
+    public $carte;
+    public $mazzo = [];
+
+    // Gestione rinominazione
+    public $modalitaRinomina = false;
+    public $nuovoNome = '';
+
+    // Statistiche calcolate in tempo reale
+    public $trattiPrincipali = [];
+    public $trattiCompleti = [];
+    public $statistichePerCosto = [];
+    public $distribuzionePerTipo = [];
+    public $distribuzionePerCosto = [];
+    public $distribuzionePerAspetto = [];
+    public $totaleCarteStatistiche = 0;
+
+    protected $listeners = [
+        'cardAdded' => 'addCard',
+        'refreshDeck' => '$refresh'
+    ];
+}
+```
+
+**Calcolo Statistiche Avanzate:**
+```php
+public function calcolaStatistiche()
+{
+    if (empty($this->mazzo)) {
+        $this->resetStatistiche();
+        return;
+    }
+
+    // Esclusione di Leader e Basi dalle statistiche
+    $cartePerStatistiche = array_filter($this->mazzo, function($carta) {
+        return !in_array($carta['tipo'], ['Leader', 'Base']);
+    });
+
+    // Calcolo tratti divisi e completi
+    $trattiDivisi = [];
+    $trattiCompleti = [];
+
+    foreach ($cartePerStatistiche as $carta) {
+        if (!empty($carta['tratti'])) {
+            $tratti = explode(' * ', $carta['tratti']);
+            foreach ($tratti as $tratto) {
+                $tratto = trim($tratto);
+                if (!empty($tratto)) {
+                    // Tratti divisi (ogni tratto separatamente)
+                    $trattiDivisi[$tratto] = ($trattiDivisi[$tratto] ?? 0) + $carta['copie'];
+                }
+            }
+            // Tratti completi (stringa intera)
+            $trattiCompleti[$carta['tratti']] = ($trattiCompleti[$carta['tratti']] ?? 0) + $carta['copie'];
+        }
+    }
+
+    // Statistiche per costo con medie
+    $statistichePerCosto = [];
+    foreach ($cartePerStatistiche as $carta) {
+        $costo = $carta['costo'];
+        if (!isset($statistichePerCosto[$costo])) {
+            $statistichePerCosto[$costo] = [
+                'count' => 0,
+                'vita_totale' => 0,
+                'potenza_totale' => 0,
+                'vita_media' => 0,
+                'potenza_media' => 0
+            ];
+        }
+
+        $statistichePerCosto[$costo]['count'] += $carta['copie'];
+        $statistichePerCosto[$costo]['vita_totale'] += ($carta['vita'] ?? 0) * $carta['copie'];
+        $statistichePerCosto[$costo]['potenza_totale'] += ($carta['potenza'] ?? 0) * $carta['copie'];
+    }
+
+    // Calcolo medie
+    foreach ($statistichePerCosto as $costo => &$stats) {
+        if ($stats['count'] > 0) {
+            $stats['vita_media'] = round($stats['vita_totale'] / $stats['count'], 1);
+            $stats['potenza_media'] = round($stats['potenza_totale'] / $stats['count'], 1);
+        }
+    }
+
+    $this->trattiPrincipali = $trattiDivisi;
+    $this->trattiCompleti = $trattiCompleti;
+    $this->statistichePerCosto = $statistichePerCosto;
+    $this->totaleCarteStatistiche = array_sum(array_column($cartePerStatistiche, 'copie'));
+}
+```
+
+---
+
+## Algoritmi di Ordinamento Avanzati
+
+### Merge Sort Personalizzato per Carte
+
+**Problema Risolto:**
+
+L'ordinamento delle carte in Star Wars Unlimited richiede criteri complessi e gerarchici che i semplici `ORDER BY` SQL non possono gestire efficacemente. È stato implementato un algoritmo merge sort personalizzato che gestisce 9 criteri di ordinamento in sequenza.
+
+**Criteri di Ordinamento (in ordine di priorità):**
+
+1. **Codice Utente (codUtente)** - Per raggruppare mazzi per proprietario
+2. **Nome Mazzo (mazzo)** - Per ordinamento alfabetico mazzi
+3. **Tipo Generico** - Leader e Basi prima di tutto
+4. **Aspetto Primario** - Blu, Verde, Rosso, Giallo, Nero, Bianco
+5. **Aspetto Secondario** - Nero, Bianco, stesso del primario, altri
+6. **Tipo Specifico** - Unità, Miglioria, Evento
+7. **Costo (costo)** - Crescente, eccetto per Leader
+8. **Data Uscita (uscita)** - Per espansioni diverse
+9. **Numero Carta (numero)** - Tie-breaker finale
+
+**Implementazione dell'Algoritmo:**
+
+```php
+public static function compareElements(&$el1, &$el2, $verbose = false)
+{
+    // 1. Confronto per codice utente (proprietario mazzo)
+    if (isset($el1["codUtente"]) && isset($el2["codUtente"])) {
+        $userCompare = strcmp($el1["codUtente"], $el2["codUtente"]);
+        if ($userCompare !== 0) {
+            return $userCompare;
+        }
+    }
+
+    // 2. Confronto per nome mazzo
+    if (isset($el1["mazzo"]) && isset($el2["mazzo"])) {
+        $mazzoOrder = [];
+        $result = Deck::select("nome as mazzo", "codUtente", "public", "id")
+                     ->distinct()->orderBy("id")->get();
+        foreach($result as &$line){
+            array_push($mazzoOrder, $line["mazzo"]);
+        }
+
+        $mazzoIndex1 = array_search($el1["mazzo"], $mazzoOrder);
+        $mazzoIndex2 = array_search($el2["mazzo"], $mazzoOrder);
+
+        if ($mazzoIndex1 !== false && $mazzoIndex2 !== false) {
+            if ($mazzoIndex1 < $mazzoIndex2) return -1;
+            if ($mazzoIndex1 > $mazzoIndex2) return 1;
+        }
+    }
+
+    // 3. Confronto per tipo generico (Leader/Base vs altri)
+    $getGenericTypeWeight = function($el) {
+        if ($el["tipo"] == "Leader") return 0;
+        if ($el["tipo"] == "Base") return 1;
+        return 2; // Unità, Miglioria, Evento
+    };
+
+    $genericWeight1 = $getGenericTypeWeight($el1);
+    $genericWeight2 = $getGenericTypeWeight($el2);
+
+    if ($genericWeight1 < $genericWeight2) return -1;
+    if ($genericWeight1 > $genericWeight2) return 1;
+
+    // 4. Confronto per aspetto primario
+    $getPrimaryAspectWeight = function($el) {
+        switch($el["aspettoPrimario"]) {
+            case "Blu": return 0;
+            case "Verde": return 1;
+            case "Rosso": return 2;
+            case "Giallo": return 3;
+            case "Nero": return 4;
+            case "Bianco": return 5;
+            default: return 6;
+        }
+    };
+
+    $primaryAspectWeight1 = $getPrimaryAspectWeight($el1);
+    $primaryAspectWeight2 = $getPrimaryAspectWeight($el2);
+
+    if ($primaryAspectWeight1 < $primaryAspectWeight2) return -1;
+    if ($primaryAspectWeight1 > $primaryAspectWeight2) return 1;
+
+    // 5. Confronto per aspetto secondario
+    $getSecondaryAspectWeight = function($el) {
+        if ($el["aspettoSecondario"] == "Nero") return 0;
+        if ($el["aspettoSecondario"] == "Bianco") return 1;
+        if ($el["aspettoSecondario"] == $el["aspettoPrimario"]) return 2;
+        return 3;
+    };
+
+    $secondaryAspectWeight1 = $getSecondaryAspectWeight($el1);
+    $secondaryAspectWeight2 = $getSecondaryAspectWeight($el2);
+
+    if ($secondaryAspectWeight1 < $secondaryAspectWeight2) return -1;
+    if ($secondaryAspectWeight1 > $secondaryAspectWeight2) return 1;
+
+    // 6. Confronto per tipo specifico
+    $getSpecificTypeWeight = function($el) {
+        switch($el["tipo"]) {
+            case "Unità": return 0;
+            case "Miglioria": return 1;
+            case "Evento": return 2;
+            default: return 3;
+        }
+    };
+
+    $specificTypeWeight1 = $getSpecificTypeWeight($el1);
+    $specificTypeWeight2 = $getSpecificTypeWeight($el2);
+
+    if ($specificTypeWeight1 < $specificTypeWeight2) return -1;
+    if ($specificTypeWeight1 > $specificTypeWeight2) return 1;
+
+    // 7. Confronto per costo (eccetto Leader)
+    if ($el1["tipo"] != "Leader" && $el2["tipo"] != "Leader") {
+        if ($el1["costo"] < $el2["costo"]) return -1;
+        if ($el1["costo"] > $el2["costo"]) return 1;
+    }
+
+    // 8. Confronto per data uscita (espansioni diverse)
+    if($el1["espansione"] != $el2["espansione"]){
+        $compareDate = strcmp($el1['uscita'], $el2['uscita']);
+        if ($compareDate < 0) return -1;
+        if ($compareDate > 0) return 1;
+    }
+
+    // 9. Confronto finale per numero carta
+    if ($el1["numero"] < $el2["numero"]) return -1;
+    if ($el1["numero"] > $el2["numero"]) return 1;
+
+    return 0; // Elementi identici
+}
+```
+
+**Implementazione Merge Sort:**
+
+```php
+public static function mergeSort(&$data, $verbose = false)
+{
+    // Gestione sia Collection che array
+    $isCollection = $data instanceof \Illuminate\Support\Collection;
+
+    if ($isCollection) {
+        // Caso base per Collection
+        if ($data->count() <= 1) {
+            return $data;
+        }
+
+        // Divisione in due metà
+        $mid = floor($data->count() / 2);
+        $left = $data->take($mid);
+        $right = $data->skip($mid);
+
+        // Ricorsione
+        $left = CardsController::mergeSort($left, $verbose);
+        $right = CardsController::mergeSort($right, $verbose);
+
+        // Merge delle due metà ordinate
+        $result = collect();
+        $leftIndex = 0;
+        $rightIndex = 0;
+        $leftArray = $left->values()->all();
+        $rightArray = $right->values()->all();
+
+        while ($leftIndex < count($leftArray) && $rightIndex < count($rightArray)) {
+            if (CardsController::compareElements($leftArray[$leftIndex], $rightArray[$rightIndex], $verbose) <= 0) {
+                $result->push($leftArray[$leftIndex]);
+                $leftIndex++;
+            } else {
+                $result->push($rightArray[$rightIndex]);
+                $rightIndex++;
+            }
+        }
+
+        // Aggiunta elementi rimanenti
+        while ($leftIndex < count($leftArray)) {
+            $result->push($leftArray[$leftIndex]);
+            $leftIndex++;
+        }
+
+        while ($rightIndex < count($rightArray)) {
+            $result->push($rightArray[$rightIndex]);
+            $rightIndex++;
+        }
+
+        return $result;
+    } else {
+        // Gestione array tradizionali
+        if (count($data) <= 1) {
+            return $data;
+        }
+
+        $mid = floor(count($data) / 2);
+        $left = array_slice($data, 0, $mid);
+        $right = array_slice($data, $mid);
+
+        $left = CardsController::mergeSort($left, $verbose);
+        $right = CardsController::mergeSort($right, $verbose);
+
+        // Merge per array
+        $result = [];
+        $leftIndex = 0;
+        $rightIndex = 0;
+
+        while ($leftIndex < count($left) && $rightIndex < count($right)) {
+            if (CardsController::compareElements($left[$leftIndex], $right[$rightIndex], $verbose) <= 0) {
+                $result[] = $left[$leftIndex];
+                $leftIndex++;
+            } else {
+                $result[] = $right[$rightIndex];
+                $rightIndex++;
+            }
+        }
+
+        // Aggiunta elementi rimanenti
+        while ($leftIndex < count($left)) {
+            $result[] = $left[$leftIndex];
+            $leftIndex++;
+        }
+
+        while ($rightIndex < count($right)) {
+            $result[] = $right[$rightIndex];
+            $rightIndex++;
+        }
+
+        return $result;
+    }
+}
+```
+
+**Vantaggi dell'Implementazione:**
+
+1. **Complessità O(n log n)** - Efficiente anche per grandi dataset
+2. **Stabilità** - Mantiene l'ordine relativo di elementi uguali
+3. **Flessibilità** - Gestisce sia Collection Laravel che array PHP
+4. **Debugging** - Modalità verbose per analisi del comportamento
+5. **Riutilizzabilità** - Utilizzato in tutto il sistema per consistenza
+
+---
+
+## Sistema di Gestione Errori Personalizzato
+
+### Architettura del Sistema
+
+Il sistema di gestione errori di SWUDB è completamente personalizzato e rappresenta una delle implementazioni più avanzate del progetto. Gestisce automaticamente tutti gli errori dell'applicazione con notifiche multi-canale e dashboard amministrativa.
+
+**Componenti del Sistema:**
+
+1. **Exception Handler Personalizzato** (bootstrap/app.php)
+2. **Model SystemError** per persistenza
+3. **Email Notifications** con template dedicati
+4. **Notifiche Telegram** in tempo reale
+5. **Dashboard Admin** per gestione errori
+
+### Exception Handler Avanzato
+
+**Configurazione in bootstrap/app.php:**
+
+```php
+->withExceptions(function (Exceptions $exceptions) {
+    $exceptions->reportable(function (Throwable $e) {
+        // 1. Salvataggio errore nel database
+        $systemError = null;
+        try {
+            $systemError = SystemError::create([
+                'exception_class' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_url' => request()->fullUrl() ?? null,
+                'request_method' => request()->method() ?? null,
+                'user_agent' => request()->userAgent() ?? null,
+                'user_id' => Auth::id(),
+                'status' => 'new',
+            ]);
+        } catch (\Exception $dbException) {
+            // Fallback logging se database non disponibile
+            \Log::error("Failed to save error to database: " . $dbException->getMessage());
+        }
+
+        // 2. Notifica Telegram immediata
+        MessageCreated::dispatch("Errore: " . $e->getMessage());
+
+        // 3. Email a tutti gli admin
+        try {
+            $admins = User::getAdmins();
+            if ($admins->isNotEmpty()) {
+                $requestUrl = request()->fullUrl() ?? null;
+                $requestMethod = request()->method() ?? null;
+                $userAgent = request()->userAgent() ?? null;
+
+                foreach ($admins as $admin) {
+                    Mail::to($admin->email)->send(
+                        new ErrorNotificationEmail($e, $requestUrl, $requestMethod, $userAgent, $systemError)
+                    );
+                }
+            }
+        } catch (\Exception $mailException) {
+            // Fallback Telegram se email fallisce
+            MessageCreated::dispatch("Errore invio email admin: " . $mailException->getMessage());
+        }
+    });
+
+    // Rendering personalizzato basato su ruolo utente
+    $exceptions->renderable(function (Throwable $e, $request) {
+        if (Auth::admin()) {
+            // Admin vedono dettagli completi con layout app
+            config(['app.debug' => true]);
+
+            return response()->view('errors.admin-debug', [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'message' => $e->getMessage(),
+                'request' => $request
+            ], 500);
+        }
+
+        // Utenti normali vedono pagine errore standard
+        config(['app.debug' => false]);
+        return null; // Usa view personalizzate
+    });
+})
+```
+
+### Model SystemError
+
+**Struttura del Model:**
+
+```php
+class SystemError extends Model
+{
+    protected $fillable = [
+        'exception_class',
+        'message',
+        'file',
+        'line',
+        'trace',
+        'request_url',
+        'request_method',
+        'user_agent',
+        'user_id',
+        'status',
+        'admin_notes',
+        'resolved_by',
+        'resolved_at',
+    ];
+
+    protected $casts = [
+        'resolved_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    // Relazioni
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function resolvedBy()
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    // Scopes per dashboard admin
+    public function scopeNew($query)
+    {
+        return $query->where('status', 'new');
+    }
+
+    public function scopeUnresolved($query)
+    {
+        return $query->whereIn('status', ['new', 'investigating']);
+    }
+
+    public function scopeByClass($query, $class)
+    {
+        return $query->where('exception_class', $class);
+    }
+
+    // Metodi di utilità
+    public function getShortTraceAttribute()
+    {
+        return Str::limit($this->trace, 500);
+    }
+
+    public function getFormattedCreatedAtAttribute()
+    {
+        return $this->created_at->format('d/m/Y H:i:s');
+    }
+}
+```
+
+### Email Notification System
+
+**Template Email Personalizzato:**
+
+```php
+class ErrorNotificationEmail extends Mailable
+{
+    public function __construct(
+        private Throwable $exception,
+        private ?string $requestUrl = null,
+        private ?string $requestMethod = null,
+        private ?string $userAgent = null,
+        private $systemError = null
+    ) {
+        $this->errorMessage = $exception->getMessage();
+        $this->errorFile = $exception->getFile();
+        $this->errorLine = $exception->getLine();
+        $this->timestamp = now()->format('d/m/Y H:i:s');
+    }
+
+    public function envelope(): Envelope
+    {
+        return new Envelope(
+            subject: '🚨 Errore Sistema SWUDB - ' . Str::limit($this->errorMessage, 50),
+            from: new Address(env('MAIL_FROM_ADDRESS'), 'SWUDB Error System')
+        );
+    }
+
+    public function content(): Content
+    {
+        return new Content(
+            view: 'emails.error-notification',
+            with: [
+                'errorMessage' => $this->errorMessage,
+                'errorFile' => $this->errorFile,
+                'errorLine' => $this->errorLine,
+                'requestUrl' => $this->requestUrl,
+                'requestMethod' => $this->requestMethod,
+                'userAgent' => $this->userAgent,
+                'timestamp' => $this->timestamp,
+                'exceptionClass' => get_class($this->exception),
+                'systemError' => $this->systemError,
+            ]
+        );
+    }
+}
+```
+
+### Sistema di Notifiche Telegram
+
+**Event/Listener Pattern:**
+
+```php
+// Event per messaggi
+class MessageCreated
+{
+    use Dispatchable;
+
+    public function __construct(public $message) {}
+}
+
+// Listener per invio Telegram
+class SendMessage
+{
+    public function handle(MessageCreated $event): void
+    {
+        // Fire-and-forget per evitare blocking
+        JobController::fireAndForgetGet(route("job.sendMessage"), [
+            "message" => $event->message,
+            "token" => env("JOB_TOKEN")
+        ]);
+    }
+}
+
+// JobController per invio effettivo
+public function sendMessage(Request $request)
+{
+    $message = $request->input('message');
+    $botToken = env('TELEGRAM_BOT_TOKEN');
+    $chatId = env('TELEGRAM_CHAT_ID');
+
+    try {
+        Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
+            'chat_id' => $chatId,
+            'text' => $message
+        ]);
+    } catch (\Exception $e) {
+        \Log::error("Errore Telegram: " . $e->getMessage());
+    }
+}
+```
+
+### Dashboard Admin per Gestione Errori
+
+**Funzionalità della Dashboard:**
+
+1. **Lista errori con filtri** (nuovo, in corso, risolto)
+2. **Dettagli completi** con stack trace
+3. **Gestione stato** e note admin
+4. **Statistiche** per tipo di errore
+5. **Azioni bulk** per gestione multipla
+
+**Vantaggi del Sistema:**
+
+1. **Notifiche Immediate** - Telegram + Email in tempo reale
+2. **Context Awareness** - Cattura URL, user agent, utente
+3. **Persistenza** - Tutti gli errori salvati per analisi
+4. **Gestione Centralizzata** - Dashboard admin completa
+5. **Fallback Robusto** - Gestione errori anche in caso di problemi sistema
+6. **Differenziazione Utenti** - Admin vedono dettagli, utenti pagine pulite
+
+---
+
+## Integrazione API e Web Scraping
+
+### Sistema di Import Automatico
+
+**Architettura del Sistema:**
+
+Il sistema di import di SWUDB integra l'API ufficiale di Star Wars Unlimited con fallback su web scraping per garantire aggiornamenti completi e affidabili.
+
+**Flusso di Import:**
+
+1. **Scansione API** per nuove carte
+2. **Confronto** con database esistente
+3. **Recupero dettagli** via API
+4. **Fallback JSON** se API non disponibile
+5. **Inserimento batch** asincrono
+6. **Notifiche** agli utenti
+
+```php
+public function startImport()
+{
+    Log::info("Starting card import process with API integration");
+
+    // 1. Generazione thread ID per tracking
+    $threadId = 'import_' . time() . '_' . rand(1000, 9999);
+    $logFile = $this->createScanLog();
+
+    // 2. Scansione API per ottenere lista carte
+    $this->writeScanLog("Inizio scansione API Star Wars Unlimited", $logFile);
+
+    try {
+        $apiCards = $this->scanAPIForCards($threadId, $logFile);
+        $this->writeScanLog("API scansionata: " . count($apiCards) . " carte trovate", $logFile);
+    } catch (\Exception $e) {
+        $this->writeScanLog("Errore scansione API: " . $e->getMessage(), $logFile);
+        ThreadMessageCreated::dispatch($threadId, "Errore scansione API: " . $e->getMessage(), true);
+        return view("carte.update", ["output" => "Errore durante la scansione API"]);
+    }
+
+    // 3. Confronto con database esistente
+    $existingCards = Card::pluck('cid')->toArray();
+    $newCards = array_filter($apiCards, function($card) use ($existingCards) {
+        return !in_array($card['cid'], $existingCards);
+    });
+
+    if (empty($newCards)) {
+        $this->writeScanLog("Nessuna nuova carta trovata", $logFile);
+        ThreadMessageCreated::dispatch($threadId, "Scansione completata - Nessuna nuova carta", true);
+        return view("carte.update", ["output" => "Nessuna nuova carta da importare"]);
+    }
+
+    $this->writeScanLog("Trovate " . count($newCards) . " nuove carte da importare", $logFile);
+
+    // 4. Recupero dettagli per nuove carte
+    $detailedCards = [];
+    foreach ($newCards as $card) {
+        try {
+            $details = $this->getCardDetailsFromAPI($card['cid']);
+            if ($details) {
+                $detailedCards[] = $details;
+            }
+        } catch (\Exception $e) {
+            $this->writeScanLog("Errore recupero dettagli carta {$card['cid']}: " . $e->getMessage(), $logFile);
+        }
+    }
+
+    // 5. Preparazione per inserimento asincrono
+    $this->prepareAsyncInsertion($detailedCards, $threadId, $logFile);
+
+    return view("carte.update", ["output" => "Import avviato per " . count($detailedCards) . " carte"]);
+}
+```
+
+**Gestione Batch Asincrona:**
+
+```php
+public function insertCards(Request $request)
+{
+    $threadId = $request->input('threadId');
+
+    // Caricamento dati da file temporaneo
+    $filePath = storage_path("app/cards_to_insert.json");
+    if (!file_exists($filePath)) {
+        ThreadMessageCreated::dispatch($threadId, "File dati non trovato", true);
+        return;
+    }
+
+    $data = json_decode(file_get_contents($filePath), true);
+    $cards = $data['cards'];
+    $logFile = $data['logFile'];
+    $totalCards = count($cards);
+
+    ThreadMessageCreated::dispatch($threadId, "Inizio inserimento batch: {$totalCards} carte");
+
+    $batchSize = 50; // Batch ottimizzato per performance
+    $insertedCount = 0;
+
+    for ($i = 0; $i < $totalCards; $i += $batchSize) {
+        $batch = array_slice($cards, $i, $batchSize);
+
+        try {
+            // Inserimento batch con transazione
+            DB::transaction(function() use ($batch, &$insertedCount) {
+                foreach ($batch as $cardData) {
+                    // Gestione caso speciale per carta ID '7499995534'
+                    if ($cardData['cid'] === '7499995534') {
+                        $cardData['numero'] = 100;
+                    }
+
+                    Card::create($cardData);
+                    $insertedCount++;
+                }
+            });
+
+            $progress = round(($insertedCount / $totalCards) * 100, 1);
+            ThreadMessageCreated::dispatch($threadId, "Progresso: {$insertedCount}/{$totalCards} carte ({$progress}%)");
+
+        } catch (\Exception $e) {
+            $this->writeScanLog("Errore inserimento batch: " . $e->getMessage(), $logFile);
+
+            // Restart automatico del processo
+            if ($i + $batchSize < $totalCards) {
+                $remainingCards = array_slice($cards, $i + $batchSize);
+                $insertData = [
+                    'cards' => $remainingCards,
+                    'threadId' => $threadId,
+                    'logFile' => $logFile,
+                    'timestamp' => time()
+                ];
+                file_put_contents($filePath, json_encode($insertData));
+
+                JobController::fireAndForgetGet(route('carte.insertCards', ['threadId' => $threadId]), [
+                    "token" => env('JOB_TOKEN')
+                ]);
+
+                ThreadMessageCreated::dispatch($threadId, "Processo riavviato automaticamente - Inserite {$insertedCount}/{$totalCards} carte");
+                return;
+            }
+        }
+
+        // Delay tra batch per evitare sovraccarico
+        usleep(100000); // 100ms
+    }
+
+    // Completamento processo
+    ThreadMessageCreated::dispatch($threadId, "Import completato: {$insertedCount} carte inserite", true);
+    $this->writeScanLog("Import completato con successo: {$insertedCount} carte", $logFile);
+
+    // Cleanup file temporaneo
+    unlink($filePath);
+
+    // Invio email notifiche agli utenti
+    $this->sendNewCardsNotification($insertedCount);
+}
+```
+
+### Sistema di Logging Avanzato
+
+**Logging Timestampato:**
+
+```php
+private function createScanLog()
+{
+    $timestamp = now()->format('Y_m_d_H_i');
+    $filename = "scansione_{$timestamp}.log";
+    $logPath = storage_path("logs/{$filename}");
+
+    $this->writeScanLog("=== INIZIO SCANSIONE SWUDB ===", $filename);
+    $this->writeScanLog("Timestamp: " . now()->format('d/m/Y H:i:s'), $filename);
+    $this->writeScanLog("Versione: " . env('APP_VERSION_PRIMARY', '1') . '.' . env('APP_VERSION_SECONDARY', '0') . '.' . env('APP_VERSION_TERTIARY', '0'), $filename);
+
+    return $filename;
+}
+
+private function writeScanLog($message, $logFile)
+{
+    $timestamp = now()->format('H:i:s');
+    $logMessage = "[{$timestamp}] {$message}\n";
+
+    file_put_contents(
+        storage_path("logs/{$logFile}"),
+        $logMessage,
+        FILE_APPEND | LOCK_EX
+    );
+
+    // Anche nel log Laravel per backup
+    Log::info("SCAN: {$message}");
+}
+```
+
+---
+
+## Performance e Caching
+
+### Strategie di Caching Implementate
+
+**1. Query Caching per Filtri:**
+
+```php
+// Cache opzioni filtri per 1 ora
+$this->espansioni = Cache::remember('cards_filter_espansioni', 3600, function () {
+    return Card::select('espansione')
+        ->selectRaw('MIN(uscita) as prima_uscita')
+        ->groupBy('espansione')
+        ->orderBy('prima_uscita')
+        ->pluck('espansione');
+});
+
+// Cache valori massimi per filtri numerici
+$maxValues = Cache::remember('cards_max_values', 3600, function () {
+    return Card::selectRaw('MAX(costo) as max_costo, MAX(potenza) as max_potenza, MAX(vita) as max_vita')
+               ->first();
+});
+```
+
+**2. Ottimizzazioni Database:**
+
+```sql
+-- Indici composti per query complesse
+CREATE INDEX idx_cards_filter ON cards (tipo, aspettoPrimario, costo, rarita);
+CREATE INDEX idx_cards_search ON cards (espansione, numero);
+CREATE INDEX idx_compositions_deck ON compositions (deck_id, card_id);
+
+-- Indice full-text per ricerca testuale
+CREATE FULLTEXT INDEX idx_fulltext_search ON cards (nome, titolo, tratti);
+```
+
+**3. Lazy Loading e Eager Loading:**
+
+```php
+// Eager loading per evitare N+1 queries
+$decks = Deck::with(['cards' => function($query) {
+    $query->select('cards.id', 'nome', 'tipo', 'costo', 'aspettoPrimario');
+}])->where('public', 1)->get();
+
+// Lazy loading condizionale
+if ($includeStats) {
+    $deck->load('cards.compositions');
+}
+```
+
+**4. Chunking per Grandi Dataset:**
+
+```php
+// Elaborazione batch per import grandi
+Card::chunk(1000, function($cards) {
+    foreach ($cards as $card) {
+        // Elaborazione singola carta
+        $this->processCard($card);
+    }
+});
+```
+
+### Ottimizzazioni Frontend
+
+**1. Asset Optimization:**
+
+```javascript
+// Vite configuration per bundling ottimizzato
+export default defineConfig({
+    plugins: [laravel({
+        input: ['resources/css/app.css', 'resources/js/app.js'],
+        refresh: true,
+    })],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['bootstrap'],
+                    charts: ['chart.js']
+                }
+            }
+        }
+    }
+});
+```
+
+**2. Livewire Optimization:**
+
+```php
+// Debouncing per filtri real-time
+<input type="text" wire:model.live.debounce.300ms="nome"
+       class="form-control" placeholder="Nome carta...">
+
+// Lazy loading per componenti pesanti
+<div wire:init="loadHeavyData">
+    @if($dataLoaded)
+        {{-- Contenuto pesante --}}
+    @else
+        <div class="spinner-border"></div>
+    @endif
+</div>
+```
+
+---
+
+## Sicurezza e Autenticazione
+
+### Sistema di Autenticazione Personalizzato
+
+**Middleware di Autorizzazione:**
+
+```php
+// Middleware personalizzato per admin
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/users', [AdminController::class, 'users']);
+    Route::get('/admin/errors', [AdminController::class, 'errors']);
+    Route::get('/admin/query', [AdminController::class, 'query']);
+    Route::post('/admin/scan', [AdminController::class, 'scanAPI']);
+});
+
+// Helper per controllo admin
 if (Auth::admin()) {
-    // Mostra informazioni debug
-    // Accesso a funzionalità avanzate
+    // Funzionalità admin
 }
 ```
 
-### Validazione Input
+**Protezione CSRF e Validazione:**
 
-**Form Validation:**
 ```php
-class DeckRequest extends FormRequest
+// Validazione input con regole personalizzate
+public function rules()
 {
-    public function rules() {
-        return [
-            'nome' => 'required|string|max:255',
-            'descrizione' => 'nullable|string|max:1000',
-            'public' => 'boolean',
-            'cards' => 'required|array|size:50',
-            'cards.*.id' => 'required|exists:cards,id',
-            'cards.*.quantity' => 'required|integer|min:1|max:3'
-        ];
-    }
+    return [
+        'nome' => 'required|string|max:255|unique:decks,nome,NULL,id,codUtente,' . Auth::user()->name,
+        'public' => 'boolean',
+        'cards' => 'array',
+        'cards.*.id' => 'required|exists:cards,id',
+        'cards.*.copie' => 'required|integer|min:1|max:3'
+    ];
+}
 
-    public function withValidator($validator) {
-        $validator->after(function ($validator) {
-            // Validazione regole mazzo personalizzate
-            $this->validateDeckRules($validator);
-        });
-    }
+// Protezione CSRF automatica per Livewire
+class DeckManager extends Component
+{
+    protected $rules = [
+        'nuovoNome' => 'required|string|max:255',
+        'copiesAmount' => 'integer|min:1|max:3'
+    ];
 }
 ```
 
-**XSS Protection:**
+**Sanitizzazione Input:**
+
 ```php
-// Sanitizzazione automatica input
-class SanitizeInput
+// Sanitizzazione filename per export
+private function sanitizeFilename($filename)
 {
-    public static function clean($input) {
-        if (is_string($input)) {
-            return htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
-        }
-
-        if (is_array($input)) {
-            return array_map([self::class, 'clean'], $input);
-        }
-
-        return $input;
-    }
+    $filename = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $filename);
+    $filename = preg_replace('/_{2,}/', '_', $filename);
+    return trim($filename, '_');
 }
+
+// Escape output per prevenire XSS
+{{ Str::limit(e($card->nome), 50) }}
+```
+
+### Gestione Sessioni e Rate Limiting
+
+**Rate Limiting per API:**
+
+```php
+// Throttling per route API
+Route::middleware(['throttle:api'])->group(function () {
+    Route::get('/api/carta/{espansione}/{numero}', [CardsController::class, 'apiCard']);
+    Route::get('/api/carte/{espansione}', [CardsController::class, 'apiCards']);
+});
+
+// Rate limiting personalizzato per import
+Route::middleware(['throttle:import,1,60'])->group(function () {
+    Route::post('/carte/import', [CardsController::class, 'startImport']);
+});
 ```
 
 ---
 
 ## Deployment e DevOps
 
-### Script di Deployment
+### Sistema di Deployment Automatizzato
 
-**all.sh - Deployment Completo:**
+**Script di Deployment (bash/all.sh):**
+
 ```bash
 #!/bin/bash
 
-# Gestione opzioni versioning
-while getopts "vp" opt; do
-  case $opt in
-    v) # Incrementa versione primaria
-      increment_primary_version
-      ;;
-    p) # Incrementa versione secondaria
-      increment_secondary_version
-      ;;
-  esac
-done
+# Gestione versioning automatico
+if [[ "$1" == "-v" ]]; then
+    # Incrementa versione primaria
+    current_primary=$(grep APP_VERSION_PRIMARY .env | cut -d '=' -f2)
+    new_primary=$((current_primary + 1))
+    sed -i "s/APP_VERSION_PRIMARY=$current_primary/APP_VERSION_PRIMARY=$new_primary/" .env
+    sed -i "s/APP_VERSION_SECONDARY=.*/APP_VERSION_SECONDARY=0/" .env
+    sed -i "s/APP_VERSION_TERTIARY=.*/APP_VERSION_TERTIARY=0/" .env
+elif [[ "$1" == "-p" ]]; then
+    # Incrementa versione secondaria
+    current_secondary=$(grep APP_VERSION_SECONDARY .env | cut -d '=' -f2)
+    new_secondary=$((current_secondary + 1))
+    sed -i "s/APP_VERSION_SECONDARY=$current_secondary/APP_VERSION_SECONDARY=$new_secondary/" .env
+    sed -i "s/APP_VERSION_TERTIARY=.*/APP_VERSION_TERTIARY=0/" .env
+fi
 
-# Processo deployment
+# Build assets
+npm run build
+
+# Commit e push
+./bash/cmt.sh "Deploy automatico $(date '+%Y-%m-%d %H:%M:%S')"
+
+# Upload via FTP
+./bash/ftp.sh
+
+echo "Deployment completato!"
+```
+
+**Script di Commit con Versioning:**
+
+```bash
+#!/bin/bash
+# bash/cmt.sh
+
+# Ottieni versione corrente
+VERSION_PRIMARY=$(grep APP_VERSION_PRIMARY .env | cut -d '=' -f2)
+VERSION_SECONDARY=$(grep APP_VERSION_SECONDARY .env | cut -d '=' -f2)
+VERSION_TERTIARY=$(grep APP_VERSION_TERTIARY .env | cut -d '=' -f2)
+VERSION="v${VERSION_PRIMARY}.${VERSION_SECONDARY}.${VERSION_TERTIARY}"
+
+# Commit con messaggio che include versione
 git add .
-git commit -m "Deploy $(get_current_version)"
+git commit -m "$1 - $VERSION"
 git push origin main
 
-# Upload FTP con gestione errori
-upload_to_ftp() {
-    lftp -c "
-    set ftp:ssl-allow no;
-    set ftp:passive-mode on;
-    open ftp://username:password@ftp.swudb.altervista.org;
-    mirror -R --delete --verbose . /;
-    quit
-    "
-}
+echo "Commit e push completati per versione $VERSION"
 ```
 
-**Monitoring e Logging:**
+### Monitoring e Health Checks
+
+**Health Check Endpoint:**
+
 ```php
-// Log personalizzato per operazioni critiche
-Log::channel('operations')->info('Scan API started', [
-    'user_id' => Auth::id(),
-    'timestamp' => now(),
-    'memory_usage' => memory_get_usage(true)
-]);
-
-// Error tracking
-class ErrorTracker
-{
-    public static function logError($exception, $context = []) {
-        Log::error($exception->getMessage(), [
-            'exception' => $exception,
-            'context' => $context,
-            'user_id' => Auth::id(),
-            'url' => request()->fullUrl(),
-            'user_agent' => request()->userAgent()
-        ]);
-
-        // Notifica admin via Telegram
-        TelegramNotifier::sendError($exception, $context);
-    }
-}
-```
-
----
-
-## Troubleshooting Avanzato
-
-### Problemi Comuni e Soluzioni
-
-**1. Timeout durante Scan API:**
-```php
-// Soluzione: Job asincroni con chunking
-public function scanAPIChunked() {
-    $pages = $this->getTotalPages();
-
-    for ($page = 1; $page <= $pages; $page++) {
-        dispatch(new ProcessAPIPage($page))
-            ->delay(now()->addSeconds($page * 2)); // Stagger requests
-    }
-}
-```
-
-**2. Memory Limit su Import Grandi:**
-```php
-// Soluzione: Streaming e batch processing
-public function importLargeDataset($data) {
-    $chunks = array_chunk($data, 100);
-
-    foreach ($chunks as $chunk) {
-        DB::transaction(function() use ($chunk) {
-            foreach ($chunk as $item) {
-                $this->processItem($item);
-            }
-        });
-
-        // Libera memoria
-        gc_collect_cycles();
-    }
-}
-```
-
-**3. Livewire Component Non Responsive:**
-```php
-// Debug Livewire
-public function render() {
-    logger('SearchFilter render called', [
-        'filters' => $this->getFilters(),
-        'results_count' => count($this->filteredCards)
+// Route automatica Laravel
+Route::get('/up', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'version' => env('APP_VERSION_PRIMARY', '1') . '.' .
+                    env('APP_VERSION_SECONDARY', '0') . '.' .
+                    env('APP_VERSION_TERTIARY', '0'),
+        'database' => DB::connection()->getPdo() ? 'connected' : 'disconnected',
+        'cache' => Cache::store()->getStore() ? 'available' : 'unavailable'
     ]);
-
-    return view('livewire.search-filter');
-}
-```
-
-### Monitoring Performance
-
-**Query Slow Log:**
-```php
-// Monitoring query lente
-DB::listen(function ($query) {
-    if ($query->time > 1000) { // > 1 secondo
-        Log::warning('Slow query detected', [
-            'sql' => $query->sql,
-            'bindings' => $query->bindings,
-            'time' => $query->time
-        ]);
-    }
 });
 ```
 
----
+**Logging Strutturato:**
 
-## Roadmap e Sviluppi Futuri
-
-### Funzionalità in Sviluppo
-
-1. **PWA (Progressive Web App)**
-   - Modalità offline per consultazione carte
-   - Cache intelligente delle immagini
-   - Installazione come app nativa
-
-2. **API GraphQL**
-   - Query flessibili per frontend avanzati
-   - Subscription per aggiornamenti real-time
-   - Schema introspection
-
-3. **Machine Learning**
-   - Raccomandazioni mazzi basate su meta
-   - Analisi win-rate automatica
-   - Predizione carte meta
-
-4. **Integrazione Social**
-   - Condivisione mazzi su social network
-   - Sistema di rating e recensioni
-   - Tornei online integrati
-
-### Miglioramenti Tecnici
-
-1. **Microservizi**
-   - Separazione API da frontend
-   - Scalabilità orizzontale
-   - Deploy indipendenti
-
-2. **Real-time Features**
-   - WebSocket per aggiornamenti live
-   - Collaborative deck building
-   - Chat integrata
-
-3. **Advanced Analytics**
-   - Dashboard admin avanzato
-   - Metriche utente dettagliate
-   - A/B testing framework
+```php
+// Log con context per debugging
+Log::info('Card import started', [
+    'user_id' => Auth::id(),
+    'thread_id' => $threadId,
+    'cards_count' => count($cards),
+    'memory_usage' => memory_get_usage(true),
+    'execution_time' => microtime(true) - $startTime
+]);
+```
 
 ---
 
-## Conclusioni
+## Testing e Quality Assurance
 
-SWUDB rappresenta un esempio completo di applicazione Laravel moderna con:
+### Strategia di Testing
 
-- **Architettura scalabile** e ben strutturata
-- **Performance ottimizzate** attraverso caching e query optimization
-- **UX avanzata** con componenti Livewire reattivi
-- **Integrazione robusta** con sistemi esterni
-- **Deployment automatizzato** e monitoring completo
+**1. Testing in Produzione:**
+- Utilizzo di unlimiteddb.net come ambiente di test
+- Deployment tramite bash/all.sh per test immediati
+- Monitoring errori in tempo reale via Telegram
 
-La combinazione di tecnologie moderne, algoritmi ottimizzati e best practice di sviluppo rende SWUDB una piattaforma solida e facilmente estendibile per la community di Star Wars Unlimited.
+**2. Unit Testing per Algoritmi:**
+
+```php
+// Test per merge sort
+class CardsSortingTest extends TestCase
+{
+    public function test_merge_sort_orders_cards_correctly()
+    {
+        $cards = collect([
+            ['nome' => 'Carta B', 'tipo' => 'Unità', 'costo' => 2],
+            ['nome' => 'Carta A', 'tipo' => 'Unità', 'costo' => 1],
+            ['nome' => 'Leader', 'tipo' => 'Leader', 'costo' => 0]
+        ]);
+
+        $sorted = CardsController::mergeSort($cards);
+
+        $this->assertEquals('Leader', $sorted->first()['nome']);
+        $this->assertEquals('Carta A', $sorted->skip(1)->first()['nome']);
+    }
+}
+```
+
+**3. Integration Testing per Livewire:**
+
+```php
+class SearchFilterTest extends TestCase
+{
+    public function test_search_filter_applies_correctly()
+    {
+        Livewire::test(SearchFilter::class)
+            ->set('nome', 'Luke')
+            ->assertSee('Luke Skywalker')
+            ->assertDontSee('Darth Vader');
+    }
+}
+```
+
+### Quality Assurance
+
+**1. Code Standards:**
+- PSR-12 compliance per PHP
+- Documentazione completa per metodi complessi
+- Type hints e return types consistenti
+
+**2. Performance Monitoring:**
+- Query logging per identificare N+1 problems
+- Memory usage tracking per import grandi
+- Response time monitoring per endpoint API
+
+**3. Error Tracking:**
+- Sistema di gestione errori personalizzato
+- Notifiche immediate per errori critici
+- Dashboard admin per analisi trend errori
+
+---
+
+## Conclusioni e Considerazioni Finali
+
+### Punti di Forza del Progetto
+
+**1. Architettura Scalabile:**
+- Separazione chiara delle responsabilità
+- Pattern architetturali consolidati
+- Estendibilità per future funzionalità
+
+**2. Algoritmi Personalizzati:**
+- Merge sort ottimizzato per dominio specifico
+- Sistema di import robusto e fault-tolerant
+- Gestione errori avanzata e proattiva
+
+**3. User Experience Moderna:**
+- Interfaccia reattiva con Livewire
+- Filtri real-time senza page reload
+- Design responsive e accessibile
+
+**4. DevOps e Deployment:**
+- Automazione completa del deployment
+- Versioning automatico
+- Monitoring e alerting integrati
+
+### Tecnologie Apprese e Implementate
+
+**Backend:**
+- Laravel 12 con tutte le funzionalità avanzate
+- Eloquent ORM con relazioni complesse
+- Event/Listener system per architettura event-driven
+- Job queues per operazioni asincrone
+
+**Frontend:**
+- Livewire 3 per reattività senza JavaScript complesso
+- Bootstrap 5.3 con tema dark personalizzato
+- Chart.js per visualizzazioni dati
+- Responsive design mobile-first
+
+**Database:**
+- MySQL con ottimizzazioni avanzate
+- Indici composti per performance
+- Transazioni per consistenza dati
+- Full-text search per ricerca testuale
+
+**DevOps:**
+- Bash scripting per automazione
+- Git workflow con versioning automatico
+- FTP deployment per hosting condiviso
+- Monitoring e logging strutturato
+
+### Sfide Tecniche Risolte
+
+**1. Ordinamento Complesso:**
+- Implementazione merge sort per 9 criteri gerarchici
+- Gestione sia Collection Laravel che array PHP
+- Modalità debug per analisi comportamento
+
+**2. Import Asincrono:**
+- Gestione timeout con chunking intelligente
+- Restart automatico in caso di errori
+- Progress tracking con notifiche real-time
+
+**3. Gestione Errori:**
+- Sistema multi-canale (email + Telegram)
+- Persistenza errori per analisi
+- Differenziazione admin/utenti
+
+**4. Performance:**
+- Caching strategico per query frequenti
+- Lazy loading per componenti pesanti
+- Ottimizzazioni database con indici mirati
+
+### Valore Educativo del Progetto
+
+Questo progetto dimostra la capacità di:
+
+1. **Progettare** architetture software complesse
+2. **Implementare** algoritmi personalizzati per esigenze specifiche
+3. **Integrare** multiple tecnologie in modo coerente
+4. **Gestire** la complessità attraverso pattern consolidati
+5. **Ottimizzare** performance e user experience
+6. **Automatizzare** processi di deployment e monitoring
+7. **Risolvere** problemi reali con soluzioni innovative
+
+SWUDB rappresenta un esempio completo di applicazione web moderna che combina best practice consolidate con soluzioni innovative per creare una piattaforma robusta, scalabile e user-friendly per la community di Star Wars Unlimited.
 
 ---
 
 *Autore: Mandich Riccardo*
+*Progetto: SWUDB - Star Wars Unlimited Database*
+*Anno Scolastico: 2024/2025*
+*Esame di Stato - Istituto Tecnico Informatico*
+```
+```
