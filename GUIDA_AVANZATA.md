@@ -1,79 +1,81 @@
-# SWUDB - Guida Avanzata per Esame di Maturità
+# SWUDB - La mia tesina per l'esame di maturità
 
-## Indice
+## Cosa troverai in questa guida
 
-1. [Panoramica del Progetto](#panoramica-del-progetto)
-2. [Architettura e Design Pattern](#architettura-e-design-pattern)
-3. [Stack Tecnologico Dettagliato](#stack-tecnologico-dettagliato)
-4. [Database Design e Ottimizzazioni](#database-design-e-ottimizzazioni)
-5. [Componenti Livewire Personalizzati](#componenti-livewire-personalizzati)
-6. [Algoritmi di Ordinamento Avanzati](#algoritmi-di-ordinamento-avanzati)
-7. [Sistema di Gestione Errori Personalizzato](#sistema-di-gestione-errori-personalizzato)
-8. [Integrazione API e Web Scraping](#integrazione-api-e-web-scraping)
-9. [Performance e Caching](#performance-e-caching)
-10. [Sicurezza e Autenticazione](#sicurezza-e-autenticazione)
-11. [Deployment e DevOps](#deployment-e-devops)
-12. [Testing e Quality Assurance](#testing-e-quality-assurance)
-
----
-
-## Panoramica del Progetto
-
-**SWUDB (Star Wars Unlimited Database)** è un database non ufficiale completo per il gioco di carte collezionabili **Star Wars: Unlimited** sviluppato da Fantasy Flight Games. Il progetto rappresenta una piattaforma web moderna e complessa che integra multiple tecnologie avanzate per offrire un'esperienza utente ottimale.
-
-### Obiettivi del Progetto
-
-**1. Database Completo delle Carte:**
-- Catalogazione di tutte le carte del gioco con metadati completi
-- Ricerca avanzata con filtri multipli e ordinamento personalizzato
-- Integrazione automatica con API ufficiali per aggiornamenti
-
-**2. Gestione Mazzi e Collezioni:**
-- Sistema completo di deck building con validazione regole
-- Gestione collezioni personali con tracking delle carte possedute
-- Export/import in formati standard del gioco
-
-**3. Analisi e Statistiche:**
-- Calcolo statistiche avanzate per mazzi (distribuzione costi, aspetti, tipi)
-- Grafici interattivi per visualizzazione dati
-- Analisi meta-game e tendenze
-
-**4. Community Features:**
-- Condivisione mazzi pubblici
-- Sistema di notifiche per nuove carte
-- Dashboard personalizzate per utenti
-
-### Caratteristiche Tecniche Distintive
-
-**1. Architettura Ibrida:**
-- Backend Laravel robusto per logica di business
-- Frontend reattivo con Livewire per UX moderna
-- Integrazione seamless senza SPA complexity
-
-**2. Algoritmi Personalizzati:**
-- Merge sort ottimizzato per ordinamento carte con 9 criteri gerarchici
-- Sistema di import asincrono con gestione batch intelligente
-- Algoritmi di matching per rilevamento carte duplicate
-
-**3. Sistema di Gestione Errori Avanzato:**
-- Tracking automatico errori con notifiche multi-canale
-- Dashboard admin per gestione errori
-- Logging strutturato con context awareness
+1. [Cos'è il mio progetto](#cosè-il-mio-progetto)
+2. [Come è fatto il sito](#come-è-fatto-il-sito)
+3. [Le tecnologie che ho usato](#le-tecnologie-che-ho-usato)
+4. [Come funziona il database](#come-funziona-il-database)
+5. [Le parti interattive del sito](#le-parti-interattive-del-sito)
+6. [Come ordino le carte](#come-ordino-le-carte)
+7. [Come gestisco gli errori](#come-gestisco-gli-errori)
+8. [Come prendo i dati delle carte](#come-prendo-i-dati-delle-carte)
+9. [Come rendo il sito veloce](#come-rendo-il-sito-veloce)
+10. [Come proteggo il sito](#come-proteggo-il-sito)
+11. [Come metto online il sito](#come-metto-online-il-sito)
+12. [Come testo che tutto funzioni](#come-testo-che-tutto-funzioni)
 
 ---
 
-## Architettura e Design Pattern
+## Cos'è il mio progetto
 
-### Pattern Architetturali Implementati
+**SWUDB** significa **Star Wars Unlimited Database**. È un sito web che ho creato per raccogliere tutte le carte del gioco **Star Wars: Unlimited** della Fantasy Flight Games.
 
-**1. Model-View-Controller (MVC) Esteso:**
+Praticamente è come avere un album digitale di tutte le carte, dove puoi:
 
-L'architettura di SWUDB estende il pattern MVC tradizionale di Laravel con un layer Livewire che gestisce la reattività frontend:
+### Cosa puoi fare sul sito
 
-- **Models**: Card, Deck, User, SystemError - Gestiscono la logica di business e persistenza
-- **Controllers**: CardsController, DecksController, AdminController, JobController - Orchestrano le operazioni
-- **Views**: Template Blade con componenti Livewire integrati
-- **Livewire Layer**: SearchFilter, DeckManager, AddCardSection, CollezioneManager - Componenti reattivi
+**1. Vedere tutte le carte:**
+- Ogni carta ha la sua scheda con tutte le informazioni
+- Puoi cercare le carte che ti interessano
+- Puoi filtrarle per tipo, colore, costo e altre caratteristiche
+
+**2. Creare i tuoi mazzi:**
+- Puoi costruire mazzi seguendo le regole del gioco
+- Puoi tenere traccia di quali carte possiedi
+- Puoi importare ed esportare mazzi da altri programmi
+
+**3. Vedere le statistiche:**
+- Il sito calcola automaticamente le statistiche dei tuoi mazzi
+- Puoi vedere grafici colorati con i dati
+- Puoi capire quali carte vanno di moda
+
+**4. Condividere con altri:**
+- Puoi rendere pubblici i tuoi mazzi
+- Ricevi notifiche quando escono carte nuove
+- Hai una pagina personale con i tuoi dati
+
+### Cosa rende speciale questo progetto
+
+**1. È fatto bene tecnicamente:**
+- La parte server (Laravel) gestisce tutti i dati
+- La parte che vedi (Livewire) si aggiorna da sola
+- Tutto funziona insieme senza problemi
+
+**2. Ha algoritmi che ho creato io:**
+- Un sistema per ordinare le carte con 7 regole diverse
+- Un sistema per scaricare tante carte senza bloccare il sito
+- Un sistema per riconoscere le carte doppie
+
+**3. Gestisce bene gli errori:**
+- Se qualcosa va storto, me lo dice subito
+- Gli amministratori hanno una pagina speciale per vedere i problemi
+- Tutto viene registrato per capire cosa è successo
+
+---
+
+## Come è fatto il sito
+
+### Come ho organizzato il codice
+
+**1. Il modello MVC (Model-View-Controller):**
+
+Ho organizzato tutto il codice seguendo un sistema chiamato MVC, che è come avere tre scatole separate:
+
+- **Models (i dati)**: Card, Deck, User, SystemError - Sono i "contenitori" dei dati
+- **Controllers (la logica)**: CardsController, DecksController, AdminController, JobController - Decidono cosa fare
+- **Views (quello che vedi)**: Le pagine HTML che vedi sul sito
+- **Livewire (le parti interattive)**: SearchFilter, DeckManager, AddCardSection, CollezioneManager - Parti che si aggiornano da sole
 
 **2. Event-Driven Architecture:**
 
@@ -654,37 +656,38 @@ public function calcolaStatistiche()
 
 ---
 
-## Algoritmi di Ordinamento Avanzati
+## Come ordino le carte
 
-### Merge Sort Personalizzato per Carte
+### Il mio sistema di ordinamento personalizzato
 
-**Problema Risolto:**
+**Il problema che dovevo risolvere:**
 
-L'ordinamento delle carte in Star Wars Unlimited richiede criteri complessi e gerarchici che i semplici `ORDER BY` SQL non possono gestire efficacemente. È stato implementato un algoritmo merge sort personalizzato che gestisce 7 criteri di ordinamento in sequenza.
+Nel gioco Star Wars Unlimited, le carte hanno tante caratteristiche diverse e non si possono ordinare semplicemente per nome o numero. Ho dovuto creare un sistema che le mette in ordine seguendo 7 regole precise, una dopo l'altra.
 
-**Criteri di Ordinamento (in ordine di priorità):**
+**Le 7 regole che uso (in ordine di importanza):**
 
-1. **Tipo Generico** - Leader e Basi prima di tutto
-2. **Aspetto Primario** - Blu, Verde, Rosso, Giallo, Nero, Bianco
-3. **Aspetto Secondario** - Nero, Bianco, stesso del primario, altri
-4. **Tipo Specifico** - Unità, Miglioria, Evento
-5. **Costo (costo)** - Crescente, eccetto per Leader
-6. **Data Uscita (uscita)** - Per espansioni diverse
-7. **Numero Carta (numero)** - Tie-breaker finale
+1. **Tipo di carta** - I Leader e le Basi vengono sempre prima
+2. **Colore principale** - Blu, Verde, Rosso, Giallo, Nero, Bianco
+3. **Colore secondario** - Nero, Bianco, stesso del principale, altri
+4. **Tipo specifico** - Unità, Miglioria, Evento
+5. **Costo** - Dal più basso al più alto (tranne i Leader)
+6. **Data di uscita** - Per distinguere le espansioni
+7. **Numero della carta** - Per decidere in caso di pareggio
 
-**Implementazione dell'Algoritmo:**
+**Come funziona il mio algoritmo:**
 
 ```php
+// Questa funzione confronta due carte e decide quale viene prima
 public static function compareElements(&$el1, &$el2, $verbose = false)
 {
     if($verbose){
-        echo "Confronto tra ".$el1["nome"]." e ".$el2["nome"]."<br>";
+        echo "Sto confrontando ".$el1["nome"]." con ".$el2["nome"]."<br>";
     }
 
-    // Definisco l'ordine dei tipi generici
+    // Definisco l'ordine dei tipi di carta (Leader e Base vengono prima)
     $genericTipoOrder = ['Leader', 'Base'];
 
-    // Definisco l'ordine degli aspetti primari
+    // Definisco l'ordine dei colori principali
     $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo', "Nero", "Bianco"];
 
     // Definisco l'ordine dei tipi specifici
