@@ -67,30 +67,16 @@
 ### Pattern Architetturali Implementati
 
 **1. Model-View-Controller (MVC) Esteso:**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     Models      │    │   Controllers   │    │   Views/Blade   │
-│                 │    │                 │    │                 │
-│ • Card          │◄──►│ • CardsCtrl     │◄──►│ • Templates     │
-│ • Deck          │    │ • DecksCtrl     │    │ • Layouts       │
-│ • User          │    │ • AdminCtrl     │    │ • Components    │
-│ • SystemError   │    │ • JobCtrl       │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         ▲                       ▲                       ▲
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │ Livewire Layer  │
-                    │                 │
-                    │ • SearchFilter  │
-                    │ • DeckManager   │
-                    │ • AddCardSection│
-                    │ • CollezioneMan │
-                    └─────────────────┘
-```
+
+L'architettura di SWUDB estende il pattern MVC tradizionale di Laravel con un layer Livewire che gestisce la reattività frontend:
+
+- **Models**: Card, Deck, User, SystemError - Gestiscono la logica di business e persistenza
+- **Controllers**: CardsController, DecksController, AdminController, JobController - Orchestrano le operazioni
+- **Views**: Template Blade con componenti Livewire integrati
+- **Livewire Layer**: SearchFilter, DeckManager, AddCardSection, CollezioneManager - Componenti reattivi
 
 **2. Event-Driven Architecture:**
+
 ```php
 // Esempio di comunicazione event-driven tra componenti
 class SearchFilter extends Component
@@ -126,6 +112,7 @@ class DeckManager extends Component
 - Caching layer per performance ottimizzate
 
 **4. Observer Pattern:**
+
 ```php
 // Event/Listener system per notifiche
 class MessageCreated
