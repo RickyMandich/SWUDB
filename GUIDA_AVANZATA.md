@@ -1,4 +1,4 @@
-# SWUDB - Documentazione Tecnica del Progetto di Maturità
+# UnlimitedDB - Documentazione Tecnica del Progetto di Maturità
 
 ## Indice della Documentazione
 
@@ -19,13 +19,13 @@
 
 ## Panoramica del Progetto
 
-**SWUDB (Star Wars Unlimited Database)** è l'applicazione web che ho sviluppato inizialmente per una necessità personale: catalogare e gestire tutte le carte del gioco **Star Wars: Unlimited** della Fantasy Flight Games. Successivamente ho deciso di portare questo progetto come tesina per l'esame di maturità.
+**UnlimitedDB** è l'applicazione web che ho sviluppato inizialmente per una necessità personale: catalogare e gestire tutte le carte del gioco **Star Wars: Unlimited** della Fantasy Flight Games. Successivamente ho deciso di portare questo progetto come tesina per l'esame di maturità.
 
 Il progetto è nato dalla mancanza di un database completo e ben organizzato per questo gioco relativamente nuovo. Inizialmente l'ho sviluppato per uso personale, ma quando ho visto la complessità tecnica raggiunta e le funzionalità implementate, ho deciso di presentarlo come progetto di maturità. Durante lo sviluppo ho dovuto affrontare diverse sfide tecniche interessanti, dalla progettazione del database alla creazione di algoritmi di ordinamento personalizzati. Il risultato è un sistema completo che gestisce:
 
 ### Genesi del Progetto
 
-Quando è uscito Star Wars Unlimited, mi sono reso conto che mancavano strumenti digitali adeguati per gestire le carte e costruire mazzi. I pochi siti esistenti erano incompleti o poco funzionali. Ho quindi iniziato a sviluppare SWUDB come soluzione personale, ma man mano che aggiungevo funzionalità e risolvevo problemi tecnici complessi, il progetto è cresciuto fino a diventare una piattaforma completa che meritava di essere presentata all'esame di stato.
+Quando è uscito Star Wars Unlimited, mi sono reso conto che mancavano strumenti digitali adeguati per gestire le carte e costruire mazzi. I pochi siti esistenti erano incompleti o poco funzionali. Ho quindi iniziato a sviluppare UnlimitedDB come soluzione personale, ma man mano che aggiungevo funzionalità e risolvevo problemi tecnici complessi, il progetto è cresciuto fino a diventare una piattaforma completa che meritava di essere presentata all'esame di stato.
 
 ### Funzionalità che ho implementato
 
@@ -945,7 +945,7 @@ public static function mergeSort(&$data, $verbose = false)
 
 ### Architettura del Sistema
 
-Il sistema di gestione errori di SWUDB è completamente personalizzato e rappresenta una delle implementazioni più avanzate del progetto. Gestisce automaticamente tutti gli errori dell'applicazione con notifiche multi-canale e dashboard amministrativa.
+Il sistema di gestione errori di UnlimitedDB è completamente personalizzato e rappresenta una delle implementazioni più avanzate del progetto. Gestisce automaticamente tutti gli errori dell'applicazione con notifiche multi-canale e dashboard amministrativa.
 
 **Componenti del Sistema:**
 
@@ -1120,8 +1120,8 @@ class ErrorNotificationEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '🚨 Errore Sistema SWUDB - ' . Str::limit($this->errorMessage, 50),
-            from: new Address(env('MAIL_FROM_ADDRESS'), 'SWUDB Error System')
+            subject: '🚨 Errore Sistema UnlimitedDB - ' . Str::limit($this->errorMessage, 50),
+            from: new Address(env('MAIL_FROM_ADDRESS'), 'UnlimitedDB Error System')
         );
     }
 
@@ -1216,7 +1216,7 @@ public function sendMessage(Request $request)
 
 **Architettura del Sistema:**
 
-Il sistema di import di SWUDB integra l'API ufficiale di Star Wars Unlimited con fallback su web scraping per garantire aggiornamenti completi e affidabili.
+Il sistema di import di UnlimitedDB integra l'API ufficiale di Star Wars Unlimited con fallback su web scraping per garantire aggiornamenti completi e affidabili.
 
 **Flusso di Import:**
 
@@ -1376,7 +1376,7 @@ private function createScanLog()
     $filename = "scansione_{$timestamp}.log";
     $logPath = storage_path("logs/{$filename}");
 
-    $this->writeScanLog("=== INIZIO SCANSIONE SWUDB ===", $filename);
+    $this->writeScanLog("=== INIZIO SCANSIONE UnlimitedDB ===", $filename);
     $this->writeScanLog("Timestamp: " . now()->format('d/m/Y H:i:s'), $filename);
     $this->writeScanLog("Versione: " . env('APP_VERSION_PRIMARY', '1') . '.' . env('APP_VERSION_SECONDARY', '0') . '.' . env('APP_VERSION_TERTIARY', '0'), $filename);
 
@@ -1825,12 +1825,12 @@ Questo progetto dimostra la capacità di:
 6. **Automatizzare** processi di deployment e monitoring
 7. **Risolvere** problemi reali con soluzioni innovative
 
-SWUDB rappresenta un esempio completo di applicazione web moderna che combina best practice consolidate con soluzioni innovative per creare una piattaforma robusta, scalabile e user-friendly per la community di Star Wars Unlimited.
+UnlimitedDB rappresenta un esempio completo di applicazione web moderna che combina best practice consolidate con soluzioni innovative per creare una piattaforma robusta, scalabile e user-friendly per la community di Star Wars Unlimited.
 
 ---
 
 *Autore: Mandich Riccardo*
-*Progetto: SWUDB - Star Wars Unlimited Database*
+*Progetto: UnlimitedDB - Star Wars Unlimited Database*
 *Anno Scolastico: 2024/2025*
 *Esame di Stato - Istituto Tecnico Informatico*
 ```
