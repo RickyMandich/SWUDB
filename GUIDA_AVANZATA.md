@@ -1,83 +1,135 @@
-# SWUDB - La mia tesina per l'esame di maturità
+# SWUDB - Documentazione Tecnica del Progetto
 
-## Cosa troverai in questa guida
+## Indice della Documentazione
 
-1. [Cos'è il mio progetto](#cosè-il-mio-progetto)
-2. [Come è fatto il sito](#come-è-fatto-il-sito)
-3. [Le tecnologie che ho usato](#le-tecnologie-che-ho-usato)
-4. [Come funziona il database](#come-funziona-il-database)
-5. [Le parti interattive del sito](#le-parti-interattive-del-sito)
-6. [Come ordino le carte](#come-ordino-le-carte)
-7. [Come gestisco gli errori](#come-gestisco-gli-errori)
-8. [Come prendo i dati delle carte](#come-prendo-i-dati-delle-carte)
-9. [Come rendo il sito veloce](#come-rendo-il-sito-veloce)
-10. [Come proteggo il sito](#come-proteggo-il-sito)
-11. [Come metto online il sito](#come-metto-online-il-sito)
-12. [Come testo che tutto funzioni](#come-testo-che-tutto-funzioni)
-
----
-
-## Cos'è il mio progetto
-
-**SWUDB** significa **Star Wars Unlimited Database**. È un sito web che ho creato per raccogliere tutte le carte del gioco **Star Wars: Unlimited** della Fantasy Flight Games.
-
-Praticamente è come avere un album digitale di tutte le carte, dove puoi:
-
-### Cosa puoi fare sul sito
-
-**1. Vedere tutte le carte:**
-- Ogni carta ha la sua scheda con tutte le informazioni
-- Puoi cercare le carte che ti interessano
-- Puoi filtrarle per tipo, colore, costo e altre caratteristiche
-
-**2. Creare i tuoi mazzi:**
-- Puoi costruire mazzi seguendo le regole del gioco
-- Puoi tenere traccia di quali carte possiedi
-- Puoi importare ed esportare mazzi da altri programmi
-
-**3. Vedere le statistiche:**
-- Il sito calcola automaticamente le statistiche dei tuoi mazzi
-- Puoi vedere grafici colorati con i dati
-- Puoi capire quali carte vanno di moda
-
-**4. Condividere con altri:**
-- Puoi rendere pubblici i tuoi mazzi
-- Ricevi notifiche quando escono carte nuove
-- Hai una pagina personale con i tuoi dati
-
-### Cosa rende speciale questo progetto
-
-**1. È fatto bene tecnicamente:**
-- La parte server (Laravel) gestisce tutti i dati
-- La parte che vedi (Livewire) si aggiorna da sola
-- Tutto funziona insieme senza problemi
-
-**2. Ha algoritmi che ho creato io:**
-- Un sistema per ordinare le carte con 7 regole diverse
-- Un sistema per scaricare tante carte senza bloccare il sito
-- Un sistema per riconoscere le carte doppie
-
-**3. Gestisce bene gli errori:**
-- Se qualcosa va storto, me lo dice subito
-- Gli amministratori hanno una pagina speciale per vedere i problemi
-- Tutto viene registrato per capire cosa è successo
+1. [Panoramica del Progetto](#panoramica-del-progetto)
+2. [Architettura del Sistema](#architettura-del-sistema)
+3. [Stack Tecnologico](#stack-tecnologico)
+4. [Progettazione del Database](#progettazione-del-database)
+5. [Componenti Livewire](#componenti-livewire)
+6. [Algoritmi di Ordinamento](#algoritmi-di-ordinamento)
+7. [Gestione degli Errori](#gestione-degli-errori)
+8. [Integrazione API](#integrazione-api)
+9. [Ottimizzazione delle Prestazioni](#ottimizzazione-delle-prestazioni)
+10. [Sicurezza e Autenticazione](#sicurezza-e-autenticazione)
+11. [Processo di Deployment](#processo-di-deployment)
+12. [Testing e Controllo Qualità](#testing-e-controllo-qualità)
 
 ---
 
-## Come è fatto il sito
+## Panoramica del Progetto
 
-### Come ho organizzato il codice
+**SWUDB (Star Wars Unlimited Database)** è un'applicazione web completa sviluppata per catalogare e gestire le carte del gioco di carte collezionabili **Star Wars: Unlimited** prodotto da Fantasy Flight Games.
 
-**1. Il modello MVC (Model-View-Controller):**
+Il sistema implementa un database relazionale completo con interfaccia web moderna per la gestione di:
 
-Ho organizzato tutto il codice seguendo un sistema chiamato MVC, che è come avere tre scatole separate:
+### Funzionalità Principali
 
-- **Models (i dati)**: Card, Deck, User, SystemError - Sono i "contenitori" dei dati
-- **Controllers (la logica)**: CardsController, DecksController, AdminController, JobController - Decidono cosa fare
-- **Views (quello che vedi)**: Le pagine HTML che vedi sul sito
-- **Livewire (le parti interattive)**: SearchFilter, DeckManager, AddCardSection, CollezioneManager - Parti che si aggiornano da sole
+**1. Catalogazione Carte:**
+- Database completo di tutte le carte con metadati strutturati
+- Sistema di ricerca avanzata con filtri multipli
+- Ordinamento personalizzato basato su criteri gerarchici
 
-**2. Event-Driven Architecture:**
+**2. Gestione Mazzi:**
+- Sistema di costruzione mazzi con validazione delle regole
+- Gestione collezioni personali con tracciamento delle carte possedute
+- Funzionalità di importazione ed esportazione in formati standard
+
+**3. Analisi Statistiche:**
+- Calcolo automatico di statistiche avanzate per i mazzi
+- Generazione di grafici interattivi per la visualizzazione dei dati
+- Analisi delle tendenze e distribuzione delle carte
+
+**4. Funzionalità Collaborative:**
+- Sistema di condivisione mazzi pubblici e privati
+- Notifiche automatiche per nuove carte
+- Dashboard personalizzate per ogni utente
+
+### Caratteristiche Tecniche Distintive
+
+**1. Architettura Modulare:**
+- Backend Laravel per la logica di business e gestione dati
+- Frontend reattivo con componenti Livewire
+- Integrazione fluida tra server-side e client-side
+
+**2. Algoritmi Personalizzati:**
+- Implementazione di merge sort ottimizzato per ordinamento carte con 7 criteri gerarchici
+- Sistema di importazione asincrona con gestione batch intelligente
+- Algoritmi di riconoscimento per identificazione carte duplicate
+
+**3. Sistema di Gestione Errori Avanzato:**
+- Monitoraggio automatico degli errori con notifiche multi-canale
+- Dashboard amministrativa per la gestione centralizzata degli errori
+- Sistema di logging strutturato con tracciamento del contesto
+
+---
+
+## Architettura del Sistema
+
+### Pattern Architetturali Implementati
+
+**1. Model-View-Controller (MVC) Esteso:**
+
+L'applicazione segue rigorosamente il pattern MVC di Laravel, esteso con un livello Livewire per la reattività:
+
+- **Models**: Card, Deck, User, SystemError - Gestiscono la logica di business e la persistenza dei dati
+- **Controllers**: CardsController, DecksController, AdminController, JobController - Orchestrano le operazioni e coordinano i flussi
+- **Views**: Template Blade per la generazione dell'interfaccia utente
+- **Livewire Components**: SearchFilter, DeckManager, AddCardSection, CollezioneManager - Componenti reattivi per interazioni dinamiche
+
+---
+
+## Stack Tecnologico
+
+### Tecnologie Backend
+
+**Laravel 12:**
+- Framework PHP moderno per lo sviluppo di applicazioni web
+- Implementazione del pattern MVC con Eloquent ORM
+- Sistema di routing avanzato e middleware per la sicurezza
+- Job queues per l'elaborazione asincrona
+
+**MySQL 8.0+:**
+- Database relazionale per la persistenza dei dati
+- Ottimizzazioni specifiche per query complesse su grandi dataset
+- Indici composti per migliorare le prestazioni di ricerca
+
+**Eloquent ORM:**
+- Object-Relational Mapping per l'astrazione del database
+- Relazioni complesse gestite tramite il package Compoships
+- Query builder fluente per operazioni database ottimizzate
+
+### Tecnologie Frontend
+
+**Livewire 3:**
+- Framework full-stack per componenti reattivi
+- Comunicazione server-client senza JavaScript complesso
+- Gestione dello stato lato server con aggiornamenti dinamici dell'interfaccia
+
+**Bootstrap 5.3:**
+- Framework CSS per interfaccia utente responsive
+- Tema dark nativo per ridurre l'affaticamento visivo
+- Componenti predefiniti per consistenza del design
+
+**Alpine.js:**
+- Framework JavaScript leggero per interattività client-side
+- Integrazione nativa con Livewire per funzionalità avanzate
+
+### Infrastruttura e Deployment
+
+**Altervista.org:**
+- Hosting web gratuito con supporto PHP e MySQL
+- Configurazione ottimizzata per applicazioni Laravel
+
+**GitHub:**
+- Sistema di controllo versione distribuito
+- Repository centrale per il codice sorgente
+
+**FTP Automatizzato:**
+- Script di deployment automatico per sincronizzazione file
+- Gestione incrementale degli aggiornamenti
+
+**2. Architettura Orientata agli Eventi:**
 
 ```php
 // Esempio di comunicazione event-driven tra componenti
@@ -656,41 +708,44 @@ public function calcolaStatistiche()
 
 ---
 
-## Come ordino le carte
+## Algoritmi di Ordinamento
 
-### Il mio sistema di ordinamento personalizzato
+### Implementazione Merge Sort Personalizzato
 
-**Il problema che dovevo risolvere:**
+**Problema Tecnico Risolto:**
 
-Nel gioco Star Wars Unlimited, le carte hanno tante caratteristiche diverse e non si possono ordinare semplicemente per nome o numero. Ho dovuto creare un sistema che le mette in ordine seguendo 7 regole precise, una dopo l'altra.
+L'ordinamento delle carte in Star Wars Unlimited richiede criteri complessi e gerarchici che i semplici comandi `ORDER BY` SQL non possono gestire efficacemente. È stato necessario implementare un algoritmo merge sort personalizzato che gestisce 7 criteri di ordinamento in sequenza gerarchica.
 
-**Le 7 regole che uso (in ordine di importanza):**
+**Criteri di Ordinamento (in ordine di priorità):**
 
-1. **Tipo di carta** - I Leader e le Basi vengono sempre prima
-2. **Colore principale** - Blu, Verde, Rosso, Giallo, Nero, Bianco
-3. **Colore secondario** - Nero, Bianco, stesso del principale, altri
-4. **Tipo specifico** - Unità, Miglioria, Evento
-5. **Costo** - Dal più basso al più alto (tranne i Leader)
-6. **Data di uscita** - Per distinguere le espansioni
-7. **Numero della carta** - Per decidere in caso di pareggio
+1. **Tipo Generico** - Leader e Base hanno priorità assoluta
+2. **Aspetto Primario** - Blu, Verde, Rosso, Giallo, Nero, Bianco
+3. **Aspetto Secondario** - Nero, Bianco, stesso dell'aspetto primario, altri
+4. **Tipo Specifico** - Unità, Miglioria, Evento
+5. **Costo** - Ordinamento crescente, esclusi i Leader
+6. **Data di Uscita** - Per distinguere espansioni diverse
+7. **Numero Carta** - Criterio finale di disambiguazione
 
-**Come funziona il mio algoritmo:**
+**Implementazione dell'Algoritmo:**
 
 ```php
-// Questa funzione confronta due carte e decide quale viene prima
+/**
+ * Funzione di confronto per l'ordinamento gerarchico delle carte
+ * Implementa 7 criteri di ordinamento in sequenza
+ */
 public static function compareElements(&$el1, &$el2, $verbose = false)
 {
     if($verbose){
-        echo "Sto confrontando ".$el1["nome"]." con ".$el2["nome"]."<br>";
+        echo "Confronto tra ".$el1["nome"]." e ".$el2["nome"]."<br>";
     }
 
-    // Definisco l'ordine dei tipi di carta (Leader e Base vengono prima)
+    // Definizione ordine tipi generici (priorità massima)
     $genericTipoOrder = ['Leader', 'Base'];
 
-    // Definisco l'ordine dei colori principali
+    // Definizione ordine aspetti primari
     $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo', "Nero", "Bianco"];
 
-    // Definisco l'ordine dei tipi specifici
+    // Definizione ordine tipi specifici
     $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
 
     // 1. Confronto per tipo generico (Leader/Base vs altri)
