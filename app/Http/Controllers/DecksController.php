@@ -88,22 +88,22 @@ class DecksController extends Controller{
                         ->id)
                     ->first();
         
-        // Recupera le carte del mazzo
-        $cards = DB::table('compositions')
-            ->leftJoin('cards', function (JoinClause $join){
-                $join->on('compositions.espansione', '=', 'cards.espansione')
-                    ->on('compositions.numero', '=', 'cards.numero');
-            })
-            ->select('cards.*', 'compositions.copie')
-            ->where('compositions.idMazzo', $mazzo->id)
-            ->get();
+        // Recupera le carte del mazzo usando le relazioni Eloquent
+        $compositions = $mazzo->compositions()->with('card')->get();
 
-        // Calcola il numero totale di carte e aggiunge gli snippet
-        $copie = 0;
-        foreach($cards as $card){
-            $card->snippet = "$card->espansione-$card->numero - ".$card->nome.(strlen($card->titolo) > 0 ? ", ". strtoupper($card->titolo) : "");
-            $copie += $card->copie;
-        }
+        // Trasforma le composizioni in un formato compatibile con il codice esistente
+        $cards = $compositions->map(function($composition) {
+            if ($composition->card) {
+                $card = $composition->card;
+                $card->copie = $composition->copie;
+                $card->snippet = $card->snippet; // Usa l'accessor definito nel modello
+                return $card;
+            }
+            return null;
+        })->filter(); // Rimuove i null
+
+        // Calcola il numero totale di carte
+        $copie = $compositions->sum('copie');
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$cards->isEmpty()) {
@@ -483,15 +483,18 @@ class DecksController extends Controller{
             $collezione->save();
         }
 
-        // Recupera le carte della collezione
-        $cards = DB::table('compositions')
-            ->leftJoin('cards', function (JoinClause $join){
-                $join->on('compositions.espansione', '=', 'cards.espansione')
-                    ->on('compositions.numero', '=', 'cards.numero');
-            })
-            ->select('cards.*', 'compositions.copie')
-            ->where('compositions.idMazzo', $collezione->id)
-            ->get();
+        // Recupera le carte della collezione usando le relazioni Eloquent
+        $compositions = $collezione->compositions()->with('card')->get();
+
+        // Trasforma le composizioni in un formato compatibile con il codice esistente
+        $cards = $compositions->map(function($composition) {
+            if ($composition->card) {
+                $card = $composition->card;
+                $card->copie = $composition->copie;
+                return $card;
+            }
+            return null;
+        })->filter(); // Rimuove i null
 
         // Calcola il numero totale di carte
         $totalCards = $cards->sum('copie');
@@ -724,15 +727,18 @@ class DecksController extends Controller{
             return null;
         }
 
-        // Recupera le carte del mazzo con le informazioni complete
-        $cards = DB::table('compositions')
-            ->leftJoin('cards', function (JoinClause $join) {
-                $join->on('compositions.espansione', '=', 'cards.espansione')
-                     ->on('compositions.numero', '=', 'cards.numero');
-            })
-            ->select('cards.*', 'compositions.copie')
-            ->where('compositions.idMazzo', $deckModel->id)
-            ->get();
+        // Recupera le carte del mazzo usando le relazioni Eloquent
+        $compositions = $deckModel->compositions()->with('card')->get();
+
+        // Trasforma le composizioni in un formato compatibile con il codice esistente
+        $cards = $compositions->map(function($composition) {
+            if ($composition->card) {
+                $card = $composition->card;
+                $card->copie = $composition->copie;
+                return $card;
+            }
+            return null;
+        })->filter(); // Rimuove i null
 
         return [
             'user' => $userModel,

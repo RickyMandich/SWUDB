@@ -1132,15 +1132,13 @@ class CardsController extends Controller
      * Confronta due elementi carta per l'ordinamento con regole di priorità dettagliate
      *
      * This is a complex comparison function that sorts cards by multiple criteria in order:
-     * 1. User code (codUtente) - for deck ownership
-     * 2. Deck name (mazzo) - for deck grouping
-     * 3. Generic type (Leader, Base vs others)
-     * 4. Primary aspect (Blu, Verde, Rosso, Giallo, Nero, Bianco)
-     * 5. Secondary aspect (Nero, Bianco, same as primary, others)
-     * 6. Specific type (Unità, Miglioria, Evento)
-     * 7. Cost (costo) - ascending order, except for Leaders
-     * 8. Release date (uscita) - for different expansions
-     * 9. Card number (numero) - final tie-breaker
+     * 1. Generic type (Leader, Base vs others)
+     * 2. Primary aspect (Blu, Verde, Rosso, Giallo, Nero, Bianco)
+     * 3. Secondary aspect (Nero, Bianco, same as primary, others)
+     * 4. Specific type (Unità, Miglioria, Evento)
+     * 5. Cost (costo) - ascending order, except for Leaders
+     * 6. Release date (uscita) - for different expansions
+     * 7. Card number (numero) - final tie-breaker
      *
      * @param array &$el1 First card element (passed by reference)
      * @param array &$el2 Second card element (passed by reference)

@@ -5,8 +5,10 @@ use App\Events\MessageCreated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Awobaz\Compoships\Compoships;
 
 class Card extends Model{
+    use Compoships;
     protected $table = 'cards';
     public $incrementing = false;
     protected $primaryKey = 'cid';
@@ -130,5 +132,27 @@ class Card extends Model{
         Cache::forget('cards_filter_arene');
         Cache::forget('cards_filter_artisti');
         Cache::forget('cards_filter_max_values');
+    }
+
+    /**
+     * Get the compositions for this card
+     * Ottiene le composizioni per questa carta
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function compositions()
+    {
+        return $this->hasMany(Composition::class, ['espansione', 'numero'], ['espansione', 'numero']);
+    }
+
+    /**
+     * Get the decks that contain this card through compositions
+     * Ottiene i mazzi che contengono questa carta attraverso le composizioni
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function decks()
+    {
+        return $this->compositions()->with('deck');
     }
 }

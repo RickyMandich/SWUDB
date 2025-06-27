@@ -28,6 +28,8 @@ namespace App\Models {
      * @property string $cid
      * @property-read mixed $id
      * @property-read mixed $snippet
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Composition> $compositions
+     * @property-read int|null $compositions_count
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereCid($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereEspansione($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Card>|Card whereNumero($value)
@@ -352,6 +354,8 @@ namespace App\Models {
      * @property int $idMazzo
      * @property int $numero
      * @property string $espansione
+     * @property-read \App\Models\Deck $deck
+     * @property-read \App\Models\Card $card
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereEspansione($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereNumero($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Composition>|Composition whereIdmazzo($value)
@@ -662,6 +666,11 @@ namespace App\Models {
      * @property boolean $public
      * @property string $nome
      * @property integer $id
+     * @property-read \App\Models\User $user
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Composition> $compositions
+     * @property-read int|null $compositions_count
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Composition> $cardsWithCompositions
+     * @property-read int|null $cardsWithCompositions_count
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck whereId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck whereNome($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Deck>|Deck wherePublic($value)

@@ -167,15 +167,15 @@ class AdminController extends Controller
             return view("errors.403");
         }
 
-        // Statistiche del sistema
+        // Statistiche del sistema usando modelli Eloquent
         $stats = [
-            'total_cards' => DB::table('cards')->count(),
-            'total_users' => DB::table('users')->count(),
-            'admin_users' => DB::table('users')->where('admin', true)->count(),
-            'total_decks' => DB::table('decks')->where('nome', '!=', 'collezione')->count(),
-            'public_decks' => DB::table('decks')->where('public', true)->where('nome', '!=', 'collezione')->count(),
-            'recent_users' => DB::table('users')->where('created_at', '>=', now()->subDays(7))->count(),
-            'total_collections' => DB::table('decks')->where('nome', 'collezione')->count(),
+            'total_cards' => \App\Models\Card::count(),
+            'total_users' => \App\Models\User::count(),
+            'admin_users' => \App\Models\User::where('admin', true)->count(),
+            'total_decks' => \App\Models\Deck::where('nome', '!=', 'collezione')->count(),
+            'public_decks' => \App\Models\Deck::where('public', true)->where('nome', '!=', 'collezione')->count(),
+            'recent_users' => \App\Models\User::where('created_at', '>=', now()->subDays(7))->count(),
+            'total_collections' => \App\Models\Deck::where('nome', 'collezione')->count(),
         ];
 
         return view('admin.dashboard', compact('stats'));
