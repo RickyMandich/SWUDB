@@ -660,52 +660,37 @@ public function calcolaStatistiche()
 
 **Problema Risolto:**
 
-L'ordinamento delle carte in Star Wars Unlimited richiede criteri complessi e gerarchici che i semplici `ORDER BY` SQL non possono gestire efficacemente. È stato implementato un algoritmo merge sort personalizzato che gestisce 9 criteri di ordinamento in sequenza.
+L'ordinamento delle carte in Star Wars Unlimited richiede criteri complessi e gerarchici che i semplici `ORDER BY` SQL non possono gestire efficacemente. È stato implementato un algoritmo merge sort personalizzato che gestisce 7 criteri di ordinamento in sequenza.
 
 **Criteri di Ordinamento (in ordine di priorità):**
 
-1. **Codice Utente (codUtente)** - Per raggruppare mazzi per proprietario
-2. **Nome Mazzo (mazzo)** - Per ordinamento alfabetico mazzi
-3. **Tipo Generico** - Leader e Basi prima di tutto
-4. **Aspetto Primario** - Blu, Verde, Rosso, Giallo, Nero, Bianco
-5. **Aspetto Secondario** - Nero, Bianco, stesso del primario, altri
-6. **Tipo Specifico** - Unità, Miglioria, Evento
-7. **Costo (costo)** - Crescente, eccetto per Leader
-8. **Data Uscita (uscita)** - Per espansioni diverse
-9. **Numero Carta (numero)** - Tie-breaker finale
+1. **Tipo Generico** - Leader e Basi prima di tutto
+2. **Aspetto Primario** - Blu, Verde, Rosso, Giallo, Nero, Bianco
+3. **Aspetto Secondario** - Nero, Bianco, stesso del primario, altri
+4. **Tipo Specifico** - Unità, Miglioria, Evento
+5. **Costo (costo)** - Crescente, eccetto per Leader
+6. **Data Uscita (uscita)** - Per espansioni diverse
+7. **Numero Carta (numero)** - Tie-breaker finale
 
 **Implementazione dell'Algoritmo:**
 
 ```php
 public static function compareElements(&$el1, &$el2, $verbose = false)
 {
-    // 1. Confronto per codice utente (proprietario mazzo)
-    if (isset($el1["codUtente"]) && isset($el2["codUtente"])) {
-        $userCompare = strcmp($el1["codUtente"], $el2["codUtente"]);
-        if ($userCompare !== 0) {
-            return $userCompare;
-        }
+    if($verbose){
+        echo "Confronto tra ".$el1["nome"]." e ".$el2["nome"]."<br>";
     }
 
-    // 2. Confronto per nome mazzo
-    if (isset($el1["mazzo"]) && isset($el2["mazzo"])) {
-        $mazzoOrder = [];
-        $result = Deck::select("nome as mazzo", "codUtente", "public", "id")
-                     ->distinct()->orderBy("id")->get();
-        foreach($result as &$line){
-            array_push($mazzoOrder, $line["mazzo"]);
-        }
+    // Definisco l'ordine dei tipi generici
+    $genericTipoOrder = ['Leader', 'Base'];
 
-        $mazzoIndex1 = array_search($el1["mazzo"], $mazzoOrder);
-        $mazzoIndex2 = array_search($el2["mazzo"], $mazzoOrder);
+    // Definisco l'ordine degli aspetti primari
+    $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo', "Nero", "Bianco"];
 
-        if ($mazzoIndex1 !== false && $mazzoIndex2 !== false) {
-            if ($mazzoIndex1 < $mazzoIndex2) return -1;
-            if ($mazzoIndex1 > $mazzoIndex2) return 1;
-        }
-    }
+    // Definisco l'ordine dei tipi specifici
+    $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
 
-    // 3. Confronto per tipo generico (Leader/Base vs altri)
+    // 1. Confronto per tipo generico (Leader/Base vs altri)
     $getGenericTypeWeight = function($el) {
         if ($el["tipo"] == "Leader") return 0;
         if ($el["tipo"] == "Base") return 1;
@@ -718,7 +703,7 @@ public static function compareElements(&$el1, &$el2, $verbose = false)
     if ($genericWeight1 < $genericWeight2) return -1;
     if ($genericWeight1 > $genericWeight2) return 1;
 
-    // 4. Confronto per aspetto primario
+    // 2. Confronto per aspetto primario
     $getPrimaryAspectWeight = function($el) {
         switch($el["aspettoPrimario"]) {
             case "Blu": return 0;
@@ -737,7 +722,7 @@ public static function compareElements(&$el1, &$el2, $verbose = false)
     if ($primaryAspectWeight1 < $primaryAspectWeight2) return -1;
     if ($primaryAspectWeight1 > $primaryAspectWeight2) return 1;
 
-    // 5. Confronto per aspetto secondario
+    // 3. Confronto per aspetto secondario
     $getSecondaryAspectWeight = function($el) {
         if ($el["aspettoSecondario"] == "Nero") return 0;
         if ($el["aspettoSecondario"] == "Bianco") return 1;
@@ -751,7 +736,7 @@ public static function compareElements(&$el1, &$el2, $verbose = false)
     if ($secondaryAspectWeight1 < $secondaryAspectWeight2) return -1;
     if ($secondaryAspectWeight1 > $secondaryAspectWeight2) return 1;
 
-    // 6. Confronto per tipo specifico
+    // 4. Confronto per tipo specifico
     $getSpecificTypeWeight = function($el) {
         switch($el["tipo"]) {
             case "Unità": return 0;
@@ -767,20 +752,20 @@ public static function compareElements(&$el1, &$el2, $verbose = false)
     if ($specificTypeWeight1 < $specificTypeWeight2) return -1;
     if ($specificTypeWeight1 > $specificTypeWeight2) return 1;
 
-    // 7. Confronto per costo (eccetto Leader)
+    // 5. Confronto per costo (eccetto Leader)
     if ($el1["tipo"] != "Leader" && $el2["tipo"] != "Leader") {
         if ($el1["costo"] < $el2["costo"]) return -1;
         if ($el1["costo"] > $el2["costo"]) return 1;
     }
 
-    // 8. Confronto per data uscita (espansioni diverse)
+    // 6. Confronto per data uscita (espansioni diverse)
     if($el1["espansione"] != $el2["espansione"]){
         $compareDate = strcmp($el1['uscita'], $el2['uscita']);
         if ($compareDate < 0) return -1;
         if ($compareDate > 0) return 1;
     }
 
-    // 9. Confronto finale per numero carta
+    // 7. Confronto finale per numero carta
     if ($el1["numero"] < $el2["numero"]) return -1;
     if ($el1["numero"] > $el2["numero"]) return 1;
 

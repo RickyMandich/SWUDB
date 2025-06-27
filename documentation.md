@@ -378,7 +378,7 @@ public function methodName($parameter, $options = [])
 #### Algoritmi di Ordinamento
 ```php
 // CardsController::compareElements()
-// Algoritmo complesso per ordinamento carte con 9 criteri gerarchici
+// Algoritmo complesso per ordinamento carte con 7 criteri gerarchici
 // Documentazione dettagliata di ogni fase di confronto
 
 // CardsController::mergeSort()

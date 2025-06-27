@@ -8,8 +8,6 @@ use App\Services\ThreadManager;
 use App\Mail\NewCardsEmail;
 
 use App\Models\Card;
-use App\Models\Deck;
-
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -1146,27 +1144,18 @@ class CardsController extends Controller
      * @return int -1 if el1 < el2, 1 if el1 > el2, 0 if equal
      */
     public static function compareElements(&$el1, &$el2, $verbose) {
-        //definisco l'ordine dei mazzi
-        $mazzoOrder = [];
-        $result = Deck::select("nome as mazzo", "codUtente", "public", "id")->distinct()->orderBy("id")->get();
-        foreach($result as &$line){
-            array_push($mazzoOrder, $line["mazzo"]);
+        if($verbose){
+            echo "Confronto tra ".$el1["nome"]." e ".$el2["nome"]."<br>";
         }
+
         // Definisco l'ordine dei tipi generici
         $genericTipoOrder = ['Leader', 'Base'];
-        
+
         // Definisco l'ordine degli aspetti primari
         $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo', "Nero", "Bianco"];
 
         // Definisco l'ordine dei tipi specifici
         $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
-        
-        // Funzione per ottenere il peso del mazzo
-        $getMazzoWeight = function($element) use ($mazzoOrder) {
-            $mazzo = $element["mazzo"];
-            $index = array_search($mazzo, $mazzoOrder);
-            return $index !== false ? $index : count($mazzoOrder);
-        };
         
         // Funzione per ottenere il peso del tipo
         $getGenericTipoWeight = function($element) use ($genericTipoOrder) {
@@ -1207,50 +1196,7 @@ class CardsController extends Controller
             return $index !== false ? $index : count($specificTipoOrder);
         };
         
-        // faccio un confronto per utente
-        if(isset($el1['codUtente']) && isset($el2['codUtente'])){
-            if ($el1['codUtente'] < $el2['codUtente']) {
-                if($verbose){
-                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del codUtente del proprietario<br>";
-                }
-                return -1;
-            }
-        
-            if ($el1['codUtente'] > $el2['codUtente']) {
-                if($verbose){
-                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del codUtente del proprietario<br>";
-                }
-                return 1;
-            }
 
-            if($verbose){
-                echo "i codici utente sono uguali(".$el1["codUtente"].")<br>";
-            }
-        }
-        
-        // Confronto per mazzo
-        if(isset($el1['mazzo']) && isset($el2['mazzo'])){
-            $mazzoWeight1 = $getMazzoWeight($el1);
-            $mazzoWeight2 = $getMazzoWeight($el2);
-            
-            if ($mazzoWeight1 < $mazzoWeight2) {
-                if($verbose){
-                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del mazzo di appartenenza<br>";
-                }
-                return -1;
-            }
-            
-            if ($mazzoWeight1 > $mazzoWeight2) {
-                if($verbose){
-                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del mazzo di appartenenza<br>";
-                }
-                return 1;
-            }
-
-            if($verbose){
-                echo "le carte sono dello stesso mazzo(".$el1["mazzo"].")<br>";
-            }
-        }
         
         // Confronto per tipo generico
         $tipoWeight1 = $getGenericTipoWeight($el1);
