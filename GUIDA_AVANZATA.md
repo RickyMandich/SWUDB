@@ -1,4 +1,4 @@
-# SWUDB - Documentazione Tecnica del Progetto
+# SWUDB - Documentazione Tecnica del Progetto di Maturità
 
 ## Indice della Documentazione
 
@@ -19,9 +19,13 @@
 
 ## Panoramica del Progetto
 
-**SWUDB (Star Wars Unlimited Database)** è l'applicazione web che ho sviluppato come progetto di maturità per catalogare e gestire tutte le carte del gioco **Star Wars: Unlimited** della Fantasy Flight Games.
+**SWUDB (Star Wars Unlimited Database)** è l'applicazione web che ho sviluppato inizialmente per una necessità personale: catalogare e gestire tutte le carte del gioco **Star Wars: Unlimited** della Fantasy Flight Games. Successivamente ho deciso di portare questo progetto come tesina per l'esame di maturità.
 
-Durante lo sviluppo ho dovuto affrontare diverse sfide tecniche interessanti, dalla progettazione del database alla creazione di algoritmi di ordinamento personalizzati. Il risultato è un sistema completo che gestisce:
+Il progetto è nato dalla mancanza di un database completo e ben organizzato per questo gioco relativamente nuovo. Inizialmente l'ho sviluppato per uso personale, ma quando ho visto la complessità tecnica raggiunta e le funzionalità implementate, ho deciso di presentarlo come progetto di maturità. Durante lo sviluppo ho dovuto affrontare diverse sfide tecniche interessanti, dalla progettazione del database alla creazione di algoritmi di ordinamento personalizzati. Il risultato è un sistema completo che gestisce:
+
+### Genesi del Progetto
+
+Quando è uscito Star Wars Unlimited, mi sono reso conto che mancavano strumenti digitali adeguati per gestire le carte e costruire mazzi. I pochi siti esistenti erano incompleti o poco funzionali. Ho quindi iniziato a sviluppare SWUDB come soluzione personale, ma man mano che aggiungevo funzionalità e risolvevo problemi tecnici complessi, il progetto è cresciuto fino a diventare una piattaforma completa che meritava di essere presentata all'esame di stato.
 
 ### Funzionalità che ho implementato
 
