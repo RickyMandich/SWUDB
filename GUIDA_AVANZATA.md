@@ -19,101 +19,101 @@
 
 ## Panoramica del Progetto
 
-**SWUDB (Star Wars Unlimited Database)** è un'applicazione web completa sviluppata per catalogare e gestire le carte del gioco di carte collezionabili **Star Wars: Unlimited** prodotto da Fantasy Flight Games.
+**SWUDB (Star Wars Unlimited Database)** è l'applicazione web che ho sviluppato come progetto di maturità per catalogare e gestire tutte le carte del gioco **Star Wars: Unlimited** della Fantasy Flight Games.
 
-Il sistema implementa un database relazionale completo con interfaccia web moderna per la gestione di:
+Durante lo sviluppo ho dovuto affrontare diverse sfide tecniche interessanti, dalla progettazione del database alla creazione di algoritmi di ordinamento personalizzati. Il risultato è un sistema completo che gestisce:
 
-### Funzionalità Principali
+### Funzionalità che ho implementato
 
-**1. Catalogazione Carte:**
-- Database completo di tutte le carte con metadati strutturati
-- Sistema di ricerca avanzata con filtri multipli
-- Ordinamento personalizzato basato su criteri gerarchici
+**1. Catalogazione delle Carte:**
+- Un database che contiene tutte le carte con i loro dati completi
+- Sistema di ricerca che ho reso molto flessibile con filtri multipli
+- Un algoritmo di ordinamento che ho dovuto creare da zero per rispettare le regole del gioco
 
-**2. Gestione Mazzi:**
-- Sistema di costruzione mazzi con validazione delle regole
-- Gestione collezioni personali con tracciamento delle carte possedute
-- Funzionalità di importazione ed esportazione in formati standard
+**2. Costruzione Mazzi:**
+- Ho implementato un sistema per creare mazzi che controlla automaticamente se rispettano le regole
+- Gli utenti possono tenere traccia delle carte che possiedono realmente
+- È possibile importare ed esportare mazzi nei formati che usano gli altri programmi del settore
 
-**3. Analisi Statistiche:**
-- Calcolo automatico di statistiche avanzate per i mazzi
-- Generazione di grafici interattivi per la visualizzazione dei dati
-- Analisi delle tendenze e distribuzione delle carte
+**3. Statistiche e Analisi:**
+- Il sistema calcola in automatico statistiche dettagliate sui mazzi (cosa che inizialmente non avevo previsto ma si è rivelata molto utile)
+- Ho aggiunto dei grafici interattivi per rendere i dati più comprensibili
+- Si possono vedere le tendenze su quali carte vengono usate di più
 
-**4. Funzionalità Collaborative:**
-- Sistema di condivisione mazzi pubblici e privati
-- Notifiche automatiche per nuove carte
-- Dashboard personalizzate per ogni utente
+**4. Aspetti Social:**
+- Gli utenti possono condividere i loro mazzi o tenerli privati
+- Ho implementato un sistema di notifiche per quando escono carte nuove
+- Ogni utente ha una sua dashboard personalizzata
 
-### Caratteristiche Tecniche Distintive
+### Aspetti Tecnici Interessanti
 
-**1. Architettura Modulare:**
-- Backend Laravel per la logica di business e gestione dati
-- Frontend reattivo con componenti Livewire
-- Integrazione fluida tra server-side e client-side
+**1. Struttura dell'Applicazione:**
+- Ho usato Laravel come base per gestire la logica e i dati
+- La parte visibile è reattiva grazie ai componenti Livewire
+- L'integrazione tra server e client funziona senza problemi
 
-**2. Algoritmi Personalizzati:**
-- Implementazione di merge sort ottimizzato per ordinamento carte con 7 criteri gerarchici
-- Sistema di importazione asincrona con gestione batch intelligente
-- Algoritmi di riconoscimento per identificazione carte duplicate
+**2. Algoritmi Sviluppati ad Hoc:**
+- Ho dovuto scrivere un merge sort specifico per ordinare le carte secondo 7 criteri diversi
+- L'importazione dei dati avviene in modo asincrono per non bloccare l'interfaccia
+- Ho creato delle routine per riconoscere automaticamente le carte duplicate
 
-**3. Sistema di Gestione Errori Avanzato:**
-- Monitoraggio automatico degli errori con notifiche multi-canale
-- Dashboard amministrativa per la gestione centralizzata degli errori
-- Sistema di logging strutturato con tracciamento del contesto
+**3. Controllo degli Errori:**
+- Tutti gli errori vengono tracciati automaticamente e mi arrivano notifiche
+- C'è una sezione amministrativa dedicata per monitorare i problemi
+- Ogni operazione viene registrata con il suo contesto per facilitare il debug
 
 ---
 
 ## Architettura del Sistema
 
-### Pattern Architetturali Implementati
+### Organizzazione del Codice
 
-**1. Model-View-Controller (MVC) Esteso:**
+**1. Struttura MVC Estesa:**
 
-L'applicazione segue rigorosamente il pattern MVC di Laravel, esteso con un livello Livewire per la reattività:
+Ho seguito il pattern Model-View-Controller di Laravel, aggiungendo però un layer Livewire per rendere tutto più interattivo:
 
-- **Models**: Card, Deck, User, SystemError - Gestiscono la logica di business e la persistenza dei dati
-- **Controllers**: CardsController, DecksController, AdminController, JobController - Orchestrano le operazioni e coordinano i flussi
-- **Views**: Template Blade per la generazione dell'interfaccia utente
-- **Livewire Components**: SearchFilter, DeckManager, AddCardSection, CollezioneManager - Componenti reattivi per interazioni dinamiche
+- **Models**: Card, Deck, User, SystemError - Si occupano dei dati e delle regole di business
+- **Controllers**: CardsController, DecksController, AdminController, JobController - Coordinano le varie operazioni
+- **Views**: Template Blade che generano le pagine HTML
+- **Componenti Livewire**: SearchFilter, DeckManager, AddCardSection, CollezioneManager - Parti dell'interfaccia che si aggiornano dinamicamente
 
 ---
 
 ## Stack Tecnologico
 
-### Tecnologie Backend
+### Tecnologie Lato Server
 
 **Laravel 12:**
-- Framework PHP moderno per lo sviluppo di applicazioni web
-- Implementazione del pattern MVC con Eloquent ORM
-- Sistema di routing avanzato e middleware per la sicurezza
-- Job queues per l'elaborazione asincrona
+- Il framework PHP che ho scelto come base dell'applicazione
+- Utilizza il pattern MVC insieme all'ORM Eloquent
+- Ha un sistema di routing molto flessibile e middleware per la sicurezza
+- Le code di lavoro permettono di elaborare operazioni pesanti in background
 
 **MySQL 8.0+:**
-- Database relazionale per la persistenza dei dati
-- Ottimizzazioni specifiche per query complesse su grandi dataset
-- Indici composti per migliorare le prestazioni di ricerca
+- Il database relazionale dove vengono salvati tutti i dati
+- Ho dovuto ottimizzare diverse query per gestire grandi quantità di carte
+- Gli indici composti migliorano notevolmente le prestazioni nelle ricerche
 
 **Eloquent ORM:**
-- Object-Relational Mapping per l'astrazione del database
-- Relazioni complesse gestite tramite il package Compoships
-- Query builder fluente per operazioni database ottimizzate
+- Permette di lavorare con il database usando oggetti PHP invece di SQL puro
+- Per le relazioni più complesse ho dovuto usare il package Compoships
+- Il query builder rende molto più semplice costruire query ottimizzate
 
-### Tecnologie Frontend
+### Tecnologie Lato Client
 
 **Livewire 3:**
-- Framework full-stack per componenti reattivi
-- Comunicazione server-client senza JavaScript complesso
-- Gestione dello stato lato server con aggiornamenti dinamici dell'interfaccia
+- Un framework che mi permette di creare componenti interattivi senza scrivere molto JavaScript
+- La comunicazione tra browser e server avviene automaticamente
+- Lo stato viene gestito sul server ma l'interfaccia si aggiorna in tempo reale
 
 **Bootstrap 5.3:**
-- Framework CSS per interfaccia utente responsive
-- Tema dark nativo per ridurre l'affaticamento visivo
-- Componenti predefiniti per consistenza del design
+- La libreria CSS che uso per l'aspetto grafico e la responsività
+- Ho implementato il tema scuro per non affaticare gli occhi durante l'uso prolungato
+- I componenti predefiniti garantiscono coerenza visiva in tutto il sito
 
 **Alpine.js:**
-- Framework JavaScript leggero per interattività client-side
-- Integrazione nativa con Livewire per funzionalità avanzate
+- Un framework JavaScript molto leggero per le interazioni più semplici
+- Si integra perfettamente con Livewire per le funzionalità più avanzate
 
 ### Infrastruttura e Deployment
 
@@ -710,21 +710,21 @@ public function calcolaStatistiche()
 
 ## Algoritmi di Ordinamento
 
-### Implementazione Merge Sort Personalizzato
+### Il Merge Sort Personalizzato che ho Sviluppato
 
-**Problema Tecnico Risolto:**
+**La Sfida Tecnica:**
 
-L'ordinamento delle carte in Star Wars Unlimited richiede criteri complessi e gerarchici che i semplici comandi `ORDER BY` SQL non possono gestire efficacemente. È stato necessario implementare un algoritmo merge sort personalizzato che gestisce 7 criteri di ordinamento in sequenza gerarchica.
+Ordinare le carte di Star Wars Unlimited non è banale come sembra. Le regole del gioco richiedono un ordinamento molto specifico che non si può ottenere con un semplice `ORDER BY` del database. Ho dovuto quindi implementare un algoritmo merge sort personalizzato che applica 7 criteri diversi in sequenza.
 
-**Criteri di Ordinamento (in ordine di priorità):**
+**I 7 Criteri che ho Implementato:**
 
-1. **Tipo Generico** - Leader e Base hanno priorità assoluta
-2. **Aspetto Primario** - Blu, Verde, Rosso, Giallo, Nero, Bianco
-3. **Aspetto Secondario** - Nero, Bianco, stesso dell'aspetto primario, altri
+1. **Tipo Generico** - Leader e Basi vengono sempre per primi
+2. **Aspetto Primario** - Blu, Verde, Rosso, Giallo, Nero, Bianco (in quest'ordine)
+3. **Aspetto Secondario** - Nero, Bianco, poi lo stesso del primario, infine gli altri
 4. **Tipo Specifico** - Unità, Miglioria, Evento
-5. **Costo** - Ordinamento crescente, esclusi i Leader
-6. **Data di Uscita** - Per distinguere espansioni diverse
-7. **Numero Carta** - Criterio finale di disambiguazione
+5. **Costo** - Dal più basso al più alto (i Leader sono esclusi da questo criterio)
+6. **Data di Uscita** - Per separare le diverse espansioni
+7. **Numero Carta** - L'ultimo criterio per risolvere i casi di parità
 
 **Implementazione dell'Algoritmo:**
 
