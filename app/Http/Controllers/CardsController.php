@@ -1144,8 +1144,21 @@ class CardsController extends Controller
      * @return int -1 if el1 < el2, 1 if el1 > el2, 0 if equal
      */
     public static function compareElements(&$el1, &$el2, $verbose) {
+        // Converto gli elementi in array se sono modelli Eloquent
+        if (is_object($el1) && method_exists($el1, 'toArray')) {
+            $el1 = $el1->toArray();
+        }
+        if (is_object($el2) && method_exists($el2, 'toArray')) {
+            $el2 = $el2->toArray();
+        }
+
+        // Funzione helper per accesso sicuro agli array
+        $getValue = function($element, $key, $default = '') {
+            return isset($element[$key]) ? $element[$key] : $default;
+        };
+
         if($verbose){
-            echo "Confronto tra ".$el1["nome"]." e ".$el2["nome"]."<br>";
+            echo "Confronto tra ".$getValue($el1, "nome")." e ".$getValue($el2, "nome")."<br>";
         }
 
         // Definisco l'ordine dei tipi generici
@@ -1159,39 +1172,56 @@ class CardsController extends Controller
         
         // Funzione per ottenere il peso del tipo
         $getGenericTipoWeight = function($element) use ($genericTipoOrder) {
-            $tipo = $element['tipo'];
+            // Converto l'elemento in array se è un modello Eloquent
+            if (is_object($element) && method_exists($element, 'toArray')) {
+                $element = $element->toArray();
+            }
+            $tipo = isset($element['tipo']) ? $element['tipo'] : '';
             $index = array_search($tipo, $genericTipoOrder);
             return $index !== false ? $index : count($genericTipoOrder);
         };
         
         // Funzione per ottenere il peso dell'aspetto primario
         $getPrimaryAspectWeight = function($element) use ($primaryAspectOrder) {
-            $aspetto = $element['aspettoPrimario'];
+            // Converto l'elemento in array se è un modello Eloquent
+            if (is_object($element) && method_exists($element, 'toArray')) {
+                $element = $element->toArray();
+            }
+            $aspetto = isset($element['aspettoPrimario']) ? $element['aspettoPrimario'] : '';
             $index = array_search($aspetto, $primaryAspectOrder);
             return $index !== false ? $index : count($primaryAspectOrder);
         };
         
         // Funzione per verificare la presenza di Dark/Light nell'aspetto secondario
         $getSecondaryAspectWeight = function($element) {
-            $aspettoSecondario = $element['aspettoSecondario'];
-            
+            // Converto l'elemento in array se è un modello Eloquent
+            if (is_object($element) && method_exists($element, 'toArray')) {
+                $element = $element->toArray();
+            }
+            $aspettoSecondario = isset($element['aspettoSecondario']) ? $element['aspettoSecondario'] : '';
+
             if ($aspettoSecondario === 'Nero') {
                 return 0;
             }
-            
+
             if ($aspettoSecondario === 'Bianco') {
                 return 1;
             }
 
-            if ($aspettoSecondario === $element["aspettoPrimario"]) {
+            $aspettoPrimario = isset($element["aspettoPrimario"]) ? $element["aspettoPrimario"] : '';
+            if ($aspettoSecondario === $aspettoPrimario) {
                 return 2;
             }
-            
+
             return 3;
         };
 
         $getSpecificTipoWeight = function($element) use ($specificTipoOrder){
-            $tipo = $element["tipo"];
+            // Converto l'elemento in array se è un modello Eloquent
+            if (is_object($element) && method_exists($element, 'toArray')) {
+                $element = $element->toArray();
+            }
+            $tipo = isset($element["tipo"]) ? $element["tipo"] : '';
             $index = array_search($tipo, $specificTipoOrder);
             return $index !== false ? $index : count($specificTipoOrder);
         };
@@ -1204,20 +1234,20 @@ class CardsController extends Controller
         
         if ($tipoWeight1 < $tipoWeight2) {
             if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del tipo generico<br>";
+                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del tipo generico<br>";
             }
             return -1;
         }
-        
+
         if ($tipoWeight1 > $tipoWeight2) {
             if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del tipo generico<br>";
+                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del tipo generico<br>";
             }
             return 1;
         }
 
         if($verbose){
-            echo "le carte sono dello stesso tipo generico(".$el1["tipo"].")<br>";
+            echo "le carte sono dello stesso tipo generico(".$getValue($el1, "tipo").")<br>";
         }
         
         // Se i tipi sono uguali, confronto per aspetto primario
@@ -1226,20 +1256,20 @@ class CardsController extends Controller
         
         if ($primaryAspectWeight1 < $primaryAspectWeight2) {
             if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'aspetto primario<br>";
+                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base dell'aspetto primario<br>";
             }
             return -1;
         }
-        
+
         if ($primaryAspectWeight1 > $primaryAspectWeight2) {
             if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'aspetto primario<br>";
+                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base dell'aspetto primario<br>";
             }
             return 1;
         }
 
         if($verbose){
-            echo "le carte hanno lo stesso aspetto primario (".$el1["aspettoPrimario"].")<br>";
+            echo "le carte hanno lo stesso aspetto primario (".$getValue($el1, "aspettoPrimario").")<br>";
         }
         
         // Se gli aspetti primari sono uguali, confronto per aspetto secondario
@@ -1248,20 +1278,20 @@ class CardsController extends Controller
         
         if ($secondaryAspectWeight1 < $secondaryAspectWeight2) {
             if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'aspetto secondario<br>";
+                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base dell'aspetto secondario<br>";
             }
             return -1;
         }
-        
+
         if ($secondaryAspectWeight1 > $secondaryAspectWeight2) {
             if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'aspetto secondario<br>";
+                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base dell'aspetto secondario<br>";
             }
             return 1;
         }
 
         if($verbose){
-            echo "le care hanno lo stesso aspetto secondario (".$el1["aspettoSecondario"].")<br>";
+            echo "le carte hanno lo stesso aspetto secondario (".$getValue($el1, "aspettoSecondario").")<br>";
         }
         
         // Se aspetto secondario è uguale, confronto per tipo specifico
@@ -1270,76 +1300,84 @@ class CardsController extends Controller
         
         if ($tipoWeight1 < $tipoWeight2) {
             if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del tipo specifico<br>";
+                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del tipo specifico<br>";
             }
             return -1;
         }
-        
+
         if ($tipoWeight1 > $tipoWeight2) {
             if($verbose){
-                echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del tipo specifico<br>";
+                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del tipo specifico<br>";
             }
             return 1;
         }
 
         if($verbose){
-            echo "le carte hanno lo stesso tipo specifico (".$el1["tipo"].")<br>";
+            echo "le carte hanno lo stesso tipo specifico (".$getValue($el1, "tipo").")<br>";
         }
-        
+
         // Se tipo specifico è uguale, confronto per costo (in ordine crescente)
-        if($el1["tipo"] != "Leader"){
-            if ($el1["costo"] < $el2["costo"]) {
+        if($getValue($el1, "tipo") != "Leader"){
+            $costo1 = $getValue($el1, "costo", 0);
+            $costo2 = $getValue($el2, "costo", 0);
+            if ($costo1 < $costo2) {
                 if($verbose){
-                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del costo<br>";
+                    echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del costo<br>";
                 }
                 return -1;
             }
-            
-            if ($el1["costo"] > $el2["costo"]) {
+
+            if ($costo1 > $costo2) {
                 if($verbose){
-                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base del costo<br>";
+                    echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del costo<br>";
                 }
                 return 1;
             }
 
             if($verbose){
-                echo "le carte hanno lo stesso costo (".$el1["costo"].")<br>";
+                echo "le carte hanno lo stesso costo (".$getValue($el1, "costo").")<br>";
             }
         }
-        
+
         // Se nome è uguali, confronto per uscita (formato aaaa mm gg)
-        if($el1["espansione"] != $el2["espansione"]){
-            $compareDate = strcmp($el1['uscita'], $el2['uscita']);
+        $espansione1 = $getValue($el1, "espansione");
+        $espansione2 = $getValue($el2, "espansione");
+        if($espansione1 != $espansione2){
+            $uscita1 = $getValue($el1, "uscita");
+            $uscita2 = $getValue($el2, "uscita");
+            $compareDate = strcmp($uscita1, $uscita2);
             if ($compareDate < 0) {
                 if($verbose){
-                    echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base dell'uscita<br>";
+                    echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base dell'uscita<br>";
                 }
                 return -1;
             }
-            
+
             if ($compareDate > 0) {
                 if($verbose){
-                    echo $el2["nome"]." viene prima di ".$el1['nome']." sulla base dell'uscita<br>";
+                    echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base dell'uscita<br>";
                 }
                 return 1;
             }
-            
+
             if($verbose){
-                echo "le carte hanno la stessa uscita (".$el1["uscita"].")<br>";
+                echo "le carte hanno la stessa uscita (".$getValue($el1, "uscita").")<br>";
             }
         }
 
         // Se la carta è uguale, confronto per numero
-        if ($el1["numero"] < $el2["numero"]) {
+        $numero1 = $getValue($el1, "numero", 0);
+        $numero2 = $getValue($el2, "numero", 0);
+        if ($numero1 < $numero2) {
             if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del numero<br>";
+                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del numero<br>";
             }
             return -1;
         }
         
-        if ($el1["numero"] > $el2["numero"]) {
+        if ($numero1 > $numero2) {
             if($verbose){
-                echo $el1["nome"]." viene prima di ".$el2['nome']." sulla base del numero<br>";
+                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del numero<br>";
             }
             return 1;
         }
