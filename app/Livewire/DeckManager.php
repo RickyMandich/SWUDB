@@ -97,11 +97,25 @@ class DeckManager extends Component
         
         // Inizializza il mazzo con le carte già presenti
         $this->mazzo = collect($mazzo)->mapWithKeys(function($card) {
+            // Salva il valore di copie se è un oggetto prima della conversione
+            $copie = null;
+            if (is_object($card) && isset($card->copie)) {
+                $copie = $card->copie;
+            }
+
             // Converto l'elemento in array se è un modello Eloquent
             if (is_object($card) && method_exists($card, 'toArray')) {
                 $card = $card->toArray();
             } else {
                 $card = (array)$card;
+            }
+
+            // Ripristina il valore di copie se era presente nell'oggetto originale
+            if ($copie !== null) {
+                $card['copie'] = $copie;
+            } else if (!isset($card['copie'])) {
+                // Se non c'è il campo copie, impostiamo un valore di default
+                $card['copie'] = 1;
             }
 
             // Accesso sicuro agli array con valori di default
@@ -128,7 +142,8 @@ class DeckManager extends Component
     {
         // Prepariamo un array con le carte attualmente nel mazzo e il loro conteggio
         $currentDeckCards = collect($this->mazzo)->mapWithKeys(function($card, $key) {
-            return [$key => $card['copie']];
+            $copie = isset($card['copie']) ? $card['copie'] : 1;
+            return [$key => $copie];
         })->toArray();
 
         // Aggiorniamo il componente sezione aggiunta carte con le carte disponibili
@@ -310,7 +325,7 @@ class DeckManager extends Component
 
         // Raccogliamo i dettagli delle carte dal mazzo
         foreach ($this->mazzo as $id => $cartaMazzo) {
-            $copie = $cartaMazzo['copie'];
+            $copie = isset($cartaMazzo['copie']) ? $cartaMazzo['copie'] : 1;
 
             // Ignoriamo i leader e le basi nelle statistiche
             if (isset($cartaMazzo['tipo'])) {
@@ -475,11 +490,13 @@ class DeckManager extends Component
         $formData = [];
 
         foreach ($this->aggiunte as $id => $carta) {
-            $formData[$id] = "A-" . $carta['copie'];
+            $copie = isset($carta['copie']) ? $carta['copie'] : 1;
+            $formData[$id] = "A-" . $copie;
         }
 
         foreach ($this->rimosse as $id => $carta) {
-            $formData[$id] = "R-" . $carta['copie'];
+            $copie = isset($carta['copie']) ? $carta['copie'] : 1;
+            $formData[$id] = "R-" . $copie;
         }
 
         // Inviamo i dati al controller salvando il form
