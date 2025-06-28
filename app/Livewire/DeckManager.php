@@ -74,18 +74,40 @@ class DeckManager extends Component
         
         // Converte le carte disponibili in un formato più facilmente utilizzabile
         $this->cards = collect($carte)->mapWithKeys(function($card) {
-            $key = $card['espansione'] . '-' . $card['numero'];
-            
+            // Converto l'elemento in array se è un modello Eloquent
+            if (is_object($card) && method_exists($card, 'toArray')) {
+                $card = $card->toArray();
+            } else {
+                $card = (array)$card;
+            }
+
+            // Accesso sicuro agli array con valori di default
+            $espansione = isset($card['espansione']) ? $card['espansione'] : '';
+            $numero = isset($card['numero']) ? $card['numero'] : 0;
+            $nome = isset($card['nome']) ? $card['nome'] : '';
+            $titolo = isset($card['titolo']) ? $card['titolo'] : '';
+
+            $key = $espansione . '-' . $numero;
+
             // Crea uno snippet per ogni carta
-            $card['snippet'] = "$card[espansione]-$card[numero] - ".$card['nome'].(strlen($card['titolo']) > 0 ? ", ". strtoupper($card['titolo']) : "");
-            
+            $card['snippet'] = "$espansione-$numero - $nome".(strlen($titolo) > 0 ? ", ". strtoupper($titolo) : "");
+
             return [$key => $card];
         })->toArray();
         
         // Inizializza il mazzo con le carte già presenti
         $this->mazzo = collect($mazzo)->mapWithKeys(function($card) {
-            $card = (array)$card;
-            $key = $card['espansione'] . '-' . $card['numero'];
+            // Converto l'elemento in array se è un modello Eloquent
+            if (is_object($card) && method_exists($card, 'toArray')) {
+                $card = $card->toArray();
+            } else {
+                $card = (array)$card;
+            }
+
+            // Accesso sicuro agli array con valori di default
+            $espansione = isset($card['espansione']) ? $card['espansione'] : '';
+            $numero = isset($card['numero']) ? $card['numero'] : 0;
+            $key = $espansione . '-' . $numero;
             return [$key => $card];
         })->toArray();
 
