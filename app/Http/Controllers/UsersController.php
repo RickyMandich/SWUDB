@@ -37,7 +37,9 @@ class UsersController extends Controller
             'users' => $users,
             'totalUsers' => $users->count(),
             'adminUsers' => $users->where('admin', true)->count(),
-            'regularUsers' => $users->where('admin', false)->count()
+            'regularUsers' => $users->where('admin', false)->count(),
+            'verifiedUsers' => $users->filter(function($user) { return $user->isEmailVerified(); })->count(),
+            'unverifiedUsers' => $users->filter(function($user) { return !$user->isEmailVerified(); })->count()
         ]);
     }
 
@@ -154,5 +156,59 @@ class UsersController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', "L'utente {$userName} è stato eliminato con successo");
+    }
+
+    /**
+     * Toggle email verification status for a specific user
+     * Attiva/disattiva lo stato di verifica email per un utente specifico
+     *
+     * @param int $id User ID
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
+    public function toggleEmailVerification($id)
+    {
+        if (!Auth::admin()) {
+            return redirect()->route('users.index')->with('error', 'Non hai i permessi per eseguire questa azione');
+        }
+
+        $user = User::findOrFail($id);
+
+        if ($user->isEmailVerified()) {
+            // Remove verification
+            $user->email_verified_at = null;
+            $user->save();
+            $status = 'rimossa la verifica email';
+        } else {
+            // Mark as verified
+            $user->markEmailAsVerified();
+            $status = 'verificata l\'email';
+        }
+
+        return redirect()->route('users.index')->with('success', "Per l'utente {$user->name} è stata {$status}");
+    }
+
+    /**
+     * Resend verification email for a specific user
+     * Reinvia email di verifica per un utente specifico
+     *
+     * @param int $id User ID
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
+    public function resendVerificationEmail($id)
+    {
+        if (!Auth::admin()) {
+            return redirect()->route('users.index')->with('error', 'Non hai i permessi per eseguire questa azione');
+        }
+
+        $user = User::findOrFail($id);
+
+        if ($user->isEmailVerified()) {
+            return redirect()->route('users.index')->with('warning', "L'utente {$user->name} ha già l'email verificata");
+        }
+
+        $emailVerificationController = new \App\Http\Controllers\EmailVerificationController();
+        $emailVerificationController->sendVerificationEmail($user);
+
+        return redirect()->route('users.index')->with('success', "Email di verifica inviata nuovamente a {$user->name}");
     }
 }

@@ -15,7 +15,7 @@
                 <div class="card-body">
                     <!-- Statistiche rapide -->
                     <div class="row mb-4">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card bg-success text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-user-shield fa-2x mb-2"></i>
@@ -24,7 +24,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="card bg-info text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-user fa-2x mb-2"></i>
@@ -33,12 +33,21 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card bg-primary text-white">
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
                                 <div class="card-body text-center">
-                                    <i class="fas fa-users fa-2x mb-2"></i>
-                                    <h5>{{ $totalUsers }}</h5>
-                                    <small>Totale Utenti</small>
+                                    <i class="fas fa-envelope-circle-check fa-2x mb-2"></i>
+                                    <h5>{{ $verifiedUsers }}</h5>
+                                    <small>Email Verificate</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                                    <h5>{{ $unverifiedUsers }}</h5>
+                                    <small>Email Non Verificate</small>
                                 </div>
                             </div>
                         </div>
@@ -53,6 +62,7 @@
                                     <th>Nome</th>
                                     <th>Email</th>
                                     <th>Stato</th>
+                                    <th>Email Verificata</th>
                                     <th>Registrato</th>
                                     <th>Ultimo Accesso</th>
                                     <th>Azioni</th>
@@ -88,6 +98,17 @@
                                         @endif
                                     </td>
                                     <td>
+                                        @if($user->isEmailVerified())
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>Verificata
+                                            </span>
+                                        @else
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Non Verificata
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         <small class="text-muted">
                                             {{ $user->created_at->format('d/m/Y H:i') }}
                                         </small>
@@ -111,13 +132,38 @@
                                                 <form method="POST" action="{{ route('users.toggle-admin', $user->id) }}" class="d-inline">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button type="submit" 
+                                                    <button type="submit"
                                                             class="btn btn-outline-{{ $user->admin ? 'warning' : 'success' }} btn-sm"
                                                             title="{{ $user->admin ? 'Rimuovi privilegi admin' : 'Promuovi ad admin' }}"
                                                             onclick="return confirm('Sei sicuro di voler {{ $user->admin ? 'rimuovere i privilegi di amministratore da' : 'promuovere ad amministratore' }} {{ $user->name }}?')">
                                                         <i class="fas fa-{{ $user->admin ? 'user-minus' : 'user-plus' }}"></i>
                                                     </button>
                                                 </form>
+
+                                                <!-- Toggle email verification -->
+                                                <form method="POST" action="{{ route('users.toggle-email-verification', $user->id) }}" class="d-inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit"
+                                                            class="btn btn-outline-{{ $user->isEmailVerified() ? 'warning' : 'info' }} btn-sm"
+                                                            title="{{ $user->isEmailVerified() ? 'Rimuovi verifica email' : 'Marca email come verificata' }}"
+                                                            onclick="return confirm('Sei sicuro di voler {{ $user->isEmailVerified() ? 'rimuovere la verifica email per' : 'marcare come verificata l\'email di' }} {{ $user->name }}?')">
+                                                        <i class="fas fa-{{ $user->isEmailVerified() ? 'envelope-open-text' : 'envelope-circle-check' }}"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Resend verification email (only if not verified) -->
+                                                @if(!$user->isEmailVerified())
+                                                    <form method="POST" action="{{ route('users.resend-verification', $user->id) }}" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit"
+                                                                class="btn btn-outline-secondary btn-sm"
+                                                                title="Reinvia email di verifica"
+                                                                onclick="return confirm('Reinviare l\'email di verifica a {{ $user->name }}?')">
+                                                            <i class="fas fa-paper-plane"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 
                                                 <!-- Elimina utente -->
                                                 <form method="POST" action="{{ route('users.destroy', $user->id) }}" class="d-inline">

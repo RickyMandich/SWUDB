@@ -88,6 +88,8 @@ Route::get('/users', [UsersController::class, 'index'])->name('users.index')->mi
 Route::get('/users/{id}', [UsersController::class, 'show'])->name('users.show')->middleware('auth');
 Route::patch('/users/{id}', [UsersController::class, 'update'])->name('users.update')->middleware('auth');
 Route::patch('/users/{id}/toggle-admin', [UsersController::class, 'toggleAdmin'])->name('users.toggle-admin')->middleware('auth');
+Route::patch('/users/{id}/toggle-email-verification', [UsersController::class, 'toggleEmailVerification'])->name('users.toggle-email-verification')->middleware('auth');
+Route::post('/users/{id}/resend-verification', [UsersController::class, 'resendVerificationEmail'])->name('users.resend-verification')->middleware('auth');
 Route::delete('/users/{id}', [UsersController::class, 'destroy'])->name('users.destroy')->middleware('auth');
 
 Route::get('/docs/tos', [AdminController::class, 'termsOfService'])->name("docs.tos");

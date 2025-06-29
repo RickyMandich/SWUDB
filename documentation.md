@@ -449,6 +449,45 @@ Popup per aggiunta carte ai mazzi con:
 - **CSRF protection** su tutte le form
 - **Rate limiting** su API endpoints
 
+### Sistema di Verifica Email
+
+Il sistema implementa un meccanismo di verifica email personalizzato per garantire la validità degli account utente:
+
+#### Funzionalità Principali
+
+- **Token di verifica**: Ogni utente riceve un token univoco di 60 caratteri
+- **Email automatica**: Invio automatico dell'email di verifica alla registrazione
+- **Middleware di protezione**: Accesso limitato per utenti non verificati
+- **Gestione admin**: Gli amministratori possono gestire lo stato di verifica
+
+#### Flusso di Verifica
+
+1. **Registrazione**: L'utente si registra e riceve un'email di verifica
+2. **Verifica**: Click sul link nell'email per attivare l'account
+3. **Accesso**: Solo utenti verificati possono accedere alle funzionalità protette
+4. **Reinvio**: Possibilità di richiedere un nuovo link di verifica
+
+#### Gestione Amministrativa
+
+Gli amministratori possono:
+- Visualizzare lo stato di verifica di tutti gli utenti
+- Marcare manualmente utenti come verificati/non verificati
+- Reinviare email di verifica per utenti specifici
+- Utilizzare il comando `php artisan users:verify-existing` per verificare utenti esistenti
+
+#### Implementazione Tecnica
+
+```php
+// Verifica se un utente ha l'email verificata
+$user->isEmailVerified()
+
+// Marca un utente come verificato
+$user->markEmailAsVerified()
+
+// Genera un nuovo token di verifica
+$user->generateEmailVerificationToken()
+```
+
 ### Validazione Input
 
 - **Form Request** per validazione complessa
