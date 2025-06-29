@@ -77,6 +77,11 @@ Route::fallback(function () {
 
 Auth::routes();
 
+// Email verification routes
+Route::get('/email/verify', [App\Http\Controllers\EmailVerificationController::class, 'verify'])->name('email.verify');
+Route::get('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'showResendForm'])->name('email.resend.form');
+Route::post('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'resend'])->name('email.resend');
+
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 
 Route::get('/users', [UsersController::class, 'index'])->name('users.index')->middleware('auth');

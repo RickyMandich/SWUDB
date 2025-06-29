@@ -19,7 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withEvents()
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->reportable(function (Throwable $e) {

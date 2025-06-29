@@ -8,16 +8,30 @@
                 <div class="card-header">{{ __('Login') }}</div>
 
                 <div class="card-body">
+                    @if(session('success'))
+                        <div class="row mb-3 justify-content-center">
+                            <div class="col-md-8 text-success text-center">
+                                {{ session('success') }}
+                            </div>
+                        </div>
+                    @endif
                     @if(session('error'))
                         <div class="row mb-3 justify-content-center">
-                            <div class="col-md-6 text-danger text-center">
+                            <div class="col-md-8 text-danger text-center">
                                 {{ session('error') }}
+                                @if(session('email'))
+                                    <br><small>
+                                        <a href="{{ route('email.resend.form') }}" class="text-decoration-none">
+                                            Clicca qui per reinviare l'email di verifica
+                                        </a>
+                                    </small>
+                                @endif
                             </div>
                         </div>
                     @endif
                     @if(session('warning'))
                         <div class="row mb-3 justify-content-center">
-                            <div class="col-md-6 text-warning text-center">
+                            <div class="col-md-8 text-warning text-center">
                                 {{ session('warning') }}
                             </div>
                         </div>
@@ -76,6 +90,10 @@
                                         {{ __('Forgot Your Password?') }}
                                     </a>
                                 @endif
+
+                                <a class="btn btn-link" href="{{ route('email.resend.form') }}">
+                                    Non hai ricevuto l'email di verifica?
+                                </a>
                             </div>
                         </div>
                     </form>

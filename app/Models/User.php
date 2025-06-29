@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'admin',
+        'email_verification_token',
     ];
 
     /**
@@ -45,6 +46,34 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Generate a random email verification token
+     */
+    public function generateEmailVerificationToken()
+    {
+        $this->email_verification_token = \Illuminate\Support\Str::random(60);
+        $this->save();
+        return $this->email_verification_token;
+    }
+
+    /**
+     * Check if email is verified
+     */
+    public function isEmailVerified()
+    {
+        return !is_null($this->email_verified_at);
+    }
+
+    /**
+     * Mark email as verified
+     */
+    public function markEmailAsVerified()
+    {
+        $this->email_verified_at = now();
+        $this->email_verification_token = null;
+        $this->save();
     }
 
     /**
