@@ -8,9 +8,9 @@
                 </h1>
 
                 <!-- Pulsanti principali -->
-                <div class="row g-4 mb-5 @guest justify-content-center @endguest">
+                <div class="row g-4 mb-5 @guest justify-content-center @else @if(!Auth::admin()) justify-content-center @endif @endguest">
                     <!-- Ricerca/Carte -->
-                    <div class="col-md-4 @guest col-lg-3 @endguest">
+                    <div class="col-md-4 @guest col-lg-3 @else @if(!Auth::admin()) col-lg-4 @else col-lg-3 @endif @endguest">
                         <div class="card bg-secondary h-100">
                             <div class="card-body text-center d-flex flex-column">
                                 <i class="fas fa-search fa-3x mb-3 text-primary"></i>
@@ -24,7 +24,7 @@
                     </div>
 
                     <!-- Mazzi -->
-                    <div class="col-md-4 @guest col-lg-3 @endguest">
+                    <div class="col-md-4 @guest col-lg-3 @else @if(!Auth::admin()) col-lg-4 @else col-lg-3 @endif @endguest">
                         <div class="card bg-secondary h-100">
                             <div class="card-body text-center d-flex flex-column">
                                 <i class="fas fa-layer-group fa-3x mb-3 text-success"></i>
@@ -39,7 +39,7 @@
 
                     <!-- Collezione (solo se loggato) -->
                     @auth
-                    <div class="col-md-4">
+                    <div class="col-md-4 @if(!Auth::admin()) col-lg-4 @else col-lg-3 @endif">
                         <div class="card bg-secondary h-100">
                             <div class="card-body text-center d-flex flex-column">
                                 <i class="fas fa-star fa-3x mb-3 text-warning"></i>
@@ -52,6 +52,22 @@
                         </div>
                     </div>
                     @endauth
+
+                    <!-- Dashboard Admin (solo se admin) -->
+                    @if(Auth::check() && Auth::admin())
+                    <div class="col-md-4 col-lg-3">
+                        <div class="card bg-secondary h-100">
+                            <div class="card-body text-center d-flex flex-column">
+                                <i class="fas fa-shield-alt fa-3x mb-3 text-danger"></i>
+                                <h5 class="card-title">Dashboard Admin</h5>
+                                <p class="card-text flex-grow-1">Gestisci il sistema e monitora le attività</p>
+                                <a href="{{ route('admin.dashboard') }}" class="btn btn-danger">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Amministrazione
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
 
                 @guest
