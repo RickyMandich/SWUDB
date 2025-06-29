@@ -8,9 +8,9 @@
                 </h1>
 
                 <!-- Pulsanti principali -->
-                <div class="row g-4 mb-5">
+                <div class="row g-4 mb-5 @guest justify-content-center @endguest">
                     <!-- Ricerca/Carte -->
-                    <div class="col-md-4">
+                    <div class="col-md-4 @guest col-lg-3 @endguest">
                         <div class="card bg-secondary h-100">
                             <div class="card-body text-center d-flex flex-column">
                                 <i class="fas fa-search fa-3x mb-3 text-primary"></i>
@@ -24,7 +24,7 @@
                     </div>
 
                     <!-- Mazzi -->
-                    <div class="col-md-4">
+                    <div class="col-md-4 @guest col-lg-3 @endguest">
                         <div class="card bg-secondary h-100">
                             <div class="card-body text-center d-flex flex-column">
                                 <i class="fas fa-layer-group fa-3x mb-3 text-success"></i>
