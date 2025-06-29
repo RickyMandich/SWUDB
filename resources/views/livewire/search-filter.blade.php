@@ -13,13 +13,13 @@
                 <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm" title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
-                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true" aria-controls="filterCollapse" title="Mostra/Nascondi filtri">
-                    <i class="fas fa-chevron-down" id="filterToggleIcon"></i>
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse" title="Mostra/Nascondi filtri">
+                    <i class="fas fa-chevron-right" id="filterToggleIcon"></i>
                 </button>
             </div>
         </div>
 
-        <div class="collapse show" id="filterCollapse">
+        <div class="collapse" id="filterCollapse">
             <div class="card-body">
 
                 <!-- Filtri principali -->
