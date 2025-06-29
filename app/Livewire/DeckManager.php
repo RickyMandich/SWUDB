@@ -71,13 +71,6 @@ class DeckManager extends Component
         $this->deckObject = $deckObject;
         $this->size = $size;
         $this->proprietario = $proprietario;
-
-        // Debug: Log what we're receiving
-        \Log::info('DeckManager mount - mazzo data:', [
-            'mazzo_type' => gettype($mazzo),
-            'mazzo_count' => is_countable($mazzo) ? count($mazzo) : 'not countable',
-            'first_item' => !empty($mazzo) ? (is_array($mazzo) ? reset($mazzo) : $mazzo->first()) : 'empty'
-        ]);
         
         // Converte le carte disponibili in un formato più facilmente utilizzabile
         $this->cards = collect($carte)->mapWithKeys(function($card) {
@@ -103,15 +96,7 @@ class DeckManager extends Component
         })->toArray();
         
         // Inizializza il mazzo con le carte già presenti
-        $this->mazzo = collect($mazzo)->mapWithKeys(function($card, $index) {
-            // Debug: Log each card being processed
-            \Log::info("Processing card $index:", [
-                'card_type' => gettype($card),
-                'is_object' => is_object($card),
-                'has_toArray' => is_object($card) && method_exists($card, 'toArray'),
-                'original_card' => is_object($card) ? get_class($card) : $card
-            ]);
-
+        $this->mazzo = collect($mazzo)->mapWithKeys(function($card) {
             // Salva il valore di copie se è un oggetto prima della conversione
             $copie = null;
             if (is_object($card) && isset($card->copie)) {
@@ -124,15 +109,6 @@ class DeckManager extends Component
             } else {
                 $card = (array)$card;
             }
-
-            // Debug: Log converted card
-            \Log::info("Converted card:", [
-                'has_espansione' => isset($card['espansione']),
-                'has_numero' => isset($card['numero']),
-                'has_snippet' => isset($card['snippet']),
-                'espansione' => $card['espansione'] ?? 'missing',
-                'numero' => $card['numero'] ?? 'missing'
-            ]);
 
             // Ripristina il valore di copie se era presente nell'oggetto originale
             if ($copie !== null) {

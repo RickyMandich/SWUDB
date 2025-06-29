@@ -84,6 +84,11 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('mazzi') }}">{{ __('custom.mazzi') }}</a>
                         </li>
+                        @auth
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('collezione') }}">{{ __('custom.Collezione') }}</a>
+                        </li>
+                        @endauth
                     </ul>
 
                     <!-- Right Side Of Navbar -->
@@ -110,10 +115,6 @@
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 <a class="dropdown-item" href="{{ route('dashboard') }}">
                                     {{ __('custom.Dashboard') }}
-                                </a>
-
-                                <a class="dropdown-item" href="{{ route('collezione') }}">
-                                    {{ __('custom.Collezione') }}
                                 </a>
 
                                 <a class="dropdown-item" href="{{ route('logout') }}"
