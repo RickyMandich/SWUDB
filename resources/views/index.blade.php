@@ -70,6 +70,38 @@
                     @endif
                 </div>
 
+                <!-- Campo di ricerca -->
+                <div class="row justify-content-center mb-5">
+                    <div class="col-12 @if(Auth::check() && Auth::admin()) col-lg-12 @else col-lg-9 @endif">
+                        <div class="card bg-dark border-primary">
+                            <div class="card-body">
+                                <h5 class="card-title text-center mb-3">
+                                    <i class="fas fa-search me-2 text-primary"></i>Ricerca Rapida
+                                </h5>
+                                <form action="{{ route('carte') }}" method="GET">
+                                    <div class="input-group input-group-lg">
+                                        <span class="input-group-text bg-primary text-white">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input class="form-control form-control-lg"
+                                               type="text"
+                                               placeholder="{{ __('custom.searchCard') }}"
+                                               name="nome"
+                                               id="home-search"
+                                               autocomplete="off">
+                                        <button class="btn btn-primary btn-lg" type="submit">
+                                            <i class="fas fa-arrow-right me-2"></i>Cerca
+                                        </button>
+                                    </div>
+                                    <div class="form-text text-center mt-2 text-muted">
+                                        Cerca per nome carta, espansione o caratteristiche
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 @guest
                 <!-- Sezione per utenti non loggati -->
                 <div class="row justify-content-center">
