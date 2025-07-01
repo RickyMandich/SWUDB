@@ -257,7 +257,7 @@ class UsersController extends Controller
         $user = Auth::user();
 
         if ($user->isEmailVerified()) {
-            return redirect()->route('profile')->with('info', 'La tua email è già verificata');
+            return redirect()->route('dashboard')->with('info', 'La tua email è già verificata');
         }
 
         // Generate new verification token and send email
