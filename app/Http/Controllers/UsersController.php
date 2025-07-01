@@ -212,20 +212,7 @@ class UsersController extends Controller
         return redirect()->route('users.index')->with('success', "Email di verifica inviata nuovamente a {$user->name}");
     }
 
-    /**
-     * Display the user's own profile page
-     * Mostra la pagina profilo dell'utente corrente
-     *
-     * @return \Illuminate\View\View The profile view
-     */
-    public function profile()
-    {
-        $user = Auth::user();
 
-        return view('profile.index', [
-            'user' => $user
-        ]);
-    }
 
     /**
      * Update the user's own profile information
@@ -256,7 +243,7 @@ class UsersController extends Controller
 
         $user->save();
 
-        return redirect()->route('profile')->with('success', 'Profilo aggiornato con successo');
+        return redirect()->route('dashboard')->with('success', 'Profilo aggiornato con successo');
     }
 
     /**
@@ -277,7 +264,7 @@ class UsersController extends Controller
         $emailVerificationController = new \App\Http\Controllers\EmailVerificationController();
         $emailVerificationController->sendVerificationEmail($user);
 
-        return redirect()->route('profile')->with('success', 'Email di verifica inviata con successo');
+        return redirect()->route('dashboard')->with('success', 'Email di verifica inviata con successo');
     }
 
     /**
@@ -297,14 +284,14 @@ class UsersController extends Controller
         ]);
 
         if (!Hash::check($request->password, $user->password)) {
-            return redirect()->route('profile')->with('error', 'Password non corretta');
+            return redirect()->route('dashboard')->with('error', 'Password non corretta');
         }
 
         // Prevent admin self-deletion if they are the only admin
         if ($user->admin) {
             $adminCount = User::where('admin', true)->count();
             if ($adminCount <= 1) {
-                return redirect()->route('profile')->with('error', 'Non puoi eliminare il tuo account: sei l\'unico amministratore del sistema');
+                return redirect()->route('dashboard')->with('error', 'Non puoi eliminare il tuo account: sei l\'unico amministratore del sistema');
             }
         }
 

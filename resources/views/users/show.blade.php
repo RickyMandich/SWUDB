@@ -195,7 +195,7 @@
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-1"></i>
                             <strong>Nota:</strong> Non puoi modificare il tuo stesso account da questa pagina.
-                            <a href="{{ route('profile') }}" class="alert-link">Vai al tuo profilo</a> per modificare i tuoi dati.
+                            <a href="{{ route('dashboard') }}" class="alert-link">Vai alla dashboard</a> per gestire il tuo account.
                         </div>
                     @endif
                 </div>

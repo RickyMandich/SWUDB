@@ -84,8 +84,7 @@ Route::post('/email/resend', [App\Http\Controllers\EmailVerificationController::
 
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 
-// Profilo personale utente
-Route::get('/profilo', [UsersController::class, 'profile'])->name('profile')->middleware('auth');
+// Azioni profilo personale utente (integrate nella dashboard)
 Route::patch('/profilo/update', [UsersController::class, 'updateProfile'])->name('profile.update')->middleware('auth');
 Route::post('/profilo/resend-verification', [UsersController::class, 'resendOwnVerificationEmail'])->name('profile.resend-verification')->middleware('auth');
 Route::delete('/profilo/delete', [UsersController::class, 'deleteOwnAccount'])->name('profile.delete')->middleware('auth');
