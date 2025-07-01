@@ -174,11 +174,11 @@
                     <h5 class="mb-0">
                         <i class="fas fa-user-cog me-2"></i>Gestione Profilo
                     </h5>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#profileManagementCollapse" aria-expanded="true" aria-controls="profileManagementCollapse">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#profileManagementCollapse" aria-expanded="false" aria-controls="profileManagementCollapse">
                         <i class="fas fa-chevron-down" id="profileToggleIcon"></i>
                     </button>
                 </div>
-                <div class="collapse show" id="profileManagementCollapse">
+                <div class="collapse" id="profileManagementCollapse">
                     <div class="card-body">
                         <div class="row">
                             <!-- Informazioni Account -->
