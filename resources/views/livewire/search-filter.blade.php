@@ -13,14 +13,14 @@
                 <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm" title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
-                <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse" title="Mostra/Nascondi filtri">
-                    <i class="fas fa-chevron-right" id="filterToggleIcon"></i>
+                <button wire:click="toggleMainFilters" type="button" class="btn btn-outline-light btn-sm" title="Mostra/Nascondi filtri">
+                    <i class="fas {{ $mainFiltersOpen ? 'fa-chevron-down' : 'fa-chevron-right' }}"></i>
                 </button>
             </div>
         </div>
 
-        <div class="collapse" id="filterCollapse">
-            <div class="card-body">
+        @if($mainFiltersOpen)
+        <div class="card-body">
 
                 <!-- Filtri principali -->
                 <div class="row g-3">
@@ -222,27 +222,12 @@
 
 
             </div>
-        </div>
+        @endif
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const filterCollapse = document.getElementById('filterCollapse');
-    const toggleIcon = document.getElementById('filterToggleIcon');
-
-    if (filterCollapse && toggleIcon) {
-        filterCollapse.addEventListener('show.bs.collapse', function () {
-            toggleIcon.classList.remove('fa-chevron-right');
-            toggleIcon.classList.add('fa-chevron-down');
-        });
-
-        filterCollapse.addEventListener('hide.bs.collapse', function () {
-            toggleIcon.classList.remove('fa-chevron-down');
-            toggleIcon.classList.add('fa-chevron-right');
-        });
-    }
-
     // Gestione ESC per chiudere i filtri avanzati
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {

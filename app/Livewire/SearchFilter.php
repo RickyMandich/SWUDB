@@ -63,6 +63,9 @@ class SearchFilter extends Component
     // Stato dei filtri avanzati (aperto/chiuso)
     public $advancedFiltersOpen = false;
 
+    // Stato del filtro principale (aperto/chiuso)
+    public $mainFiltersOpen = false;
+
     protected $listeners = [
         'resetFilters' => 'resetAllFilters',
         'applyFiltersForPopup' => 'getFilteredCardsForPopup',
@@ -384,6 +387,17 @@ class SearchFilter extends Component
     public function toggleAdvancedFilters()
     {
         $this->advancedFiltersOpen = !$this->advancedFiltersOpen;
+    }
+
+    /**
+     * Toggle the main filters section open/closed state
+     * Attiva/disattiva lo stato aperto/chiuso della sezione filtri principale
+     *
+     * @return void
+     */
+    public function toggleMainFilters()
+    {
+        $this->mainFiltersOpen = !$this->mainFiltersOpen;
     }
 
     public function render()
