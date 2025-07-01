@@ -114,13 +114,19 @@
 
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 <a class="dropdown-item" href="{{ route('dashboard') }}">
-                                    {{ __('custom.Dashboard') }}
+                                    <i class="fas fa-tachometer-alt me-1"></i>{{ __('custom.Dashboard') }}
                                 </a>
+
+                                <a class="dropdown-item" href="{{ route('profile') }}">
+                                    <i class="fas fa-user-cog me-1"></i>Il Mio Profilo
+                                </a>
+
+                                <div class="dropdown-divider"></div>
 
                                 <a class="dropdown-item" href="{{ route('logout') }}"
                                    onclick="event.preventDefault();
                                                  document.getElementById('logout-form').submit();">
-                                    {{ __('custom.Logout') }}
+                                    <i class="fas fa-sign-out-alt me-1"></i>{{ __('custom.Logout') }}
                                 </a>
 
                                 <a class="dropdown-item" href="{{ route('carte.update') }}">

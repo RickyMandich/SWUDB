@@ -194,8 +194,8 @@
                     @else
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-1"></i>
-                            <strong>Nota:</strong> Non puoi modificare il tuo stesso account da questa pagina. 
-                            Usa le impostazioni del profilo per modificare i tuoi dati.
+                            <strong>Nota:</strong> Non puoi modificare il tuo stesso account da questa pagina.
+                            <a href="{{ route('profile') }}" class="alert-link">Vai al tuo profilo</a> per modificare i tuoi dati.
                         </div>
                     @endif
                 </div>

@@ -211,4 +211,109 @@ class UsersController extends Controller
 
         return redirect()->route('users.index')->with('success', "Email di verifica inviata nuovamente a {$user->name}");
     }
+
+    /**
+     * Display the user's own profile page
+     * Mostra la pagina profilo dell'utente corrente
+     *
+     * @return \Illuminate\View\View The profile view
+     */
+    public function profile()
+    {
+        $user = Auth::user();
+
+        return view('profile.index', [
+            'user' => $user
+        ]);
+    }
+
+    /**
+     * Update the user's own profile information
+     * Aggiorna le informazioni del profilo dell'utente corrente
+     *
+     * @param Request $request HTTP request containing user data
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => 'required|string|max:255|unique:users,name,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+        ]);
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+
+        // Aggiorna la password solo se fornita
+        if ($request->filled('password')) {
+            $request->validate([
+                'password' => 'min:8|confirmed',
+            ]);
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return redirect()->route('profile')->with('success', 'Profilo aggiornato con successo');
+    }
+
+    /**
+     * Resend verification email for the current user
+     * Reinvia email di verifica per l'utente corrente
+     *
+     * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
+     */
+    public function resendOwnVerificationEmail()
+    {
+        $user = Auth::user();
+
+        if ($user->isEmailVerified()) {
+            return redirect()->route('profile')->with('info', 'La tua email è già verificata');
+        }
+
+        // Generate new verification token and send email
+        $emailVerificationController = new \App\Http\Controllers\EmailVerificationController();
+        $emailVerificationController->sendVerificationEmail($user);
+
+        return redirect()->route('profile')->with('success', 'Email di verifica inviata con successo');
+    }
+
+    /**
+     * Delete the user's own account
+     * Elimina l'account dell'utente corrente
+     *
+     * @param Request $request HTTP request
+     * @return \Illuminate\Http\RedirectResponse Redirect to home page
+     */
+    public function deleteOwnAccount(Request $request)
+    {
+        $user = Auth::user();
+
+        // Validate password for security
+        $request->validate([
+            'password' => 'required',
+        ]);
+
+        if (!Hash::check($request->password, $user->password)) {
+            return redirect()->route('profile')->with('error', 'Password non corretta');
+        }
+
+        // Prevent admin self-deletion if they are the only admin
+        if ($user->admin) {
+            $adminCount = User::where('admin', true)->count();
+            if ($adminCount <= 1) {
+                return redirect()->route('profile')->with('error', 'Non puoi eliminare il tuo account: sei l\'unico amministratore del sistema');
+            }
+        }
+
+        $userName = $user->name;
+
+        // Logout and delete
+        Auth::logout();
+        $user->delete();
+
+        return redirect()->route('index')->with('success', "Account {$userName} eliminato con successo");
+    }
 }
