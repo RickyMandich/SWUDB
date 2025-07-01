@@ -174,7 +174,7 @@
                     <h5 class="mb-0">
                         <i class="fas fa-user-cog me-2"></i>Gestione Profilo
                     </h5>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#profileManagementCollapse" aria-expanded="false" aria-controls="profileManagementCollapse">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#profileManagementCollapse" aria-expanded="true" aria-controls="profileManagementCollapse">
                         <i class="fas fa-chevron-down" id="profileToggleIcon"></i>
                     </button>
                 </div>
@@ -272,7 +272,7 @@
                         <h5 class="mb-0">
                             <i class="fas fa-tasks me-2"></i>Todo List - Stato Sviluppo
                         </h5>
-                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#todoListCollapse" aria-expanded="true" aria-controls="todoListCollapse">
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#todoListCollapse" aria-expanded="false" aria-controls="todoListCollapse">
                             <i class="fas fa-chevron-up" id="todoToggleIcon"></i>
                         </button>
                     </div>
