@@ -178,7 +178,7 @@
                         <i class="fas fa-chevron-down" id="profileToggleIcon"></i>
                     </button>
                 </div>
-                <div class="collapse" id="profileManagementCollapse">
+                <div class="collapse show" id="profileManagementCollapse">
                     <div class="card-body">
                         <div class="row">
                             <!-- Informazioni Account -->
@@ -276,7 +276,7 @@
                             <i class="fas fa-chevron-up" id="todoToggleIcon"></i>
                         </button>
                     </div>
-                    <div class="collapse show" id="todoListCollapse">
+                    <div class="collapse" id="todoListCollapse">
                         <div class="card-body">
                             <div class="markdown-content" style="max-height: 600px; overflow-y: auto;">
                                 @php
