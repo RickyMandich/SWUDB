@@ -94,7 +94,7 @@
                                         </button>
                                     </div>
                                     <div class="form-text text-center mt-2 text-muted">
-                                        Cerca per nome carta, espansione o caratteristiche
+                                        Cerca carte per nome
                                     </div>
                                 </form>
                             </div>
