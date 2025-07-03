@@ -65,7 +65,7 @@
                                     @foreach($result as $row)
                                         <tr>
                                             @foreach((array)$row as $value)
-                                                <td>{{ $value }}</td>
+                                                <td>{!! $value !!}</td>
                                             @endforeach
                                         </tr>
                                     @endforeach
