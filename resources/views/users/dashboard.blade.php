@@ -226,7 +226,7 @@
 
                             <!-- Azioni Account -->
                             <div class="col-md-6">
-                                <div class="card bg-secondary">
+                                <div class="card bg-custom-light">
                                     <div class="card-header">
                                         <h6><i class="fas fa-tools me-1"></i>Azioni Account</h6>
                                     </div>

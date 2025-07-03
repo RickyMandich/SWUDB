@@ -117,10 +117,6 @@
                                     <i class="fas fa-tachometer-alt me-1"></i>{{ __('custom.Dashboard') }}
                                 </a>
 
-                                <a class="dropdown-item" href="{{ route('dashboard') }}">
-                                    <i class="fas fa-user-cog me-1"></i>Il Mio Profilo
-                                </a>
-
                                 <div class="dropdown-divider"></div>
 
                                 <a class="dropdown-item" href="{{ route('logout') }}"
