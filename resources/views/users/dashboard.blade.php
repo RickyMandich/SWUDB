@@ -183,7 +183,7 @@
                         <div class="row">
                             <!-- Informazioni Account -->
                             <div class="col-md-6">
-                                <div class="card bg-secondary">
+                                <div class="card bg-custom-light">
                                     <div class="card-header">
                                         <h6><i class="fas fa-info-circle me-1"></i>Informazioni Account</h6>
                                     </div>
@@ -273,7 +273,7 @@
                             <i class="fas fa-tasks me-2"></i>Todo List - Stato Sviluppo
                         </h5>
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#todoListCollapse" aria-expanded="false" aria-controls="todoListCollapse">
-                            <i class="fas fa-chevron-up" id="todoToggleIcon"></i>
+                            <i class="fas fa-chevron-down" id="todoToggleIcon"></i>
                         </button>
                     </div>
                     <div class="collapse" id="todoListCollapse">
