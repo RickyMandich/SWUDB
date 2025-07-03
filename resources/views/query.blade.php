@@ -62,9 +62,10 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($result as $row)
+                                    @foreach($result as $k=>$row)
                                         <tr>
                                             @foreach((array)$row as $value)
+                                            @if(isset($sorted) and $sorted)
                                                 <td>{!! $value !!}</td>
                                             @endforeach
                                         </tr>
