@@ -742,9 +742,6 @@ class CardsController extends Controller
                     $this->writeScanLog("Checkpoint salvato all'indice: " . ($index + 1), $logFile);
                 }
 
-                // Small delay between each card
-                usleep(50000); // Reduced to 50ms delay
-
                 // Check execution time and break if approaching limits
                 if ((time() - ($_SERVER['REQUEST_TIME'] ?? time())) > 240) { // 4 minutes limit
                     $this->writeScanLog("Limite tempo raggiunto, salvataggio checkpoint e riavvio...", $logFile);
@@ -1050,7 +1047,12 @@ class CardsController extends Controller
 
         $users = User::select("email")->where('email', '!=', null)->get();
         foreach($users as $user){
-            Mail::to($user['email'])->send(new NewCardsEmail($cardsData));
+            try{
+                Mail::to($user['email'])->send(new NewCardsEmail($cardsData));
+            }catch(\Error $e){
+                sleep(1);
+                Mail::to($user['email'])->send(new NewCardsEmail($cardsData));
+            }
         }
     }
 
