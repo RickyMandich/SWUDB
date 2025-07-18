@@ -134,7 +134,7 @@
                                     <div class="col">
                                         <input type="number"
                                                wire:model.live="costoMax"
-                                               class="form-control"
+                                               class="form-control max"
                                                placeholder="Max ({{ $maxCostoDb }})"
                                                min="0" max="{{ $maxCostoDb }}">
                                     </div>
@@ -156,7 +156,7 @@
                                     <div class="col">
                                         <input type="number"
                                                wire:model.live="potenzaMax"
-                                               class="form-control"
+                                               class="form-control max"
                                                placeholder="Max ({{ $maxPotenzaDb }})"
                                                min="0" max="{{ $maxPotenzaDb }}">
                                     </div>
@@ -179,6 +179,7 @@
                                         <input type="number"
                                                wire:model.live="vitaMax"
                                                class="form-control"
+                                               oninput="checkMax(this)"
                                                placeholder="Max ({{ $maxVitaDb }})"
                                                min="0" max="{{ $maxVitaDb }}">
                                     </div>
@@ -227,15 +228,18 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Gestione ESC per chiudere i filtri avanzati
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            const advancedFilters = document.getElementById('advancedFilters');
-            if (advancedFilters && !advancedFilters.classList.contains('d-none')) {
-                @this.call('toggleAdvancedFilters');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestione ESC per chiudere i filtri avanzati
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const advancedFilters = document.getElementById('advancedFilters');
+                if (advancedFilters && !advancedFilters.classList.contains('d-none')) {
+                    @this.call('toggleAdvancedFilters');
+                }
             }
-        }
+        });
     });
-});
+    function checkMax(input) {
+        console.log(input);
+    }
 </script>
