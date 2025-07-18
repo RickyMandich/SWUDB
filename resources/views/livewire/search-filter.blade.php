@@ -244,5 +244,8 @@
     function checkMax(input) {
         console.log(input);
         console.log(input.value);
+        if(empty(input.value)){
+            input.value = undefined;
+        }
     }
 </script>
