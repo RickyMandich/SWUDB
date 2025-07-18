@@ -134,7 +134,8 @@
                                     <div class="col">
                                         <input type="number"
                                                wire:model.live="costoMax"
-                                               class="form-control max"
+                                               class="form-control"
+                                               oninput="checkMax(this)"
                                                placeholder="Max ({{ $maxCostoDb }})"
                                                min="0" max="{{ $maxCostoDb }}">
                                     </div>
@@ -156,7 +157,8 @@
                                     <div class="col">
                                         <input type="number"
                                                wire:model.live="potenzaMax"
-                                               class="form-control max"
+                                               class="form-control"
+                                               oninput="checkMax(this)"
                                                placeholder="Max ({{ $maxPotenzaDb }})"
                                                min="0" max="{{ $maxPotenzaDb }}">
                                     </div>
@@ -241,5 +243,6 @@
     });
     function checkMax(input) {
         console.log(input);
+        console.log(input.value);
     }
 </script>
