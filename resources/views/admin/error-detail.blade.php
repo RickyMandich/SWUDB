@@ -88,7 +88,7 @@
                             <h6><i class="fas fa-code me-1"></i>Stack Trace</h6>
                         </div>
                         <div class="card-body">
-                            <pre class="bg-light p-3 small" style="max-height: 400px; overflow-y: auto;"><code>{{ $error->trace }}</code></pre>
+                            <pre class="p-3 small" style="max-height: 400px; overflow-y: auto;"><code>{{ $error->trace }}</code></pre>
                         </div>
                     </div>
                 </div>
