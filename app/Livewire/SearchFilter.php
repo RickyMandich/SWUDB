@@ -192,7 +192,7 @@ class SearchFilter extends Component
     public function applyFilters()
     {
         // Normalizza i valori vuoti dei filtri numerici in null
-        foreach (['costoMin', 'costoMax', 'potenzaMin', 'potenzaMax', 'vitaMin', 'vitaMax'] as $field) {
+        foreach (['costoMin', 'costoMax', 'potenzaMin', 'potenzaMax', 'vitaMin', 'vitaMax', 'unica'] as $field) {
             if ($this->$field === '' || $this->$field === false) {
                 $this->$field = null;
             }
