@@ -70,7 +70,7 @@
                                                         @if(isset($sorted) and $sorted)
                                                             <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
                                                         @endif
-                                                        {!! $key !!} => {!! $value !!}
+                                                        <!--{!! $key !!} => -->{!! $value !!}
                                                         @if(isset($sorted) and $sorted)
                                                             </a>
                                                         @endif
