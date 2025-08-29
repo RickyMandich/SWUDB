@@ -67,14 +67,14 @@
                                             <td>
                                                 {{ var_dump((array)$row) }}
                                             </td>
-                                            @foreach((array)$row as $key=>$value)
-                                                @if($key !== "" or $value !== "")
+                                            @foreach((array)$row as $key=>$value):
+                                                @if($key !== "" or $value !== ""):
                                                     <td>
-                                                        @if(isset($sorted) and $sorted)
+                                                        @if(isset($sorted) and $sorted):
                                                             <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
                                                         @endif
                                                         |{!! $key !!}| => |{!! $value !!}|
-                                                        @if(isset($sorted) and $sorted)
+                                                        @if(isset($sorted) and $sorted):
                                                             </a>
                                                         @endif
                                                     <td>
