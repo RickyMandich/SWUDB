@@ -53,7 +53,7 @@
                             @endif
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-striped table-striped-column table-hover table-sm">
+                            <table class="table table-striped-column table-hover table-sm">
                                 <thead class="table-dark">
                                     <tr>
                                         @foreach(array_keys((array)$result[0]) as $column)
