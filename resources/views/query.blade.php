@@ -62,14 +62,14 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($result as $k=>$row)
+                                    @foreach($result as $row)
                                         <tr>
-                                            @foreach((array)$row as $value)
+                                            @foreach((array)$row as $key=>$value)
                                                 <td>
                                                     @if(isset($sorted) and $sorted)
                                                         <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
                                                     @endif
-                                                        {!! $value !!}
+                                                    {!! $key !!} => {!! $value !!}
                                                     @if(isset($sorted) and $sorted)
                                                         </a>
                                                     @endif
