@@ -65,7 +65,7 @@
                                     @foreach($result as $row)
                                         <tr>
                                             <td>
-                                                {{ var_dump($row) }}
+                                                {{ var_dump((array)$row) }}
                                             </td>
                                             @foreach((array)$row as $key=>$value)
                                                 <td>
