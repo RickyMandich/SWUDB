@@ -77,7 +77,7 @@
                                                         @if(isset($sorted) and $sorted)
                                                             </a>
                                                         @endif
-                                                    <td>
+                                                    </td>
                                                 @endif
                                             @endforeach
                                         </tr>
