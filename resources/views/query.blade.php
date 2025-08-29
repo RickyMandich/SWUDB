@@ -64,6 +64,9 @@
                                 <tbody>
                                     @foreach($result as $row)
                                         <tr>
+                                            <td>
+                                                {{ var_dump($row) }}
+                                            </td>
                                             @foreach((array)$row as $key=>$value)
                                                 <td>
                                                     @if(isset($sorted) and $sorted)
