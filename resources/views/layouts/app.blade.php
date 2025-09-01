@@ -143,6 +143,9 @@
                                     <a class="dropdown-item" href="{{ route('query') }}">
                                         <i class="fas fa-database me-1"></i>{{ __('custom.query') }}
                                     </a>
+                                    <a class="dropdown-item" href="{{ route('admin.logs') }}">
+                                        <i class="fas fa-file-alt me-1"></i>Gestione Logs
+                                    </a>
                                     <a class="dropdown-item" href="{{ route('admin.errors') }}">
                                         <i class="fas fa-exclamation-triangle me-1"></i>Gestione Errori
                                     </a>

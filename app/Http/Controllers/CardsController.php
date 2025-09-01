@@ -120,7 +120,7 @@ class CardsController extends Controller
     private function getScanLogPath()
     {
         $timestamp = now()->format('Y_m_d_H_i');
-        return storage_path("logs/scansione_{$timestamp}.log");
+        return storage_path("logs/scansione/{$timestamp}.log");
     }
 
     /**
@@ -140,7 +140,7 @@ class CardsController extends Controller
         $timestamp = now()->format('Y-m-d H:i:s');
         $logMessage = "[{$timestamp}] {$message}\n";
 
-        // Ensure logs directory exists
+        // Ensure logs/scansione directory exists
         $logDir = dirname($logFile);
         if (!is_dir($logDir)) {
             mkdir($logDir, 0755, true);

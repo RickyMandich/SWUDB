@@ -1373,14 +1373,14 @@ public function insertCards(Request $request)
 private function createScanLog()
 {
     $timestamp = now()->format('Y_m_d_H_i');
-    $filename = "scansione_{$timestamp}.log";
-    $logPath = storage_path("logs/{$filename}");
+    $filename = "{$timestamp}.log";
+    $logPath = storage_path("logs/scansione/{$filename}");
 
-    $this->writeScanLog("=== INIZIO SCANSIONE UnlimitedDB ===", $filename);
-    $this->writeScanLog("Timestamp: " . now()->format('d/m/Y H:i:s'), $filename);
-    $this->writeScanLog("Versione: " . env('APP_VERSION_PRIMARY', '1') . '.' . env('APP_VERSION_SECONDARY', '0') . '.' . env('APP_VERSION_TERTIARY', '0'), $filename);
+    $this->writeScanLog("=== INIZIO SCANSIONE UnlimitedDB ===", $logPath);
+    $this->writeScanLog("Timestamp: " . now()->format('d/m/Y H:i:s'), $logPath);
+    $this->writeScanLog("Versione: " . env('APP_VERSION_PRIMARY', '1') . '.' . env('APP_VERSION_SECONDARY', '0') . '.' . env('APP_VERSION_TERTIARY', '0'), $logPath);
 
-    return $filename;
+    return $logPath;
 }
 
 private function writeScanLog($message, $logFile)
@@ -1388,8 +1388,14 @@ private function writeScanLog($message, $logFile)
     $timestamp = now()->format('H:i:s');
     $logMessage = "[{$timestamp}] {$message}\n";
 
+    // Ensure logs/scansione directory exists
+    $logDir = dirname($logFile);
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+
     file_put_contents(
-        storage_path("logs/{$logFile}"),
+        $logFile,
         $logMessage,
         FILE_APPEND | LOCK_EX
     );
