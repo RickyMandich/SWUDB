@@ -3,7 +3,7 @@
         'name' => 'laravel/laravel',
         'pretty_version' => 'dev-laravel',
         'version' => 'dev-laravel',
-        'reference' => 'f6a08df4e5bc85a4a527601bcdf4645447bef914',
+        'reference' => '7d3699568cc6af2450002bc8781e8d58a12f01b5',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -397,7 +397,7 @@
         'laravel/laravel' => array(
             'pretty_version' => 'dev-laravel',
             'version' => 'dev-laravel',
-            'reference' => 'f6a08df4e5bc85a4a527601bcdf4645447bef914',
+            'reference' => '7d3699568cc6af2450002bc8781e8d58a12f01b5',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -1300,6 +1300,15 @@
             'install_path' => __DIR__ . '/../symfony/yaml',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'telegram-bot/api' => array(
+            'pretty_version' => 'v2.5.0',
+            'version' => '2.5.0.0',
+            'reference' => 'eaae3526223db49a1bad76a2dfa501dc287979cf',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../telegram-bot/api',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'theseer/tokenizer' => array(
             'pretty_version' => '1.2.3',

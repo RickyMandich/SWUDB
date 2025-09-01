@@ -1,17 +1,21 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
 use App\Http\Controllers\JobController;
+use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\UsersController;
-use App\Http\Controllers\AdminController;
-
-
-
-
 
 use App\Jobs\ExecuteArtisanCommand;
+
 use Illuminate\Support\Facades\Route;
+
+// Webhook endpoint (da inserire in routes/api.php)
+Route::post('/telegram/webhook', [TelegramController::class, 'webhook']);
+
+// Route per configurare il webhook (da chiamare una sola volta)
+Route::get('/telegram/setup-webhook', [TelegramController::class, 'setWebhook']);
 
 Route::get('/', function(){return view('index');})->name("index");
 
