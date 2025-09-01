@@ -1,5 +1,4 @@
 # Aggiungi tutti i file al commit
-git add .
 git status
 
 # Leggi la versione dell'app dal file .env
@@ -27,7 +26,7 @@ echo "Versione trovata: '$APP_VERSION'"
 nomeCommit=$(date "+%Y %m %d %H:%M")
 nomeCommit="aggiornamento $nomeCommit [v$APP_VERSION]"
 echo "Messaggio commit: $nomeCommit"
-git commit -m "$nomeCommit"
+git commit -am "$nomeCommit"
 
 # Esegui il push sul repository remoto
 git push -f
