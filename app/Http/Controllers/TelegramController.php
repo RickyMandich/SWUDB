@@ -55,26 +55,37 @@ class TelegramController extends Controller
     private function executeScanCommand($username, $chatId)
     {
         Log::info("Scan command received by: " . $username);
-        
-        // Chiama la tua logica esistente (sostituisce la chiamata HTTP)
-        $this->triggerUpdate();
-        
-        // Invia messaggio di conferma all'utente
-        $this->sendMessage($chatId, "Scan avviato con successo! 🔍");
+
+        try {
+            // Invia messaggio di avvio
+            $this->sendMessage($chatId, "🔍 Avvio scansione in corso...");
+
+            // Chiama la tua logica esistente (sostituisce la chiamata HTTP)
+            $this->triggerUpdate();
+
+            // Invia messaggio di conferma all'utente
+            $this->sendMessage($chatId, "✅ Scansione completata con successo!");
+        } catch (\Exception $e) {
+            Log::error("Error in executeScanCommand: " . $e->getMessage());
+            $this->sendMessage($chatId, "❌ Errore durante la scansione: " . $e->getMessage());
+        }
     }
 
     // Metodo che sostituisce la chiamata HTTP al tuo endpoint /update
     private function triggerUpdate()
     {
-        // Invece di fare una chiamata HTTP, chiama direttamente il tuo controller/service
-        // Esempio: 
-        // app(UpdateService::class)->performUpdate();
-        
-        // Oppure se vuoi mantenere la chiamata HTTP:
-        // Http::get(url('/update'));
-        
-        // Per ora mettiamo un placeholder
-        Log::info("Update triggered");
+        try {
+            Log::info("Triggering update from Telegram bot");
+
+            // Chiama direttamente il metodo startImport del CardsController
+            $cardsController = new \App\Http\Controllers\CardsController();
+            $cardsController->startImport();
+
+            Log::info("Update completed successfully");
+        } catch (\Exception $e) {
+            Log::error("Error during update: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     // Metodo helper per inviare messaggi
