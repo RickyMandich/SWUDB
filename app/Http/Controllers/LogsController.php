@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 
 class LogsController extends Controller
 {
@@ -160,24 +159,15 @@ class LogsController extends Controller
     }
 
     /**
-     * Get file content with size limit
-     * Ottiene il contenuto del file con limite di dimensione
+     * Get file content without size limit
+     * Ottiene il contenuto del file senza limite di dimensione
      *
      * @param string $filePath Full path to file
      * @return array File content information
      */
     private function getFileContent($filePath)
     {
-        $maxSize = 5 * 1024 * 1024; // 5MB limit
         $fileSize = File::size($filePath);
-        
-        if ($fileSize > $maxSize) {
-            return [
-                'content' => null,
-                'error' => 'File troppo grande per essere visualizzato (limite: 5MB)',
-                'size' => $fileSize
-            ];
-        }
 
         try {
             $content = File::get($filePath);
