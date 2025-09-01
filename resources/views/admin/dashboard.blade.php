@@ -146,6 +146,9 @@
                                         <a href="{{ route('admin.query') }}" class="btn btn-outline-secondary">
                                             <i class="fas fa-database me-2"></i>Query Database
                                         </a>
+                                        <a href="{{ route('admin.logs') }}" class="btn btn-outline-warning">
+                                            <i class="fas fa-file-alt me-2"></i>Gestione Logs
+                                        </a>
                                         <a href="{{ route('carte.update') }}" class="btn btn-outline-success">
                                             <i class="fas fa-sync-alt me-2"></i>Aggiorna Database Carte
                                         </a>
