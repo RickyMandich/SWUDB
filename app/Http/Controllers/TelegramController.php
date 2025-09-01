@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Telegram\Bot\Api;
-use Telegram\Bot\Objects\Update;
 use Illuminate\Support\Facades\Log;
+use TelegramBot\Api\BotApi;
+use TelegramBot\Api\Types\Update;
 
 class TelegramController extends Controller
 {
@@ -13,14 +13,15 @@ class TelegramController extends Controller
 
     public function __construct()
     {
-        $this->telegram = new Api(config('telegram.bot_token'));
+        $this->telegram = new BotApi(config('telegram.bot_token'));
     }
 
     // Webhook endpoint per ricevere update da Telegram
     public function webhook(Request $request)
     {
         try {
-            $update = $this->telegram->getWebhookUpdate();
+            $input = $request->getContent();
+            $update = Update::fromResponse(json_decode($input, true));
             $this->handleUpdate($update);
             
             return response('OK', 200);
@@ -79,23 +80,21 @@ class TelegramController extends Controller
     // Metodo helper per inviare messaggi
     private function sendMessage($chatId, $text)
     {
-        $this->telegram->sendMessage([
-            'chat_id' => $chatId,
-            'text' => $text
-        ]);
+        $this->telegram->sendMessage($chatId, $text);
     }
 
     // Metodo per configurare il webhook (da chiamare una sola volta)
     public function setWebhook()
     {
         try {
-            $webhook_url = config('telegram.webhook_url') . '/telegram/webhook';
-            $response = $this->telegram->setWebhook(['url' => $webhook_url]);
+            $webhook_url = config('telegram.webhook_url') . '/api/telegram/webhook';
+            $response = $this->telegram->setWebhook($webhook_url);
             
             return response()->json([
                 'success' => true,
                 'message' => 'Webhook configurato con successo',
-                'url' => $webhook_url
+                'url' => $webhook_url,
+                'response' => $response
             ]);
         } catch (\Exception $e) {
             return response()->json([

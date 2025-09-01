@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 // Webhook endpoint (da inserire in routes/api.php)
 Route::post('/telegram/webhook', [TelegramController::class, 'webhook']);
 
+// Route per configurare il webhook (da chiamare una sola volta)
+Route::get('/telegram/setup-webhook', [TelegramController::class, 'setWebhook']);
+
 Route::get('/', function(){return view('index');})->name("index");
 
 Route::get("query", [AdminController::class, 'query'])->name("admin.query")->middleware('auth');
