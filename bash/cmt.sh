@@ -1,4 +1,6 @@
 # Aggiungi tutti i file al commit
+git add .
+# Mostra lo stato dei file
 git status
 
 # Leggi la versione dell'app dal file .env
