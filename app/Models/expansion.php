@@ -15,13 +15,15 @@ class Expansion extends Model
     protected $fillable = [
         'espansione',
         'uscita',
-        'rotazione'
+        'rotazione',
+        'confermato'
     ];
 
     protected $casts = [
         'espansione' => 'string',
         'uscita' => 'string',
-        'rotazione' => 'string'
+        'rotazione' => 'string',
+        'confermato' => 'boolean'
     ];
 
     /**

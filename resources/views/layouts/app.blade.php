@@ -182,9 +182,6 @@
                                 <a href="/docs/tos">Terms of Service</a>
                             </small>.
                         </p>
-                        <p>
-                            {{ __("custom.orario")  }}
-                        </p>
                     </div>
                 </div>
             </div>

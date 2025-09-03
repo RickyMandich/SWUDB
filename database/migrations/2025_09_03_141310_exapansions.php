@@ -15,6 +15,7 @@ return new class extends Migration
                 $table->string('espansione', 10)->primary();
                 $table->string('uscita', 65);
                 $table->string('rotazione', 1)->default('0');
+                $table->boolean('confermato')->default(true);
             });
         }
     }

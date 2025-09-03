@@ -956,9 +956,15 @@ class CardsController extends Controller
                     //verifico che questa espansione esista, altrimenti la creo dando come data di uscita quella di questa carta
                     $espansione = Expansion::where('espansione', $carta->espansione)->first();
                     if (!$espansione) {
+                        // Trova la rotazione dell'espansione più recente
+                        $ultimaEspansione = Expansion::orderBy('uscita', 'desc')->first();
+                        $rotazioneDefault = $ultimaEspansione ? $ultimaEspansione->rotazione : '0';
+
                         $espansione = new Expansion();
                         $espansione->espansione = $carta->espansione;
                         $espansione->uscita = $cardData["uscita"];
+                        $espansione->rotazione = $rotazioneDefault;
+                        $espansione->confermato = false; // Nuove espansioni non confermate di default
                         $espansione->save();
                     }
 

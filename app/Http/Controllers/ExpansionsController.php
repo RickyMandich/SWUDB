@@ -57,7 +57,8 @@ class ExpansionsController extends Controller
                 ->where('espansione', $request->espansione)
                 ->update([
                     'uscita' => $request->uscita,
-                    'rotazione' => $request->rotazione
+                    'rotazione' => $request->rotazione,
+                    'confermato' => $request->has('confermato') ? true : false
                 ]);
 
             if ($result) {

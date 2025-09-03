@@ -48,6 +48,7 @@
                                     <th>Codice Espansione</th>
                                     <th>Data Uscita</th>
                                     <th>Rotazione</th>
+                                    <th>Confermato</th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
@@ -83,7 +84,19 @@
                                                        style="width: 60px;"
                                                        required>
                                             </td>
-                                            
+
+                                            <td class="text-center">
+                                                @if($expansion->confermato)
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Confermato
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times me-1"></i>Non confermato
+                                                    </span>
+                                                @endif
+                                            </td>
+
                                             <td>
                                                 <button type="submit" class="btn btn-primary btn-sm">
                                                     <i class="fas fa-save me-1"></i>Salva
@@ -93,7 +106,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted">
+                                        <td colspan="5" class="text-center text-muted">
                                             <i class="fas fa-info-circle me-1"></i>Nessuna espansione trovata
                                         </td>
                                     </tr>
