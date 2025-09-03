@@ -975,6 +975,7 @@ namespace App\Models {
     /**
      * App\Models\Expansion
      *
+     * @property boolean $confermato
      * @property string $rotazione
      * @property string $uscita
      * @property string $espansione
@@ -983,6 +984,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereEspansione($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereUscita($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereRotazione($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereConfermato($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion query()
