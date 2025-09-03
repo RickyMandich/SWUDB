@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Expansion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ExpansionsController extends Controller
 {
@@ -51,12 +52,19 @@ class ExpansionsController extends Controller
                 return redirect()->back()->with('error', 'Espansione non trovata');
             }
 
-            $expansion->update([
-                'uscita' => $request->uscita,
-                'rotazione' => $request->rotazione
-            ]);
+            // Aggiornamento con query builder diretto
+            $result = DB::table('expansions')
+                ->where('espansione', $request->espansione)
+                ->update([
+                    'uscita' => $request->uscita,
+                    'rotazione' => $request->rotazione
+                ]);
 
-            return redirect()->back()->with('success', "Espansione {$request->espansione} aggiornata: rotazione = {$request->rotazione}");
+            if ($result) {
+                return redirect()->back()->with('success', "Espansione {$request->espansione} aggiornata con successo");
+            } else {
+                return redirect()->back()->with('error', 'Nessuna riga aggiornata');
+            }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Errore durante l\'aggiornamento: ' . $e->getMessage());
         }

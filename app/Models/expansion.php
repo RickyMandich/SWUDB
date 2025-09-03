@@ -10,8 +10,7 @@ class Expansion extends Model
     protected $primaryKey = 'espansione';
     public $incrementing = false;
     protected $keyType = 'string';
-    public const CREATED_AT = null;
-    public const UPDATED_AT = null;
+    public $timestamps = false;
 
     protected $fillable = [
         'espansione',

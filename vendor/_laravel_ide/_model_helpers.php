@@ -975,12 +975,14 @@ namespace App\Models {
     /**
      * App\Models\Expansion
      *
+     * @property string $rotazione
      * @property string $uscita
      * @property string $espansione
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Card> $cards
      * @property-read int|null $cards_count
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereEspansione($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereUscita($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereRotazione($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion query()
