@@ -89,21 +89,6 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <div class="mt-4">
-                        <div class="card bg-info-subtle">
-                            <div class="card-body">
-                                <h6 class="card-title">
-                                    <i class="fas fa-info-circle me-1"></i>Informazioni sui gruppi di rotazione:
-                                </h6>
-                                <ul class="mb-0">
-                                    <li><strong>0:</strong> Gruppo base/standard</li>
-                                    <li><strong>A-Z:</strong> Gruppi di rotazione identificati da lettere maiuscole</li>
-                                    <li>Le espansioni dello stesso gruppo entrano ed escono dal formato insieme</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
