@@ -45,13 +45,18 @@ class ExpansionsController extends Controller
         ]);
 
         try {
-            $expansion = Expansion::findOrFail($request->espansione);
+            $expansion = Expansion::where('espansione', $request->espansione)->first();
+
+            if (!$expansion) {
+                return redirect()->back()->with('error', 'Espansione non trovata');
+            }
+
             $expansion->update([
                 'uscita' => $request->uscita,
                 'rotazione' => $request->rotazione
             ]);
 
-            return redirect()->back()->with('success', 'Espansione aggiornata con successo');
+            return redirect()->back()->with('success', "Espansione {$request->espansione} aggiornata: rotazione = {$request->rotazione}");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Errore durante l\'aggiornamento: ' . $e->getMessage());
         }
