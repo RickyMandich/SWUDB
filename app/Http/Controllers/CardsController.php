@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Events\ThreadMessageCreated;
+
 use App\Services\ThreadManager;
 
 use App\Mail\NewCardsEmail;
 
 use App\Models\Card;
 use App\Models\User;
+use App\Models\Expansion;
+
 use Illuminate\Http\Request;
+
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-
 use Illuminate\Support\Facades\Mail;
 
 class CardsController extends Controller
@@ -951,10 +954,18 @@ class CardsController extends Controller
                     $carta->tratti = $cardData["tratti"];
                     $carta->arena = $cardData["arena"] ?? null;
                     $carta->artista = $cardData["artista"];
-                    $carta->uscita = $cardData["uscita"];
                     $carta->frontArt = $cardData["frontArt"] ?? null;
                     $carta->backArt = $cardData["backArt"] ?? null;
                     $carta->maxCopie = $cardData["maxCopie"] ?? 3;
+
+                    //verifico che questa espansione esista, altrimenti la creo dando come data di uscita quella di questa carta
+                    $espansione = Expansion::where('espansione', $carta->espansione)->first();
+                    if (!$espansione) {
+                        $espansione = new Expansion();
+                        $espansione->espansione = $carta->espansione;
+                        $espansione->uscita = $cardData["uscita"];
+                        $espansione->save();
+                    }
 
                     // Save card to database
                     $carta->save();

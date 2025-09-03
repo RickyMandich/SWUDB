@@ -33,14 +33,14 @@ class Card extends Model{
         'tratti',
         'arena',
         'artista',
-        'uscita',
         'frontArt',
         'backArt',
         'maxCopie'
     ];
     protected $appends = [
         'id',
-        'snippet'
+        'snippet',
+        'uscita'
     ];
     /**
      * Get the card's formatted ID attribute (expansion-number format)
@@ -61,6 +61,16 @@ class Card extends Model{
     public function getSnippetAttribute(){
         return "$this->id - ".$this->nome.(strlen($this->titolo) > 0 ? ", ". strtoupper($this->titolo) : "");
     }
+
+    /**
+     * Get the card's release date from the expansion
+     * Ottiene la data di uscita della carta dall'espansione
+     *
+     * @return string|null The release date from the expansion
+     */
+    public function getUscitaAttribute(){
+        return $this->expansion?->uscita;
+    }
     protected $casts = [
         'cid' => 'string',
         'espansione' => 'string',
@@ -78,8 +88,7 @@ class Card extends Model{
         'descrizione' => 'string',
         'tratti' => 'string',
         'arena' => 'string',
-        'artista' => 'string',
-        'uscita' => 'datetime:Y-m-d H:i'
+        'artista' => 'string'
     ];
     /**
      * Get the fillable attributes array
@@ -132,6 +141,17 @@ class Card extends Model{
         Cache::forget('cards_filter_arene');
         Cache::forget('cards_filter_artisti');
         Cache::forget('cards_filter_max_values');
+    }
+
+    /**
+     * Get the expansion that this card belongs to
+     * Ottiene l'espansione a cui appartiene questa carta
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function expansion()
+    {
+        return $this->belongsTo(Expansion::class, 'espansione', 'espansione');
     }
 
     /**
