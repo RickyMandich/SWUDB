@@ -35,5 +35,6 @@ return[
     'documentazione' => 'here you can find the',
     'Documentazione' => 'Documentation',
     'Guida Avanzata' => 'Advanced Guide',
-    'Collezione' => 'Collection'
+    'Collezione' => 'Collection',
+    'orario' => 'you\'ve loaded this page at: ',
 ];
