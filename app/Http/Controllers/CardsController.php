@@ -318,11 +318,6 @@ class CardsController extends Controller
             'uscita' => isset($attributes['publishedAt']) ? explode('T', $attributes['publishedAt'])[0] : '',
         ];
 
-        // Special case: Force numero to 100 for specific CID
-        if ($cardId === '7499995534') {
-            $cardData['numero'] = 100;
-        }
-
         // Extract expansion
         $expansion = $attributes['expansion']['data']['attributes'] ?? [];
         $cardData['espansione'] = $expansion['code'] ?? null;
