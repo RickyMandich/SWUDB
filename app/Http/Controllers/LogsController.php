@@ -147,12 +147,13 @@ class LogsController extends Controller
             ];
         }
 
-        // Sort: directories first, then files, both alphabetically
+        // Sort: directories first, then files by modification date (newest first)
         usort($items, function($a, $b) {
             if ($a['type'] !== $b['type']) {
                 return $a['type'] === 'directory' ? -1 : 1;
             }
-            return strcasecmp($a['name'], $b['name']);
+            // For same type, sort by modification date (newest first)
+            return $b['modified'] <=> $a['modified'];
         });
 
         return $items;
