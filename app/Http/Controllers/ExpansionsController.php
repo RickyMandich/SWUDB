@@ -66,7 +66,11 @@ class ExpansionsController extends Controller
                 ]);
 
             if ($result) {
-                return redirect()->back()->with('success', "Espansione {$request->espansione} aggiornata con successo");
+                $redirectUrl = route('admin.expansions');
+                if ($request->has('filtra') && $request->filtra === 'on') {
+                    $redirectUrl .= '?filtra=on';
+                }
+                return redirect($redirectUrl)->with('success', "Espansione {$request->espansione} aggiornata con successo");
             } else {
                 return redirect()->back()->with('error', 'Nessuna riga aggiornata');
             }

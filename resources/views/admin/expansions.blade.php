@@ -10,7 +10,7 @@
                         <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
                     </h4>
                     <div class="d-flex gap-2">
-                        <input type="checkbox" name="filtra" id="filtro">
+                        <input type="checkbox" name="filtra" id="filtro" {{ request('filtra') === 'on' ? 'checked' : '' }}>
                         <label for="filtro">Filtra non confermate</label>
                     </div>
                     <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
@@ -63,6 +63,7 @@
                                             @csrf
                                             @method('PATCH')
                                             <input type="hidden" name="espansione" value="{{ $expansion->espansione }}">
+                                            <input type="hidden" name="filtra" value="{{ request('filtra') }}">
                                             
                                             <td>
                                                 <strong>{{ $expansion->espansione }}</strong>
@@ -123,4 +124,22 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroCheckbox = document.getElementById('filtro');
+
+    filtroCheckbox.addEventListener('change', function() {
+        const currentUrl = new URL(window.location);
+
+        if (this.checked) {
+            currentUrl.searchParams.set('filtra', 'on');
+        } else {
+            currentUrl.searchParams.delete('filtra');
+        }
+
+        window.location.href = currentUrl.toString();
+    });
+});
+</script>
 @endsection
