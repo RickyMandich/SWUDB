@@ -21,7 +21,7 @@ class ExpansionsController extends Controller
             return view("errors.403");
         }
 
-        $expansions = Expansion::orderBy('uscita')->get();
+        $expansions = Expansion::where("confermato", false)->orderBy('uscita')->get();
 
         return view('admin.expansions', compact('expansions'));
     }
