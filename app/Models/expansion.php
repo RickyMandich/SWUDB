@@ -29,8 +29,7 @@ class Expansion extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function cards()
-    {
+    public function cards(){
         return $this->hasMany(Card::class, 'espansione', 'espansione');
     }
 }

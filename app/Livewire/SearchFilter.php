@@ -114,9 +114,7 @@ class SearchFilter extends Component
         // Carica tutte le opzioni uniche per i filtri dalla cache
         $this->espansioni = Cache::remember('cards_filter_espansioni', 3600, function () {
             return Card::select('espansione')
-                ->selectRaw('MIN(uscita) as prima_uscita')
                 ->groupBy('espansione')
-                ->orderBy('prima_uscita')
                 ->pluck('espansione');
         });
 
