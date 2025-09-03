@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CardsController;
 use App\Http\Controllers\DecksController;
+use App\Http\Controllers\ExpansionsController;
 use App\Http\Controllers\JobController;
 
 use App\Http\Controllers\UsersController;
@@ -109,6 +110,10 @@ Route::get('/admin/logs', [App\Http\Controllers\LogsController::class, 'index'])
 Route::patch('/admin/errors/{error}', [AdminController::class, 'updateError'])->name("admin.errors.update")->middleware('auth');
 Route::get('/admin/errors/quick-action/{error}/{action}', [AdminController::class, 'quickActionError'])->name("admin.errors.quick-action")->middleware('auth');
 Route::post('/admin/errors/batch-action', [AdminController::class, 'batchActionErrors'])->name("admin.errors.batch-action")->middleware('auth');
+
+// Gestione espansioni (solo admin)
+Route::get('/admin/expansions', [ExpansionsController::class, 'index'])->name("admin.expansions")->middleware('auth');
+Route::patch('/admin/expansions/update', [ExpansionsController::class, 'update'])->name("admin.expansions.update")->middleware('auth');
 
 Route::get("/job/AddCard", [JobController::class, 'addCard'])->name("job.addCard");
 

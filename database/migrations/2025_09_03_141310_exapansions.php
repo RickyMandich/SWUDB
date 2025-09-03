@@ -14,6 +14,7 @@ return new class extends Migration
             Schema::create('expansions', function (Blueprint $table) {
                 $table->string('espansione', 10)->primary();
                 $table->string('uscita', 65);
+                $table->string('rotazione', 1)->default('0');
             });
         }
     }

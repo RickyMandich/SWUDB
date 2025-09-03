@@ -152,6 +152,9 @@
                                         <a href="{{ route('carte.update') }}" class="btn btn-outline-success">
                                             <i class="fas fa-sync-alt me-2"></i>Aggiorna Database Carte
                                         </a>
+                                        <a href="{{ route('admin.expansions') }}" class="btn btn-outline-info">
+                                            <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
+                                        </a>
                                         <a href="{{ route('mazzi') }}" class="btn btn-outline-info">
                                             <i class="fas fa-layer-group me-2"></i>Mazzi Pubblici
                                         </a>

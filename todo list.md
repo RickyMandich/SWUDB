@@ -53,6 +53,7 @@
 - ~~aggiungere i pulsanti "segna come ignorato" e "segna come risolto" nell'elenco degli errori e nella mail di comunicazione, nella mail metti anche il link all'errore~~
 - ~~aggiungere pulsanti per segnare come risolti o ignorati tutti i nuovi errori, e possibilità di selezione multipla per assegnare stati specifici a errori selezionati~~
 - ~~sistemare i filtri per unica~~
+- creare pagina admin di gestione espansioni e rotazioni
 
 
 ## Funzionalità Future
