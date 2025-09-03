@@ -61,12 +61,15 @@
                                             </td>
                                             
                                             <td>
-                                                <select name="rotazione" class="form-select form-select-sm" required>
-                                                    <option value="0" {{ $expansion->rotazione === '0' ? 'selected' : '' }}>Standard (0)</option>
-                                                    <option value="1" {{ $expansion->rotazione === '1' ? 'selected' : '' }}>Rotazione (1)</option>
-                                                    <option value="2" {{ $expansion->rotazione === '2' ? 'selected' : '' }}>Legacy (2)</option>
-                                                    <option value="3" {{ $expansion->rotazione === '3' ? 'selected' : '' }}>Banned (3)</option>
-                                                </select>
+                                                <input type="text"
+                                                       name="rotazione"
+                                                       value="{{ $expansion->rotazione }}"
+                                                       class="form-control form-control-sm text-center"
+                                                       maxlength="1"
+                                                       pattern="[0A-Z]"
+                                                       title="Inserire 0 o una lettera maiuscola (A-Z)"
+                                                       style="width: 60px;"
+                                                       required>
                                             </td>
                                             
                                             <td>
@@ -91,13 +94,12 @@
                         <div class="card bg-info-subtle">
                             <div class="card-body">
                                 <h6 class="card-title">
-                                    <i class="fas fa-info-circle me-1"></i>Informazioni sui valori di rotazione:
+                                    <i class="fas fa-info-circle me-1"></i>Informazioni sui gruppi di rotazione:
                                 </h6>
                                 <ul class="mb-0">
-                                    <li><strong>0 - Standard:</strong> Espansione attualmente in formato Standard</li>
-                                    <li><strong>1 - Rotazione:</strong> Espansione che uscirà dal formato Standard</li>
-                                    <li><strong>2 - Legacy:</strong> Espansione fuori dal formato Standard</li>
-                                    <li><strong>3 - Banned:</strong> Espansione bannata/non utilizzabile</li>
+                                    <li><strong>0:</strong> Gruppo base/standard</li>
+                                    <li><strong>A-Z:</strong> Gruppi di rotazione identificati da lettere maiuscole</li>
+                                    <li>Le espansioni dello stesso gruppo entrano ed escono dal formato insieme</li>
                                 </ul>
                             </div>
                         </div>
@@ -107,18 +109,4 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-submit form on select change for better UX
-    const rotationSelects = document.querySelectorAll('select[name="rotazione"]');
-    rotationSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            if (confirm('Vuoi salvare automaticamente questa modifica?')) {
-                this.closest('form').submit();
-            }
-        });
-    });
-});
-</script>
 @endsection

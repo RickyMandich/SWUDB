@@ -20,7 +20,7 @@ class ExpansionsController extends Controller
             return view("errors.403");
         }
 
-        $expansions = Expansion::orderBy('espansione')->get();
+        $expansions = Expansion::orderBy('uscita')->get();
 
         return view('admin.expansions', compact('expansions'));
     }
@@ -41,7 +41,7 @@ class ExpansionsController extends Controller
         $request->validate([
             'espansione' => 'required|string|max:10',
             'uscita' => 'required|string|max:65',
-            'rotazione' => 'required|string|size:1'
+            'rotazione' => 'required|string|size:1|regex:/^[0A-Z]$/'
         ]);
 
         try {
