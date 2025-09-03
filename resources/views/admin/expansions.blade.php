@@ -9,6 +9,10 @@
                     <h4 class="mb-0">
                         <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
                     </h4>
+                    <div class="d-flex gap-2">
+                        <input type="checkbox" name="filtra" id="filtro">
+                        <label for="filtro">Filtra non confermate</label>
+                    </div>
                     <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
                     </a>

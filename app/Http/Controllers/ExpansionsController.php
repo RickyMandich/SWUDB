@@ -15,13 +15,17 @@ class ExpansionsController extends Controller
      *
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse Expansions management view or error redirect
      */
-    public function index()
+    public function index(Request $request)
     {
         if (!Auth::admin()) {
             return view("errors.403");
         }
 
-        $expansions = Expansion::where("confermato", false)->orderBy('uscita')->get();
+        if($request->input('filtra') === "on"){
+            $expansions = Expansion::where("confermato", false)->orderBy('uscita')->get();
+        }else{
+            $expansions = Expansion::orderBy('uscita')->get();
+        }
 
         return view('admin.expansions', compact('expansions'));
     }
