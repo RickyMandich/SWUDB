@@ -25,9 +25,9 @@ namespace App\Models {
      * @property integer $numero
      * @property string $espansione
      * @property string $cid
-     * @property-read mixed $uscita
      * @property-read mixed $id
      * @property-read mixed $snippet
+     * @property-read mixed $uscita
      * @property-read \App\Models\Expansion $expansion
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Composition> $compositions
      * @property-read int|null $compositions_count
@@ -1630,8 +1630,12 @@ namespace App\Models {
     /**
      * App\Models\Expansion
      *
+     * @property string $uscita
+     * @property string $espansione
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Card> $cards
      * @property-read int|null $cards_count
+     * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereEspansione($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion whereUscita($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Expansion>|Expansion query()

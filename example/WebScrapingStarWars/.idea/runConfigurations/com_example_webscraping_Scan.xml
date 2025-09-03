@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="com.example.webscraping.Scan" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.example.webscraping.Scan" />
+    <module name="WebScrapingStarWars" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
