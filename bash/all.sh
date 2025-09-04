@@ -11,7 +11,7 @@ VERSION_MAJOR=false
 VERSION_PATCH=false
 
 # Parsing delle opzioni
-while getopts "vp" opt; do
+while getopts "vph" opt; do
     case $opt in
         v)
             VERSION_MAJOR=true
@@ -19,11 +19,17 @@ while getopts "vp" opt; do
         p)
             VERSION_PATCH=true
             ;;
+        h)
+            echo "  -v  (versione): Incrementa APP_VERSION_PRIMARY e resetta APP_VERSION_SECONDARY a 0"
+            echo "  -p  (patch): Incrementa APP_VERSION_SECONDARY"
+            echo "Le opzioni -v e -p non possono essere usate insieme"
+            exit 1
+            ;;
         \?)
             echo "Opzione non valida: -$OPTARG" >&2
             echo "Uso: $0 [-v] [-p]"
-            echo "  -v: Incrementa APP_VERSION_PRIMARY e resetta APP_VERSION_SECONDARY a 0"
-            echo "  -p: Incrementa APP_VERSION_SECONDARY"
+            echo "  -v  (versione): Incrementa APP_VERSION_PRIMARY e resetta APP_VERSION_SECONDARY a 0"
+            echo "  -p  (patch): Incrementa APP_VERSION_SECONDARY"
             echo "Le opzioni -v e -p non possono essere usate insieme"
             exit 1
             ;;
