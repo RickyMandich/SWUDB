@@ -152,6 +152,9 @@
                                         <a href="{{ route('carte.update') }}" class="btn btn-outline-success">
                                             <i class="fas fa-sync-alt me-2"></i>Aggiorna Database Carte
                                         </a>
+                                        <a href="/api/telegram/setup-webhook" class="btn btn-outline-info" target="_blank">
+                                            <i class="fas fa-robot me-2"></i>Imposta Webhook Telegram
+                                        </a>
                                         <a href="{{ route('admin.expansions') }}" class="btn btn-outline-info">
                                             <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
                                         </a>
