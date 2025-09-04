@@ -182,6 +182,32 @@ class AdminController extends Controller
     }
 
     /**
+     * Display all decks (including collections) for admin management
+     * Mostra tutti i mazzi (incluse le collezioni) per la gestione admin
+     *
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse Admin decks view or error redirect
+     */
+    public function decks()
+    {
+        if (!Auth::admin()) {
+            return view("errors.403");
+        }
+
+        // Recupera tutti i mazzi con informazioni utente e dimensione
+        $decks = \App\Models\Deck::with('user')
+            ->leftJoin('compositions', 'decks.id', '=', 'compositions.idMazzo')
+            ->select(
+                'decks.*',
+                \DB::raw('COALESCE(SUM(compositions.copie), 0) as total_cards')
+            )
+            ->groupBy('decks.id', 'decks.codUtente', 'decks.nome', 'decks.public', 'decks.created_at', 'decks.updated_at', 'decks.versione')
+            ->orderBy('decks.updated_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.decks', compact('decks'));
+    }
+
+    /**
      * Display system errors management page
      * Mostra la pagina di gestione degli errori di sistema
      *

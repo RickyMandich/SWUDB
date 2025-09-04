@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'La mia Collezione')
+@section('title', isset($targetUser) ? "Collezione di {$targetUser->name}" : 'La mia Collezione')
 @section('content')
     <div class="container-fluid">
         <!-- Header della collezione -->
@@ -9,11 +9,35 @@
                     <div class="card-body text-center">
                         <h1 class="card-title mb-2">
                             <i class="fas fa-folder-open me-2"></i>
-                            La mia Collezione
+                            @if(isset($targetUser))
+                                Collezione di {{ $targetUser->name }}
+                                @if($isAdmin)
+                                    <span class="badge bg-warning ms-2">
+                                        <i class="fas fa-shield-alt me-1"></i>Vista Admin
+                                    </span>
+                                @endif
+                            @else
+                                La mia Collezione
+                            @endif
                         </h1>
-                        <p class="card-text mb-0">
-                            <strong>{{ $totalCards }}</strong> carte totali nella collezione
-                        </p>
+                        @if(isset($noCollection) && $noCollection)
+                            <p class="card-text mb-0 text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Questo utente non ha ancora una collezione
+                            </p>
+                        @else
+                            <p class="card-text mb-0">
+                                <strong>{{ $totalCards }}</strong> carte totali nella collezione
+                            </p>
+                        @endif
+
+                        @if($isAdmin && isset($targetUser))
+                            <div class="mt-2">
+                                <a href="{{ route('admin.decks') }}" class="btn btn-outline-light btn-sm">
+                                    <i class="fas fa-arrow-left me-1"></i>Torna alla Gestione Mazzi
+                                </a>
+                            </div>
+                        @endif
                         @if(isset($debugInfo) && Auth::check() && Auth::user()->admin)
                         <div class="mt-2">
                             <button type="button"

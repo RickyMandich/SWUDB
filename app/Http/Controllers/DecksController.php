@@ -79,14 +79,19 @@ class DecksController extends Controller{
         
         // Se utente e mazzo esistono, procedi
         $proprietario = Auth::check() ? Auth()->user()->id == User::where("name", $user)->first()->id : false;
-        
+
         // Recupera il mazzo
         $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
-                    ->where("codUtente", 
+                    ->where("codUtente",
                         User::where("name", $user)
                         ->first()
                         ->id)
                     ->first();
+
+        // Verifica autorizzazioni: proprietario, mazzo pubblico, o admin
+        if (!$proprietario && !$mazzo->public && !Auth::admin()) {
+            return view("errors.403");
+        }
         
         // Recupera le carte del mazzo usando le relazioni Eloquent
         $compositions = $mazzo->compositions()->with('card')->get();
@@ -476,21 +481,41 @@ class DecksController extends Controller{
      *
      * @return \Illuminate\View\View The collection view with cards, statistics and debug info
      */
-    public function collezione(){
+    public function collezione(Request $request){
         $user = Auth::user();
+
+        // Se è specificato un utente nel parametro e l'utente corrente è admin
+        $targetUserName = $request->get('user');
+        if ($targetUserName && Auth::admin()) {
+            $targetUser = User::where('name', $targetUserName)->first();
+            if ($targetUser) {
+                $user = $targetUser;
+            }
+        }
 
         // Cerca collezione esistente
         $collezione = Deck::where('codUtente', $user->id)
                          ->where('nome', 'Collezione')
                          ->first();
 
-        // Se non esiste, creala
-        if (!$collezione) {
+        // Se non esiste, creala (solo per l'utente corrente, non per altri utenti visualizzati dagli admin)
+        if (!$collezione && (!$targetUserName || !Auth::admin())) {
             $collezione = new Deck();
             $collezione->nome = 'Collezione';
             $collezione->public = false;
             $collezione->codUtente = $user->id;
             $collezione->save();
+        }
+
+        // Se non esiste collezione per l'utente target e siamo admin, mostra messaggio
+        if (!$collezione && $targetUserName && Auth::admin()) {
+            return view('collezione', [
+                'cards' => collect(),
+                'totalCards' => 0,
+                'targetUser' => $user,
+                'isAdmin' => true,
+                'noCollection' => true
+            ]);
         }
 
         // Recupera le carte della collezione usando le relazioni Eloquent
@@ -557,8 +582,11 @@ class DecksController extends Controller{
         return view('collezione.index', [
             'collezione' => $cards,
             'totalCards' => $totalCards,
-            'collezioneId' => $collezione->id,
-            'debugInfo' => $debugInfo
+            'collezioneId' => $collezione ? $collezione->id : null,
+            'debugInfo' => $debugInfo,
+            'targetUser' => $targetUserName ? $user : null,
+            'isAdmin' => Auth::admin(),
+            'noCollection' => false
         ]);
     }
 

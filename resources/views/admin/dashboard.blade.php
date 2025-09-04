@@ -158,8 +158,8 @@
                                         <a href="{{ route('admin.expansions') }}" class="btn btn-outline-info">
                                             <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
                                         </a>
-                                        <a href="{{ route('mazzi') }}" class="btn btn-outline-info">
-                                            <i class="fas fa-layer-group me-2"></i>Mazzi Pubblici
+                                        <a href="{{ route('admin.decks') }}" class="btn btn-outline-info">
+                                            <i class="fas fa-layer-group me-2"></i>Gestione Mazzi
                                         </a>
                                         <a href="{{ route('admin.errors') }}" class="btn btn-outline-danger">
                                             <i class="fas fa-exclamation-triangle me-2"></i>Gestione Errori

@@ -104,6 +104,7 @@ Route::get('/docs/privacy', [AdminController::class, 'privacyPolicy'])->name("do
 Route::get('/documentazione', [AdminController::class, 'documentation'])->name("documentazione");
 Route::get('/guida-avanzata', [AdminController::class, 'advancedGuide'])->name("guida.avanzata");
 Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name("admin.dashboard")->middleware('auth');
+Route::get('/admin/decks', [AdminController::class, 'decks'])->name("admin.decks")->middleware('auth');
 Route::get('/admin/errors', [AdminController::class, 'errors'])->name("admin.errors")->middleware('auth');
 Route::get('/admin/errors/{error}', [AdminController::class, 'showError'])->name("admin.errors.show")->middleware('auth');
 Route::get('/admin/logs', [App\Http\Controllers\LogsController::class, 'index'])->name("admin.logs")->middleware('auth');
