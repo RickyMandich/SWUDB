@@ -5,13 +5,16 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use TelegramBot\Api\BotApi;
 use TelegramBot\Api\Types\Update;
+use App\Services\ThreadManager;
 
 class TelegramController extends Controller
 {
     private $telegram;
     private $logFile;
+    private $currentThreadId;
 
     public function __construct()
     {
@@ -124,10 +127,14 @@ class TelegramController extends Controller
         $this->logToBot("Username: " . $username);
         $this->logToBot("Chat ID: " . $chatId);
 
+        // Genera un thread ID univoco per questa scansione
+        $this->currentThreadId = ThreadManager::generateThreadId('scan');
+        $this->logToBot("Thread ID generato: " . $this->currentThreadId);
+
         try {
-            // Invia messaggio di avvio
+            // Invia messaggio di avvio usando thread messaging
             $this->logToBot("Invio messaggio di avvio scansione...");
-            $this->sendMessage($chatId, "🔍 Avvio scansione in corso...");
+            $this->sendThreadMessage($chatId, "🔍 Avvio scansione in corso...", false);
             $this->logToBot("Messaggio di avvio inviato con successo");
 
             // Chiama la tua logica esistente (sostituisce la chiamata HTTP)
@@ -135,21 +142,26 @@ class TelegramController extends Controller
             $this->triggerUpdate();
             $this->logToBot("triggerUpdate() completato");
 
-            // Invia messaggio di conferma all'utente
-            $this->logToBot("Invio messaggio di completamento...");
-            $this->sendMessage($chatId, "✅ Scansione completata con successo!");
-            $this->logToBot("Messaggio di completamento inviato con successo");
-
-            $this->logToBot("=== COMANDO SCAN COMPLETATO CON SUCCESSO ===");
+            // Il messaggio di completamento verrà gestito automaticamente
+            // dal sistema di thread messaging del CardsController
+            $this->logToBot("=== COMANDO SCAN AVVIATO CON SUCCESSO ===");
+            $this->logToBot("I messaggi di progresso verranno gestiti dal thread: " . $this->currentThreadId);
         } catch (\Exception $e) {
             $this->logToBot("ERRORE in executeScanCommand: " . $e->getMessage(), 'ERROR');
             $this->logToBot("Stack trace: " . $e->getTraceAsString(), 'ERROR');
 
             try {
-                $this->sendMessage($chatId, "❌ Errore durante la scansione: " . $e->getMessage());
+                // Invia messaggio di errore usando il thread messaging
+                $this->sendThreadMessage($chatId, "❌ Errore durante l'avvio della scansione: " . $e->getMessage(), true);
                 $this->logToBot("Messaggio di errore inviato all'utente");
             } catch (\Exception $sendError) {
                 $this->logToBot("ERRORE nell'invio del messaggio di errore: " . $sendError->getMessage(), 'ERROR');
+                // Fallback al messaggio normale se il thread messaging fallisce
+                try {
+                    $this->sendMessage($chatId, "❌ Errore durante la scansione: " . $e->getMessage());
+                } catch (\Exception $fallbackError) {
+                    $this->logToBot("ERRORE anche nel fallback: " . $fallbackError->getMessage(), 'ERROR');
+                }
             }
         }
     }
@@ -164,9 +176,19 @@ class TelegramController extends Controller
             $cardsController = new \App\Http\Controllers\CardsController();
             $this->logToBot("CardsController creato con successo");
 
-            $this->logToBot("Chiamata startImport()...");
-            $cardsController->startImport();
+            // Aggiorna il messaggio per indicare l'avvio del processo
+            $this->sendThreadMessage(
+                env('TELEGRAM_CHAT_ID'),
+                "🔍 Avvio scansione API per nuove carte...",
+                false
+            );
+
+            $this->logToBot("Chiamata startImport() con thread ID: " . $this->currentThreadId);
+            $cardsController->startImport($this->currentThreadId);
             $this->logToBot("startImport() completato con successo");
+
+            // Il processo continuerà in background, i messaggi di progresso
+            // verranno gestiti dal sistema di thread messaging esistente
 
         } catch (\Exception $e) {
             $this->logToBot("ERRORE durante triggerUpdate: " . $e->getMessage(), 'ERROR');
@@ -187,6 +209,66 @@ class TelegramController extends Controller
         } catch (\Exception $e) {
             $this->logToBot("ERRORE nell'invio messaggio: " . $e->getMessage(), 'ERROR');
             throw $e;
+        }
+    }
+
+    /**
+     * Send a threaded message that can replace previous messages
+     * Invia un messaggio in thread che può sostituire i messaggi precedenti
+     *
+     * @param string $chatId Telegram chat ID
+     * @param string $message Message text
+     * @param bool $isComplete Whether this message marks the thread as complete
+     * @return void
+     */
+    private function sendThreadMessage($chatId, $message, $isComplete = false)
+    {
+        if (!$this->currentThreadId) {
+            $this->logToBot("ERRORE: Nessun thread ID attivo per sendThreadMessage", 'ERROR');
+            // Fallback al messaggio normale
+            $this->sendMessage($chatId, $message);
+            return;
+        }
+
+        $this->logToBot("Invio thread message [{$this->currentThreadId}]: {$message}" . ($isComplete ? " [COMPLETE]" : ""));
+
+        $botToken = env('TELEGRAM_BOT_TOKEN');
+
+        try {
+            // Controlla se abbiamo un messaggio esistente da modificare
+            $existingMessageId = ThreadManager::getTelegramMessageId($this->currentThreadId);
+
+            if ($existingMessageId) {
+                // Modifica il messaggio esistente
+                $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/editMessageText", [
+                    'chat_id' => $chatId,
+                    'message_id' => $existingMessageId,
+                    'text' => $message
+                ]);
+
+                $this->logToBot("Messaggio thread modificato ID {$existingMessageId}");
+            } else {
+                // Invia un nuovo messaggio e memorizza il suo ID
+                $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                    'chat_id' => $chatId,
+                    'text' => $message
+                ]);
+
+                $responseData = $response->json();
+                if (isset($responseData['result']['message_id'])) {
+                    $messageId = $responseData['result']['message_id'];
+                    ThreadManager::setTelegramMessageId($this->currentThreadId, $messageId);
+                    $this->logToBot("Nuovo messaggio thread inviato ID {$messageId}");
+                }
+            }
+
+            // Aggiorna il thread manager
+            ThreadManager::updateThread($this->currentThreadId, $message, $isComplete);
+
+        } catch (\Exception $e) {
+            $this->logToBot("ERRORE in sendThreadMessage: " . $e->getMessage(), 'ERROR');
+            // Fallback al messaggio normale in caso di errore
+            $this->sendMessage($chatId, $message);
         }
     }
 

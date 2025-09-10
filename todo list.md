@@ -54,6 +54,7 @@
 - ~~aggiungere pulsanti per segnare come risolti o ignorati tutti i nuovi errori, e possibilità di selezione multipla per assegnare stati specifici a errori selezionati~~
 - ~~sistemare i filtri per unica~~
 - ~~creare pagina admin di gestione espansioni e rotazioni~~
+- sistemare la gestione dei messaggi telegram
 
 
 ## Funzionalità Future

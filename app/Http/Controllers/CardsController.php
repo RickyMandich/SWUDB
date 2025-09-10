@@ -516,12 +516,12 @@ class CardsController extends Controller
      *
      * @return \Illuminate\View\View The update result view with import statistics
      */
-    public function startImport(){
+    public function startImport($externalThreadId = null){
         Log::info("Starting card import process with API integration");
         $this->sendTelegramAlert("Inizio scansione nuove carte tramite API");
 
-        // Generate a thread ID for this import session
-        $threadId = ThreadManager::generateThreadId('import');
+        // Use external thread ID if provided, otherwise generate a new one
+        $threadId = $externalThreadId ?? ThreadManager::generateThreadId('import');
         ThreadMessageCreated::dispatch($threadId, "Avvio scansione carte tramite API");
 
         // Launch the API scan process in background
