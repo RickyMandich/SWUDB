@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 use TelegramBot\Api\BotApi;
 use TelegramBot\Api\Types\Update;
 use App\Services\ThreadManager;
+use App\Events\ThreadMessageCreated;
 
 class TelegramController extends Controller
 {
@@ -132,9 +133,9 @@ class TelegramController extends Controller
         $this->logToBot("Thread ID generato: " . $this->currentThreadId);
 
         try {
-            // Invia messaggio di avvio usando thread messaging
+            // Invia messaggio di avvio usando il sistema di eventi (stesso del CardsController)
             $this->logToBot("Invio messaggio di avvio scansione...");
-            $this->sendThreadMessage($chatId, "🔍 Avvio scansione API per nuove carte...", false);
+            ThreadMessageCreated::dispatch($this->currentThreadId, "🔍 Avvio scansione API per nuove carte...", false);
             $this->logToBot("Messaggio di avvio inviato con successo");
 
             // Chiama la tua logica esistente (sostituisce la chiamata HTTP)
@@ -152,12 +153,12 @@ class TelegramController extends Controller
             $this->logToBot("Stack trace: " . $e->getTraceAsString(), 'ERROR');
 
             try {
-                // Invia messaggio di errore usando il thread messaging
-                $this->sendThreadMessage($chatId, "❌ Errore durante l'avvio della scansione: " . $e->getMessage(), true);
+                // Invia messaggio di errore usando il sistema di eventi
+                ThreadMessageCreated::dispatch($this->currentThreadId, "❌ Errore durante l'avvio della scansione: " . $e->getMessage(), true);
                 $this->logToBot("Messaggio di errore inviato all'utente");
             } catch (\Exception $sendError) {
                 $this->logToBot("ERRORE nell'invio del messaggio di errore: " . $sendError->getMessage(), 'ERROR');
-                // Fallback al messaggio normale se il thread messaging fallisce
+                // Fallback al messaggio normale se il sistema di eventi fallisce
                 try {
                     $this->sendMessage($chatId, "❌ Errore durante la scansione: " . $e->getMessage());
                 } catch (\Exception $fallbackError) {
@@ -177,12 +178,8 @@ class TelegramController extends Controller
             $cardsController = new \App\Http\Controllers\CardsController();
             $this->logToBot("CardsController creato con successo");
 
-            // Aggiorna il messaggio per indicare l'avvio del processo
-            $this->sendThreadMessage(
-                env('TELEGRAM_CHAT_ID'),
-                "🔍 Recupero lista carte dall'API...",
-                false
-            );
+            // Il messaggio di progresso verrà gestito dal CardsController
+            // Non inviamo messaggi aggiuntivi qui per evitare conflitti
 
             $this->logToBot("Chiamata startImport() con thread ID: " . $this->currentThreadId);
             $cardsController->startImport($this->currentThreadId);

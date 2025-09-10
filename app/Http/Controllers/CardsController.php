@@ -583,8 +583,10 @@ class CardsController extends Controller
             if (!$existingThread) {
                 // Thread doesn't exist, this is a direct call - send initial message
                 ThreadMessageCreated::dispatch($threadId, "Recupero lista carte dall'API...");
+            } else {
+                // Thread exists, update with current progress
+                ThreadMessageCreated::dispatch($threadId, "Recupero lista carte dall'API...");
             }
-            // If thread exists, don't send initial message - TelegramController already sent it
 
             // Step 1: Get all card IDs from API (COMPLETE scan before proceeding)
             $this->writeScanLog("Inizio recupero completo ID carte dall'API", $logFile);
@@ -885,7 +887,7 @@ class CardsController extends Controller
 
             // Send notifications after successful insertion
             $this->sendEmailNotifications($cards);
-            $this->sendTelegramAlert("Importazione completata per " . count($cards) . " nuove carte");
+            // Note: Telegram notification is sent via ThreadMessageCreated in insertCardsDirectly
 
             if ($logFile) {
                 $this->writeScanLog("Importazione completata e notifiche inviate", $logFile);

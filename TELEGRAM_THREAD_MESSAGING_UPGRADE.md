@@ -115,8 +115,21 @@ JobController::sendThreadMessage (modifica stesso messaggio)
 
 1. `app/Http/Controllers/TelegramController.php` - Aggiunto thread messaging
 2. `app/Http/Controllers/CardsController.php` - Supporto thread ID esterno
-3. `routes/web.php` - Aggiunta route di test
-4. `resources/views/test/telegram.blade.php` - Pagina di test (nuovo file)
+3. `app/Listeners/SendThreadMessage.php` - Correzione formattazione messaggi scan
+4. `routes/web.php` - Aggiunta route di test
+5. `resources/views/test/telegram.blade.php` - Pagina di test (nuovo file)
+
+## Correzioni Applicate
+
+### Problema: Messaggi Duplicati
+**Causa**: Il listener `SendThreadMessage` aggiungeva automaticamente prefissi come "✅ Scan:" ai messaggi.
+
+**Soluzione**: Modificato il listener per preservare la formattazione originale per i thread `scan_*` provenienti dal TelegramController.
+
+### Problema: Messaggio Iniziale Duplicato
+**Causa**: Sia TelegramController che CardsController.scanAPI inviavano messaggi iniziali.
+
+**Soluzione**: CardsController.scanAPI ora controlla se il thread esiste già e non invia messaggi duplicati.
 
 ## Note Tecniche
 
