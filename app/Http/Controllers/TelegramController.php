@@ -134,7 +134,7 @@ class TelegramController extends Controller
         try {
             // Invia messaggio di avvio usando thread messaging
             $this->logToBot("Invio messaggio di avvio scansione...");
-            $this->sendThreadMessage($chatId, "🔍 Avvio scansione in corso...", false);
+            $this->sendThreadMessage($chatId, "🔍 Avvio scansione API per nuove carte...", false);
             $this->logToBot("Messaggio di avvio inviato con successo");
 
             // Chiama la tua logica esistente (sostituisce la chiamata HTTP)
@@ -142,10 +142,11 @@ class TelegramController extends Controller
             $this->triggerUpdate();
             $this->logToBot("triggerUpdate() completato");
 
-            // Il messaggio di completamento verrà gestito automaticamente
-            // dal sistema di thread messaging del CardsController
+            // Il messaggio di completamento e tutti i messaggi di progresso
+            // verranno gestiti automaticamente dal sistema di thread messaging del CardsController
             $this->logToBot("=== COMANDO SCAN AVVIATO CON SUCCESSO ===");
-            $this->logToBot("I messaggi di progresso verranno gestiti dal thread: " . $this->currentThreadId);
+            $this->logToBot("Thread ID: " . $this->currentThreadId);
+            $this->logToBot("I messaggi di progresso verranno gestiti automaticamente dal CardsController");
         } catch (\Exception $e) {
             $this->logToBot("ERRORE in executeScanCommand: " . $e->getMessage(), 'ERROR');
             $this->logToBot("Stack trace: " . $e->getTraceAsString(), 'ERROR');
@@ -179,7 +180,7 @@ class TelegramController extends Controller
             // Aggiorna il messaggio per indicare l'avvio del processo
             $this->sendThreadMessage(
                 env('TELEGRAM_CHAT_ID'),
-                "🔍 Avvio scansione API per nuove carte...",
+                "🔍 Recupero lista carte dall'API...",
                 false
             );
 

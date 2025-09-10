@@ -518,11 +518,24 @@ class CardsController extends Controller
      */
     public function startImport($externalThreadId = null){
         Log::info("Starting card import process with API integration");
-        $this->sendTelegramAlert("Inizio scansione nuove carte tramite API");
 
         // Use external thread ID if provided, otherwise generate a new one
         $threadId = $externalThreadId ?? ThreadManager::generateThreadId('import');
-        ThreadMessageCreated::dispatch($threadId, "Avvio scansione carte tramite API");
+
+        // Only send alert if no external thread ID (to avoid duplicate messages)
+        if (!$externalThreadId) {
+            $this->sendTelegramAlert("Inizio scansione nuove carte tramite API");
+            ThreadMessageCreated::dispatch($threadId, "Avvio scansione carte tramite API");
+        } else {
+            // External thread ID means we're called from TelegramController
+            // which already sent the initial message, but we need to ensure the thread exists
+            Log::info("Using external thread ID: {$threadId}");
+
+            // Initialize the thread if it doesn't exist yet
+            if (!ThreadManager::getThread($threadId)) {
+                ThreadManager::updateThread($threadId, "Avvio scansione carte tramite API", false);
+            }
+        }
 
         // Launch the API scan process in background
         JobController::fireAndForgetGet(route('carte.scanAPI', ['threadId' => $threadId]), [
