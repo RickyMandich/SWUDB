@@ -107,7 +107,10 @@ class TelegramController extends Controller
                         $this->logToBot("Comando /scan riconosciuto");
                         $this->executeScanCommand($username, $message->getChat()->getId());
                         break;
-
+                    case '/start':
+                        $this->logToBot("Comando /start riconosciuto");
+                        $this->executeScanCommand($username, $message->getChat()->getId());
+                        break;
                     default:
                         $this->logToBot("Comando non riconosciuto: " . $command);
                         $this->sendMessage($message->getChat()->getId(), 'Comando non riconosciuto');
@@ -133,11 +136,6 @@ class TelegramController extends Controller
         $this->logToBot("Thread ID generato: " . $this->currentThreadId);
 
         try {
-            // Invia messaggio di avvio usando il sistema di eventi (stesso del CardsController)
-            $this->logToBot("Invio messaggio di avvio scansione...");
-            ThreadMessageCreated::dispatch($this->currentThreadId, "🔍 Avvio scansione API per nuove carte...", false);
-            $this->logToBot("Messaggio di avvio inviato con successo");
-
             // Chiama la tua logica esistente (sostituisce la chiamata HTTP)
             $this->logToBot("Avvio triggerUpdate()...");
             $this->triggerUpdate();
