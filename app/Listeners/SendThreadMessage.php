@@ -59,15 +59,23 @@ class SendThreadMessage
      *
      * This method adds thread identification and status indicators to help
      * users understand which process the message belongs to and its current state.
+     * For threads from TelegramController (scan_*), it preserves the original formatting.
      *
      * @param ThreadMessageCreated $event The event containing message data
      * @return string Formatted message ready for Telegram
      */
     private function formatMessageForTelegram(ThreadMessageCreated $event): string
     {
+        // Check if this is a thread from TelegramController (scan_*)
+        if (strpos($event->threadId, 'scan_') === 0) {
+            // For scan threads, use the message as-is to preserve TelegramController formatting
+            return $event->message;
+        }
+
+        // For other threads, use the original formatting with prefix
         $threadPrefix = $this->getThreadPrefix($event->threadId);
         $statusIcon = $event->isComplete ? "✅" : "🔄";
-        
+
         return "{$statusIcon} {$threadPrefix}: {$event->message}";
     }
 

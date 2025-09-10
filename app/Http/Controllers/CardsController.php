@@ -578,7 +578,13 @@ class CardsController extends Controller
         $this->writeScanLog("Thread ID: {$threadId}", $logFile);
 
         try {
-            ThreadMessageCreated::dispatch($threadId, "Recupero lista carte dall'API...");
+            // Check if thread already exists (called from TelegramController)
+            $existingThread = ThreadManager::getThread($threadId);
+            if (!$existingThread) {
+                // Thread doesn't exist, this is a direct call - send initial message
+                ThreadMessageCreated::dispatch($threadId, "Recupero lista carte dall'API...");
+            }
+            // If thread exists, don't send initial message - TelegramController already sent it
 
             // Step 1: Get all card IDs from API (COMPLETE scan before proceeding)
             $this->writeScanLog("Inizio recupero completo ID carte dall'API", $logFile);
