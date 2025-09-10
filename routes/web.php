@@ -8,8 +8,6 @@ use App\Http\Controllers\JobController;
 
 use App\Http\Controllers\UsersController;
 
-use App\Jobs\ExecuteArtisanCommand;
-
 use Illuminate\Support\Facades\Route;
 
 

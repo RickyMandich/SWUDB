@@ -131,6 +131,16 @@ JobController::sendThreadMessage (modifica stesso messaggio)
 
 **Soluzione**: CardsController.scanAPI ora controlla se il thread esiste già e non invia messaggi duplicati.
 
+### Problema: Sistemi di Messaging Separati
+**Causa**: TelegramController usava `sendThreadMessage()` diretto, CardsController usava eventi `ThreadMessageCreated`.
+
+**Soluzione**: TelegramController ora usa lo stesso sistema di eventi per garantire che tutti i messaggi modifichino lo stesso messaggio Telegram.
+
+### Problema: Messaggi Finali Duplicati
+**Causa**: Due messaggi finali separati: uno via ThreadMessageCreated e uno via sendTelegramAlert.
+
+**Soluzione**: Rimosso il messaggio duplicato via sendTelegramAlert, mantenendo solo quello via ThreadMessageCreated.
+
 ## Note Tecniche
 
 - Il sistema utilizza le API di Telegram per `editMessageText`
