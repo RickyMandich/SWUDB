@@ -72,11 +72,19 @@ class TestEmailSerialization extends Command
             }
             
             $this->info('');
-            $this->info('🎉 All serialization tests passed!');
+            // Test direct execution (fire and forget scenario)
+            $this->info('Testing direct job execution (fire and forget)...');
+            $errorJob = new SendQueuedEmail($errorMail, 'test@example.com', 'Test direct execution');
+            $errorJob->handle();
+            $this->info('✅ Direct job execution successful');
+
+            $this->info('');
+            $this->info('🎉 All tests passed!');
             $this->info('The PDO serialization issue should be resolved.');
-            
+            $this->info('The job can be executed both in queue and fire-and-forget mode.');
+
         } catch (\Exception $e) {
-            $this->error('❌ Serialization test failed:');
+            $this->error('❌ Test failed:');
             $this->error($e->getMessage());
             $this->error('');
             $this->error('Stack trace:');

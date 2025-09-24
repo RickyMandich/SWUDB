@@ -155,6 +155,14 @@ Il sistema risolve il problema **"Serialization of 'PDO' is not allowed"** attra
 - **Supporto completo**: Gestisce tutti i tipi di Mailable del progetto
 - **Fallback sicuro**: Gestione errori per Mailable non supportati
 
+### Compatibilità Fire and Forget
+Il sistema gestisce correttamente l'esecuzione sia in coda che in modalità fire and forget:
+
+- **Controllo contesto**: Verifica se `$this->job` è disponibile
+- **Job ID dinamico**: Usa 'fire-and-forget' quando non in coda
+- **Attempts sicuri**: Gestisce `attempts()` quando non disponibile
+- **Logging consistente**: Funziona in entrambe le modalità
+
 ### Retry Logic
 - **3 tentativi** con backoff: 30s, 60s, 120s
 - **Timeout**: 120 secondi per job

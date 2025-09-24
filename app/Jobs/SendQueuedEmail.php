@@ -109,7 +109,7 @@ class SendQueuedEmail implements ShouldQueue
      */
     protected function logSuccess()
     {
-        $jobId = $this->job->getJobId() ?? 'unknown';
+        $jobId = $this->job ? $this->job->getJobId() : 'fire-and-forget';
 
         $message = "Email inviata con successo a: {$this->to}";
         if ($this->logContext) {
@@ -140,8 +140,8 @@ class SendQueuedEmail implements ShouldQueue
      */
     protected function logError(\Exception $e)
     {
-        $jobId = $this->job->getJobId() ?? 'unknown';
-        $attempt = $this->attempts();
+        $jobId = $this->job ? $this->job->getJobId() : 'fire-and-forget';
+        $attempt = $this->job ? $this->attempts() : 1;
 
         $message = "Errore invio email a: {$this->to} - {$e->getMessage()}";
         if ($this->logContext) {
@@ -180,7 +180,7 @@ class SendQueuedEmail implements ShouldQueue
      */
     public function failed(\Throwable $exception)
     {
-        $jobId = $this->job->getJobId() ?? 'unknown';
+        $jobId = $this->job ? $this->job->getJobId() : 'fire-and-forget';
 
         $message = "Invio email fallito definitivamente a: {$this->to} dopo {$this->tries} tentativi - {$exception->getMessage()}";
         if ($this->logContext) {

@@ -6,6 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Queue\Worker;
+use Illuminate\Queue\Jobs\DatabaseJob;
+use Illuminate\Queue\WorkerOptions;
 use App\Events\MessageCreated;
 use App\Services\EmailLogService;
 
@@ -386,11 +390,30 @@ class JobController extends Controller
                     if ($jobClass === 'App\\Jobs\\SendQueuedEmail') {
                         $jobData = unserialize($payload['data']['command']);
 
-                        // Execute the email sending
-                        $jobData->handle();
+                        try {
+                            // Execute the email sending directly
+                            $jobData->handle();
 
-                        // Remove the job from queue
-                        \DB::table('jobs')->where('id', $jobRecord->id)->delete();
+                            // Remove the job from queue on success
+                            \DB::table('jobs')->where('id', $jobRecord->id)->delete();
+
+                        } catch (\Exception $e) {
+                            EmailLogService::logError('Job Processing', $e, [
+                                'job_id' => $jobRecord->id,
+                                'job_class' => $jobClass
+                            ]);
+
+                            // Remove job and mark as failed
+                            \DB::table('jobs')->where('id', $jobRecord->id)->delete();
+                            \DB::table('failed_jobs')->insert([
+                                'uuid' => Str::uuid(),
+                                'connection' => 'database',
+                                'queue' => 'emails',
+                                'payload' => $jobRecord->payload,
+                                'exception' => $e->getMessage(),
+                                'failed_at' => now()
+                            ]);
+                        }
 
                         $processedCount++;
                         EmailLogService::logProcessor("✅ Job {$jobRecord->id} completato con successo", 'INFO', $logFile);

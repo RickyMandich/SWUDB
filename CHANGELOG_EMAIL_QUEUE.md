@@ -118,10 +118,13 @@ php artisan email:cleanup-logs --dry-run  # Simulazione
 php artisan email:test-serialization
 ```
 
-## Correzione Bug PDO Serialization
+## Correzione Bug Critici
 
-### Problema Risolto
+### 1. PDO Serialization Error
 Il sistema risolveva l'errore critico **"Serialization of 'PDO' is not allowed"** che impediva il funzionamento della coda email.
+
+### 2. Fire and Forget Context Error
+Risolto l'errore **"Call to a member function getJobId() on null"** che si verificava nell'esecuzione fire and forget.
 
 ### Causa
 I Mailable contenevano riferimenti al database (PDO) che non possono essere serializzati quando Laravel salva i job nella coda database.
@@ -140,6 +143,12 @@ I Mailable contenevano riferimenti al database (PDO) che non possono essere seri
 - `extractMailableData()`: Estrae dati serializzabili dal Mailable
 - `recreateMailable()`: Ricrea il Mailable dai dati estratti
 - Fallback sicuro per Mailable non supportati
+
+### Correzioni Fire and Forget
+- **Job ID sicuro**: `$this->job ? $this->job->getJobId() : 'fire-and-forget'`
+- **Attempts sicuri**: `$this->job ? $this->attempts() : 1`
+- **Logging consistente**: Funziona in entrambe le modalità di esecuzione
+- **Error handling**: Gestione errori migliorata nel JobController
 
 ## Integrazione Fire and Forget
 
