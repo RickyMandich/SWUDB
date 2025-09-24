@@ -6,6 +6,7 @@ use App\Jobs\SendQueuedEmail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Events\MessageCreated;
+use App\Services\EmailLogService;
 
 /**
  * Service for managing email queue operations with rate limiting
@@ -64,6 +65,11 @@ class EmailQueueService
             // Avvia il processore coda email via fire and forget
             self::triggerQueueProcessor();
 
+            // Log to dedicated email queue log
+            EmailLogService::logQueue("Email accodata per: {$to} - Mailable: " . get_class($mailable) .
+                ($logContext ? " - Contesto: {$logContext}" : "") .
+                ($delay > 0 ? " - Delay: {$delay}s" : ""));
+
             Log::info('Email queued successfully', [
                 'to' => $to,
                 'mailable' => get_class($mailable),
@@ -76,6 +82,13 @@ class EmailQueueService
             if ($logContext) {
                 $message .= " - Contesto: {$logContext}";
             }
+
+            // Log to dedicated email error log
+            EmailLogService::logError('Email Queue', $e, [
+                'to' => $to,
+                'mailable' => get_class($mailable),
+                'context' => $logContext
+            ]);
 
             MessageCreated::dispatch($message);
 
@@ -110,10 +123,12 @@ class EmailQueueService
                     ['token' => env('JOB_TOKEN')]
                 );
 
+                EmailLogService::logProcessor('Processore coda email avviato automaticamente');
                 Log::info('Email queue processor triggered');
             }
 
         } catch (\Exception $e) {
+            EmailLogService::logError('Trigger Queue Processor', $e);
             Log::error('Failed to trigger email queue processor', [
                 'error' => $e->getMessage()
             ]);
@@ -201,7 +216,10 @@ class EmailQueueService
         if ($logContext) {
             $message .= " - Contesto: {$logContext}";
         }
-        
+
+        EmailLogService::logQueue("Email accodate per {$totalEmails} utenti - Mailable: " . get_class($mailable) .
+            ($logContext ? " - Contesto: {$logContext}" : "") . " - Batch size: 10");
+
         MessageCreated::dispatch($message);
         
         Log::info('Bulk emails queued', [

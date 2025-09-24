@@ -1176,6 +1176,16 @@ Il processore si avvia automaticamente quando vengono accodate email, utilizzand
 - **Rate limiting**: 2 email/secondo integrato
 - **Auto-restart**: Si riavvia se ci sono job in coda
 
+**Sistema di Logging Dedicato:**
+
+Il sistema crea log dettagliati nella cartella `storage/logs/mail/`:
+
+- `queue_YYYY_MM_DD.log` - Operazioni di accodamento
+- `send_YYYY_MM_DD.log` - Invii email effettivi
+- `processor_YYYY_MM_DD.log` - Elaborazione coda
+- `errors_YYYY_MM_DD.log` - Errori dettagliati con stack trace
+- `stats_YYYY_MM_DD.log` - Statistiche e metriche
+
 **Comandi di monitoraggio:**
 
 ```bash

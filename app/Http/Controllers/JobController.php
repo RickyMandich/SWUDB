@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use App\Events\MessageCreated;
+use App\Services\EmailLogService;
 
 /**
  * Controller for handling background job operations and Telegram notifications
@@ -320,12 +324,16 @@ class JobController extends Controller
             abort(403, 'Unauthorized');
         }
 
+        // Create dedicated log file for this processing session
+        $logFile = EmailLogService::createLogFile('processor');
+
         $startTime = time();
         $maxExecutionTime = 240; // 4 minutes limit like other jobs
         $processedCount = 0;
         $maxEmailsPerSecond = 2;
 
         try {
+            EmailLogService::logProcessor("=== AVVIO PROCESSORE EMAIL ===", 'INFO', $logFile);
             // Get pending email jobs from database
             $pendingJobs = \DB::table('jobs')
                 ->where('queue', 'emails')
@@ -333,11 +341,15 @@ class JobController extends Controller
                 ->limit(50) // Process max 50 jobs per run
                 ->get();
 
+            EmailLogService::logProcessor("Job in coda trovati: {$pendingJobs->count()}", 'INFO', $logFile);
+
             if ($pendingJobs->isEmpty()) {
+                EmailLogService::logProcessor("Nessun job email in coda - terminazione", 'INFO', $logFile);
                 \Log::info('No pending email jobs to process');
                 return;
             }
 
+            EmailLogService::logProcessor("Inizio elaborazione {$pendingJobs->count()} job email", 'INFO', $logFile);
             \Log::info("Processing {$pendingJobs->count()} email jobs");
 
             foreach ($pendingJobs as $jobRecord) {
@@ -350,7 +362,10 @@ class JobController extends Controller
                         ->where('queue', 'emails')
                         ->count();
 
+                    EmailLogService::logProcessor("Timeout raggiunto dopo {$processedCount} email elaborate", 'WARNING', $logFile);
+
                     if ($remainingJobs > 0) {
+                        EmailLogService::logProcessor("Riavvio processore per {$remainingJobs} job rimanenti", 'INFO', $logFile);
                         self::fireAndForgetGet(route('job.processEmailQueue'), [
                             'token' => env('JOB_TOKEN')
                         ]);
@@ -360,11 +375,13 @@ class JobController extends Controller
 
                 try {
                     // Apply rate limiting
-                    $this->applyEmailRateLimit($maxEmailsPerSecond);
+                    $this->applyEmailRateLimit($maxEmailsPerSecond, $logFile);
 
                     // Process the job
                     $payload = json_decode($jobRecord->payload, true);
                     $jobClass = $payload['displayName'] ?? null;
+
+                    EmailLogService::logProcessor("Elaborazione job ID: {$jobRecord->id} - Classe: {$jobClass}", 'INFO', $logFile);
 
                     if ($jobClass === 'App\\Jobs\\SendQueuedEmail') {
                         $jobData = unserialize($payload['data']['command']);
@@ -376,10 +393,16 @@ class JobController extends Controller
                         \DB::table('jobs')->where('id', $jobRecord->id)->delete();
 
                         $processedCount++;
+                        EmailLogService::logProcessor("✅ Job {$jobRecord->id} completato con successo", 'INFO', $logFile);
                         \Log::info("Email job {$jobRecord->id} processed successfully");
                     }
 
                 } catch (\Exception $e) {
+                    EmailLogService::logError('Process Email Job', $e, [
+                        'job_id' => $jobRecord->id,
+                        'job_class' => $jobClass ?? 'unknown'
+                    ]);
+
                     \Log::error("Error processing email job {$jobRecord->id}: " . $e->getMessage());
 
                     // Handle job failure
@@ -387,6 +410,8 @@ class JobController extends Controller
                 }
             }
 
+            EmailLogService::logProcessor("=== COMPLETAMENTO PROCESSORE EMAIL ===", 'INFO', $logFile);
+            EmailLogService::logProcessor("Job elaborati: {$processedCount}", 'INFO', $logFile);
             \Log::info("Email queue processing completed: {$processedCount} jobs processed");
 
             // Check if there are more jobs to process
@@ -395,13 +420,21 @@ class JobController extends Controller
                 ->count();
 
             if ($remainingJobs > 0) {
+                EmailLogService::logProcessor("Riavvio processore per {$remainingJobs} job rimanenti", 'INFO', $logFile);
                 // Schedule next processing cycle
                 self::fireAndForgetGet(route('job.processEmailQueue'), [
                     'token' => env('JOB_TOKEN')
                 ]);
+            } else {
+                EmailLogService::logProcessor("Tutti i job completati - nessun riavvio necessario", 'INFO', $logFile);
             }
 
         } catch (\Exception $e) {
+            EmailLogService::logError('Email Queue Processor', $e, [
+                'processed_count' => $processedCount ?? 0,
+                'execution_time' => (time() - $startTime) . 's'
+            ]);
+
             \Log::error('Email queue processor error: ' . $e->getMessage());
             \App\Events\MessageCreated::dispatch('Errore processore coda email: ' . $e->getMessage());
         }
@@ -412,9 +445,10 @@ class JobController extends Controller
      * Applica rate limiting per l'invio email
      *
      * @param int $maxPerSecond Maximum emails per second
+     * @param string|null $logFile Optional log file for detailed logging
      * @return void
      */
-    private function applyEmailRateLimit(int $maxPerSecond)
+    private function applyEmailRateLimit(int $maxPerSecond, ?string $logFile = null)
     {
         $cacheKey = 'email_rate_limit';
         $currentSecond = now()->format('Y-m-d H:i:s');
@@ -423,6 +457,9 @@ class JobController extends Controller
         $currentCount = \Cache::get($cacheKey . ':' . $currentSecond, 0);
 
         if ($currentCount >= $maxPerSecond) {
+            if ($logFile) {
+                EmailLogService::logProcessor("Rate limit raggiunto ({$currentCount}/{$maxPerSecond}) - attesa 1 secondo", 'INFO', $logFile);
+            }
             // Wait until next second if limit reached
             sleep(1);
             $currentSecond = now()->format('Y-m-d H:i:s');

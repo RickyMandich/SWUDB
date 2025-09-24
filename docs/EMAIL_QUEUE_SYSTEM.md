@@ -116,15 +116,34 @@ EmailQueueService::queueToUsers(
 
 ## Monitoraggio e Debugging
 
-### Log Files
-- **Laravel Log**: `storage/logs/laravel.log`
+### Sistema di Logging Dedicato
+
+Il sistema utilizza una cartella di log dedicata `storage/logs/mail/` con file separati per ogni operazione:
+
+- **Queue Log**: `storage/logs/mail/queue_YYYY_MM_DD.log` - Operazioni di accodamento
+- **Send Log**: `storage/logs/mail/send_YYYY_MM_DD.log` - Invii email
+- **Processor Log**: `storage/logs/mail/processor_YYYY_MM_DD.log` - Elaborazione coda
+- **Error Log**: `storage/logs/mail/errors_YYYY_MM_DD.log` - Errori dettagliati
+- **Stats Log**: `storage/logs/mail/stats_YYYY_MM_DD.log` - Statistiche
+
+### Log Files Aggiuntivi
+- **Laravel Log**: `storage/logs/laravel.log` - Backup generale
 - **Telegram**: Messaggi automatici via MessageCreated
 - **Database**: Tabelle `jobs` e `failed_jobs`
+
+### Struttura Log Email
+
+Ogni file di log include:
+- **Timestamp**: Formato `[HH:mm:ss] [LEVEL] messaggio`
+- **Header sessione**: Versione app, provider email, configurazione
+- **Contesto dettagliato**: Job ID, destinatari, errori completi
+- **Statistiche**: Contatori, tempi di elaborazione, rate limiting
 
 ### Metriche Chiave
 - Pending jobs: `SELECT COUNT(*) FROM jobs WHERE queue = 'emails'`
 - Failed jobs: `SELECT COUNT(*) FROM failed_jobs WHERE queue = 'emails'`
 - Rate limit: Cache key `email_rate_limit:YYYY-MM-DD HH:mm:ss`
+- Log cleanup: File più vecchi di 30 giorni vengono eliminati automaticamente
 
 ## Gestione Errori
 

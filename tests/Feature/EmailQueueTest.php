@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use App\Services\EmailQueueService;
+use App\Services\EmailLogService;
 use App\Jobs\SendQueuedEmail;
 use App\Mail\EmailVerificationMail;
 use App\Models\User;
@@ -212,5 +213,40 @@ class EmailQueueTest extends TestCase
         
         // Only 2 jobs should be pushed (for users with email)
         Queue::assertPushed(SendQueuedEmail::class, 2);
+    }
+
+    /**
+     * Test email logging system
+     * Testa il sistema di logging email
+     */
+    public function test_email_logging_system()
+    {
+        // Test log file creation
+        $logFile = EmailLogService::createLogFile('test');
+        $this->assertFileExists($logFile);
+        $this->assertStringContainsString('storage/logs/mail/email_test_', $logFile);
+
+        // Test logging methods
+        EmailLogService::logQueue('Test queue message');
+        EmailLogService::logSend('Test send message');
+        EmailLogService::logProcessor('Test processor message');
+
+        // Test error logging
+        $exception = new \Exception('Test error message');
+        EmailLogService::logError('Test Operation', $exception, ['test' => 'context']);
+
+        // Test stats logging
+        EmailLogService::logStats([
+            'total_emails' => 10,
+            'successful' => 8,
+            'failed' => 2
+        ]);
+
+        // Verify log files were created
+        $this->assertDirectoryExists(storage_path('logs/mail'));
+
+        // Test cleanup functionality
+        $deletedCount = EmailLogService::cleanupOldLogs(0); // Delete all files
+        $this->assertIsInt($deletedCount);
     }
 }

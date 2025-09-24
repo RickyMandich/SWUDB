@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\JobController;
+use App\Services\EmailLogService;
 
 /**
  * Command to check the status of the email queue
@@ -98,6 +99,8 @@ class EmailQueueStatus extends Command
         $this->info('Triggering email queue processor...');
 
         try {
+            EmailLogService::logProcessor('Processore avviato manualmente da comando artisan');
+
             JobController::fireAndForgetGet(
                 route('job.processEmailQueue'),
                 ['token' => env('JOB_TOKEN')]
@@ -106,6 +109,7 @@ class EmailQueueStatus extends Command
             $this->info('Email queue processor triggered successfully');
 
         } catch (\Exception $e) {
+            EmailLogService::logError('Manual Trigger', $e);
             $this->error('Failed to trigger processor: ' . $e->getMessage());
         }
     }
@@ -129,7 +133,8 @@ class EmailQueueStatus extends Command
             DB::table('failed_jobs')
                 ->where('queue', 'emails')
                 ->delete();
-                
+
+            EmailLogService::logQueue("Cancellati {$count} job falliti tramite comando artisan");
             $this->info("Cleared {$count} failed email jobs");
         }
     }

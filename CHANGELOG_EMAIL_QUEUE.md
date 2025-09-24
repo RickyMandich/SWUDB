@@ -7,16 +7,22 @@
 ## File Creati
 
 ### 1. Core System
-- `app/Jobs/SendQueuedEmail.php` - Job per invio email con rate limiting
+- `app/Jobs/SendQueuedEmail.php` - Job per invio email con logging dettagliato
 - `app/Services/EmailQueueService.php` - Servizio principale per gestione coda email
+- `app/Services/EmailLogService.php` - Servizio dedicato per logging email
 - `app/Http/Middleware/EmailRateLimitMiddleware.php` - Middleware per prevenire abusi
 
 ### 2. Commands
 - `app/Console/Commands/EmailQueueStatus.php` - Comando per monitorare stato coda
+- `app/Console/Commands/EmailLogCleanup.php` - Comando per pulizia log vecchi
 
-### 3. Documentation & Tests
+### 3. Logging System
+- `storage/logs/mail/` - Cartella dedicata per log email
+- `config/logging.php` - Canale di logging 'mail' aggiunto
+
+### 4. Documentation & Tests
 - `docs/EMAIL_QUEUE_SYSTEM.md` - Documentazione completa del sistema
-- `tests/Feature/EmailQueueTest.php` - Test suite per il sistema di coda
+- `tests/Feature/EmailQueueTest.php` - Test suite per il sistema di coda (inclusi test logging)
 - `CHANGELOG_EMAIL_QUEUE.md` - Questo file di changelog
 
 ## File Modificati
@@ -77,9 +83,12 @@
 - ✅ Throttling intelligente (max ogni 30 secondi)
 - ✅ Auto-restart se ci sono job in coda
 
-### 5. Monitoring & Debugging
-- ✅ Comando semplificato per stato coda
-- ✅ Logging su file e Telegram
+### 5. Sistema di Logging Avanzato
+- ✅ Cartella dedicata `storage/logs/mail/` con file separati per operazione
+- ✅ Log dettagliati con timestamp, contesto e stack trace errori
+- ✅ Pulizia automatica file vecchi (30 giorni)
+- ✅ Comando per monitoraggio stato coda
+- ✅ Logging su file dedicati, Laravel log e Telegram
 - ✅ Metriche dettagliate in database
 
 ### 5. Abuse Prevention
@@ -98,6 +107,10 @@ php artisan email:status --trigger
 
 # Gestire job falliti
 php artisan email:status --clear-failed
+
+# Pulire log vecchi
+php artisan email:cleanup-logs --days=30
+php artisan email:cleanup-logs --dry-run  # Simulazione
 ```
 
 ## Integrazione Fire and Forget

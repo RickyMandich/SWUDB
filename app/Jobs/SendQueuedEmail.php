@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Events\MessageCreated;
+use App\Services\EmailLogService;
 
 /**
  * Job for sending emails with rate limiting to prevent overflow
@@ -74,6 +75,11 @@ class SendQueuedEmail implements ShouldQueue
      */
     public function handle()
     {
+        $jobId = $this->job->getJobId() ?? 'unknown';
+
+        // Log job start
+        EmailLogService::logSend("Inizio invio email a: {$this->to} (Job ID: {$jobId})");
+
         try {
             // Send the email
             Mail::to($this->to)->send($this->mailable);
@@ -97,18 +103,26 @@ class SendQueuedEmail implements ShouldQueue
      */
     protected function logSuccess()
     {
+        $jobId = $this->job->getJobId() ?? 'unknown';
+        $mailableClass = get_class($this->mailable);
+
         $message = "Email inviata con successo a: {$this->to}";
         if ($this->logContext) {
             $message .= " - Contesto: {$this->logContext}";
         }
-        
+
+        // Log to dedicated email log
+        EmailLogService::logSend("✅ {$message} (Job ID: {$jobId}, Mailable: {$mailableClass})");
+
+        // Send Telegram notification
         MessageCreated::dispatch($message);
-        
+
+        // Backup to Laravel log
         Log::info('Email sent successfully', [
             'to' => $this->to,
-            'mailable' => get_class($this->mailable),
+            'mailable' => $mailableClass,
             'context' => $this->logContext,
-            'job_id' => $this->job->getJobId() ?? 'unknown'
+            'job_id' => $jobId
         ]);
     }
 
@@ -121,20 +135,34 @@ class SendQueuedEmail implements ShouldQueue
      */
     protected function logError(\Exception $e)
     {
+        $jobId = $this->job->getJobId() ?? 'unknown';
+        $attempt = $this->attempts();
+
         $message = "Errore invio email a: {$this->to} - {$e->getMessage()}";
         if ($this->logContext) {
             $message .= " - Contesto: {$this->logContext}";
         }
-        
+
+        // Log to dedicated email error log
+        EmailLogService::logError('Email Send', $e, [
+            'to' => $this->to,
+            'mailable' => get_class($this->mailable),
+            'context' => $this->logContext,
+            'job_id' => $jobId,
+            'attempt' => $attempt
+        ]);
+
+        // Send Telegram notification
         MessageCreated::dispatch($message);
-        
+
+        // Backup to Laravel log
         Log::error('Email send failed', [
             'to' => $this->to,
             'mailable' => get_class($this->mailable),
             'context' => $this->logContext,
             'error' => $e->getMessage(),
-            'job_id' => $this->job->getJobId() ?? 'unknown',
-            'attempt' => $this->attempts()
+            'job_id' => $jobId,
+            'attempt' => $attempt
         ]);
     }
 
@@ -147,19 +175,32 @@ class SendQueuedEmail implements ShouldQueue
      */
     public function failed(\Throwable $exception)
     {
+        $jobId = $this->job->getJobId() ?? 'unknown';
+
         $message = "Invio email fallito definitivamente a: {$this->to} dopo {$this->tries} tentativi - {$exception->getMessage()}";
         if ($this->logContext) {
             $message .= " - Contesto: {$this->logContext}";
         }
-        
+
+        // Log to dedicated email error log
+        EmailLogService::logError('Email Job Failed Permanently', $exception, [
+            'to' => $this->to,
+            'mailable' => get_class($this->mailable),
+            'context' => $this->logContext,
+            'job_id' => $jobId,
+            'max_tries' => $this->tries
+        ]);
+
+        // Send Telegram notification
         MessageCreated::dispatch($message);
-        
+
+        // Backup to Laravel log
         Log::critical('Email job failed permanently', [
             'to' => $this->to,
             'mailable' => get_class($this->mailable),
             'context' => $this->logContext,
             'error' => $exception->getMessage(),
-            'job_id' => $this->job->getJobId() ?? 'unknown'
+            'job_id' => $jobId
         ]);
     }
 }
