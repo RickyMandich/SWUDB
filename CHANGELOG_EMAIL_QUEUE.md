@@ -7,7 +7,7 @@
 ## File Creati
 
 ### 1. Core System
-- `app/Jobs/SendQueuedEmail.php` - Job per invio email con logging dettagliato
+- `app/Jobs/SendQueuedEmail.php` - Job per invio email con serializzazione sicura
 - `app/Services/EmailQueueService.php` - Servizio principale per gestione coda email
 - `app/Services/EmailLogService.php` - Servizio dedicato per logging email
 - `app/Http/Middleware/EmailRateLimitMiddleware.php` - Middleware per prevenire abusi
@@ -15,6 +15,7 @@
 ### 2. Commands
 - `app/Console/Commands/EmailQueueStatus.php` - Comando per monitorare stato coda
 - `app/Console/Commands/EmailLogCleanup.php` - Comando per pulizia log vecchi
+- `app/Console/Commands/TestEmailSerialization.php` - Comando per testare serializzazione
 
 ### 3. Logging System
 - `storage/logs/mail/` - Cartella dedicata per log email
@@ -68,6 +69,7 @@
 
 ### 2. Queue Management
 - ✅ Coda dedicata 'emails'
+- ✅ Serializzazione sicura Mailable (risolve errore PDO)
 - ✅ Retry automatico (3 tentativi: 30s, 60s, 120s)
 - ✅ Timeout configurabile (120 secondi)
 - ✅ Logging dettagliato
@@ -111,7 +113,33 @@ php artisan email:status --clear-failed
 # Pulire log vecchi
 php artisan email:cleanup-logs --days=30
 php artisan email:cleanup-logs --dry-run  # Simulazione
+
+# Testare serializzazione (debug)
+php artisan email:test-serialization
 ```
+
+## Correzione Bug PDO Serialization
+
+### Problema Risolto
+Il sistema risolveva l'errore critico **"Serialization of 'PDO' is not allowed"** che impediva il funzionamento della coda email.
+
+### Causa
+I Mailable contenevano riferimenti al database (PDO) che non possono essere serializzati quando Laravel salva i job nella coda database.
+
+### Soluzione Implementata
+1. **Estrazione dati**: I Mailable vengono scomposti in dati serializzabili nel costruttore del job
+2. **Ricostruzione**: I Mailable vengono ricreati nel metodo `handle()` usando i dati estratti
+3. **Supporto completo**: Gestisce tutti i tipi di Mailable del progetto:
+   - `ErrorNotificationEmail`
+   - `EmailVerificationMail`
+   - `NewCardsNotification`
+   - `NewCardsEmail`
+   - `ImportErrorsNotification`
+
+### Metodi Chiave
+- `extractMailableData()`: Estrae dati serializzabili dal Mailable
+- `recreateMailable()`: Ricrea il Mailable dai dati estratti
+- Fallback sicuro per Mailable non supportati
 
 ## Integrazione Fire and Forget
 

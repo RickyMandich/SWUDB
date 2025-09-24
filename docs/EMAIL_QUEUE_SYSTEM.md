@@ -147,6 +147,14 @@ Ogni file di log include:
 
 ## Gestione Errori
 
+### Serializzazione Mailable
+Il sistema risolve il problema **"Serialization of 'PDO' is not allowed"** attraverso:
+
+- **Estrazione dati**: I Mailable vengono scomposti in dati serializzabili
+- **Ricostruzione**: I Mailable vengono ricreati nel job usando i dati estratti
+- **Supporto completo**: Gestisce tutti i tipi di Mailable del progetto
+- **Fallback sicuro**: Gestione errori per Mailable non supportati
+
 ### Retry Logic
 - **3 tentativi** con backoff: 30s, 60s, 120s
 - **Timeout**: 120 secondi per job

@@ -29,7 +29,8 @@ class SendQueuedEmail implements ShouldQueue
     public $backoff = [30, 60, 120]; // Retry after 30s, 60s, 120s
     public $timeout = 120;
 
-    protected $mailable;
+    protected $mailableClass;
+    protected $mailableData;
     protected $to;
     protected $logContext;
 
@@ -43,10 +44,12 @@ class SendQueuedEmail implements ShouldQueue
      */
     public function __construct($mailable, string $to, string $logContext = '')
     {
-        $this->mailable = $mailable;
+        // Store mailable class and serializable data instead of the object
+        $this->mailableClass = get_class($mailable);
+        $this->mailableData = $this->extractMailableData($mailable);
         $this->to = $to;
         $this->logContext = $logContext;
-        
+
         // Set the queue to 'emails' for better organization
         $this->onQueue('emails');
     }
@@ -81,8 +84,11 @@ class SendQueuedEmail implements ShouldQueue
         EmailLogService::logSend("Inizio invio email a: {$this->to} (Job ID: {$jobId})");
 
         try {
+            // Recreate the mailable from stored data
+            $mailable = $this->recreateMailable();
+
             // Send the email
-            Mail::to($this->to)->send($this->mailable);
+            Mail::to($this->to)->send($mailable);
 
             // Log successful send
             $this->logSuccess();
@@ -104,7 +110,6 @@ class SendQueuedEmail implements ShouldQueue
     protected function logSuccess()
     {
         $jobId = $this->job->getJobId() ?? 'unknown';
-        $mailableClass = get_class($this->mailable);
 
         $message = "Email inviata con successo a: {$this->to}";
         if ($this->logContext) {
@@ -112,7 +117,7 @@ class SendQueuedEmail implements ShouldQueue
         }
 
         // Log to dedicated email log
-        EmailLogService::logSend("✅ {$message} (Job ID: {$jobId}, Mailable: {$mailableClass})");
+        EmailLogService::logSend("✅ {$message} (Job ID: {$jobId}, Mailable: {$this->mailableClass})");
 
         // Send Telegram notification
         MessageCreated::dispatch($message);
@@ -120,7 +125,7 @@ class SendQueuedEmail implements ShouldQueue
         // Backup to Laravel log
         Log::info('Email sent successfully', [
             'to' => $this->to,
-            'mailable' => $mailableClass,
+            'mailable' => $this->mailableClass,
             'context' => $this->logContext,
             'job_id' => $jobId
         ]);
@@ -146,7 +151,7 @@ class SendQueuedEmail implements ShouldQueue
         // Log to dedicated email error log
         EmailLogService::logError('Email Send', $e, [
             'to' => $this->to,
-            'mailable' => get_class($this->mailable),
+            'mailable' => $this->mailableClass,
             'context' => $this->logContext,
             'job_id' => $jobId,
             'attempt' => $attempt
@@ -158,7 +163,7 @@ class SendQueuedEmail implements ShouldQueue
         // Backup to Laravel log
         Log::error('Email send failed', [
             'to' => $this->to,
-            'mailable' => get_class($this->mailable),
+            'mailable' => $this->mailableClass,
             'context' => $this->logContext,
             'error' => $e->getMessage(),
             'job_id' => $jobId,
@@ -185,7 +190,7 @@ class SendQueuedEmail implements ShouldQueue
         // Log to dedicated email error log
         EmailLogService::logError('Email Job Failed Permanently', $exception, [
             'to' => $this->to,
-            'mailable' => get_class($this->mailable),
+            'mailable' => $this->mailableClass,
             'context' => $this->logContext,
             'job_id' => $jobId,
             'max_tries' => $this->tries
@@ -197,10 +202,121 @@ class SendQueuedEmail implements ShouldQueue
         // Backup to Laravel log
         Log::critical('Email job failed permanently', [
             'to' => $this->to,
-            'mailable' => get_class($this->mailable),
+            'mailable' => $this->mailableClass,
             'context' => $this->logContext,
             'error' => $exception->getMessage(),
             'job_id' => $jobId
         ]);
+    }
+
+    /**
+     * Extract serializable data from mailable
+     * Estrae dati serializzabili dal mailable
+     *
+     * @param mixed $mailable
+     * @return array
+     */
+    protected function extractMailableData($mailable): array
+    {
+        $data = [];
+
+        // Handle different mailable types
+        if (method_exists($mailable, 'build')) {
+            // For standard mailables, try to extract public properties
+            $reflection = new \ReflectionClass($mailable);
+            $properties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
+
+            foreach ($properties as $property) {
+                $value = $property->getValue($mailable);
+                // Only store serializable values
+                if (is_scalar($value) || is_array($value) || is_null($value)) {
+                    $data[$property->getName()] = $value;
+                }
+            }
+        }
+
+        // Store specific data based on mailable class
+        if ($mailable instanceof \App\Mail\EmailVerificationMail) {
+            $data['user_id'] = $mailable->user->id ?? null;
+            $data['verification_url'] = $mailable->verificationUrl ?? null;
+        } elseif ($mailable instanceof \App\Mail\ErrorNotificationEmail) {
+            $data['error_message'] = $mailable->errorMessage ?? null;
+            $data['error_file'] = $mailable->errorFile ?? null;
+            $data['error_line'] = $mailable->errorLine ?? null;
+            $data['request_url'] = $mailable->requestUrl ?? null;
+            $data['request_method'] = $mailable->requestMethod ?? null;
+            $data['user_agent'] = $mailable->userAgent ?? null;
+            $data['timestamp'] = $mailable->timestamp ?? null;
+            $data['exception_class'] = get_class($mailable->exception ?? new \Exception());
+        } elseif ($mailable instanceof \App\Mail\NewCardsNotification) {
+            $data['new_cards'] = $mailable->newCards ?? [];
+        } elseif ($mailable instanceof \App\Mail\NewCardsEmail) {
+            $data['cards'] = $mailable->cards ?? [];
+        } elseif ($mailable instanceof \App\Mail\ImportErrorsNotification) {
+            $data['stats'] = $mailable->stats ?? [];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Recreate mailable from stored data
+     * Ricrea il mailable dai dati memorizzati
+     *
+     * @return mixed
+     */
+    protected function recreateMailable()
+    {
+        switch ($this->mailableClass) {
+            case 'App\\Mail\\EmailVerificationMail':
+                $user = \App\Models\User::find($this->mailableData['user_id'] ?? null);
+                $verificationUrl = $this->mailableData['verification_url'] ?? '';
+                return new \App\Mail\EmailVerificationMail($user, $verificationUrl);
+
+            case 'App\\Mail\\ErrorNotificationEmail':
+                // Create a generic exception from stored data
+                $errorMessage = $this->mailableData['error_message'] ?? 'Unknown error';
+                $exception = new \Exception($errorMessage);
+
+                return new \App\Mail\ErrorNotificationEmail(
+                    $exception,
+                    $this->mailableData['request_url'] ?? null,
+                    $this->mailableData['request_method'] ?? null,
+                    $this->mailableData['user_agent'] ?? null,
+                    null // systemError
+                );
+
+            case 'App\\Mail\\NewCardsNotification':
+                $newCards = $this->mailableData['new_cards'] ?? [];
+                return new \App\Mail\NewCardsNotification($newCards);
+
+            case 'App\\Mail\\NewCardsEmail':
+                $cards = $this->mailableData['cards'] ?? [];
+                return new \App\Mail\NewCardsEmail($cards);
+
+            case 'App\\Mail\\ImportErrorsNotification':
+                $stats = $this->mailableData['stats'] ?? [];
+                return new \App\Mail\ImportErrorsNotification($stats);
+
+            default:
+                // Fallback: try to create with reflection
+                $reflection = new \ReflectionClass($this->mailableClass);
+
+                // Try to create with no arguments first
+                if ($reflection->getConstructor() === null || $reflection->getConstructor()->getNumberOfRequiredParameters() === 0) {
+                    $mailable = $reflection->newInstance();
+
+                    // Set public properties from stored data
+                    foreach ($this->mailableData as $property => $value) {
+                        if ($reflection->hasProperty($property) && $reflection->getProperty($property)->isPublic()) {
+                            $mailable->$property = $value;
+                        }
+                    }
+
+                    return $mailable;
+                }
+
+                throw new \Exception("Cannot recreate mailable of class {$this->mailableClass}");
+        }
     }
 }
