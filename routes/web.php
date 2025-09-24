@@ -123,6 +123,8 @@ Route::get("/job/SendMessage", [JobController::class, 'sendMessage'])->name("job
 
 Route::get("/job/SendThreadMessage", [JobController::class, 'sendThreadMessage'])->name("job.sendThreadMessage");
 
+Route::get("/job/ProcessEmailQueue", [JobController::class, 'processEmailQueue'])->name("job.processEmailQueue");
+
 route::get('compare/{espansione1}-{numero1}/{espansione2}-{numero2}', [CardsController::class, 'compare'])->name("compare");
 
 route::get('migrate', function () {

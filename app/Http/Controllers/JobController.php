@@ -302,4 +302,180 @@ class JobController extends Controller
 
         return true;
     }
+
+    /**
+     * Process email queue with rate limiting
+     * Elabora la coda email con rate limiting
+     *
+     * This method processes pending email jobs from the database queue
+     * with automatic rate limiting to prevent email provider overflow.
+     *
+     * @param Request $request HTTP request containing authentication token
+     * @return void
+     */
+    public function processEmailQueue(Request $request)
+    {
+        // Verify token for security
+        if ($request->input('token') !== env('JOB_TOKEN')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $startTime = time();
+        $maxExecutionTime = 240; // 4 minutes limit like other jobs
+        $processedCount = 0;
+        $maxEmailsPerSecond = 2;
+
+        try {
+            // Get pending email jobs from database
+            $pendingJobs = \DB::table('jobs')
+                ->where('queue', 'emails')
+                ->orderBy('available_at', 'asc')
+                ->limit(50) // Process max 50 jobs per run
+                ->get();
+
+            if ($pendingJobs->isEmpty()) {
+                \Log::info('No pending email jobs to process');
+                return;
+            }
+
+            \Log::info("Processing {$pendingJobs->count()} email jobs");
+
+            foreach ($pendingJobs as $jobRecord) {
+                // Check execution time limit
+                if ((time() - $startTime) > $maxExecutionTime) {
+                    \Log::info("Email queue processor: Time limit reached, processed {$processedCount} jobs");
+
+                    // Restart the process if there are more jobs
+                    $remainingJobs = \DB::table('jobs')
+                        ->where('queue', 'emails')
+                        ->count();
+
+                    if ($remainingJobs > 0) {
+                        self::fireAndForgetGet(route('job.processEmailQueue'), [
+                            'token' => env('JOB_TOKEN')
+                        ]);
+                    }
+                    return;
+                }
+
+                try {
+                    // Apply rate limiting
+                    $this->applyEmailRateLimit($maxEmailsPerSecond);
+
+                    // Process the job
+                    $payload = json_decode($jobRecord->payload, true);
+                    $jobClass = $payload['displayName'] ?? null;
+
+                    if ($jobClass === 'App\\Jobs\\SendQueuedEmail') {
+                        $jobData = unserialize($payload['data']['command']);
+
+                        // Execute the email sending
+                        $jobData->handle();
+
+                        // Remove the job from queue
+                        \DB::table('jobs')->where('id', $jobRecord->id)->delete();
+
+                        $processedCount++;
+                        \Log::info("Email job {$jobRecord->id} processed successfully");
+                    }
+
+                } catch (\Exception $e) {
+                    \Log::error("Error processing email job {$jobRecord->id}: " . $e->getMessage());
+
+                    // Handle job failure
+                    $this->handleFailedEmailJob($jobRecord, $e);
+                }
+            }
+
+            \Log::info("Email queue processing completed: {$processedCount} jobs processed");
+
+            // Check if there are more jobs to process
+            $remainingJobs = \DB::table('jobs')
+                ->where('queue', 'emails')
+                ->count();
+
+            if ($remainingJobs > 0) {
+                // Schedule next processing cycle
+                self::fireAndForgetGet(route('job.processEmailQueue'), [
+                    'token' => env('JOB_TOKEN')
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Email queue processor error: ' . $e->getMessage());
+            \App\Events\MessageCreated::dispatch('Errore processore coda email: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Apply rate limiting for email sending
+     * Applica rate limiting per l'invio email
+     *
+     * @param int $maxPerSecond Maximum emails per second
+     * @return void
+     */
+    private function applyEmailRateLimit(int $maxPerSecond)
+    {
+        $cacheKey = 'email_rate_limit';
+        $currentSecond = now()->format('Y-m-d H:i:s');
+
+        // Get current count for this second
+        $currentCount = \Cache::get($cacheKey . ':' . $currentSecond, 0);
+
+        if ($currentCount >= $maxPerSecond) {
+            // Wait until next second if limit reached
+            sleep(1);
+            $currentSecond = now()->format('Y-m-d H:i:s');
+            $currentCount = \Cache::get($cacheKey . ':' . $currentSecond, 0);
+        }
+
+        // Increment counter for current second
+        \Cache::put($cacheKey . ':' . $currentSecond, $currentCount + 1, 5);
+    }
+
+    /**
+     * Handle failed email job
+     * Gestisce job email fallito
+     *
+     * @param object $jobRecord The failed job record
+     * @param \Exception $exception The exception that caused the failure
+     * @return void
+     */
+    private function handleFailedEmailJob($jobRecord, \Exception $exception)
+    {
+        $attempts = $jobRecord->attempts + 1;
+        $maxAttempts = 3;
+
+        if ($attempts >= $maxAttempts) {
+            // Move to failed jobs table
+            \DB::table('failed_jobs')->insert([
+                'uuid' => \Str::uuid(),
+                'connection' => 'database',
+                'queue' => 'emails',
+                'payload' => $jobRecord->payload,
+                'exception' => $exception->getMessage() . "\n" . $exception->getTraceAsString(),
+                'failed_at' => now()
+            ]);
+
+            // Remove from jobs table
+            \DB::table('jobs')->where('id', $jobRecord->id)->delete();
+
+            \Log::error("Email job {$jobRecord->id} failed permanently after {$attempts} attempts");
+            \App\Events\MessageCreated::dispatch("Job email fallito definitivamente: {$exception->getMessage()}");
+
+        } else {
+            // Retry with backoff
+            $backoffSeconds = [30, 60, 120][$attempts - 1] ?? 120;
+            $retryAt = now()->addSeconds($backoffSeconds)->timestamp;
+
+            \DB::table('jobs')
+                ->where('id', $jobRecord->id)
+                ->update([
+                    'attempts' => $attempts,
+                    'available_at' => $retryAt
+                ]);
+
+            \Log::info("Email job {$jobRecord->id} scheduled for retry in {$backoffSeconds} seconds (attempt {$attempts})");
+        }
+    }
 }

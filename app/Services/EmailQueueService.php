@@ -53,32 +53,68 @@ class EmailQueueService
     {
         try {
             $job = new SendQueuedEmail($mailable, $to, $logContext);
-            
+
             if ($delay > 0) {
                 $job->delay(now()->addSeconds($delay));
             }
-            
+
             dispatch($job);
-            
+
+            // Trigger email queue processor via fire and forget
+            // Avvia il processore coda email via fire and forget
+            self::triggerQueueProcessor();
+
             Log::info('Email queued successfully', [
                 'to' => $to,
                 'mailable' => get_class($mailable),
                 'context' => $logContext,
                 'delay' => $delay
             ]);
-            
+
         } catch (\Exception $e) {
             $message = "Errore nell'accodamento email per: {$to} - {$e->getMessage()}";
             if ($logContext) {
                 $message .= " - Contesto: {$logContext}";
             }
-            
+
             MessageCreated::dispatch($message);
-            
+
             Log::error('Failed to queue email', [
                 'to' => $to,
                 'mailable' => get_class($mailable),
                 'context' => $logContext,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Trigger the email queue processor via fire and forget
+     * Avvia il processore coda email via fire and forget
+     *
+     * @return void
+     */
+    protected static function triggerQueueProcessor()
+    {
+        try {
+            // Check if processor is already running by looking for recent activity
+            $lastProcessorRun = \Cache::get('email_processor_last_run', 0);
+            $now = time();
+
+            // Only trigger if processor hasn't run in the last 30 seconds
+            if (($now - $lastProcessorRun) > 30) {
+                \Cache::put('email_processor_last_run', $now, 60);
+
+                \App\Http\Controllers\JobController::fireAndForgetGet(
+                    route('job.processEmailQueue'),
+                    ['token' => env('JOB_TOKEN')]
+                );
+
+                Log::info('Email queue processor triggered');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to trigger email queue processor', [
                 'error' => $e->getMessage()
             ]);
         }

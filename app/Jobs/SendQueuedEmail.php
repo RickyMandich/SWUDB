@@ -64,54 +64,29 @@ class SendQueuedEmail implements ShouldQueue
     }
 
     /**
-     * Execute the job with rate limiting
-     * Esegue il job con rate limiting
+     * Execute the job - send the email
+     * Esegue il job - invia l'email
+     *
+     * Note: Rate limiting is handled by the JobController processor
+     * Nota: Il rate limiting è gestito dal processore JobController
      *
      * @return void
      */
     public function handle()
     {
         try {
-            // Apply rate limiting: max 2 emails per second
-            $this->applyRateLimit();
-            
             // Send the email
             Mail::to($this->to)->send($this->mailable);
-            
+
             // Log successful send
             $this->logSuccess();
-            
+
         } catch (\Exception $e) {
             $this->logError($e);
-            
+
             // Re-throw the exception to trigger retry mechanism
             throw $e;
         }
-    }
-
-    /**
-     * Apply rate limiting to ensure max 2 emails per second
-     * Applica rate limiting per garantire max 2 email al secondo
-     *
-     * @return void
-     */
-    protected function applyRateLimit()
-    {
-        $cacheKey = 'email_rate_limit';
-        $currentSecond = now()->format('Y-m-d H:i:s');
-        
-        // Get current count for this second
-        $currentCount = Cache::get($cacheKey . ':' . $currentSecond, 0);
-        
-        if ($currentCount >= 2) {
-            // Wait until next second if limit reached
-            sleep(1);
-            $currentSecond = now()->format('Y-m-d H:i:s');
-            $currentCount = Cache::get($cacheKey . ':' . $currentSecond, 0);
-        }
-        
-        // Increment counter for current second
-        Cache::put($cacheKey . ':' . $currentSecond, $currentCount + 1, 5);
     }
 
     /**

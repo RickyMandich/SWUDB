@@ -120,26 +120,32 @@ class EmailQueueTest extends TestCase
     }
 
     /**
-     * Test rate limiting functionality
-     * Testa la funzionalità di rate limiting
+     * Test fire and forget processor trigger
+     * Testa l'attivazione del processore fire and forget
      */
-    public function test_rate_limiting()
+    public function test_processor_trigger()
     {
         $user = User::factory()->create();
         $mailable = new EmailVerificationMail($user, 'http://test.com/verify');
-        
-        // Create a SendQueuedEmail job
-        $job = new SendQueuedEmail($mailable, $user->email, 'Rate limit test');
-        
-        // Simulate that 2 emails have already been sent this second
-        $currentSecond = now()->format('Y-m-d H:i:s');
-        Cache::put('email_rate_limit:' . $currentSecond, 2, 5);
-        
-        // The job should handle rate limiting internally
-        // We can't easily test the sleep() behavior in unit tests,
-        // but we can verify the job is created correctly
-        $this->assertInstanceOf(SendQueuedEmail::class, $job);
-        $this->assertEquals($user->email, $job->to);
+
+        // Clear any existing processor timestamp
+        Cache::forget('email_processor_last_run');
+
+        // Mock the JobController to verify it gets called
+        $this->mock(\App\Http\Controllers\JobController::class, function ($mock) {
+            $mock->shouldReceive('fireAndForgetGet')
+                ->once()
+                ->with(
+                    route('job.processEmailQueue'),
+                    ['token' => env('JOB_TOKEN')]
+                );
+        });
+
+        // Queue an email - this should trigger the processor
+        EmailQueueService::queue($mailable, $user->email, 'Processor trigger test');
+
+        // Verify the job was queued
+        Queue::assertPushed(SendQueuedEmail::class);
     }
 
     /**

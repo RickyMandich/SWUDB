@@ -12,9 +12,7 @@
 - `app/Http/Middleware/EmailRateLimitMiddleware.php` - Middleware per prevenire abusi
 
 ### 2. Commands
-- `app/Console/Commands/ProcessEmailQueue.php` - Comando per processare la coda
 - `app/Console/Commands/EmailQueueStatus.php` - Comando per monitorare stato coda
-- `app/Console/Commands/TestEmailQueue.php` - Comando per testare il sistema
 
 ### 3. Documentation & Tests
 - `docs/EMAIL_QUEUE_SYSTEM.md` - Documentazione completa del sistema
@@ -35,11 +33,16 @@
 - `app/Providers/AppServiceProvider.php`
   - Aggiunto rate limiter per coda email (120/minuto = 2/secondo)
 
+- `app/Http/Controllers/JobController.php`
+  - Aggiunto metodo `processEmailQueue()` per elaborazione fire and forget
+  - Implementato rate limiting e gestione retry
+
 - `bootstrap/app.php`
   - Sostituito invio email admin sincrono con `EmailQueueService::queueToAdmins()`
   - Registrato middleware `email.rate.limit`
 
 - `routes/web.php`
+  - Aggiunta rotta `/job/ProcessEmailQueue` per processore
   - Applicato middleware rate limiting alle rotte di invio email:
     - `/email/resend` (3 tentativi/10 minuti)
     - `/profilo/resend-verification` (2 tentativi/30 minuti)
@@ -68,8 +71,14 @@
 - ✅ Gestione automatica utenti senza email
 - ✅ Batching intelligente (10 utenti per batch)
 
-### 4. Monitoring & Debugging
-- ✅ Comandi per stato coda e gestione job falliti
+### 4. Fire and Forget Integration
+- ✅ Processore si avvia automaticamente quando servono email
+- ✅ Integrazione nativa con JobController esistente
+- ✅ Throttling intelligente (max ogni 30 secondi)
+- ✅ Auto-restart se ci sono job in coda
+
+### 5. Monitoring & Debugging
+- ✅ Comando semplificato per stato coda
 - ✅ Logging su file e Telegram
 - ✅ Metriche dettagliate in database
 
@@ -81,20 +90,24 @@
 ## Comandi Disponibili
 
 ```bash
-# Processare la coda
-php artisan email:process-queue --daemon
+# Monitorare stato coda
+php artisan email:status
 
-# Monitorare stato
-php artisan email:queue-status
+# Avviare processore manualmente (se necessario)
+php artisan email:status --trigger
 
 # Gestire job falliti
-php artisan email:queue-status --retry-failed
-php artisan email:queue-status --clear-failed
-
-# Testare il sistema
-php artisan email:test-queue --count=10 --to=test@example.com
-php artisan email:test-queue --dry-run
+php artisan email:status --clear-failed
 ```
+
+## Integrazione Fire and Forget
+
+Il sistema utilizza l'architettura esistente del progetto:
+
+- **Rotta**: `/job/ProcessEmailQueue` (protetta da JOB_TOKEN)
+- **Trigger**: Automatico quando si accodano email
+- **Throttling**: Max ogni 30 secondi per evitare sovrapposizioni
+- **Auto-restart**: Si riavvia se ci sono job in coda dopo elaborazione
 
 ## API del Servizio
 
@@ -130,12 +143,13 @@ EmailQueueService::sendImmediate($mailable, $email, 'Contesto');
 3. ✅ Tutti i file creati e modificati
 4. ✅ Test suite implementata
 
-### Prossimi Passi per Produzione
+### Vantaggi Fire and Forget
 
-1. Avviare worker coda: `php artisan email:process-queue --daemon`
-2. Configurare supervisor/systemd per mantenere worker attivo
-3. Monitorare con `php artisan email:queue-status`
-4. Testare con `php artisan email:test-queue --dry-run`
+1. **Zero configurazione**: Nessun worker da mantenere attivo
+2. **Auto-scaling**: Si avvia solo quando necessario
+3. **Fault tolerance**: Restart automatico in caso di problemi
+4. **Integrazione nativa**: Usa JobController esistente
+5. **Monitoraggio**: `php artisan email:status`
 
 ## Compatibilità
 

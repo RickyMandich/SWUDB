@@ -1167,17 +1167,26 @@ EmailQueueService::queueToUsers($mailable, $users, 'Contesto', 5);
 EmailQueueService::queueToAdmins($mailable, 'Contesto');
 ```
 
-**Comandi di gestione:**
+**Sistema Fire and Forget:**
+
+Il processore si avvia automaticamente quando vengono accodate email, utilizzando l'architettura JobController esistente:
+
+- **Rotta**: `/job/ProcessEmailQueue` (protetta da token)
+- **Trigger**: Automatico quando si accodano email
+- **Rate limiting**: 2 email/secondo integrato
+- **Auto-restart**: Si riavvia se ci sono job in coda
+
+**Comandi di monitoraggio:**
 
 ```bash
-# Processa la coda email
-php artisan email:process-queue --daemon
-
 # Controlla stato della coda
-php artisan email:queue-status
+php artisan email:status
+
+# Avvia processore manualmente (se necessario)
+php artisan email:status --trigger
 
 # Gestisci job falliti
-php artisan email:queue-status --retry-failed
+php artisan email:status --clear-failed
 ```
 
 #### Sistema di Notifiche Telegram

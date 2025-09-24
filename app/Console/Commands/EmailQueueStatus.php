@@ -5,13 +5,11 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Http\Controllers\JobController;
 
 /**
  * Command to check the status of the email queue
  * Comando per controllare lo stato della coda email
- *
- * This command provides information about pending, failed, and processed emails
- * in the queue system.
  */
 class EmailQueueStatus extends Command
 {
@@ -20,16 +18,16 @@ class EmailQueueStatus extends Command
      *
      * @var string
      */
-    protected $signature = 'email:queue-status 
-                            {--clear-failed : Clear all failed email jobs}
-                            {--retry-failed : Retry all failed email jobs}';
+    protected $signature = 'email:status
+                            {--trigger : Trigger the email queue processor}
+                            {--clear-failed : Clear all failed email jobs}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Check the status of the email queue and manage failed jobs';
+    protected $description = 'Check email queue status and manage basic operations';
 
     /**
      * Execute the console command.
@@ -40,61 +38,75 @@ class EmailQueueStatus extends Command
     {
         $this->info('Email Queue Status Report');
         $this->line('==========================');
-        
+
         // Check pending jobs in emails queue
         $pendingJobs = DB::table('jobs')
             ->where('queue', 'emails')
             ->count();
-            
+
         $this->info("Pending email jobs: {$pendingJobs}");
-        
+
         // Check failed jobs
         $failedJobs = DB::table('failed_jobs')
             ->where('queue', 'emails')
             ->count();
-            
+
         $this->info("Failed email jobs: {$failedJobs}");
-        
+
+        // Check processor status
+        $lastProcessorRun = Cache::get('email_processor_last_run', 0);
+        $timeSinceLastRun = time() - $lastProcessorRun;
+
+        if ($lastProcessorRun > 0) {
+            $this->info("Last processor run: {$timeSinceLastRun} seconds ago");
+        } else {
+            $this->warn("Processor has never run");
+        }
+
         // Check rate limiting status
-        $this->checkRateLimitStatus();
-        
+        $currentSecond = now()->format('Y-m-d H:i:s');
+        $cacheKey = 'email_rate_limit:' . $currentSecond;
+        $currentCount = Cache::get($cacheKey, 0);
+
+        $this->line('');
+        $this->info('Rate Limiting Status:');
+        $this->line("Emails sent this second: {$currentCount}/2");
+
         // Handle options
+        if ($this->option('trigger')) {
+            $this->triggerProcessor();
+        }
+
         if ($this->option('clear-failed')) {
             $this->clearFailedJobs();
         }
-        
-        if ($this->option('retry-failed')) {
-            $this->retryFailedJobs();
-        }
-        
+
         // Show recent failed jobs if any
         if ($failedJobs > 0) {
             $this->showRecentFailedJobs();
         }
-        
+
         return 0;
     }
     
     /**
-     * Check rate limiting status
-     * Controlla lo stato del rate limiting
+     * Trigger the email queue processor
+     * Avvia il processore coda email
      */
-    protected function checkRateLimitStatus()
+    protected function triggerProcessor()
     {
-        $this->line('');
-        $this->info('Rate Limiting Status:');
-        
-        $currentSecond = now()->format('Y-m-d H:i:s');
-        $cacheKey = 'email_rate_limit:' . $currentSecond;
-        $currentCount = Cache::get($cacheKey, 0);
-        
-        $this->line("Current second: {$currentSecond}");
-        $this->line("Emails sent this second: {$currentCount}/2");
-        
-        if ($currentCount >= 2) {
-            $this->warn('Rate limit reached for current second');
-        } else {
-            $this->info('Rate limit OK');
+        $this->info('Triggering email queue processor...');
+
+        try {
+            JobController::fireAndForgetGet(
+                route('job.processEmailQueue'),
+                ['token' => env('JOB_TOKEN')]
+            );
+
+            $this->info('Email queue processor triggered successfully');
+
+        } catch (\Exception $e) {
+            $this->error('Failed to trigger processor: ' . $e->getMessage());
         }
     }
     
@@ -122,31 +134,7 @@ class EmailQueueStatus extends Command
         }
     }
     
-    /**
-     * Retry all failed email jobs
-     * Riprova tutti i job email falliti
-     */
-    protected function retryFailedJobs()
-    {
-        $failedJobs = DB::table('failed_jobs')
-            ->where('queue', 'emails')
-            ->get();
-            
-        if ($failedJobs->isEmpty()) {
-            $this->info('No failed email jobs to retry');
-            return;
-        }
-        
-        $count = $failedJobs->count();
-        
-        if ($this->confirm("Retry {$count} failed email jobs?")) {
-            foreach ($failedJobs as $job) {
-                $this->call('queue:retry', ['id' => $job->uuid]);
-            }
-            
-            $this->info("Retried {$count} failed email jobs");
-        }
-    }
+
     
     /**
      * Show recent failed jobs
@@ -160,7 +148,7 @@ class EmailQueueStatus extends Command
         $recentFailed = DB::table('failed_jobs')
             ->where('queue', 'emails')
             ->orderBy('failed_at', 'desc')
-            ->limit(5)
+            ->limit(3)
             ->get(['uuid', 'exception', 'failed_at']);
             
         if ($recentFailed->isEmpty()) {

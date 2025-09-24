@@ -42,30 +42,25 @@ Job che gestisce l'invio effettivo con:
 - Logging dettagliato
 - Gestione errori
 
-### 3. Comandi Artisan
+### 3. Processore Fire and Forget
 
-#### Processare la Coda
-```bash
-# Processa la coda email una volta
-php artisan email:process-queue
+Il sistema utilizza il meccanismo fire and forget esistente tramite JobController:
 
-# Processa in modalità daemon (continua)
-php artisan email:process-queue --daemon
-
-# Con opzioni personalizzate
-php artisan email:process-queue --timeout=120 --sleep=5 --tries=5
-```
+- **Avvio Automatico**: Il processore si avvia automaticamente quando vengono accodate email
+- **Gestione Asincrona**: Utilizza `JobController::fireAndForgetGet()` per elaborazione non bloccante
+- **Rate Limiting**: Integrato nel processore (2 email/secondo)
+- **Auto-restart**: Si riavvia automaticamente se ci sono job in coda
 
 #### Monitorare lo Stato
 ```bash
 # Controlla stato della coda
-php artisan email:queue-status
+php artisan email:status
+
+# Avvia manualmente il processore
+php artisan email:status --trigger
 
 # Cancella job falliti
-php artisan email:queue-status --clear-failed
-
-# Riprova job falliti
-php artisan email:queue-status --retry-failed
+php artisan email:status --clear-failed
 ```
 
 ## Configurazione
@@ -143,32 +138,61 @@ EmailQueueService::queueToUsers(
 - Notifiche Telegram per tutti gli errori
 - Log dettagliati per debugging
 
+## Comandi Disponibili
+
+```bash
+# Monitorare stato coda
+php artisan email:status
+
+# Avviare manualmente il processore
+php artisan email:status --trigger
+
+# Gestire job falliti
+php artisan email:status --clear-failed
+```
+
+## Integrazione Fire and Forget
+
+Il sistema si integra perfettamente con l'architettura esistente:
+
+- **Rotta**: `/job/ProcessEmailQueue` (protetta da token)
+- **Trigger**: Automatico quando si accodano email
+- **Throttling**: Processore si avvia max ogni 30 secondi
+- **Restart**: Automatico se ci sono job in coda dopo elaborazione
+
 ## Best Practices
 
 1. **Usa sempre EmailQueueService** invece di Mail::to()->send()
 2. **Fornisci contesto** per il logging
-3. **Monitora regolarmente** con `email:queue-status`
-4. **Processa la coda** con worker dedicato
+3. **Monitora regolarmente** con `email:status`
+4. **Il processore si avvia automaticamente** - non serve gestione manuale
 5. **Gestisci failed jobs** periodicamente
 
 ## Deployment
 
 Per il deployment in produzione:
 
-1. Assicurati che le tabelle `jobs` e `failed_jobs` esistano
-2. Avvia il worker della coda: `php artisan email:process-queue --daemon`
-3. Configura un supervisor/systemd per mantenere il worker attivo
-4. Monitora i log per eventuali problemi
+1. ✅ Assicurati che le tabelle `jobs` e `failed_jobs` esistano
+2. ✅ Il sistema si avvia automaticamente quando servono email
+3. ✅ Nessuna configurazione aggiuntiva richiesta
+4. ✅ Monitora con `php artisan email:status`
+
+### Vantaggi Fire and Forget
+
+1. **Zero configurazione**: Nessun worker da mantenere attivo
+2. **Auto-scaling**: Si avvia solo quando necessario
+3. **Fault tolerance**: Restart automatico in caso di problemi
+4. **Integrazione nativa**: Usa l'architettura esistente del progetto
 
 ## Troubleshooting
 
 ### Email non inviate
 ```bash
 # Controlla coda
-php artisan email:queue-status
+php artisan email:status
 
-# Processa manualmente
-php artisan email:process-queue
+# Avvia processore manualmente
+php artisan email:status --trigger
 ```
 
 ### Rate limit raggiunto
@@ -179,10 +203,10 @@ php artisan email:process-queue
 ### Job falliti
 ```bash
 # Vedi dettagli
-php artisan email:queue-status
+php artisan email:status
 
-# Riprova
-php artisan email:queue-status --retry-failed
+# Cancella job falliti
+php artisan email:status --clear-failed
 ```
 
 Questo sistema garantisce invio affidabile e scalabile delle email rispettando i limiti del provider.
