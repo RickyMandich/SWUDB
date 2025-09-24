@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -43,5 +44,13 @@ class AppServiceProvider extends ServiceProvider
         // Force HTTPS for all generated links in production
         // Forza HTTPS per tutti i link generati in produzione
         URL::forceScheme('https');
+
+        // Configure rate limiter for email queue
+        // Configura il rate limiter per la coda email
+        RateLimiter::for('emails', function ($job) {
+            // Allow 2 emails per second (120 per minute)
+            // Permette 2 email al secondo (120 al minuto)
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(120);
+        });
     }
 }

@@ -1079,14 +1079,15 @@ class CardsController extends Controller
         }
 
         $users = User::select("email")->where('email', '!=', null)->get();
-        foreach($users as $user){
-            try{
-                Mail::to($user['email'])->send(new NewCardsEmail($cardsData));
-            }catch(\Error $e){
-                sleep(1);
-                Mail::to($user['email'])->send(new NewCardsEmail($cardsData));
-            }
-        }
+
+        // Use email queue service to send emails with rate limiting
+        // Usa il servizio di coda email per inviare email con rate limiting
+        \App\Services\EmailQueueService::queueToUsers(
+            new NewCardsEmail($cardsData),
+            $users,
+            'Notifica nuove carte',
+            5 // 5 seconds delay between batches
+        );
     }
 
     /**

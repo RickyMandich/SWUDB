@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'email.rate.limit' => \App\Http\Middleware\EmailRateLimitMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -51,20 +52,17 @@ return Application::configure(basePath: dirname(__DIR__))
             // Invia messaggio Telegram
             MessageCreated::dispatch("Errore: " . $e->getMessage());
 
-            // Invia email a tutti gli admin
+            // Invia email a tutti gli admin usando la coda
+            // Send email to all admins using queue
             try {
-                $admins = User::getAdmins();
-                if ($admins->isNotEmpty()) {
-                    $requestUrl = request()->fullUrl() ?? null;
-                    $requestMethod = request()->method() ?? null;
-                    $userAgent = request()->userAgent() ?? null;
+                $requestUrl = request()->fullUrl() ?? null;
+                $requestMethod = request()->method() ?? null;
+                $userAgent = request()->userAgent() ?? null;
 
-                    foreach ($admins as $admin) {
-                        Mail::to($admin->email)->send(
-                            new ErrorNotificationEmail($e, $requestUrl, $requestMethod, $userAgent, $systemError)
-                        );
-                    }
-                }
+                \App\Services\EmailQueueService::queueToAdmins(
+                    new ErrorNotificationEmail($e, $requestUrl, $requestMethod, $userAgent, $systemError),
+                    'Notifica errore sistema'
+                );
             } catch (\Exception $mailException) {
                 // Se l'invio email fallisce, invia solo un messaggio Telegram aggiuntivo
                 MessageCreated::dispatch("Errore invio email admin: " . $mailException->getMessage());

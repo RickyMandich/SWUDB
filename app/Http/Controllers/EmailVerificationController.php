@@ -90,12 +90,13 @@ class EmailVerificationController extends Controller
         // Create verification URL
         $verificationUrl = route('email.verify', ['token' => $token]);
         
-        try {
-            Mail::to($user->email)->send(new EmailVerificationMail($user, $verificationUrl));
-            MessageCreated::dispatch("Email di verifica inviata a: " . $user->email);
-        } catch (\Exception $e) {
-            MessageCreated::dispatch("Errore invio email verifica: " . $e->getMessage());
-        }
+        // Use email queue service for verification emails
+        // Usa il servizio di coda email per le email di verifica
+        \App\Services\EmailQueueService::queue(
+            new EmailVerificationMail($user, $verificationUrl),
+            $user->email,
+            'Email verifica utente'
+        );
     }
 
     /**

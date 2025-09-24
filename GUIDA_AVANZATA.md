@@ -985,20 +985,17 @@ Il sistema di gestione errori di UnlimitedDB è completamente personalizzato e r
         // 2. Notifica Telegram immediata
         MessageCreated::dispatch("Errore: " . $e->getMessage());
 
-        // 3. Email a tutti gli admin
+        // 3. Email a tutti gli admin usando la coda
+        // Send email to all admins using queue
         try {
-            $admins = User::getAdmins();
-            if ($admins->isNotEmpty()) {
-                $requestUrl = request()->fullUrl() ?? null;
-                $requestMethod = request()->method() ?? null;
-                $userAgent = request()->userAgent() ?? null;
+            $requestUrl = request()->fullUrl() ?? null;
+            $requestMethod = request()->method() ?? null;
+            $userAgent = request()->userAgent() ?? null;
 
-                foreach ($admins as $admin) {
-                    Mail::to($admin->email)->send(
-                        new ErrorNotificationEmail($e, $requestUrl, $requestMethod, $userAgent, $systemError)
-                    );
-                }
-            }
+            \App\Services\EmailQueueService::queueToAdmins(
+                new ErrorNotificationEmail($e, $requestUrl, $requestMethod, $userAgent, $systemError),
+                'Notifica errore sistema'
+            );
         } catch (\Exception $mailException) {
             // Fallback Telegram se email fallisce
             MessageCreated::dispatch("Errore invio email admin: " . $mailException->getMessage());
@@ -1145,7 +1142,45 @@ class ErrorNotificationEmail extends Mailable
 }
 ```
 
-### Sistema di Notifiche Telegram
+### Sistema di Notifiche
+
+Il sistema di notifiche utilizza due canali principali:
+
+1. **Telegram** - Per notifiche immediate agli amministratori
+2. **Email** - Per comunicazioni con utenti e notifiche admin (con coda e rate limiting)
+
+#### Sistema di Coda Email
+
+Per prevenire l'overflow del provider email (limite: 2 email/secondo), è stato implementato un sistema di coda con rate limiting automatico:
+
+```php
+// Uso del servizio di coda email
+use App\Services\EmailQueueService;
+
+// Invia singola email
+EmailQueueService::queue($mailable, $email, 'Contesto');
+
+// Invia a più utenti con batching
+EmailQueueService::queueToUsers($mailable, $users, 'Contesto', 5);
+
+// Invia a tutti gli admin
+EmailQueueService::queueToAdmins($mailable, 'Contesto');
+```
+
+**Comandi di gestione:**
+
+```bash
+# Processa la coda email
+php artisan email:process-queue --daemon
+
+# Controlla stato della coda
+php artisan email:queue-status
+
+# Gestisci job falliti
+php artisan email:queue-status --retry-failed
+```
+
+#### Sistema di Notifiche Telegram
 
 **Event/Listener Pattern:**
 

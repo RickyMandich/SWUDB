@@ -82,13 +82,13 @@ Auth::routes();
 // Email verification routes
 Route::get('/email/verify', [App\Http\Controllers\EmailVerificationController::class, 'verify'])->name('email.verify');
 Route::get('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'showResendForm'])->name('email.resend.form');
-Route::post('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'resend'])->name('email.resend');
+Route::post('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'resend'])->name('email.resend')->middleware('email.rate.limit:3,10');
 
 Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
 
 // Azioni profilo personale utente (integrate nella dashboard)
 Route::patch('/profilo/update', [UsersController::class, 'updateProfile'])->name('profile.update')->middleware('auth');
-Route::post('/profilo/resend-verification', [UsersController::class, 'resendOwnVerificationEmail'])->name('profile.resend-verification')->middleware('auth');
+Route::post('/profilo/resend-verification', [UsersController::class, 'resendOwnVerificationEmail'])->name('profile.resend-verification')->middleware(['auth', 'email.rate.limit:2,30']);
 Route::delete('/profilo/delete', [UsersController::class, 'deleteOwnAccount'])->name('profile.delete')->middleware('auth');
 
 // Gestione utenti (solo admin)
@@ -97,7 +97,7 @@ Route::get('/users/{id}', [UsersController::class, 'show'])->name('users.show')-
 Route::patch('/users/{id}', [UsersController::class, 'update'])->name('users.update')->middleware('auth');
 Route::patch('/users/{id}/toggle-admin', [UsersController::class, 'toggleAdmin'])->name('users.toggle-admin')->middleware('auth');
 Route::patch('/users/{id}/toggle-email-verification', [UsersController::class, 'toggleEmailVerification'])->name('users.toggle-email-verification')->middleware('auth');
-Route::post('/users/{id}/resend-verification', [UsersController::class, 'resendVerificationEmail'])->name('users.resend-verification')->middleware('auth');
+Route::post('/users/{id}/resend-verification', [UsersController::class, 'resendVerificationEmail'])->name('users.resend-verification')->middleware(['auth', 'email.rate.limit:5,60']);
 Route::delete('/users/{id}', [UsersController::class, 'destroy'])->name('users.destroy')->middleware('auth');
 
 Route::get('/docs/tos', [AdminController::class, 'termsOfService'])->name("docs.tos");
