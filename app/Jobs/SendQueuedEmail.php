@@ -78,7 +78,7 @@ class SendQueuedEmail implements ShouldQueue
      */
     public function handle()
     {
-        $jobId = $this->job->getJobId() ?? 'unknown';
+        $jobId = $this->job ? $this->job->getJobId() : 'fire-and-forget';
 
         // Log job start
         EmailLogService::logSend("Inizio invio email a: {$this->to} (Job ID: {$jobId})");

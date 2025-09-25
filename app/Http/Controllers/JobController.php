@@ -509,7 +509,7 @@ class JobController extends Controller
         if ($attempts >= $maxAttempts) {
             // Move to failed jobs table
             \DB::table('failed_jobs')->insert([
-                'uuid' => \Str::uuid(),
+                'uuid' => Str::uuid(),
                 'connection' => 'database',
                 'queue' => 'emails',
                 'payload' => $jobRecord->payload,
