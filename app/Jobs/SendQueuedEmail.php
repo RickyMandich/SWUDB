@@ -25,8 +25,8 @@ class SendQueuedEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 3;
-    public $backoff = [30, 60, 120]; // Retry after 30s, 60s, 120s
+    public $tries = 2; // Reduced to prevent duplicates
+    public $backoff = [60]; // Single retry after 60s
     public $timeout = 120;
 
     protected $mailableClass;
@@ -96,7 +96,21 @@ class SendQueuedEmail implements ShouldQueue
         } catch (\Exception $e) {
             $this->logError($e);
 
-            // Re-throw the exception to trigger retry mechanism
+            // Check if it's a rate limiting error - don't retry these
+            if (str_contains($e->getMessage(), 'Too many requests') ||
+                str_contains($e->getMessage(), 'rate limit')) {
+
+                EmailLogService::logError('Rate Limit Hit', $e, [
+                    'to' => $this->to,
+                    'context' => $this->logContext,
+                    'action' => 'Job will be deleted to prevent duplicates'
+                ]);
+
+                // Don't retry rate limit errors - just log and delete
+                return;
+            }
+
+            // Re-throw other exceptions to trigger retry mechanism
             throw $e;
         }
     }
@@ -256,6 +270,9 @@ class SendQueuedEmail implements ShouldQueue
             $data['stats'] = $mailable->stats ?? [];
         }
 
+        // Debug logging for mailable class detection
+        EmailLogService::logQueue("Mailable estratto: " . get_class($mailable) . " - Dati: " . json_encode(array_keys($data)));
+
         return $data;
     }
 
@@ -267,6 +284,11 @@ class SendQueuedEmail implements ShouldQueue
      */
     protected function recreateMailable()
     {
+        // Validate mailable class
+        if (empty($this->mailableClass) || !class_exists($this->mailableClass)) {
+            throw new \Exception("Invalid mailable class: '{$this->mailableClass}'");
+        }
+
         switch ($this->mailableClass) {
             case 'App\\Mail\\EmailVerificationMail':
                 $user = \App\Models\User::find($this->mailableData['user_id'] ?? null);

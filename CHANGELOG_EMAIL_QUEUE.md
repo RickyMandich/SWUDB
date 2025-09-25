@@ -16,6 +16,8 @@
 - `app/Console/Commands/EmailQueueStatus.php` - Comando per monitorare stato coda
 - `app/Console/Commands/EmailLogCleanup.php` - Comando per pulizia log vecchi
 - `app/Console/Commands/TestEmailSerialization.php` - Comando per testare serializzazione
+- `app/Console/Commands/EmailQueueCleanup.php` - Comando per pulire duplicati coda
+- `app/Console/Commands/TestEmailSystem.php` - Comando per testare sistema completo
 
 ### 3. Logging System
 - `storage/logs/mail/` - Cartella dedicata per log email
@@ -116,6 +118,13 @@ php artisan email:cleanup-logs --dry-run  # Simulazione
 
 # Testare serializzazione (debug)
 php artisan email:test-serialization
+
+# Pulire coda email da duplicati
+php artisan email:cleanup --dry-run
+php artisan email:cleanup
+
+# Testare sistema completo
+php artisan email:test-system --send
 ```
 
 ## Correzione Bug Critici

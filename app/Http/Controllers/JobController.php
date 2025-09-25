@@ -476,21 +476,30 @@ class JobController extends Controller
         $cacheKey = 'email_rate_limit';
         $currentSecond = now()->format('Y-m-d H:i:s');
 
-        // Get current count for this second
-        $currentCount = \Cache::get($cacheKey . ':' . $currentSecond, 0);
+        // Use atomic increment to prevent race conditions
+        $currentCount = \Cache::increment($cacheKey . ':' . $currentSecond, 1);
 
-        if ($currentCount >= $maxPerSecond) {
-            if ($logFile) {
-                EmailLogService::logProcessor("Rate limit raggiunto ({$currentCount}/{$maxPerSecond}) - attesa 1 secondo", 'INFO', $logFile);
-            }
-            // Wait until next second if limit reached
-            sleep(1);
-            $currentSecond = now()->format('Y-m-d H:i:s');
-            $currentCount = \Cache::get($cacheKey . ':' . $currentSecond, 0);
+        // Set expiration if this is the first increment
+        if ($currentCount === 1) {
+            \Cache::put($cacheKey . ':' . $currentSecond, 1, 5);
         }
 
-        // Increment counter for current second
-        \Cache::put($cacheKey . ':' . $currentSecond, $currentCount + 1, 5);
+        if ($currentCount > $maxPerSecond) {
+            if ($logFile) {
+                EmailLogService::logProcessor("Rate limit raggiunto ({$currentCount}/{$maxPerSecond}) - attesa 1 secondo", 'WARNING', $logFile);
+            }
+
+            // Wait until next second if limit exceeded
+            sleep(1);
+
+            // Reset for next second
+            $nextSecond = now()->format('Y-m-d H:i:s');
+            \Cache::put($cacheKey . ':' . $nextSecond, 1, 5);
+
+            if ($logFile) {
+                EmailLogService::logProcessor("Rate limit reset - nuovo secondo: {$nextSecond}", 'INFO', $logFile);
+            }
+        }
     }
 
     /**
