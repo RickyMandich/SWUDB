@@ -99,6 +99,17 @@ class TelegramController extends Controller
             // Verifica se è un comando (inizia con /)
             if (strpos($message->getText(), '/') === 0) {
                 $this->logToBot("Comando rilevato!");
+
+                // Esegui setup webhook prima di processare il comando
+                $this->logToBot("Esecuzione setup webhook automatico...");
+                try {
+                    $this->setupWebhookInternal();
+                    $this->logToBot("Setup webhook completato");
+                } catch (\Exception $e) {
+                    $this->logToBot("ERRORE durante setup webhook: " . $e->getMessage(), 'ERROR');
+                    // Continua comunque con l'esecuzione del comando
+                }
+
                 $command = $message->getText();
                 $username = $message->getFrom()->getUsername() ?? 'utente_senza_username';
 
@@ -268,26 +279,35 @@ class TelegramController extends Controller
         }
     }
 
-    // Metodo per configurare il webhook (da chiamare una sola volta)
-    public function setWebhook()
+    /**
+     * Metodo interno per configurare il webhook (chiamato automaticamente ad ogni comando)
+     */
+    private function setupWebhookInternal()
     {
         $this->logToBot("=== CONFIGURAZIONE WEBHOOK ===");
 
+        $webhook_url = config('telegram.webhook_url') . '/api/telegram/webhook';
+        $this->logToBot("URL webhook: " . $webhook_url);
+
+        $this->logToBot("Chiamata setWebhook a Telegram...");
+        $response = $this->telegram->setWebhook($webhook_url);
+        $this->logToBot("Risposta Telegram: " . json_encode($response));
+
+        $this->logToBot("Webhook configurato con successo!");
+    }
+
+    // Metodo per configurare il webhook (da chiamare manualmente se necessario)
+    public function setWebhook()
+    {
+        $this->logToBot("=== CONFIGURAZIONE WEBHOOK (MANUALE) ===");
+
         try {
-            $webhook_url = config('telegram.webhook_url') . '/api/telegram/webhook';
-            $this->logToBot("URL webhook: " . $webhook_url);
-
-            $this->logToBot("Chiamata setWebhook a Telegram...");
-            $response = $this->telegram->setWebhook($webhook_url);
-            $this->logToBot("Risposta Telegram: " . json_encode($response));
-
-            $this->logToBot("Webhook configurato con successo!");
+            $this->setupWebhookInternal();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Webhook configurato con successo',
-                'url' => $webhook_url,
-                'response' => $response
+                'url' => config('telegram.webhook_url') . '/api/telegram/webhook'
             ]);
         } catch (\Exception $e) {
             $this->logToBot("ERRORE nella configurazione webhook: " . $e->getMessage(), 'ERROR');
