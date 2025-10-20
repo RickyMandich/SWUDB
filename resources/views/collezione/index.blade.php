@@ -89,7 +89,7 @@
 
         <!-- Componente Livewire per i filtri di ricerca -->
         <div class="mb-4">
-            @livewire('search-filter', ['mode' => 'collezione'])
+            @livewire('search-filter', ['mode' => 'collezione', 'initialParams' => $initialParams ?? []])
         </div>
 
         <!-- Risultati di ricerca -->

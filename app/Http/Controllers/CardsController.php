@@ -40,6 +40,7 @@ class CardsController extends Controller
         return view('carte.index', [
             "nome" => $get["nome"],
             "initialNome" => $get["nome"],
+            "initialParams" => $get,
             "title" => $title,
         ]);
     }

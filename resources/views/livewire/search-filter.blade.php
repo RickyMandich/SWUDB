@@ -9,6 +9,17 @@
                     <button wire:click="loadAllCards" class="btn btn-outline-primary btn-sm" title="Mostra tutte le carte">
                         <i class="fas fa-list me-1"></i>Tutte
                     </button>
+                    @if($hasActiveFilters)
+                        <button onclick="saveCurrentSearch()" class="btn btn-outline-success btn-sm" title="Salva ricerca corrente">
+                            <i class="fas fa-bookmark me-1"></i>Salva
+                        </button>
+                        <button onclick="shareCurrentSearch()" class="btn btn-outline-info btn-sm" title="Condividi ricerca">
+                            <i class="fas fa-share me-1"></i>Condividi
+                        </button>
+                    @endif
+                    <button onclick="showSavedSearches()" class="btn btn-outline-warning btn-sm" title="Visualizza ricerche salvate">
+                        <i class="fas fa-history me-1"></i>Salvate
+                    </button>
                 @endif
                 <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm" title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
@@ -247,5 +258,173 @@
         if(empty(input.value)){
             input.value = undefined;
         }
+    }
+
+    // Listen for URL update events from Livewire
+    // Ascolta gli eventi di aggiornamento URL da Livewire
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('updateUrl', (url) => {
+            // Update browser URL without page reload
+            // Aggiorna l'URL del browser senza ricaricare la pagina
+            window.history.pushState({}, '', url[0]);
+        });
+    });
+
+    // Function to save current search to localStorage
+    // Funzione per salvare la ricerca corrente nel localStorage
+    function saveCurrentSearch() {
+        const currentUrl = window.location.href;
+        const searchName = prompt('Inserisci un nome per questa ricerca:');
+
+        if (searchName && searchName.trim()) {
+            let savedSearches = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+
+            // Remove existing search with same name
+            // Rimuovi ricerca esistente con lo stesso nome
+            savedSearches = savedSearches.filter(search => search.name !== searchName.trim());
+
+            // Add new search
+            // Aggiungi nuova ricerca
+            savedSearches.push({
+                name: searchName.trim(),
+                url: currentUrl,
+                date: new Date().toISOString()
+            });
+
+            localStorage.setItem('savedSearches', JSON.stringify(savedSearches));
+            alert('Ricerca salvata con successo!');
+        }
+    }
+
+    // Function to share current search
+    // Funzione per condividere la ricerca corrente
+    function shareCurrentSearch() {
+        const currentUrl = window.location.href;
+
+        if (navigator.share) {
+            // Use native sharing if available
+            // Usa condivisione nativa se disponibile
+            navigator.share({
+                title: 'Ricerca Carte - UnlimitedDB',
+                text: 'Guarda questa ricerca di carte su UnlimitedDB',
+                url: currentUrl
+            });
+        } else {
+            // Fallback: copy to clipboard
+            // Fallback: copia negli appunti
+            navigator.clipboard.writeText(currentUrl).then(() => {
+                alert('URL copiato negli appunti!');
+            }).catch(() => {
+                // Fallback for older browsers
+                // Fallback per browser più vecchi
+                const textArea = document.createElement('textarea');
+                textArea.value = currentUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('URL copiato negli appunti!');
+            });
+        }
+    }
+
+    // Function to show saved searches
+    // Funzione per mostrare le ricerche salvate
+    function showSavedSearches() {
+        const savedSearches = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+
+        if (savedSearches.length === 0) {
+            alert('Nessuna ricerca salvata trovata.');
+            return;
+        }
+
+        // Create modal content
+        // Crea contenuto del modal
+        let modalContent = '<div class="list-group">';
+        savedSearches.forEach((search, index) => {
+            const date = new Date(search.date).toLocaleDateString('it-IT');
+            modalContent += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${search.name}</h6>
+                        <small class="text-muted">Salvata il ${date}</small>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="loadSavedSearch('${search.url}')">
+                            <i class="fas fa-external-link-alt"></i> Carica
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSavedSearch(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        modalContent += '</div>';
+
+        // Show modal
+        // Mostra modal
+        showModal('Ricerche Salvate', modalContent);
+    }
+
+    // Function to load a saved search
+    // Funzione per caricare una ricerca salvata
+    function loadSavedSearch(url) {
+        window.location.href = url;
+    }
+
+    // Function to delete a saved search
+    // Funzione per eliminare una ricerca salvata
+    function deleteSavedSearch(index) {
+        if (confirm('Sei sicuro di voler eliminare questa ricerca salvata?')) {
+            let savedSearches = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+            savedSearches.splice(index, 1);
+            localStorage.setItem('savedSearches', JSON.stringify(savedSearches));
+            showSavedSearches(); // Refresh the modal
+        }
+    }
+
+    // Generic modal function
+    // Funzione modal generica
+    function showModal(title, content) {
+        // Remove existing modal if any
+        // Rimuovi modal esistente se presente
+        const existingModal = document.getElementById('savedSearchesModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal
+        // Crea modal
+        const modalHtml = `
+            <div class="modal fade" id="savedSearchesModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">${title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${content}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to page and show
+        // Aggiungi modal alla pagina e mostra
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('savedSearchesModal'));
+        modal.show();
+
+        // Remove modal from DOM when hidden
+        // Rimuovi modal dal DOM quando nascosto
+        document.getElementById('savedSearchesModal').addEventListener('hidden.bs.modal', function() {
+            this.remove();
+        });
     }
 </script>

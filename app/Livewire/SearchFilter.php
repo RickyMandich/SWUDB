@@ -44,6 +44,12 @@ class SearchFilter extends Component
     public $unica = null;
     public $artista = '';
 
+    // Parametri iniziali da GET
+    public $initialParams = [];
+
+    // Computed property per verificare se ci sono filtri attivi
+    public $hasActiveFilters = false;
+
     // Proprietà per le opzioni dei select
     public $espansioni = [];
     public $tipi = [];
@@ -78,26 +84,121 @@ class SearchFilter extends Component
      *
      * @param string $mode Component mode: 'page', 'popup' or 'collezione'
      * @param string|null $initialNome Initial name filter value from URL parameter
+     * @param array $initialParams Initial parameters from GET request
      * @return void
      */
-    public function mount($mode = 'page', $initialNome = null)
+    public function mount($mode = 'page', $initialNome = null, $initialParams = [])
     {
         $this->mode = $mode;
+        $this->initialParams = $initialParams;
+
         $this->loadFilterOptions();
 
-        // Set initial filter values if provided
-        // Imposta i valori iniziali dei filtri se forniti
+        // Initialize filters from GET parameters if available
+        // Inizializza i filtri dai parametri GET se disponibili
+        $this->initializeFromParams();
+
+        // Override with specific parameters if provided
+        // Sovrascrivi con parametri specifici se forniti
         if (!empty($initialNome)) {
             $this->nome = $initialNome;
         }
 
-        // Apply filters if any initial values are set, otherwise load all cards
-        // Applica i filtri se sono impostati valori iniziali, altrimenti carica tutte le carte
-        if (!empty($this->nome)) {
+        // Initialize hasActiveFilters property
+        // Inizializza la proprietà hasActiveFilters
+        $this->hasActiveFilters = $this->hasActiveFilters();
+
+        // Apply filters if any initial values are set, otherwise load all cards (except in popup mode)
+        // Applica i filtri se sono impostati valori iniziali, altrimenti carica tutte le carte (eccetto in modalità popup)
+        if ($this->hasActiveFilters) {
             $this->applyFilters();
-        } else {
+        } else if ($this->mode !== 'popup') {
             $this->loadAllCards();
         }
+        // In popup mode without filters, start with empty results for better performance
+        // In modalità popup senza filtri, inizia con risultati vuoti per migliori prestazioni
+    }
+
+    /**
+     * Initialize filter values from GET parameters
+     * Inizializza i valori dei filtri dai parametri GET
+     *
+     * @return void
+     */
+    private function initializeFromParams()
+    {
+        if (empty($this->initialParams)) {
+            return;
+        }
+
+        // Map GET parameters to component properties
+        // Mappa i parametri GET alle proprietà del componente
+        $paramMap = [
+            'nome' => 'nome',
+            'titolo' => 'titolo',
+            'espansione' => 'espansione',
+            'tipo' => 'tipo',
+            'aspettoPrimario' => 'aspettoPrimario',
+            'aspettoSecondario' => 'aspettoSecondario',
+            'rarita' => 'rarita',
+            'costoMin' => 'costoMin',
+            'costoMax' => 'costoMax',
+            'potenzaMin' => 'potenzaMin',
+            'potenzaMax' => 'potenzaMax',
+            'vitaMin' => 'vitaMin',
+            'vitaMax' => 'vitaMax',
+            'tratti' => 'tratti',
+            'arena' => 'arena',
+            'unica' => 'unica',
+            'artista' => 'artista'
+        ];
+
+        foreach ($paramMap as $param => $property) {
+            if (isset($this->initialParams[$param]) && $this->initialParams[$param] !== '') {
+                $value = $this->initialParams[$param];
+
+                // Convert numeric parameters
+                // Converti parametri numerici
+                if (in_array($param, ['costoMin', 'costoMax', 'potenzaMin', 'potenzaMax', 'vitaMin', 'vitaMax'])) {
+                    $value = is_numeric($value) ? (int)$value : null;
+                }
+
+                // Convert boolean parameters
+                // Converti parametri booleani
+                if ($param === 'unica') {
+                    $value = $value === '1' ? true : ($value === '0' ? false : null);
+                }
+
+                $this->$property = $value;
+            }
+        }
+    }
+
+    /**
+     * Check if any filters are currently active
+     * Verifica se ci sono filtri attualmente attivi
+     *
+     * @return bool
+     */
+    private function hasActiveFilters()
+    {
+        return !empty($this->nome) ||
+               !empty($this->titolo) ||
+               !empty($this->espansione) ||
+               !empty($this->tipo) ||
+               !empty($this->aspettoPrimario) ||
+               !empty($this->aspettoSecondario) ||
+               !empty($this->rarita) ||
+               $this->costoMin !== null ||
+               $this->costoMax !== null ||
+               $this->potenzaMin !== null ||
+               $this->potenzaMax !== null ||
+               $this->vitaMin !== null ||
+               $this->vitaMax !== null ||
+               !empty($this->tratti) ||
+               !empty($this->arena) ||
+               $this->unica !== null ||
+               !empty($this->artista);
     }
 
     /**
@@ -290,8 +391,58 @@ class SearchFilter extends Component
         $this->filteredCards = $results;
         $this->totalResults = $this->filteredCards->count();
 
+        // Update hasActiveFilters property
+        // Aggiorna la proprietà hasActiveFilters
+        $this->hasActiveFilters = $this->hasActiveFilters();
+
         // Emetti evento per aggiornare la vista principale
         $this->dispatch('cardsFiltered', $this->filteredCards->toArray());
+
+        // Update URL with current filter parameters for page and collezione modes
+        // Aggiorna l'URL con i parametri di filtro correnti per le modalità page e collezione
+        if (in_array($this->mode, ['page', 'collezione'])) {
+            $this->updateUrlWithFilters();
+        }
+    }
+
+    /**
+     * Update the browser URL with current filter parameters
+     * Aggiorna l'URL del browser con i parametri di filtro correnti
+     *
+     * @return void
+     */
+    private function updateUrlWithFilters()
+    {
+        $params = [];
+
+        // Add non-empty filter values to URL parameters
+        // Aggiungi valori di filtro non vuoti ai parametri URL
+        if (!empty($this->nome)) $params['nome'] = $this->nome;
+        if (!empty($this->titolo)) $params['titolo'] = $this->titolo;
+        if (!empty($this->espansione)) $params['espansione'] = $this->espansione;
+        if (!empty($this->tipo)) $params['tipo'] = $this->tipo;
+        if (!empty($this->aspettoPrimario)) $params['aspettoPrimario'] = $this->aspettoPrimario;
+        if (!empty($this->aspettoSecondario)) $params['aspettoSecondario'] = $this->aspettoSecondario;
+        if (!empty($this->rarita)) $params['rarita'] = $this->rarita;
+        if ($this->costoMin !== null) $params['costoMin'] = $this->costoMin;
+        if ($this->costoMax !== null) $params['costoMax'] = $this->costoMax;
+        if ($this->potenzaMin !== null) $params['potenzaMin'] = $this->potenzaMin;
+        if ($this->potenzaMax !== null) $params['potenzaMax'] = $this->potenzaMax;
+        if ($this->vitaMin !== null) $params['vitaMin'] = $this->vitaMin;
+        if ($this->vitaMax !== null) $params['vitaMax'] = $this->vitaMax;
+        if (!empty($this->tratti)) $params['tratti'] = $this->tratti;
+        if (!empty($this->arena)) $params['arena'] = $this->arena;
+        if ($this->unica !== null) $params['unica'] = $this->unica ? '1' : '0';
+        if (!empty($this->artista)) $params['artista'] = $this->artista;
+
+        // Build URL based on current mode
+        // Costruisci URL basato sulla modalità corrente
+        $routeName = $this->mode === 'collezione' ? 'collezione' : 'carte';
+        $url = route($routeName, $params);
+
+        // Use JavaScript to update URL without page reload
+        // Usa JavaScript per aggiornare l'URL senza ricaricare la pagina
+        $this->dispatch('updateUrl', $url);
     }
 
     /**
@@ -327,6 +478,14 @@ class SearchFilter extends Component
         // Nota: $advancedFiltersOpen non viene intenzionalmente resettato per preservare lo stato dell'UI
 
         $this->applyFilters();
+
+        // Update URL to remove all filter parameters
+        // Aggiorna l'URL per rimuovere tutti i parametri di filtro
+        if (in_array($this->mode, ['page', 'collezione'])) {
+            $routeName = $this->mode === 'collezione' ? 'collezione' : 'carte';
+            $url = route($routeName);
+            $this->dispatch('updateUrl', $url);
+        }
     }
 
     /**
@@ -358,6 +517,10 @@ class SearchFilter extends Component
 
         $this->filteredCards = $results;
         $this->totalResults = $this->filteredCards->count();
+
+        // Update hasActiveFilters property
+        // Aggiorna la proprietà hasActiveFilters
+        $this->hasActiveFilters = $this->hasActiveFilters();
 
         // Emetti evento per aggiornare la vista principale
         $this->dispatch('cardsFiltered', $this->filteredCards->toArray());

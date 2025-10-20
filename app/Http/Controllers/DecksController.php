@@ -514,7 +514,8 @@ class DecksController extends Controller{
                 'totalCards' => 0,
                 'targetUser' => $user,
                 'isAdmin' => true,
-                'noCollection' => true
+                'noCollection' => true,
+                'initialParams' => $request->all()
             ]);
         }
 
@@ -586,7 +587,8 @@ class DecksController extends Controller{
             'debugInfo' => $debugInfo,
             'targetUser' => $targetUserName ? $user : null,
             'isAdmin' => Auth::admin(),
-            'noCollection' => false
+            'noCollection' => false,
+            'initialParams' => $request->all()
         ]);
     }
 

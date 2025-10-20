@@ -4,7 +4,7 @@
     <div class="container-fluid">
         <!-- Componente Livewire per i filtri di ricerca -->
         <div class="mb-4" id="search-filter-container">
-            @livewire('search-filter', ['mode' => 'page', 'initialNome' => $initialNome ?? ''])
+            @livewire('search-filter', ['mode' => 'page', 'initialNome' => $initialNome ?? '', 'initialParams' => $initialParams ?? []])
         </div>
 
         <!-- Risultati di ricerca -->
