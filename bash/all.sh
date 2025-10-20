@@ -23,7 +23,7 @@ while getopts "vph" opt; do
             echo "  -v  (versione): Incrementa APP_VERSION_PRIMARY e resetta APP_VERSION_SECONDARY a 0"
             echo "  -p  (patch): Incrementa APP_VERSION_SECONDARY"
             echo "Le opzioni -v e -p non possono essere usate insieme"
-            exit 1
+            exit 0
             ;;
         \?)
             echo "Opzione non valida: -$OPTARG" >&2

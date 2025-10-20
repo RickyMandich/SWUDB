@@ -10,7 +10,11 @@
                         <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
                     </h4>
                     <div class="d-flex gap-2">
-                        <input type="checkbox" name="filtra" id="filtro" {{ request('filtra', 'on') === 'on' ? 'checked' : '' }}>
+                        @php
+                            // Attiva di default solo se è la prima visita (nessun parametro filtra)
+                            $filtroAttivo = request()->has('filtra') ? request('filtra') === 'on' : true;
+                        @endphp
+                        <input type="checkbox" name="filtra" id="filtro" {{ $filtroAttivo ? 'checked' : '' }}>
                         <label for="filtro">Filtra non confermate</label>
                     </div>
                     <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
