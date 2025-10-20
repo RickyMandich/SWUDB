@@ -12,6 +12,7 @@
                     <div class="d-flex gap-2">
                         @php
                             // Attiva di default solo se è la prima visita (nessun parametro filtra)
+                            // Se il parametro esiste, rispetta il valore ('on' o 'off')
                             $filtroAttivo = request()->has('filtra') ? request('filtra') === 'on' : true;
                         @endphp
                         <input type="checkbox" name="filtra" id="filtro" {{ $filtroAttivo ? 'checked' : '' }}>
@@ -157,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (this.checked) {
             currentUrl.searchParams.set('filtra', 'on');
         } else {
-            currentUrl.searchParams.delete('filtra');
+            currentUrl.searchParams.set('filtra', 'off');
         }
 
         window.location.href = currentUrl.toString();

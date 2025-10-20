@@ -22,6 +22,7 @@ class ExpansionsController extends Controller
         }
 
         // Attiva di default il filtro "non confermate" solo se è la prima visita (nessun parametro filtra)
+        // Se il parametro esiste, rispetta il valore ('on' o 'off')
         $filtra = $request->has('filtra') ? $request->input('filtra') : 'on';
 
         // Ottieni le espansioni da mostrare (filtrate o tutte)
