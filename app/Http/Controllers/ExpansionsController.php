@@ -21,13 +21,20 @@ class ExpansionsController extends Controller
             return view("errors.403");
         }
 
-        if($request->input('filtra') === "on"){
+        // Attiva di default il filtro "non confermate" se non specificato
+        $filtra = $request->input('filtra', 'on');
+
+        // Ottieni le espansioni da mostrare (filtrate o tutte)
+        if($filtra === "on"){
             $expansions = Expansion::where("confermato", false)->orderBy('uscita')->get();
         }else{
             $expansions = Expansion::orderBy('uscita')->get();
         }
 
-        return view('admin.expansions', compact('expansions'));
+        // Ottieni sempre tutte le espansioni per popolare i select (serve per le opzioni "principale")
+        $allExpansions = Expansion::orderBy('uscita')->get();
+
+        return view('admin.expansions', compact('expansions', 'allExpansions'));
     }
 
     /**
@@ -46,7 +53,8 @@ class ExpansionsController extends Controller
         $request->validate([
             'espansione' => 'required|string|max:10',
             'uscita' => 'required|string|max:65',
-            'rotazione' => 'required|string|size:1|regex:/^[0A-Z]$/'
+            'rotazione' => 'required|string|size:1|regex:/^[0A-Z]$/',
+            'principale' => 'required|string|max:10'
         ]);
 
         try {
@@ -62,6 +70,7 @@ class ExpansionsController extends Controller
                 ->update([
                     'uscita' => $request->uscita,
                     'rotazione' => $request->rotazione,
+                    'principale' => $request->principale,
                     'confermato' => $request->has('confermato') ? false : true
                 ]);
 

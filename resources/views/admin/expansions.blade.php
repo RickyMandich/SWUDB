@@ -10,7 +10,7 @@
                         <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
                     </h4>
                     <div class="d-flex gap-2">
-                        <input type="checkbox" name="filtra" id="filtro" {{ request('filtra') === 'on' ? 'checked' : '' }}>
+                        <input type="checkbox" name="filtra" id="filtro" {{ request('filtra', 'on') === 'on' ? 'checked' : '' }}>
                         <label for="filtro">Filtra non confermate</label>
                     </div>
                     <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
@@ -52,6 +52,7 @@
                                     <th>Codice Espansione</th>
                                     <th>Data Uscita</th>
                                     <th>Rotazione</th>
+                                    <th>Principale</th>
                                     <th>Confermato</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -88,6 +89,23 @@
                                                        title="Inserire 0 o una lettera maiuscola (A-Z)"
                                                        style="width: 60px;"
                                                        required>
+                                            </td>
+
+                                            <td>
+                                                <select name="principale"
+                                                        class="form-select form-select-sm"
+                                                        style="width: 160px;"
+                                                        required>
+                                                    <option value="0" {{ $expansion->principale === '0' ? 'selected' : '' }}>
+                                                        🏆 Principale
+                                                    </option>
+                                                    @foreach($allExpansions->where('principale', '0')->where('espansione', '!=', $expansion->espansione)->sortBy('uscita') as $mainExpansion)
+                                                        <option value="{{ $mainExpansion->espansione }}"
+                                                                {{ $expansion->principale === $mainExpansion->espansione ? 'selected' : '' }}>
+                                                            {{ $mainExpansion->espansione }} ({{ $mainExpansion->uscita }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
                                             </td>
 
                                             <td class="text-center">
