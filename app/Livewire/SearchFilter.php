@@ -214,9 +214,11 @@ class SearchFilter extends Component
     {
         // Carica tutte le opzioni uniche per i filtri dalla cache
         $this->espansioni = Cache::remember('cards_filter_espansioni', 3600, function () {
-            return Card::select('espansione')
-                ->groupBy('espansione')
-                ->pluck('espansione');
+            return Card::select('cards.espansione')
+                ->join('expansions', 'cards.espansione', '=', 'expansions.espansione')
+                ->groupBy('cards.espansione', 'expansions.uscita')
+                ->orderBy('expansions.uscita', 'asc')
+                ->pluck('cards.espansione');
         });
 
         $this->tipi = Cache::remember('cards_filter_tipi', 3600, function () {
