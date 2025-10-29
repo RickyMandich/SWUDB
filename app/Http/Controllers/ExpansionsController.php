@@ -55,7 +55,7 @@ class ExpansionsController extends Controller
             'espansione' => 'required|string|max:10',
             'uscita' => 'required|string|max:65',
             'rotazione' => 'required|string|size:1|regex:/^[0A-Z]$/',
-            'principale' => 'required|string|max:10'
+            'principale' => 'required|string|max:10|regex:/^(-1|0|[A-Z0-9]+)$/'
         ]);
 
         try {

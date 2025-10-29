@@ -104,6 +104,9 @@
                                                     <option value="0" {{ $expansion->principale === '0' ? 'selected' : '' }}>
                                                         🏆 Principale
                                                     </option>
+                                                    <option value="-1" {{ $expansion->principale === '-1' ? 'selected' : '' }}>
+                                                        ⭐ Standalone
+                                                    </option>
                                                     @foreach($allExpansions->where('principale', '0')->where('espansione', '!=', $expansion->espansione)->sortBy('uscita') as $mainExpansion)
                                                         <option value="{{ $mainExpansion->espansione }}"
                                                                 {{ $expansion->principale === $mainExpansion->espansione ? 'selected' : '' }}>
