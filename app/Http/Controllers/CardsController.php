@@ -7,6 +7,7 @@ use App\Events\ThreadMessageCreated;
 use App\Services\ThreadManager;
 
 use App\Mail\NewCardsEmail;
+use App\Mail\NewExpansionEmail;
 
 use App\Models\Card;
 use App\Models\User;
@@ -988,6 +989,10 @@ class CardsController extends Controller
                         $espansione->rotazione = $rotazioneDefault;
                         $espansione->confermato = false; // Nuove espansioni non confermate di default
                         $espansione->save();
+
+                        // Send email notification to admins about new expansion
+                        // Invia notifica email agli admin per la nuova espansione
+                        $this->sendNewExpansionNotification($espansione);
                     }
 
                     // Save card to database
@@ -1088,6 +1093,32 @@ class CardsController extends Controller
             $users,
             'Notifica nuove carte',
             5 // 5 seconds delay between batches
+        );
+    }
+
+    /**
+     * Send email notifications to admin users about new expansion
+     * Invia notifiche email agli utenti admin per la nuova espansione
+     *
+     * @param Expansion $expansion The newly created expansion
+     * @return void
+     */
+    private function sendNewExpansionNotification($expansion)
+    {
+        // Prepare expansion data with links for email template
+        $expansionData = [
+            'espansione' => $expansion->espansione,
+            'uscita' => $expansion->uscita,
+            'rotazione' => $expansion->rotazione,
+            'confermato' => $expansion->confermato,
+            'cards_url' => route('carte') . '?espansione=' . urlencode($expansion->espansione)
+        ];
+
+        // Use email queue service to send emails to admins only
+        // Usa il servizio di coda email per inviare email solo agli admin
+        \App\Services\EmailQueueService::queueToAdmins(
+            new NewExpansionEmail($expansionData),
+            'Notifica nuova espansione'
         );
     }
 
