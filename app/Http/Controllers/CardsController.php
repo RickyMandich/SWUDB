@@ -1176,6 +1176,42 @@ class CardsController extends Controller
     }
 
     /**
+     * Test route for email system - removes TSEC expansion and triggers DB update
+     * Route di test per sistema email - rimuove espansione TSEC e avvia aggiornamento DB
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testMail()
+    {
+        try {
+            // Delete TSEC expansion and cards to simulate new content detection
+            $deletedExpansions = \DB::table('expansions')->where('espansione', 'TSEC')->delete();
+            $deletedCards = \DB::table('cards')->where('espansione', 'TSEC')->delete();
+
+            // Launch DB update process with fire and forget
+            JobController::fireAndForgetGet(route('carte.update'), [
+                "token" => env('JOB_TOKEN')
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test avviato con successo',
+                'deleted_expansions' => $deletedExpansions,
+                'deleted_cards' => $deletedCards,
+                'action' => 'DB update process launched in background',
+                'check_results' => 'Controlla i risultati su Telegram e Gmail'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Errore durante il test'
+            ], 500);
+        }
+    }
+
+    /**
      * Clean up processing checkpoint (manual recovery)
      * Pulisce il checkpoint di elaborazione (recovery manuale)
      *
