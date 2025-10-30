@@ -1111,7 +1111,8 @@ class CardsController extends Controller
             'uscita' => $expansion->uscita,
             'rotazione' => $expansion->rotazione,
             'confermato' => $expansion->confermato,
-            'cards_url' => route('carte') . '?espansione=' . urlencode($expansion->espansione)
+            'cards_url' => route('carte') . '?espansione=' . urlencode($expansion->espansione),
+            'admin_url' => route('admin.expansions')
         ];
 
         // Use email queue service to send emails to admins only

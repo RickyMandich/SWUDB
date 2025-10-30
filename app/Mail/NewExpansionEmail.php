@@ -59,7 +59,7 @@ class NewExpansionEmail extends Mailable
             with: [
                 'expansion' => $this->expansion,
                 'buttonText' => 'Gestisci Espansioni',
-                'buttonUrl' => route('admin.expansions')
+                'buttonUrl' => $this->expansion['admin_url'] ?? url('/')
             ]
         );
     }
