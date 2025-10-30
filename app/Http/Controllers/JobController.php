@@ -473,44 +473,13 @@ class JobController extends Controller
      */
     private function applyEmailRateLimit(int $maxPerSecond, ?string $logFile = null)
     {
-        // Check if we recently hit a rate limit and need to slow down
-        if (\Cache::has('email_rate_limit_hit')) {
-            if ($logFile) {
-                EmailLogService::logProcessor("Rate limit cooldown attivo - attesa 3 secondi", 'WARNING', $logFile);
-            }
-            sleep(3);
+        // Always apply 1 second delay between emails to respect external API limit (2/second)
+        // This ensures we never exceed the limit instead of waiting for it to be exceeded
+        if ($logFile) {
+            EmailLogService::logProcessor("Applicando delay di 1 secondo tra email", 'INFO', $logFile);
         }
 
-        $cacheKey = 'email_rate_limit';
-        $currentSecond = now()->format('Y-m-d H:i:s');
-
-        // Use atomic increment to prevent race conditions
-        $currentCount = \Cache::increment($cacheKey . ':' . $currentSecond, 1);
-
-        // Set expiration if this is the first increment
-        if ($currentCount === 1) {
-            \Cache::put($cacheKey . ':' . $currentSecond, 1, 5);
-        }
-
-        if ($currentCount > $maxPerSecond) {
-            if ($logFile) {
-                EmailLogService::logProcessor("Rate limit raggiunto ({$currentCount}/{$maxPerSecond}) - attesa 2 secondi", 'WARNING', $logFile);
-            }
-
-            // Wait 2 seconds if limit exceeded to be more conservative
-            sleep(2);
-
-            // Reset for next second
-            $nextSecond = now()->format('Y-m-d H:i:s');
-            \Cache::put($cacheKey . ':' . $nextSecond, 1, 5);
-
-            if ($logFile) {
-                EmailLogService::logProcessor("Rate limit reset - nuovo secondo: {$nextSecond}", 'INFO', $logFile);
-            }
-        } else {
-            // Add small delay between emails even when under limit
-            usleep(100000); // 100ms delay between emails
-        }
+        sleep(1); // Always 1 second delay between emails
     }
 
     /**

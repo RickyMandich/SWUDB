@@ -287,11 +287,11 @@ class EmailQueueService
             return;
         }
 
-        $totalDelay = 5; // Start with 5 second initial delay
-        $batchSize = 3; // Further reduced batch size for maximum safety
-        $batchDelay = 15; // Increased to 15 seconds between batches
+        $totalDelay = 0; // No initial delay needed - processor handles timing
+        $batchSize = 50; // Can use larger batches since processor handles 1s delay per email
+        $batchDelay = 0; // No batch delay needed - processor handles timing
 
-        EmailLogService::logQueue("Inizio accodamento bulk di " . count($notifications) . " tipi di notifiche con delay iniziale di {$totalDelay}s");
+        EmailLogService::logQueue("Inizio accodamento bulk di " . count($notifications) . " tipi di notifiche - processore gestirà 1s delay per email");
 
         foreach ($notifications as $notification) {
             if (!isset($notification['mailable'], $notification['recipients'], $notification['context'])) {
@@ -321,29 +321,13 @@ class EmailQueueService
 
             EmailLogService::logQueue("Accodamento {$type}: {$validRecipients->count()} destinatari con delay iniziale {$totalDelay}s");
 
-            // Queue emails for this notification type with current delay
-            $currentDelay = $totalDelay;
-            $emailDelay = 2; // 2 seconds between individual emails
-
-            foreach ($validRecipients->chunk($batchSize) as $batch) {
-                foreach ($batch as $user) {
-                    self::queueSingle($mailable, $user->email, $context, $currentDelay);
-                    $currentDelay += $emailDelay; // Add delay between individual emails
-                }
-
-                // Add extra delay between batches (on top of individual delays)
-                $currentDelay += $batchDelay;
+            // Queue all emails for this notification type immediately
+            // The processor will handle 1 second delay between each email automatically
+            foreach ($validRecipients as $user) {
+                self::queueSingle($mailable, $user->email, $context, 0); // No delay needed in queue
             }
 
-            // Update total delay for next notification type
-            // Calculate based on individual emails + batch delays
-            $emailCount = $validRecipients->count();
-            $batchCount = ceil($emailCount / $batchSize);
-            $individualDelays = $emailCount * $emailDelay;
-            $batchDelays = $batchCount * $batchDelay;
-            $totalDelay += $individualDelays + $batchDelays;
-
-            EmailLogService::logQueue("Completato {$type}: {$batchCount} batch, prossimo delay: {$totalDelay}s");
+            EmailLogService::logQueue("Completato {$type}: {$validRecipients->count()} email accodate");
         }
 
         EmailLogService::logQueue("Bulk accodamento completato - delay totale finale: {$totalDelay}s");
