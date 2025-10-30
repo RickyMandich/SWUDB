@@ -266,6 +266,8 @@ class SendQueuedEmail implements ShouldQueue
             $data['new_cards'] = $mailable->newCards ?? [];
         } elseif ($mailable instanceof \App\Mail\NewCardsEmail) {
             $data['cards'] = $mailable->cards ?? [];
+        } elseif ($mailable instanceof \App\Mail\NewExpansionEmail) {
+            $data['expansion'] = $mailable->expansion ?? [];
         } elseif ($mailable instanceof \App\Mail\ImportErrorsNotification) {
             $data['stats'] = $mailable->stats ?? [];
         }
@@ -315,6 +317,10 @@ class SendQueuedEmail implements ShouldQueue
             case 'App\\Mail\\NewCardsEmail':
                 $cards = $this->mailableData['cards'] ?? [];
                 return new \App\Mail\NewCardsEmail($cards);
+
+            case 'App\\Mail\\NewExpansionEmail':
+                $expansion = $this->mailableData['expansion'] ?? [];
+                return new \App\Mail\NewExpansionEmail($expansion);
 
             case 'App\\Mail\\ImportErrorsNotification':
                 $stats = $this->mailableData['stats'] ?? [];

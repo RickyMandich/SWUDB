@@ -1115,11 +1115,17 @@ class CardsController extends Controller
             'admin_url' => route('admin.expansions')
         ];
 
-        // Use email queue service to send emails to admins only
-        // Usa il servizio di coda email per inviare email solo agli admin
-        \App\Services\EmailQueueService::queueToAdmins(
+        // Get admin users exactly like sendEmailNotifications does for all users
+        // Ottieni utenti admin esattamente come sendEmailNotifications fa per tutti gli utenti
+        $admins = User::getAdmins();
+
+        // Use email queue service to send emails with rate limiting (same as new cards)
+        // Usa il servizio di coda email per inviare email con rate limiting (come per le nuove carte)
+        \App\Services\EmailQueueService::queueToUsers(
             new NewExpansionEmail($expansionData),
-            'Notifica nuova espansione'
+            $admins,
+            'Notifica nuova espansione',
+            5 // 5 seconds delay between batches (same as new cards)
         );
     }
 
