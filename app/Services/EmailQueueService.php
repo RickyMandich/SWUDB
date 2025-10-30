@@ -269,4 +269,81 @@ class EmailQueueService
             ]);
         }
     }
+
+    /**
+     * Queue multiple notification types with coordinated delays
+     * Mette in coda più tipi di notifiche con delay coordinati
+     *
+     * This method ensures that multiple notification types (expansions, cards, etc.)
+     * are queued with proper delays to prevent rate limiting issues.
+     *
+     * @param array $notifications Array of notification configurations
+     * Each notification should have: type, mailable, recipients, context
+     * @return void
+     */
+    public static function queueBulkNotifications(array $notifications)
+    {
+        if (empty($notifications)) {
+            return;
+        }
+
+        $totalDelay = 0;
+        $batchSize = 10;
+        $batchDelay = 5; // 5 seconds between batches
+
+        EmailLogService::logQueue("Inizio accodamento bulk di " . count($notifications) . " tipi di notifiche");
+
+        foreach ($notifications as $notification) {
+            if (!isset($notification['mailable'], $notification['recipients'], $notification['context'])) {
+                Log::warning('Invalid notification configuration skipped', $notification);
+                continue;
+            }
+
+            $mailable = $notification['mailable'];
+            $recipients = $notification['recipients'];
+            $context = $notification['context'];
+            $type = $notification['type'] ?? 'unknown';
+
+            // Convert to collection if needed
+            if (!($recipients instanceof \Illuminate\Support\Collection)) {
+                $recipients = collect($recipients);
+            }
+
+            // Filter out users without email
+            $validRecipients = $recipients->filter(function($user) {
+                return !empty($user->email);
+            });
+
+            if ($validRecipients->isEmpty()) {
+                Log::warning("No valid recipients for notification type: {$type}");
+                continue;
+            }
+
+            EmailLogService::logQueue("Accodamento {$type}: {$validRecipients->count()} destinatari con delay iniziale {$totalDelay}s");
+
+            // Queue emails for this notification type with current delay
+            $currentDelay = $totalDelay;
+            foreach ($validRecipients->chunk($batchSize) as $batch) {
+                foreach ($batch as $user) {
+                    self::queueSingle($mailable, $user->email, $context, $currentDelay);
+                }
+
+                // Add delay between batches
+                $currentDelay += $batchDelay;
+            }
+
+            // Update total delay for next notification type
+            // Calculate based on number of batches for this notification
+            $batchCount = ceil($validRecipients->count() / $batchSize);
+            $totalDelay += ($batchCount * $batchDelay);
+
+            EmailLogService::logQueue("Completato {$type}: {$batchCount} batch, prossimo delay: {$totalDelay}s");
+        }
+
+        EmailLogService::logQueue("Bulk accodamento completato - delay totale finale: {$totalDelay}s");
+        Log::info('Bulk notifications queued successfully', [
+            'notification_types' => count($notifications),
+            'total_delay' => $totalDelay
+        ]);
+    }
 }
