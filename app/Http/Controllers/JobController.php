@@ -334,7 +334,7 @@ class JobController extends Controller
         $startTime = time();
         $maxExecutionTime = 240; // 4 minutes limit like other jobs
         $processedCount = 0;
-        $maxEmailsPerSecond = 2;
+        $maxEmailsPerSecond = 1; // Reduced from 2 to 1 for better API compatibility
 
         try {
             EmailLogService::logProcessor("=== AVVIO PROCESSORE EMAIL ===", 'INFO', $logFile);
@@ -473,6 +473,14 @@ class JobController extends Controller
      */
     private function applyEmailRateLimit(int $maxPerSecond, ?string $logFile = null)
     {
+        // Check if we recently hit a rate limit and need to slow down
+        if (\Cache::has('email_rate_limit_hit')) {
+            if ($logFile) {
+                EmailLogService::logProcessor("Rate limit cooldown attivo - attesa 3 secondi", 'WARNING', $logFile);
+            }
+            sleep(3);
+        }
+
         $cacheKey = 'email_rate_limit';
         $currentSecond = now()->format('Y-m-d H:i:s');
 
@@ -486,11 +494,11 @@ class JobController extends Controller
 
         if ($currentCount > $maxPerSecond) {
             if ($logFile) {
-                EmailLogService::logProcessor("Rate limit raggiunto ({$currentCount}/{$maxPerSecond}) - attesa 1 secondo", 'WARNING', $logFile);
+                EmailLogService::logProcessor("Rate limit raggiunto ({$currentCount}/{$maxPerSecond}) - attesa 2 secondi", 'WARNING', $logFile);
             }
 
-            // Wait until next second if limit exceeded
-            sleep(1);
+            // Wait 2 seconds if limit exceeded to be more conservative
+            sleep(2);
 
             // Reset for next second
             $nextSecond = now()->format('Y-m-d H:i:s');
@@ -499,6 +507,9 @@ class JobController extends Controller
             if ($logFile) {
                 EmailLogService::logProcessor("Rate limit reset - nuovo secondo: {$nextSecond}", 'INFO', $logFile);
             }
+        } else {
+            // Add small delay between emails even when under limit
+            usleep(100000); // 100ms delay between emails
         }
     }
 

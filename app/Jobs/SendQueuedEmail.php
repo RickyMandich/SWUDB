@@ -103,10 +103,16 @@ class SendQueuedEmail implements ShouldQueue
                 EmailLogService::logError('Rate Limit Hit', $e, [
                     'to' => $this->to,
                     'context' => $this->logContext,
-                    'action' => 'Job will be deleted to prevent duplicates'
+                    'action' => 'Adding aggressive delay and retrying'
                 ]);
 
-                // Don't retry rate limit errors - just log and delete
+                // Add aggressive delay when rate limit is hit
+                sleep(5);
+
+                // Set a cache flag to slow down the entire system temporarily
+                \Cache::put('email_rate_limit_hit', true, 60); // 1 minute cooldown
+
+                // Don't retry rate limit errors - just log and delete to prevent queue buildup
                 return;
             }
 

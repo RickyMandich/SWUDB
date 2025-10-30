@@ -288,8 +288,8 @@ class EmailQueueService
         }
 
         $totalDelay = 0;
-        $batchSize = 10;
-        $batchDelay = 5; // 5 seconds between batches
+        $batchSize = 5; // Reduced batch size for better rate limiting
+        $batchDelay = 10; // Increased to 10 seconds between batches
 
         EmailLogService::logQueue("Inizio accodamento bulk di " . count($notifications) . " tipi di notifiche");
 
