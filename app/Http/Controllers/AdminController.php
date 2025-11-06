@@ -104,7 +104,6 @@ class AdminController extends Controller
                         }
                     }
                 }
-                }
             } else {
                 // Query di modifica (INSERT, UPDATE, DELETE) - restituisce numero righe modificate
                 $affectedRows = DB::affectingStatement($query);
