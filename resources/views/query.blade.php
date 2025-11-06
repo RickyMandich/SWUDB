@@ -73,9 +73,12 @@
                         @endif
                         <div class="table-responsive">
                             <table class="table table-striped-columns table-hover table-sm">
+                                @php
+                                    $columns = array_keys((array)$result[0]);
+                                @endphp
                                 <thead class="table-dark">
                                     <tr>
-                                        @foreach(array_keys((array)$result[0]) as $column)
+                                        @foreach($columns as $column)
                                             <th>{{ $column }}</th>
                                         @endforeach
                                     </tr>
@@ -83,12 +86,16 @@
                                 <tbody>
                                     @foreach($result as $row)
                                         <tr>
-                                            @foreach((array)$row as $key=>$value)
+                                            @foreach($columns as $column)
                                                 <td>
+                                                    @php
+                                                        $rowArray = (array)$row;
+                                                        $value = $rowArray[$column] ?? '';
+                                                    @endphp
                                                     @if(isset($sorted) and $sorted)
                                                         <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
                                                     @endif
-                                                    <!--{!! $key !!} => -->{!! $value !!}
+                                                    {!! $value !!}
                                                     @if(isset($sorted) and $sorted)
                                                         </a>
                                                     @endif
