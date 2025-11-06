@@ -47,8 +47,12 @@
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="mb-0">Risultati ({{ count($result) }} righe):</h5>
                             @if(isset($sorted) && $sorted)
-                                <span class="badge bg-info">
-                                    <i class="fas fa-sort me-1"></i>Ordinamento mergeSort applicato
+                                <span class="badge bg-success">
+                                    <i class="fas fa-sort me-1"></i>Ordine mergeSort
+                                </span>
+                            @else
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-sort-slash me-1"></i>Ordine non mergeSort
                                 </span>
                             @endif
                         </div>
