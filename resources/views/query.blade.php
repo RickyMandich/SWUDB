@@ -84,17 +84,15 @@
                                     @foreach($result as $row)
                                         <tr>
                                             @foreach((array)$row as $key=>$value)
-                                                @if($key !== "" or $value !== "")
-                                                    <td>
-                                                        @if(isset($sorted) and $sorted)
-                                                            <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
-                                                        @endif
-                                                        <!--{!! $key !!} => -->{!! $value !!}
-                                                        @if(isset($sorted) and $sorted)
-                                                            </a>
-                                                        @endif
-                                                    </td>
-                                                @endif
+                                                <td>
+                                                    @if(isset($sorted) and $sorted)
+                                                        <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
+                                                    @endif
+                                                    <!--{!! $key !!} => -->{!! $value !!}
+                                                    @if(isset($sorted) and $sorted)
+                                                        </a>
+                                                    @endif
+                                                </td>
                                             @endforeach
                                         </tr>
                                     @endforeach

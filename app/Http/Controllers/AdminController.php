@@ -81,7 +81,8 @@ class AdminController extends Controller
                             $resultArray = array_map(fn($item) => (array) $item, $result);
 
                             // Se manca l'attributo uscita, lo recupera dalla tabella expansions
-                            if (!array_key_exists('uscita', $firstResult)) {
+                            $needsUscita = !array_key_exists('uscita', $firstResult);
+                            if ($needsUscita) {
                                 $expansions = \App\Models\Expansion::all()->keyBy('espansione');
                                 $resultArray = array_map(function($item) use ($expansions) {
                                     if (isset($expansions[$item['espansione']])) {
@@ -102,6 +103,7 @@ class AdminController extends Controller
                             $sortApplied = false;
                         }
                     }
+                }
                 }
             } else {
                 // Query di modifica (INSERT, UPDATE, DELETE) - restituisce numero righe modificate
