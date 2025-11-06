@@ -23,10 +23,11 @@
                         <div class="mt-2">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i>
-                                <strong>Nota:</strong> Le query sulla tabella <code>cards</code> senza <code>ORDER BY</code>
+                                <strong>Nota:</strong> Le query senza <code>ORDER BY</code>
                                 verranno automaticamente ordinate usando l'algoritmo mergeSort personalizzato,
                                 purché i risultati contengano tutti gli attributi necessari
-                                (nome, tipo, aspettoPrimario, aspettoSecondario, costo, uscita, numero, espansione).
+                                (nome, tipo, aspettoPrimario, aspettoSecondario, costo, numero, espansione).
+                                L'attributo <code>uscita</code> viene recuperato automaticamente dalla tabella <code>expansions</code> se mancante.
                                 <br>
                                 <i class="fas fa-keyboard me-1"></i>
                                 <strong>Scorciatoia:</strong> Premi <kbd>Ctrl</kbd> + <kbd>Invio</kbd> per eseguire la query.

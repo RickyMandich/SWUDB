@@ -62,7 +62,8 @@ class AdminController extends Controller
 
                 if (!$hasOrderBy && !empty($result)) {
                     // Verifica che i risultati abbiano gli attributi necessari per il mergeSort
-                    $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'uscita', 'numero', 'espansione'];
+                    // uscita non è necessaria, può essere recuperata dalla tabella espansione
+                    $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'numero', 'espansione'];
                     $firstResult = (array) $result[0];
                     $hasRequiredAttributes = true;
                     $missingAttributes = [];
@@ -78,6 +79,17 @@ class AdminController extends Controller
                         try {
                             // Converte gli oggetti stdClass in array per il mergeSort
                             $resultArray = array_map(fn($item) => (array) $item, $result);
+
+                            // Se manca l'attributo uscita, lo recupera dalla tabella expansions
+                            if (!array_key_exists('uscita', $firstResult)) {
+                                $expansions = \App\Models\Expansion::all()->keyBy('espansione');
+                                $resultArray = array_map(function($item) use ($expansions) {
+                                    if (isset($expansions[$item['espansione']])) {
+                                        $item['uscita'] = $expansions[$item['espansione']]->uscita;
+                                    }
+                                    return $item;
+                                }, $resultArray);
+                            }
 
                             // Applica il mergeSort
                             $sortedResult = CardsController::mergeSort($resultArray);
