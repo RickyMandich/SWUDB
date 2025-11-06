@@ -65,11 +65,12 @@ class AdminController extends Controller
                     $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'uscita', 'numero', 'espansione'];
                     $firstResult = (array) $result[0];
                     $hasRequiredAttributes = true;
+                    $missingAttributes = [];
 
                     foreach ($requiredAttributes as $attr) {
                         if (!array_key_exists($attr, $firstResult)) {
                             $hasRequiredAttributes = false;
-                            break;
+                            $missingAttributes[] = $attr;
                         }
                     }
 
@@ -106,7 +107,8 @@ class AdminController extends Controller
             "error" => $error,
             "query" => $query,
             "sorted" => $sortApplied,
-            "isSelectQuery" => $isSelectQuery
+            "isSelectQuery" => $isSelectQuery,
+            "missingAttributes" => $missingAttributes ?? null
         ]);
     }
 

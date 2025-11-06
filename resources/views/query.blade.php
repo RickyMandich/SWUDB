@@ -46,16 +46,30 @@
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="mb-0">Risultati ({{ count($result) }} righe):</h5>
-                            @if(isset($sorted) && $sorted)
-                                <span class="badge bg-success">
-                                    <i class="fas fa-sort me-1"></i>Ordine mergeSort
-                                </span>
-                            @else
-                                <span class="badge bg-warning text-dark">
-                                    <i class="fas fa-sort-slash me-1"></i>Ordine non mergeSort
-                                </span>
-                            @endif
+                            <div>
+                                @if(isset($sorted) && $sorted)
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-sort me-1"></i>Ordine mergeSort
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning text-dark"
+                                        @if(isset($missingAttributes) && !empty($missingAttributes))
+                                            title="Attributi mancanti: {{ implode(', ', $missingAttributes) }}"
+                                        @endif>
+                                        <i class="fas fa-sort-slash me-1"></i>Ordine non mergeSort
+                                    </span>
+                                @endif
+                            </div>
                         </div>
+                        @if(isset($missingAttributes) && !empty($missingAttributes))
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                <small>
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>MergeSort non applicato.</strong> Attributi mancanti: <code>{{ implode(', ', $missingAttributes) }}</code>
+                                </small>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        @endif
                         <div class="table-responsive">
                             <table class="table table-striped-columns table-hover table-sm">
                                 <thead class="table-dark">
