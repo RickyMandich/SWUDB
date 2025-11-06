@@ -57,13 +57,10 @@ class AdminController extends Controller
                 // Query SELECT - restituisce risultati
                 $result = DB::select($query);
 
-                // Se la query riguarda la tabella cards e non ha ORDER BY, applica mergeSort
-                // Usa regex per riconoscere anche alias e join: from cards[ ,\n\t] o from `cards`[ ,\n\t]
-                $isCardsQuery = preg_match('/from\s+cards(\s|,|$)/i', $queryLower) ||
-                               preg_match('/from\s+`cards`(\s|,|$)/i', $queryLower);
+                // Applica mergeSort se non c'è ORDER BY e i risultati hanno gli attributi necessari
                 $hasOrderBy = strpos($queryLower, 'order by') !== false;
 
-                if ($isCardsQuery && !$hasOrderBy && !empty($result)) {
+                if (!$hasOrderBy && !empty($result)) {
                     // Verifica che i risultati abbiano gli attributi necessari per il mergeSort
                     $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'uscita', 'numero', 'espansione'];
                     $firstResult = (array) $result[0];
