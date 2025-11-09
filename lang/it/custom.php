@@ -24,7 +24,6 @@ return[
     'Register' => 'Registrati',
     'Logout' => 'Esci',
     'Dashboard' => 'Profilo',
-    'refreshDB' => 'Aggiorna il Database',
     'next' => 'Prossima',
     'back' => 'Precedente',
     'query' => 'Accedi al Database',

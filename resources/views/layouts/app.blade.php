@@ -125,10 +125,6 @@
                                     <i class="fas fa-sign-out-alt me-1"></i>{{ __('custom.Logout') }}
                                 </a>
 
-                                <a class="dropdown-item" href="{{ route('carte.update') }}">
-                                    {{ __('custom.refreshDB') }}
-                                </a>
-
                                 @if(Auth::admin())
                                     <div class="dropdown-divider"></div>
                                     <h6 class="dropdown-header">
