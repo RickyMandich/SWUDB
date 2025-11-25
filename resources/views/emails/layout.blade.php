@@ -12,7 +12,7 @@
         <p style="margin-top: 20px;">Siamo felici di averti con noi. Se hai domande o problemi, non esitare a contattarci.</p>
         @endif
 
-        <a href="{{ url('/') }}" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 4px;">
+        <a href="{{ $buttonUrl ?? url('/') }}" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #0d6efd; color: white; text-decoration: none; border-radius: 4px;">
             @if(isset($buttonText))
                 {{ $buttonText }}
             @else

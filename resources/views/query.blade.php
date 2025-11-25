@@ -23,10 +23,11 @@
                         <div class="mt-2">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i>
-                                <strong>Nota:</strong> Le query sulla tabella <code>cards</code> senza <code>ORDER BY</code>
+                                <strong>Nota:</strong> Le query senza <code>ORDER BY</code>
                                 verranno automaticamente ordinate usando l'algoritmo mergeSort personalizzato,
                                 purché i risultati contengano tutti gli attributi necessari
-                                (nome, tipo, aspettoPrimario, aspettoSecondario, costo, uscita, numero, espansione).
+                                (nome, tipo, aspettoPrimario, aspettoSecondario, costo, numero, espansione).
+                                L'attributo <code>uscita</code> viene recuperato automaticamente dalla tabella <code>expansions</code> se mancante.
                                 <br>
                                 <i class="fas fa-keyboard me-1"></i>
                                 <strong>Scorciatoia:</strong> Premi <kbd>Ctrl</kbd> + <kbd>Invio</kbd> per eseguire la query.
@@ -46,17 +47,38 @@
                         <hr>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="mb-0">Risultati ({{ count($result) }} righe):</h5>
-                            @if(isset($sorted) && $sorted)
-                                <span class="badge bg-info">
-                                    <i class="fas fa-sort me-1"></i>Ordinamento mergeSort applicato
-                                </span>
-                            @endif
+                            <div>
+                                @if(isset($sorted) && $sorted)
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-sort me-1"></i>Ordine mergeSort
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning text-dark"
+                                        @if(isset($missingAttributes) && !empty($missingAttributes))
+                                            title="Attributi mancanti: {{ implode(', ', $missingAttributes) }}"
+                                        @endif>
+                                        <i class="fas fa-sort-slash me-1"></i>Ordine non mergeSort
+                                    </span>
+                                @endif
+                            </div>
                         </div>
+                        @if(isset($missingAttributes) && !empty($missingAttributes))
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                <small>
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>MergeSort non applicato.</strong> Attributi mancanti: <code>{{ implode(', ', $missingAttributes) }}</code>
+                                </small>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        @endif
                         <div class="table-responsive">
                             <table class="table table-striped-columns table-hover table-sm">
+                                @php
+                                    $columns = array_keys((array)$result[0]);
+                                @endphp
                                 <thead class="table-dark">
                                     <tr>
-                                        @foreach(array_keys((array)$result[0]) as $column)
+                                        @foreach($columns as $column)
                                             <th>{{ $column }}</th>
                                         @endforeach
                                     </tr>
@@ -64,18 +86,20 @@
                                 <tbody>
                                     @foreach($result as $row)
                                         <tr>
-                                            @foreach((array)$row as $key=>$value)
-                                                @if($key !== "" or $value !== "")
-                                                    <td>
-                                                        @if(isset($sorted) and $sorted)
-                                                            <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
-                                                        @endif
-                                                        <!--{!! $key !!} => -->{!! $value !!}
-                                                        @if(isset($sorted) and $sorted)
-                                                            </a>
-                                                        @endif
-                                                    </td>
-                                                @endif
+                                            @foreach($columns as $column)
+                                                <td>
+                                                    @php
+                                                        $rowArray = (array)$row;
+                                                        $value = $rowArray[$column] ?? '';
+                                                    @endphp
+                                                    @if(isset($sorted) and $sorted)
+                                                        <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
+                                                    @endif
+                                                    {!! $value !!}
+                                                    @if(isset($sorted) and $sorted)
+                                                        </a>
+                                                    @endif
+                                                </td>
                                             @endforeach
                                         </tr>
                                     @endforeach

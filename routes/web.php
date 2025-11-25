@@ -39,6 +39,9 @@ Route::get('/checkScanStatus/{threadId}', [CardsController::class, 'checkScanSta
 
 Route::get('/cleanupCheckpoint', [CardsController::class, 'cleanupCheckpoint'])->name("carte.cleanupCheckpoint");
 
+// Test route for email system
+Route::get('/testMail', [CardsController::class, 'testMail'])->name("testMail");
+
 Route::get('/mazzi', [DecksController::class, 'index'])->name("mazzi");
 
 Route::get('/collezione', [DecksController::class, 'collezione'])->name('collezione')->middleware('auth');

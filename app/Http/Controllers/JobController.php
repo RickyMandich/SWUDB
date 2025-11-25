@@ -334,7 +334,7 @@ class JobController extends Controller
         $startTime = time();
         $maxExecutionTime = 240; // 4 minutes limit like other jobs
         $processedCount = 0;
-        $maxEmailsPerSecond = 2;
+        $maxEmailsPerSecond = 1; // Reduced from 2 to 1 for better API compatibility
 
         try {
             EmailLogService::logProcessor("=== AVVIO PROCESSORE EMAIL ===", 'INFO', $logFile);
@@ -473,33 +473,13 @@ class JobController extends Controller
      */
     private function applyEmailRateLimit(int $maxPerSecond, ?string $logFile = null)
     {
-        $cacheKey = 'email_rate_limit';
-        $currentSecond = now()->format('Y-m-d H:i:s');
-
-        // Use atomic increment to prevent race conditions
-        $currentCount = \Cache::increment($cacheKey . ':' . $currentSecond, 1);
-
-        // Set expiration if this is the first increment
-        if ($currentCount === 1) {
-            \Cache::put($cacheKey . ':' . $currentSecond, 1, 5);
+        // Always apply 1 second delay between emails to respect external API limit (2/second)
+        // This ensures we never exceed the limit instead of waiting for it to be exceeded
+        if ($logFile) {
+            EmailLogService::logProcessor("Applicando delay di 1 secondo tra email", 'INFO', $logFile);
         }
 
-        if ($currentCount > $maxPerSecond) {
-            if ($logFile) {
-                EmailLogService::logProcessor("Rate limit raggiunto ({$currentCount}/{$maxPerSecond}) - attesa 1 secondo", 'WARNING', $logFile);
-            }
-
-            // Wait until next second if limit exceeded
-            sleep(1);
-
-            // Reset for next second
-            $nextSecond = now()->format('Y-m-d H:i:s');
-            \Cache::put($cacheKey . ':' . $nextSecond, 1, 5);
-
-            if ($logFile) {
-                EmailLogService::logProcessor("Rate limit reset - nuovo secondo: {$nextSecond}", 'INFO', $logFile);
-            }
-        }
+        sleep(1); // Always 1 second delay between emails
     }
 
     /**

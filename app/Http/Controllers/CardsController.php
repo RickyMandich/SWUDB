@@ -7,6 +7,7 @@ use App\Events\ThreadMessageCreated;
 use App\Services\ThreadManager;
 
 use App\Mail\NewCardsEmail;
+use App\Mail\NewExpansionEmail;
 
 use App\Models\Card;
 use App\Models\User;
@@ -883,11 +884,13 @@ class CardsController extends Controller
                 return;
             }
 
-            // Process cards with timeout management
-            $this->insertCardsDirectly($cards, $threadId, $logFile);
+            // Process cards with timeout management and collect new expansions
+            $result = $this->insertCardsDirectly($cards, $threadId, $logFile);
+            $insertedCards = $result['cards'] ?? $cards;
+            $newExpansions = $result['expansions'] ?? [];
 
-            // Send notifications after successful insertion
-            $this->sendEmailNotifications($cards);
+            // Send unified notifications after successful insertion
+            $this->sendUnifiedNotifications($insertedCards, !empty($newExpansions) ? $newExpansions[0] : null);
             // Note: Telegram notification is sent via ThreadMessageCreated in insertCardsDirectly
 
             if ($logFile) {
@@ -913,7 +916,7 @@ class CardsController extends Controller
      * @param array $cards Array of cards to insert
      * @param string $threadId Thread ID for progress tracking
      * @param string|null $logFile Log file path for detailed logging
-     * @return void
+     * @return array Array with 'cards' (inserted cards) and 'expansions' (new expansions created)
      */
     private function insertCardsDirectly($cards, $threadId, $logFile = null)
     {
@@ -922,6 +925,8 @@ class CardsController extends Controller
         $insertedCount = 0;
         $errorCount = 0;
         $startTime = time();
+        $insertedCards = [];
+        $newExpansions = [];
 
         if ($logFile) {
             $this->writeScanLog("Inizio inserimento diretto di {$totalCards} carte", $logFile);
@@ -988,11 +993,18 @@ class CardsController extends Controller
                         $espansione->rotazione = $rotazioneDefault;
                         $espansione->confermato = false; // Nuove espansioni non confermate di default
                         $espansione->save();
+
+                        // Collect new expansion for unified notification
+                        // Raccogli nuova espansione per notifica unificata
+                        $newExpansions[] = $espansione;
                     }
 
                     // Save card to database
                     $carta->save();
                     $insertedCount++;
+
+                    // Collect inserted card for notification
+                    $insertedCards[] = $cardData;
 
                     if ($logFile) {
                         $this->writeScanLog("Carta inserita: {$carta->cid} - {$carta->nome}", $logFile);
@@ -1033,7 +1045,10 @@ class CardsController extends Controller
                     ]);
 
                     ThreadMessageCreated::dispatch($threadId, "Processo riavviato automaticamente - Inserite " . ($insertedCount) . "/" . $totalCards . " carte");
-                    return;
+                    return [
+                        'cards' => $insertedCards,
+                        'expansions' => $newExpansions
+                    ];
                 }
             }
 
@@ -1051,45 +1066,92 @@ class CardsController extends Controller
         }
 
         ThreadMessageCreated::dispatch($threadId, $finalMsg, true);
+
+        return [
+            'cards' => $insertedCards,
+            'expansions' => $newExpansions
+        ];
     }
 
     /**
      * Send email notifications to all users about new cards
-     * Invia notifiche email a tutti gli utenti sulle nuove carte
+     * Send unified notifications for new cards and expansions
+     * Invia notifiche unificate per nuove carte ed espansioni
+     *
+     * @param array $toInsert Array of new cards to notify about
+     * @param \App\Models\Expansion|null $newExpansion Newly created expansion if any
+     * @return void
+     */
+    private function sendUnifiedNotifications($toInsert, $newExpansion = null)
+    {
+        $notifications = [];
+
+        // Add expansion notification if present (sent first to admins)
+        if ($newExpansion) {
+            $expansionData = [
+                'espansione' => $newExpansion->espansione,
+                'uscita' => $newExpansion->uscita,
+                'rotazione' => $newExpansion->rotazione,
+                'confermato' => $newExpansion->confermato,
+                'cards_url' => route('carte') . '?espansione=' . urlencode($newExpansion->espansione),
+                'admin_url' => route('admin.expansions')
+            ];
+
+            $notifications[] = [
+                'type' => 'expansion',
+                'mailable' => new NewExpansionEmail($expansionData),
+                'recipients' => User::getAdmins(),
+                'context' => 'Notifica nuova espansione'
+            ];
+        }
+
+        // Add cards notification if present (sent to all users)
+        if (!empty($toInsert)) {
+            // Prepare cards data with links for email template
+            $cardsData = [];
+            foreach($toInsert as $card){
+                $espansione = $card["espansione"] ?? 'N/A';
+                $numero = $card["numero"] ?? 'N/A';
+                $nome = $card["nome"] ?? 'N/A';
+                $titolo = $card["titolo"] ?? '';
+
+                $cardsData[] = [
+                    'espansione' => $espansione,
+                    'numero' => $numero,
+                    'nome' => $nome,
+                    'titolo' => $titolo,
+                    'snippet' => "{$espansione}-{$numero} - {$nome}" . ($titolo ? " {$titolo}" : ""),
+                    'url' => route('carta', ['espansione' => $espansione, 'numero' => $numero])
+                ];
+            }
+
+            $notifications[] = [
+                'type' => 'cards',
+                'mailable' => new NewCardsEmail($cardsData),
+                'recipients' => User::select("email")->where('email', '!=', null)->get(),
+                'context' => 'Notifica nuove carte'
+            ];
+        }
+
+        // Send all notifications with coordinated delays
+        if (!empty($notifications)) {
+            \App\Services\EmailQueueService::queueBulkNotifications($notifications);
+        }
+    }
+
+    /**
+     * Legacy method for backward compatibility - now uses unified system
+     * Metodo legacy per compatibilità - ora usa il sistema unificato
      *
      * @param array $toInsert Array of new cards to notify about
      * @return void
      */
-    private function sendEmailNotifications($toInsert){
-        // Prepare cards data with links for email template
-        $cardsData = [];
-        foreach($toInsert as $card){
-            $espansione = $card["espansione"] ?? 'N/A';
-            $numero = $card["numero"] ?? 'N/A';
-            $nome = $card["nome"] ?? 'N/A';
-            $titolo = $card["titolo"] ?? '';
-
-            $cardsData[] = [
-                'espansione' => $espansione,
-                'numero' => $numero,
-                'nome' => $nome,
-                'titolo' => $titolo,
-                'snippet' => "{$espansione}-{$numero} - {$nome}" . ($titolo ? " {$titolo}" : ""),
-                'url' => route('carta', ['espansione' => $espansione, 'numero' => $numero])
-            ];
-        }
-
-        $users = User::select("email")->where('email', '!=', null)->get();
-
-        // Use email queue service to send emails with rate limiting
-        // Usa il servizio di coda email per inviare email con rate limiting
-        \App\Services\EmailQueueService::queueToUsers(
-            new NewCardsEmail($cardsData),
-            $users,
-            'Notifica nuove carte',
-            5 // 5 seconds delay between batches
-        );
+    private function sendEmailNotifications($toInsert)
+    {
+        $this->sendUnifiedNotifications($toInsert, null);
     }
+
+
 
     /**
      * Check the status of a scan process
@@ -1111,6 +1173,42 @@ class CardsController extends Controller
             'latestMessage' => $latestMessage,
             'threadId' => $threadId
         ]);
+    }
+
+    /**
+     * Test route for email system - removes TSEC expansion and triggers DB update
+     * Route di test per sistema email - rimuove espansione TSEC e avvia aggiornamento DB
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testMail()
+    {
+        try {
+            // Delete TSEC expansion and cards to simulate new content detection
+            $deletedExpansions = \DB::table('expansions')->where('espansione', 'TSEC')->delete();
+            $deletedCards = \DB::table('cards')->where('espansione', 'TSEC')->delete();
+
+            // Launch DB update process with fire and forget
+            JobController::fireAndForgetGet(route('carte.update'), [
+                "token" => env('JOB_TOKEN')
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test avviato con successo',
+                'deleted_expansions' => $deletedExpansions,
+                'deleted_cards' => $deletedCards,
+                'action' => 'DB update process launched in background',
+                'check_results' => 'Controlla i risultati su Telegram e Gmail'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Errore durante il test'
+            ], 500);
+        }
     }
 
     /**
