@@ -693,100 +693,300 @@ class SystemError extends Model
 
 ### Descrizione
 Sistema completo con:
-- **Coda email** con rate limiting (2 email/secondo) per evitare overflow del provider
+- **Sistema "Fire and Forget"** - NON usa `php artisan queue:work` (impraticabile in produzione)
+- **Processore HTTP asincrono** - Si auto-attiva quando ci sono email in coda
+- **Rate limiting** (1 email/secondo) per evitare overflow del provider
 - **Mailable dedicato** per notifiche errori con azioni rapide
 - **Servizio di logging** per tracciare tutte le operazioni email
 - **Job con retry** automatico in caso di fallimento
 
-### 4.1 Service: `app/Services/EmailQueueService.php`
+### ⚠️ IMPORTANTE: Sistema Fire and Forget
+
+Questa app **NON** usa `php artisan queue:work` perché:
+1. Richiede un processo sempre attivo in background
+2. Necessita di Supervisor o simili in produzione
+3. È complicato da gestire su hosting condivisi
+
+Invece, usa un sistema **Fire and Forget** che:
+1. Quando si accoda un'email, fa una chiamata HTTP asincrona a se stesso
+2. Il processore elabora le email in coda
+3. Si riavvia automaticamente se ci sono ancora email da processare
+4. Non blocca la richiesta dell'utente
+
+### 4.1 JobController con Fire and Forget: `app/Http/Controllers/JobController.php`
+
+Questo controller è il cuore del sistema. Contiene i metodi per:
+- Inviare richieste HTTP asincrone senza aspettare risposta
+- Processare la coda email
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use App\Services\EmailLogService;
+
+class JobController extends Controller
+{
+    /**
+     * Esegue una richiesta GET "fire-and-forget" senza aspettare la risposta
+     * Usa socket raw per inviare la richiesta e chiudere subito la connessione
+     */
+    public static function fireAndForgetGet($url, $data = []) {
+        $query = http_build_query($data);
+        $parts = parse_url($url);
+
+        if (!isset($parts['host']) || !isset($parts['path'])) {
+            return false;
+        }
+
+        $path = $parts['path'];
+        if (isset($parts['query']) && $parts['query'] !== '') {
+            $path .= '?' . $parts['query'] . '&' . $query;
+        } elseif ($query !== '') {
+            $path .= '?' . $query;
+        }
+
+        // Usa fsockopen per una connessione asincrona
+        $fp = fsockopen($parts['host'], $parts['port'] ?? 80, $errno, $errstr, 30);
+
+        if (!$fp) {
+            return false;
+        }
+
+        $out = "GET " . $path . " HTTP/1.1\r\n";
+        $out .= "Host: " . $parts['host'] . "\r\n";
+        $out .= "Connection: Close\r\n\r\n";
+
+        fwrite($fp, $out);
+        fclose($fp); // Chiude subito, senza aspettare risposta
+
+        return true;
+    }
+
+    /**
+     * Processa la coda email con rate limiting
+     * Questo metodo viene chiamato via fire-and-forget
+     */
+    public function processEmailQueue(Request $request)
+    {
+        // Verifica token per sicurezza
+        if ($request->input('token') !== env('JOB_TOKEN')) {
+            abort(403, 'Unauthorized');
+        }
+
+        $logFile = EmailLogService::createLogFile('processor');
+        $startTime = time();
+        $maxExecutionTime = 240; // 4 minuti limite
+        $processedCount = 0;
+
+        try {
+            // Recupera i job email dalla tabella jobs
+            $pendingJobs = \DB::table('jobs')
+                ->where('queue', 'emails')
+                ->orderBy('available_at', 'asc')
+                ->limit(50)
+                ->get();
+
+            EmailLogService::logProcessor("Job trovati: {$pendingJobs->count()}", 'INFO', $logFile);
+
+            if ($pendingJobs->isEmpty()) {
+                return;
+            }
+
+            foreach ($pendingJobs as $jobRecord) {
+                // Controlla timeout
+                if ((time() - $startTime) > $maxExecutionTime) {
+                    // Riavvia il processore per i job rimanenti
+                    $remainingJobs = \DB::table('jobs')->where('queue', 'emails')->count();
+                    if ($remainingJobs > 0) {
+                        self::fireAndForgetGet(route('job.processEmailQueue'), [
+                            'token' => env('JOB_TOKEN')
+                        ]);
+                    }
+                    return;
+                }
+
+                // Rate limiting: 1 secondo tra ogni email
+                sleep(1);
+
+                try {
+                    $payload = json_decode($jobRecord->payload, true);
+                    $jobClass = $payload['displayName'] ?? null;
+
+                    if ($jobClass === 'App\\Jobs\\SendQueuedEmail') {
+                        $jobData = unserialize($payload['data']['command']);
+
+                        // Esegui l'invio email
+                        $jobData->handle();
+
+                        // Rimuovi dalla coda
+                        \DB::table('jobs')->where('id', $jobRecord->id)->delete();
+                        $processedCount++;
+                    }
+
+                } catch (\Exception $e) {
+                    // Gestisci errore: sposta in failed_jobs
+                    \DB::table('jobs')->where('id', $jobRecord->id)->delete();
+                    \DB::table('failed_jobs')->insert([
+                        'uuid' => Str::uuid(),
+                        'connection' => 'database',
+                        'queue' => 'emails',
+                        'payload' => $jobRecord->payload,
+                        'exception' => $e->getMessage(),
+                        'failed_at' => now()
+                    ]);
+                }
+            }
+
+            // Controlla se ci sono altri job
+            $remainingJobs = \DB::table('jobs')->where('queue', 'emails')->count();
+            if ($remainingJobs > 0) {
+                // Riavvia automaticamente
+                self::fireAndForgetGet(route('job.processEmailQueue'), [
+                    'token' => env('JOB_TOKEN')
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            EmailLogService::logError('Email Queue Processor', $e);
+        }
+    }
+}
+```
+
+### 4.2 Service: `app/Services/EmailQueueService.php`
 
 ```php
 <?php
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
 use App\Jobs\SendQueuedEmail;
-use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Services\EmailLogService;
 
 class EmailQueueService
 {
     /**
-     * Aggiungi email alla coda
+     * Mette in coda un'email
      */
     public static function queue($mailable, $to, string $logContext = '', int $delay = 0)
     {
-        $toEmail = is_string($to) ? $to : $to->email;
-
-        EmailLogService::logQueue("Accodamento email per {$toEmail} - {$logContext}");
-
-        $job = new SendQueuedEmail($mailable, $toEmail, $logContext);
-
-        if ($delay > 0) {
-            dispatch($job)->delay(now()->addSeconds($delay));
-        } else {
-            dispatch($job);
-        }
-    }
-
-    /**
-     * Invia email a tutti gli admin
-     */
-    public static function queueToAdmins($mailable, string $logContext = '')
-    {
-        $admins = User::getAdmins();
-
-        if ($admins->isEmpty()) {
-            Log::warning('Nessun utente admin trovato per la notifica email');
+        if (is_array($to)) {
+            foreach ($to as $recipient) {
+                self::queueSingle($mailable, $recipient, $logContext, $delay);
+            }
             return;
         }
 
-        EmailLogService::logQueue("Invio email a " . $admins->count() . " admin - {$logContext}");
-
-        self::queueToUsers($mailable, $admins, $logContext);
+        self::queueSingle($mailable, $to, $logContext, $delay);
     }
 
     /**
-     * Invia email a più utenti con batching
+     * Mette in coda una singola email
      */
-    public static function queueToUsers($mailable, $users, string $logContext = '', int $batchDelay = 500)
+    protected static function queueSingle($mailable, string $to, string $logContext = '', int $delay = 0)
     {
-        $delay = 0;
-        $batchSize = 10;
-        $count = 0;
+        try {
+            $job = new SendQueuedEmail($mailable, $to, $logContext);
 
+            if ($delay > 0) {
+                $job->delay(now()->addSeconds($delay));
+            }
+
+            dispatch($job);
+
+            // CRUCIALE: Avvia il processore fire-and-forget
+            self::triggerQueueProcessor();
+
+            EmailLogService::logQueue("Email accodata per: {$to}");
+
+        } catch (\Exception $e) {
+            EmailLogService::logError('Email Queue', $e, ['to' => $to]);
+        }
+    }
+
+    /**
+     * Avvia il processore coda email via fire-and-forget
+     * Si attiva solo se non è già in esecuzione (throttle 30 secondi)
+     */
+    protected static function triggerQueueProcessor()
+    {
+        try {
+            $lastProcessorRun = \Cache::get('email_processor_last_run', 0);
+            $now = time();
+
+            // Avvia solo se non è stato eseguito negli ultimi 30 secondi
+            if (($now - $lastProcessorRun) > 30) {
+                \Cache::put('email_processor_last_run', $now, 60);
+
+                \App\Http\Controllers\JobController::fireAndForgetGet(
+                    route('job.processEmailQueue'),
+                    ['token' => env('JOB_TOKEN')]
+                );
+
+                EmailLogService::logProcessor('Processore avviato automaticamente');
+            }
+
+        } catch (\Exception $e) {
+            EmailLogService::logError('Trigger Queue Processor', $e);
+        }
+    }
+
+    /**
+     * Invia a tutti gli admin
+     */
+    public static function queueToAdmins($mailable, string $logContext = '')
+    {
+        try {
+            $admins = \App\Models\User::getAdmins();
+
+            if ($admins->isEmpty()) {
+                Log::warning('Nessun admin trovato per la notifica');
+                return;
+            }
+
+            self::queueToUsers($mailable, $admins, $logContext);
+
+        } catch (\Exception $e) {
+            EmailLogService::logError('Queue To Admins', $e);
+        }
+    }
+
+    /**
+     * Invia a più utenti
+     */
+    public static function queueToUsers($mailable, $users, string $logContext = '', int $batchDelay = 0)
+    {
         foreach ($users as $user) {
-            self::queue(clone $mailable, $user, $logContext, $delay);
-            $count++;
-
-            // Aggiungi delay ogni batch per rate limiting
-            if ($count % $batchSize === 0) {
-                $delay += $batchDelay;
+            if (!empty($user->email)) {
+                self::queueSingle($mailable, $user->email, $logContext, 0);
             }
         }
-
-        EmailLogService::logQueue("Accodate {$count} email con delay massimo di {$delay}ms");
     }
 
     /**
-     * Invia email immediatamente (bypass coda)
+     * Invia immediatamente (bypass coda, solo per emergenze)
      */
-    public static function sendImmediate($mailable, $to, string $logContext = '')
+    public static function sendImmediate($mailable, string $to, string $logContext = ''): bool
     {
-        $toEmail = is_string($to) ? $to : $to->email;
-
         try {
-            \Mail::to($toEmail)->send($mailable);
-            EmailLogService::logSend("Email inviata immediatamente a {$toEmail} - {$logContext}");
+            Mail::to($to)->send($mailable);
+            return true;
         } catch (\Exception $e) {
-            EmailLogService::logError('send_immediate', $e, ['to' => $toEmail, 'context' => $logContext]);
-            throw $e;
+            EmailLogService::logError('Send Immediate', $e, ['to' => $to]);
+            return false;
         }
     }
 }
 ```
 
-### 4.2 Job: `app/Jobs/SendQueuedEmail.php`
+### 4.3 Job: `app/Jobs/SendQueuedEmail.php`
 
 ```php
 <?php
@@ -798,7 +998,6 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Support\Facades\Mail;
 use App\Services\EmailLogService;
 
@@ -807,7 +1006,7 @@ class SendQueuedEmail implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 2;
-    public $backoff = [60]; // Retry dopo 60 secondi
+    public $backoff = [60];
     public $timeout = 120;
 
     protected $mailableClass;
@@ -817,18 +1016,11 @@ class SendQueuedEmail implements ShouldQueue
 
     public function __construct($mailable, string $to, string $logContext = '')
     {
+        $this->queue = 'emails'; // IMPORTANTE: usa la coda 'emails'
         $this->mailableClass = get_class($mailable);
         $this->mailableData = $this->extractMailableData($mailable);
         $this->to = $to;
         $this->logContext = $logContext;
-    }
-
-    /**
-     * Rate limiting middleware
-     */
-    public function middleware(): array
-    {
-        return [new RateLimited('emails')];
     }
 
     public function handle(): void
@@ -837,20 +1029,13 @@ class SendQueuedEmail implements ShouldQueue
             $mailable = $this->recreateMailable();
             Mail::to($this->to)->send($mailable);
 
-            EmailLogService::logSend("Email inviata con successo a {$this->to} - {$this->logContext}");
+            EmailLogService::logSend("Email inviata a {$this->to}");
         } catch (\Exception $e) {
-            EmailLogService::logError('send_queued', $e, [
-                'to' => $this->to,
-                'mailable' => $this->mailableClass,
-                'context' => $this->logContext,
-            ]);
+            EmailLogService::logError('send_queued', $e, ['to' => $this->to]);
             throw $e;
         }
     }
 
-    /**
-     * Estrae i dati dal mailable per la serializzazione
-     */
     protected function extractMailableData($mailable): array
     {
         $data = [];
@@ -860,11 +1045,8 @@ class SendQueuedEmail implements ShouldQueue
             $name = $property->getName();
             $value = $property->getValue($mailable);
 
-            // Serializza solo tipi semplici
             if (is_scalar($value) || is_null($value) || is_array($value)) {
                 $data[$name] = $value;
-            } elseif (is_object($value) && method_exists($value, 'toArray')) {
-                $data[$name] = $value->toArray();
             } elseif ($value instanceof \Illuminate\Database\Eloquent\Model) {
                 $data[$name] = ['id' => $value->id, '_class' => get_class($value)];
             }
@@ -873,42 +1055,24 @@ class SendQueuedEmail implements ShouldQueue
         return $data;
     }
 
-    /**
-     * Ricrea il mailable dai dati serializzati
-     */
     protected function recreateMailable()
     {
         $class = $this->mailableClass;
-        $mailable = new $class(...array_values($this->mailableData));
-        return $mailable;
-    }
-
-    public function failed(\Throwable $exception): void
-    {
-        EmailLogService::logError('job_failed', new \Exception($exception->getMessage()), [
-            'to' => $this->to,
-            'mailable' => $this->mailableClass,
-            'attempts' => $this->attempts(),
-        ]);
+        return new $class(...array_values($this->mailableData));
     }
 }
 ```
 
-### 4.3 Rate Limiting per Email
+### 4.4 Route per il Processore
 
-Aggiungi in `app/Providers/AppServiceProvider.php`:
+**Aggiungi in `routes/web.php`:**
 
 ```php
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Support\Facades\RateLimiter;
+use App\Http\Controllers\JobController;
 
-public function boot(): void
-{
-    // Rate limit per email: 2 al secondo
-    RateLimiter::for('emails', function ($job) {
-        return Limit::perSecond(2);
-    });
-}
+// Route per il processore email (protetta da token)
+Route::get("/job/ProcessEmailQueue", [JobController::class, 'processEmailQueue'])
+    ->name("job.processEmailQueue");
 ```
 
 ### 4.4 Mailable: `app/Mail/ErrorNotificationEmail.php`
@@ -1231,18 +1395,19 @@ Puoi usare qualsiasi provider email supportato da Laravel:
 app/
 ├── Http/
 │   └── Controllers/
+│       ├── JobController.php           # ⭐ CRUCIALE: Fire-and-forget + processore email
 │       └── LogsController.php          # Visualizzazione log
 ├── Jobs/
-│   └── SendQueuedEmail.php             # Job invio email
+│   └── SendQueuedEmail.php             # Job invio email (coda 'emails')
 ├── Mail/
 │   └── ErrorNotificationEmail.php      # Mailable errori
 ├── Models/
 │   ├── SystemError.php                 # Model errori
-│   └── User.php                        # (modificare per aggiungere isAdmin, getAdmins)
+│   └── User.php                        # (aggiungere isAdmin, getAdmins)
 ├── Providers/
 │   └── AuthMacroServiceProvider.php    # (opzionale) Macro Auth::admin()
 └── Services/
-    ├── EmailQueueService.php           # Servizio coda email
+    ├── EmailQueueService.php           # ⭐ Servizio coda + trigger processore
     └── EmailLogService.php             # Servizio logging email
 
 bootstrap/
@@ -1263,7 +1428,7 @@ resources/
         └── admin-debug.blade.php       # View debug per admin
 
 routes/
-└── web.php                             # Aggiungere routes admin
+└── web.php                             # Routes admin + job
 ```
 
 ### Routes da Aggiungere
@@ -1273,6 +1438,7 @@ routes/
 
 use App\Http\Controllers\LogsController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\JobController;
 
 // Visualizzazione log
 Route::get('/admin/logs', [LogsController::class, 'index'])
@@ -1295,6 +1461,10 @@ Route::patch('/admin/errors/{error}', [AdminController::class, 'updateError'])
 Route::get('/admin/errors/quick-action/{error}/{action}', [AdminController::class, 'quickActionError'])
     ->name('admin.errors.quick-action')
     ->middleware('auth');
+
+// ⭐ CRUCIALE: Route per il processore email (protetta da JOB_TOKEN)
+Route::get("/job/ProcessEmailQueue", [JobController::class, 'processEmailQueue'])
+    ->name("job.processEmailQueue");
 ```
 
 ---
@@ -1302,6 +1472,10 @@ Route::get('/admin/errors/quick-action/{error}/{action}', [AdminController::clas
 ## 7. Configurazione .env
 
 ```env
+# ========== APP ==========
+APP_NAME="La Tua App"
+APP_URL=http://localhost  # IMPORTANTE: deve essere l'URL corretto per fire-and-forget
+
 # ========== CONFIGURAZIONE EMAIL ==========
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.example.com
@@ -1312,9 +1486,13 @@ MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=noreply@tuodominio.com
 MAIL_FROM_NAME="${APP_NAME}"
 
-# ========== CODA ==========
-# Usa 'database' per la coda persistente
+# ========== CODA (OBBLIGATORIO) ==========
 QUEUE_CONNECTION=database
+
+# ========== TOKEN SICUREZZA JOB (OBBLIGATORIO) ==========
+# Token segreto per proteggere le route dei job
+# Genera con: php artisan tinker -> Str::random(32)
+JOB_TOKEN=il_tuo_token_segreto_qui
 
 # ========== DEBUG ==========
 # Questo valore viene sovrascritto dinamicamente per gli admin
@@ -1323,24 +1501,29 @@ APP_DEBUG=false
 
 ### Configurazione Coda Database
 
-Se usi `QUEUE_CONNECTION=database`, devi creare le tabelle necessarie:
+Devi creare le tabelle per la coda e i job falliti:
 
 ```bash
 php artisan queue:table
+php artisan queue:failed-table
 php artisan migrate
 ```
 
-### Avvio Queue Worker
+Questo crea le tabelle:
+- `jobs` - contiene i job in coda
+- `failed_jobs` - contiene i job falliti
 
-Per processare le email in coda:
+### ⚠️ NON Serve `php artisan queue:work`
 
-```bash
-# Sviluppo
-php artisan queue:work
+**Il sistema Fire and Forget si auto-gestisce:**
 
-# Produzione (con supervisor)
-php artisan queue:work --sleep=3 --tries=3 --max-time=3600
-```
+1. Quando acodi un'email → `EmailQueueService::queue()`
+2. Automaticamente chiama → `triggerQueueProcessor()`
+3. Che fa fire-and-forget verso → `/job/ProcessEmailQueue`
+4. Il processore elabora le email con rate limiting (1/secondo)
+5. Se ci sono altre email, si riavvia automaticamente
+
+**Nessun processo in background necessario!**
 
 ---
 
@@ -1348,7 +1531,7 @@ php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 
 1. **Sicurezza**: Il metodo `Auth::admin()` verifica sempre che l'utente sia autenticato prima di controllare i permessi.
 
-2. **Rate Limiting**: Il sistema limita a 2 email/secondo per evitare di saturare il provider.
+2. **Rate Limiting**: Il sistema limita a 1 email/secondo per evitare di saturare il provider (gestito nel processore, non nel job).
 
 3. **Logging Dedicato**: Le email hanno log separati in `storage/logs/mail/` per facilitare il debug.
 
@@ -1356,28 +1539,60 @@ php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 
 5. **Quick Actions**: Le email di errore includono link per gestire rapidamente l'errore dalla casella email.
 
+6. **Fire and Forget**: NON serve `php artisan queue:work`. Il sistema si auto-attiva quando ci sono email da inviare.
+
+7. **JOB_TOKEN**: Protegge le route dei job da accessi non autorizzati. Genera un token sicuro!
+
+8. **APP_URL**: Deve essere corretto altrimenti il fire-and-forget non funziona (usa fsockopen verso l'host).
+
 ---
 
 ## 🔧 Comandi Utili
 
 ```bash
-# Creare la migration
-php artisan make:migration create_system_errors_table
-
-# Creare il model
-php artisan make:model SystemError
-
-# Creare il mailable
-php artisan make:mail ErrorNotificationEmail
-
-# Creare il job
-php artisan make:job SendQueuedEmail
-
-# Eseguire le migration
+# Creare le tabelle necessarie
+php artisan queue:table
+php artisan queue:failed-table
 php artisan migrate
 
-# Testare le email
+# Generare un JOB_TOKEN sicuro
 php artisan tinker
->>> Mail::to('test@example.com')->send(new \App\Mail\ErrorNotificationEmail(new \Exception('Test')));
+>>> Str::random(32)
+
+# Testare manualmente il processore (browser o curl)
+curl "http://tuodominio.com/job/ProcessEmailQueue?token=TUO_JOB_TOKEN"
+
+# Verificare job in coda
+php artisan tinker
+>>> DB::table('jobs')->where('queue', 'emails')->count()
+
+# Verificare job falliti
+>>> DB::table('failed_jobs')->count()
+
+# Testare accodamento email
+php artisan tinker
+>>> \App\Services\EmailQueueService::queue(new \App\Mail\ErrorNotificationEmail(new \Exception('Test')), 'test@example.com', 'Test manuale');
+```
+
+---
+
+## 🔄 Flusso Completo
+
+```
+1. Si verifica un errore
+        ↓
+2. bootstrap/app.php → reportable() cattura l'eccezione
+        ↓
+3. SystemError::create() → salva nel DB
+        ↓
+4. EmailQueueService::queueToAdmins() → accoda email per tutti gli admin
+        ↓
+5. SendQueuedEmail viene dispatchato → finisce nella tabella 'jobs'
+        ↓
+6. triggerQueueProcessor() → fire-and-forget verso /job/ProcessEmailQueue
+        ↓
+7. JobController::processEmailQueue() → elabora i job con rate limiting
+        ↓
+8. Email inviate! Se ci sono altri job, si riavvia automaticamente
 ```
 
