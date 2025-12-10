@@ -170,13 +170,54 @@ class LogsController extends Controller
     {
         $fileSize = File::size($filePath);
 
+        // Maximum bytes to read into memory when displaying a log file
+        // 2 MB by default to avoid large memory allocations in the web server
+        $maxReadBytes = 2 * 1024 * 1024; // 2MB
+
         try {
-            $content = File::get($filePath);
+            // If file is small enough, read whole file
+            if ($fileSize <= $maxReadBytes) {
+                $content = File::get($filePath);
+                return [
+                    'content' => $content,
+                    'error' => null,
+                    'size' => $fileSize,
+                    'lines' => substr_count($content, "\n") + 1,
+                    'truncated' => false
+                ];
+            }
+
+            // For big files, read only the last $maxReadBytes bytes (tail)
+            $handle = fopen($filePath, 'rb');
+            if ($handle === false) {
+                throw new \Exception('Impossibile aprire il file.');
+            }
+
+            // Seek to the position maxReadBytes bytes from the end
+            if (fseek($handle, -$maxReadBytes, SEEK_END) === 0) {
+                $content = stream_get_contents($handle);
+            } else {
+                // If fseek with negative offset is not supported, fall back to reading last chunk
+                // Move to middle/near-end of file and read remaining
+                fseek($handle, 0, SEEK_END);
+                $pos = ftell($handle);
+                $start = max(0, $pos - $maxReadBytes);
+                fseek($handle, $start);
+                $content = stream_get_contents($handle);
+            }
+            fclose($handle);
+
+            // Prepend an informational header so user understands output is truncated
+            $notice = "[Visualizzati solo gli ultimi " . number_format($maxReadBytes / 1024, 0) . " KB del file; file totale: " . self::formatFileSize($fileSize) . "]\n";
+            $content = $notice . $content;
+
             return [
                 'content' => $content,
                 'error' => null,
                 'size' => $fileSize,
-                'lines' => substr_count($content, "\n") + 1
+                'lines' => substr_count($content, "\n") + 1,
+                'truncated' => true,
+                'truncated_bytes' => $maxReadBytes
             ];
         } catch (\Exception $e) {
             return [

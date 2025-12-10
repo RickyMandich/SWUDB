@@ -63,6 +63,14 @@
                                         onclick="copyToClipboard()" style="z-index: 10;">
                                     <i class="fas fa-copy me-1"></i>Copia
                                 </button>
+
+                                @if(!empty($fileContent['truncated']))
+                                    <div class="alert alert-info m-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Visualizzati solo gli ultimi {{ number_format(($fileContent['truncated_bytes'] ?? (2*1024*1024)) / 1024) }} KB del file. File totale: {{ App\Http\Controllers\LogsController::formatFileSize($fileContent['size'] ?? 0) }}.
+                                    </div>
+                                @endif
+
                                 <pre class="bg-dark text-light p-3 m-0" style="max-height: 70vh; overflow-y: auto; font-size: 0.85rem; line-height: 1.4;"><code id="logContent">{{ $fileContent['content'] ?? '' }}</code></pre>
                             </div>
                         @endif
