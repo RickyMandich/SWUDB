@@ -10,49 +10,47 @@
                         <i class="fas fa-list me-1"></i>Tutte
                     </button>
                     @if($hasActiveFilters)
-                        <button onclick="saveCurrentSearch()" class="btn btn-outline-success btn-sm" title="Salva ricerca corrente">
+                        <button onclick="saveCurrentSearch()" class="btn btn-outline-success btn-sm"
+                            title="Salva ricerca corrente">
                             <i class="fas fa-bookmark me-1"></i>Salva
                         </button>
                         <button onclick="shareCurrentSearch()" class="btn btn-outline-info btn-sm" title="Condividi ricerca">
                             <i class="fas fa-share me-1"></i>Condividi
                         </button>
                     @endif
-                    <button onclick="showSavedSearches()" class="btn btn-outline-warning btn-sm" title="Visualizza ricerche salvate">
+                    <button onclick="showSavedSearches()" class="btn btn-outline-warning btn-sm"
+                        title="Visualizza ricerche salvate">
                         <i class="fas fa-history me-1"></i>Salvate
                     </button>
                 @endif
-                <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm" title="Resetta tutti i filtri">
+                <button wire:click="resetAllFilters" class="btn btn-outline-light btn-sm"
+                    title="Resetta tutti i filtri">
                     <i class="fas fa-undo me-1"></i>Reset
                 </button>
-                <button wire:click="toggleMainFilters" type="button" class="btn btn-outline-light btn-sm" title="Mostra/Nascondi filtri">
+                <button wire:click="toggleMainFilters" type="button" class="btn btn-outline-light btn-sm"
+                    title="Mostra/Nascondi filtri">
                     <i class="fas {{ $mainFiltersOpen ? 'fa-chevron-down' : 'fa-chevron-right' }}"></i>
                 </button>
             </div>
         </div>
 
         @if($mainFiltersOpen)
-        <div class="card-body">
+            <div class="card-body">
 
                 <!-- Filtri principali -->
                 <div class="row g-3">
                     <!-- Nome -->
                     <div class="col-md-4">
                         <label for="nome" class="form-label fw-bold">Nome della carta</label>
-                        <input type="text"
-                               wire:model.live.debounce.300ms="nome"
-                               class="form-control"
-                               id="nome"
-                               placeholder="Inserisci il nome...">
+                        <input type="text" wire:model.live.debounce.300ms="nome" class="form-control" id="nome"
+                            placeholder="Inserisci il nome...">
                     </div>
 
                     <!-- Titolo -->
                     <div class="col-md-4">
                         <label for="titolo" class="form-label fw-bold">Titolo</label>
-                        <input type="text"
-                               wire:model.live.debounce.300ms="titolo"
-                               class="form-control"
-                               id="titolo"
-                               placeholder="Inserisci il titolo...">
+                        <input type="text" wire:model.live.debounce.300ms="titolo" class="form-control" id="titolo"
+                            placeholder="Inserisci il titolo...">
                     </div>
 
                     <!-- Espansione -->
@@ -128,27 +126,22 @@
                         <i class="fas {{ $advancedFiltersOpen ? 'fa-chevron-up' : 'fa-chevron-down' }} ms-1"></i>
                     </button>
 
-                    <div class="{{ $advancedFiltersOpen ? 'd-block' : 'd-none' }}" id="advancedFilters" style="transition: all 0.3s ease;">
+                    <div class="{{ $advancedFiltersOpen ? 'd-block' : 'd-none' }}" id="advancedFilters"
+                        style="transition: all 0.3s ease;">
                         <div class="row g-3">
                             <!-- Costo -->
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Costo</label>
                                 <div class="row g-2">
                                     <div class="col">
-                                        <input type="number"
-                                               wire:model.live="costoMin"
-                                               class="form-control"
-                                               placeholder="Min"
-                                               min="0" max="{{ $maxCostoDb }}">
+                                        <input type="number" wire:model.live="costoMin" class="form-control"
+                                            placeholder="Min" min="0" max="{{ $maxCostoDb }}">
                                     </div>
                                     <div class="col-auto align-self-center">-</div>
                                     <div class="col">
-                                        <input type="number"
-                                               wire:model.live="costoMax"
-                                               class="form-control"
-                                               oninput="checkMax(this)"
-                                               placeholder="Max ({{ $maxCostoDb }})"
-                                               min="0" max="{{ $maxCostoDb }}">
+                                        <input type="number" wire:model.live="costoMax" class="form-control"
+                                            oninput="checkMax(this)" placeholder="Max ({{ $maxCostoDb }})" min="0"
+                                            max="{{ $maxCostoDb }}">
                                     </div>
                                 </div>
                             </div>
@@ -158,20 +151,14 @@
                                 <label class="form-label fw-bold">Potenza</label>
                                 <div class="row g-2">
                                     <div class="col">
-                                        <input type="number"
-                                               wire:model.live="potenzaMin"
-                                               class="form-control"
-                                               placeholder="Min"
-                                               min="0" max="{{ $maxPotenzaDb }}">
+                                        <input type="number" wire:model.live="potenzaMin" class="form-control"
+                                            placeholder="Min" min="0" max="{{ $maxPotenzaDb }}">
                                     </div>
                                     <div class="col-auto align-self-center">-</div>
                                     <div class="col">
-                                        <input type="number"
-                                               wire:model.live="potenzaMax"
-                                               class="form-control"
-                                               oninput="checkMax(this)"
-                                               placeholder="Max ({{ $maxPotenzaDb }})"
-                                               min="0" max="{{ $maxPotenzaDb }}">
+                                        <input type="number" wire:model.live="potenzaMax" class="form-control"
+                                            oninput="checkMax(this)" placeholder="Max ({{ $maxPotenzaDb }})" min="0"
+                                            max="{{ $maxPotenzaDb }}">
                                     </div>
                                 </div>
                             </div>
@@ -181,20 +168,14 @@
                                 <label class="form-label fw-bold">Vita</label>
                                 <div class="row g-2">
                                     <div class="col">
-                                        <input type="number"
-                                               wire:model.live="vitaMin"
-                                               class="form-control"
-                                               placeholder="Min"
-                                               min="0" max="{{ $maxVitaDb }}">
+                                        <input type="number" wire:model.live="vitaMin" class="form-control"
+                                            placeholder="Min" min="0" max="{{ $maxVitaDb }}">
                                     </div>
                                     <div class="col-auto align-self-center">-</div>
                                     <div class="col">
-                                        <input type="number"
-                                               wire:model.live="vitaMax"
-                                               class="form-control"
-                                               oninput="checkMax(this)"
-                                               placeholder="Max ({{ $maxVitaDb }})"
-                                               min="0" max="{{ $maxVitaDb }}">
+                                        <input type="number" wire:model.live="vitaMax" class="form-control"
+                                            oninput="checkMax(this)" placeholder="Max ({{ $maxVitaDb }})" min="0"
+                                            max="{{ $maxVitaDb }}">
                                     </div>
                                 </div>
                             </div>
@@ -202,11 +183,8 @@
                             <!-- Tratti -->
                             <div class="col-md-6">
                                 <label for="tratti" class="form-label fw-bold">Tratti</label>
-                                <input type="text"
-                                       wire:model.live.debounce.300ms="tratti"
-                                       class="form-control"
-                                       id="tratti"
-                                       placeholder="Cerca nei tratti...">
+                                <input type="text" wire:model.live.debounce.300ms="tratti" class="form-control" id="tratti"
+                                    placeholder="Cerca nei tratti...">
                             </div>
 
                             <!-- Arena -->
@@ -241,9 +219,9 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // Gestione ESC per chiudere i filtri avanzati
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 const advancedFilters = document.getElementById('advancedFilters');
                 if (advancedFilters && !advancedFilters.classList.contains('d-none')) {
@@ -253,10 +231,8 @@
         });
     });
     function checkMax(input) {
-        console.log(input);
-        console.log(input.value);
-        if(empty(input.value)){
-            input.value = undefined;
+        if (!input.value || input.value === '') {
+            input.value = '';
         }
     }
 
@@ -423,7 +399,7 @@
 
         // Remove modal from DOM when hidden
         // Rimuovi modal dal DOM quando nascosto
-        document.getElementById('savedSearchesModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('savedSearchesModal').addEventListener('hidden.bs.modal', function () {
             this.remove();
         });
     }

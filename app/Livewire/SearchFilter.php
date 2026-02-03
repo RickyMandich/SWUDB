@@ -160,7 +160,7 @@ class SearchFilter extends Component
                 // Convert numeric parameters
                 // Converti parametri numerici
                 if (in_array($param, ['costoMin', 'costoMax', 'potenzaMin', 'potenzaMax', 'vitaMin', 'vitaMax'])) {
-                    $value = is_numeric($value) ? (int)$value : null;
+                    $value = is_numeric($value) ? (int) $value : null;
                 }
 
                 // Convert boolean parameters
@@ -183,22 +183,22 @@ class SearchFilter extends Component
     private function hasActiveFilters()
     {
         return !empty($this->nome) ||
-               !empty($this->titolo) ||
-               !empty($this->espansione) ||
-               !empty($this->tipo) ||
-               !empty($this->aspettoPrimario) ||
-               !empty($this->aspettoSecondario) ||
-               !empty($this->rarita) ||
-               $this->costoMin !== null ||
-               $this->costoMax !== null ||
-               $this->potenzaMin !== null ||
-               $this->potenzaMax !== null ||
-               $this->vitaMin !== null ||
-               $this->vitaMax !== null ||
-               !empty($this->tratti) ||
-               !empty($this->arena) ||
-               $this->unica !== null ||
-               !empty($this->artista);
+            !empty($this->titolo) ||
+            !empty($this->espansione) ||
+            !empty($this->tipo) ||
+            !empty($this->aspettoPrimario) ||
+            !empty($this->aspettoSecondario) ||
+            !empty($this->rarita) ||
+            $this->costoMin !== null ||
+            $this->costoMax !== null ||
+            $this->potenzaMin !== null ||
+            $this->potenzaMax !== null ||
+            $this->vitaMin !== null ||
+            $this->vitaMax !== null ||
+            !empty($this->tratti) ||
+            !empty($this->arena) ||
+            $this->unica !== null ||
+            !empty($this->artista);
     }
 
     /**
@@ -292,13 +292,40 @@ class SearchFilter extends Component
      */
     public function applyFilters()
     {
-        // Normalizza i valori vuoti dei filtri numerici in null
+        // Assicura che i filtri siano scalari (non array) e gestisce i tipi corretti
+        $this->nome = is_array($this->nome) ? (string) ($this->nome[0] ?? '') : (string) $this->nome;
+        $this->titolo = is_array($this->titolo) ? (string) ($this->titolo[0] ?? '') : (string) $this->titolo;
+        $this->espansione = is_array($this->espansione) ? (string) ($this->espansione[0] ?? '') : (string) $this->espansione;
+        $this->tipo = is_array($this->tipo) ? (string) ($this->tipo[0] ?? '') : (string) $this->tipo;
+        $this->aspettoPrimario = is_array($this->aspettoPrimario) ? (string) ($this->aspettoPrimario[0] ?? '') : (string) $this->aspettoPrimario;
+        $this->aspettoSecondario = is_array($this->aspettoSecondario) ? (string) ($this->aspettoSecondario[0] ?? '') : (string) $this->aspettoSecondario;
+        $this->rarita = is_array($this->rarita) ? (string) ($this->rarita[0] ?? '') : (string) $this->rarita;
+        $this->tratti = is_array($this->tratti) ? (string) ($this->tratti[0] ?? '') : (string) $this->tratti;
+        $this->arena = is_array($this->arena) ? (string) ($this->arena[0] ?? '') : (string) $this->arena;
+        $this->artista = is_array($this->artista) ? (string) ($this->artista[0] ?? '') : (string) $this->artista;
+
+        // Normalizza i valori vuoti o array dei filtri numerici in null
         foreach (['costoMin', 'costoMax', 'potenzaMin', 'potenzaMax', 'vitaMin', 'vitaMax', 'unica'] as $field) {
-            if ($this->$field === '' || $this->$field === false) {
+            $val = $this->$field;
+
+            // Se è un array, prendi il primo elemento
+            if (is_array($val)) {
+                $val = !empty($val) ? reset($val) : null;
+            }
+
+            // Normalizza valori vuoti o "falsy"
+            if ($val === '' || $val === false || $val === 'null' || $val === 'undefined') {
                 $this->$field = null;
+            } else if ($val !== null) {
+                // Per 'unica' gestiamo come booleano, per gli altri come intero
+                if ($field === 'unica') {
+                    $this->$field = in_array($val, [1, '1', true, 'true'], true);
+                } else {
+                    $this->$field = (int) $val;
+                }
             }
         }
-        
+
         $query = Card::query();
 
         // Filtro per nome
@@ -337,29 +364,29 @@ class SearchFilter extends Component
         }
 
         // Filtro per costo (solo se specificato)
-        if ($this->costoMin !== null || ($this->costoMax !== null && $this->costoMax < $this->maxCostoDb)) {
+        if ($this->costoMin !== null || ($this->costoMax !== null && (int) $this->costoMax < (int) $this->maxCostoDb)) {
             $minCosto = $this->costoMin ?? 0;
             $maxCosto = $this->costoMax ?? $this->maxCostoDb;
-            $query->whereBetween('costo', [$minCosto, $maxCosto]);
+            $query->whereBetween('costo', [(int) $minCosto, (int) $maxCosto]);
         }
 
         // Filtro per potenza (solo se specificato)
-        if ($this->potenzaMin !== null || ($this->potenzaMax !== null && $this->potenzaMax < $this->maxPotenzaDb)) {
+        if ($this->potenzaMin !== null || ($this->potenzaMax !== null && (int) $this->potenzaMax < (int) $this->maxPotenzaDb)) {
             $minPotenza = $this->potenzaMin ?? 0;
             $maxPotenza = $this->potenzaMax ?? $this->maxPotenzaDb;
-            $query->where(function($q) use ($minPotenza, $maxPotenza) {
+            $query->where(function ($q) use ($minPotenza, $maxPotenza) {
                 $q->whereNull('potenza')
-                  ->orWhereBetween('potenza', [$minPotenza, $maxPotenza]);
+                    ->orWhereBetween('potenza', [(int) $minPotenza, (int) $maxPotenza]);
             });
         }
 
         // Filtro per vita (solo se specificato)
-        if ($this->vitaMin !== null || ($this->vitaMax !== null && $this->vitaMax < $this->maxVitaDb)) {
+        if ($this->vitaMin !== null || ($this->vitaMax !== null && (int) $this->vitaMax < (int) $this->maxVitaDb)) {
             $minVita = $this->vitaMin ?? 0;
             $maxVita = $this->vitaMax ?? $this->maxVitaDb;
-            $query->where(function($q) use ($minVita, $maxVita) {
+            $query->where(function ($q) use ($minVita, $maxVita) {
                 $q->whereNull('vita')
-                  ->orWhereBetween('vita', [$minVita, $maxVita]);
+                    ->orWhereBetween('vita', [(int) $minVita, (int) $maxVita]);
             });
         }
 
@@ -419,23 +446,40 @@ class SearchFilter extends Component
 
         // Add non-empty filter values to URL parameters
         // Aggiungi valori di filtro non vuoti ai parametri URL
-        if (!empty($this->nome)) $params['nome'] = $this->nome;
-        if (!empty($this->titolo)) $params['titolo'] = $this->titolo;
-        if (!empty($this->espansione)) $params['espansione'] = $this->espansione;
-        if (!empty($this->tipo)) $params['tipo'] = $this->tipo;
-        if (!empty($this->aspettoPrimario)) $params['aspettoPrimario'] = $this->aspettoPrimario;
-        if (!empty($this->aspettoSecondario)) $params['aspettoSecondario'] = $this->aspettoSecondario;
-        if (!empty($this->rarita)) $params['rarita'] = $this->rarita;
-        if ($this->costoMin !== null) $params['costoMin'] = $this->costoMin;
-        if ($this->costoMax !== null) $params['costoMax'] = $this->costoMax;
-        if ($this->potenzaMin !== null) $params['potenzaMin'] = $this->potenzaMin;
-        if ($this->potenzaMax !== null) $params['potenzaMax'] = $this->potenzaMax;
-        if ($this->vitaMin !== null) $params['vitaMin'] = $this->vitaMin;
-        if ($this->vitaMax !== null) $params['vitaMax'] = $this->vitaMax;
-        if (!empty($this->tratti)) $params['tratti'] = $this->tratti;
-        if (!empty($this->arena)) $params['arena'] = $this->arena;
-        if ($this->unica !== null) $params['unica'] = $this->unica ? '1' : '0';
-        if (!empty($this->artista)) $params['artista'] = $this->artista;
+        if (!empty($this->nome))
+            $params['nome'] = $this->nome;
+        if (!empty($this->titolo))
+            $params['titolo'] = $this->titolo;
+        if (!empty($this->espansione))
+            $params['espansione'] = $this->espansione;
+        if (!empty($this->tipo))
+            $params['tipo'] = $this->tipo;
+        if (!empty($this->aspettoPrimario))
+            $params['aspettoPrimario'] = $this->aspettoPrimario;
+        if (!empty($this->aspettoSecondario))
+            $params['aspettoSecondario'] = $this->aspettoSecondario;
+        if (!empty($this->rarita))
+            $params['rarita'] = $this->rarita;
+        if ($this->costoMin !== null)
+            $params['costoMin'] = $this->costoMin;
+        if ($this->costoMax !== null)
+            $params['costoMax'] = $this->costoMax;
+        if ($this->potenzaMin !== null)
+            $params['potenzaMin'] = $this->potenzaMin;
+        if ($this->potenzaMax !== null)
+            $params['potenzaMax'] = $this->potenzaMax;
+        if ($this->vitaMin !== null)
+            $params['vitaMin'] = $this->vitaMin;
+        if ($this->vitaMax !== null)
+            $params['vitaMax'] = $this->vitaMax;
+        if (!empty($this->tratti))
+            $params['tratti'] = $this->tratti;
+        if (!empty($this->arena))
+            $params['arena'] = $this->arena;
+        if ($this->unica !== null)
+            $params['unica'] = $this->unica ? '1' : '0';
+        if (!empty($this->artista))
+            $params['artista'] = $this->artista;
 
         // Build URL based on current mode
         // Costruisci URL basato sulla modalità corrente
@@ -530,23 +574,74 @@ class SearchFilter extends Component
 
     // Real-time filter update methods - automatically trigger when properties change
     // Metodi di aggiornamento filtri in tempo reale - si attivano automaticamente quando cambiano le proprietà
-    public function updatedNome() { $this->applyFilters(); }
-    public function updatedTitolo() { $this->applyFilters(); }
-    public function updatedEspansione() { $this->applyFilters(); }
-    public function updatedTipo() { $this->applyFilters(); }
-    public function updatedAspettoPrimario() { $this->applyFilters(); }
-    public function updatedAspettoSecondario() { $this->applyFilters(); }
-    public function updatedRarita() { $this->applyFilters(); }
-    public function updatedCostoMin() { $this->applyFilters(); }
-    public function updatedCostoMax() { $this->applyFilters(); }
-    public function updatedPotenzaMin() { $this->applyFilters(); }
-    public function updatedPotenzaMax() { $this->applyFilters(); }
-    public function updatedVitaMin() { $this->applyFilters(); }
-    public function updatedVitaMax() { $this->applyFilters(); }
-    public function updatedTratti() { $this->applyFilters(); }
-    public function updatedArena() { $this->applyFilters(); }
-    public function updatedUnica() { $this->applyFilters(); }
-    public function updatedArtista() { $this->applyFilters(); }
+    public function updatedNome()
+    {
+        $this->applyFilters();
+    }
+    public function updatedTitolo()
+    {
+        $this->applyFilters();
+    }
+    public function updatedEspansione()
+    {
+        $this->applyFilters();
+    }
+    public function updatedTipo()
+    {
+        $this->applyFilters();
+    }
+    public function updatedAspettoPrimario()
+    {
+        $this->applyFilters();
+    }
+    public function updatedAspettoSecondario()
+    {
+        $this->applyFilters();
+    }
+    public function updatedRarita()
+    {
+        $this->applyFilters();
+    }
+    public function updatedCostoMin()
+    {
+        $this->applyFilters();
+    }
+    public function updatedCostoMax()
+    {
+        $this->applyFilters();
+    }
+    public function updatedPotenzaMin()
+    {
+        $this->applyFilters();
+    }
+    public function updatedPotenzaMax()
+    {
+        $this->applyFilters();
+    }
+    public function updatedVitaMin()
+    {
+        $this->applyFilters();
+    }
+    public function updatedVitaMax()
+    {
+        $this->applyFilters();
+    }
+    public function updatedTratti()
+    {
+        $this->applyFilters();
+    }
+    public function updatedArena()
+    {
+        $this->applyFilters();
+    }
+    public function updatedUnica()
+    {
+        $this->applyFilters();
+    }
+    public function updatedArtista()
+    {
+        $this->applyFilters();
+    }
 
     /**
      * Toggle the advanced filters section open/closed state

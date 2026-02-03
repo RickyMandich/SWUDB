@@ -1,61 +1,61 @@
 # todo list
 ## Effettiva
-- ~~sistemare l'intestazione dell'immagine~~
-- ~~sistemare icona unica~~
-- ~~sistemare webscraping segnalini~~
-- ~~sistemare l'accesso a mazzi~~
-- ~~sistemare i popup~~
-- ~~sistemare webscraping descrizione leader~~
-- ~~sistemare visualizzazione descrizione leader~~
-- ~~sistemare la posizion del footer~~
-- ~~sistemare la posizione dei messaggi di errore~~
-- ~~scrivere i termini di servizio~~
-- ~~scrivere le traduzioni~~
-- ~~sistemare bordi aggiunta/rimozione carte~~
-- ~~sistemare la barra di ricerca nella navbar~~
-- ~~sistemare la generazione dell'uscita della carta~~
-- ~~aggiustare il tasto di aggiunta carte~~
-- ~~impostare i thread per la gestione dell'inserimento carte~~
-- ~~migliorare i thread per la gestione dell'inserimento carte~~
-- ~~sistemare il footer (link Mandich Riccardo)~~
-- ~~refreshare tutte le carte~~
-- ~~far funzionare le mail~~
-- ~~sistemare il testo delle mail di aggiunta nuove carte~~
-- ~~sistemare l'esistenza dei link next/back nelle carte~~
-- ~~creazione di mail alias `info@unlimiteddb.net`~~
-- ~~filtri di ricerca~~
+- [X] [X] ~~sistemare l'intestazione dell'immagine~~
+- [X] [X] ~~sistemare icona unica~~
+- [X] ~~sistemare webscraping segnalini~~
+- [X] ~~sistemare l'accesso a mazzi~~
+- [X] ~~sistemare i popup~~
+- [X] ~~sistemare webscraping descrizione leader~~
+- [X] ~~sistemare visualizzazione descrizione leader~~
+- [X] ~~sistemare la posizion del footer~~
+- [X] ~~sistemare la posizione dei messaggi di errore~~
+- [X] ~~scrivere i termini di servizio~~
+- [X] ~~scrivere le traduzioni~~
+- [X] ~~sistemare bordi aggiunta/rimozione carte~~
+- [X] ~~sistemare la barra di ricerca nella navbar~~
+- [X] ~~sistemare la generazione dell'uscita della carta~~
+- [X] ~~aggiustare il tasto di aggiunta carte~~
+- [X] ~~impostare i thread per la gestione dell'inserimento carte~~
+- [X] ~~migliorare i thread per la gestione dell'inserimento carte~~
+- [X] ~~sistemare il footer (link Mandich Riccardo)~~
+- [X] ~~refreshare tutte le carte~~
+- [X] ~~far funzionare le mail~~
+- [X] ~~sistemare il testo delle mail di aggiunta nuove carte~~
+- [X] ~~sistemare l'esistenza dei link next/back nelle carte~~
+- [X] ~~creazione di mail alias `info@unlimiteddb.net`~~
+- [X] ~~filtri di ricerca~~
     - ~~fare in modo che se io apro i filtri avanzati e modifico qualcosa nel caricamento non venga richiusa in automatico la sezione filtri avanzati~~
-- ~~aggiustare il popup di aggiunta carte~~
-- ~~trasformazione delle analisi delle carte in grafici~~
-- ~~gestione della collezione~~
-- ~~analisi delle statistiche delle carte nei mazzi~~
+- [X] ~~aggiustare il popup di aggiunta carte~~
+- [X] ~~trasformazione delle analisi delle carte in grafici~~
+- [X] ~~gestione della collezione~~
+- [X] ~~analisi delle statistiche delle carte nei mazzi~~
     - ~~numero carte x costo e per tipo~~
     - ~~tratti~~
         - ~~divisi~~
         - ~~non divisi~~
     - ~~hp/potenza media~~
     - ~~sistemare la larghezza dei card su mobile~~
-- ~~Implementazione di cache per migliorare le performance~~
-- ~~ottimizzare il popup di aggiunta carte~~
-- ~~Funzionalità di esportazione mazzi in formato TXT e JSON~~
-- ~~Funzionalità di importazione mazzi da URL o file~~
+- [X] ~~Implementazione di cache per migliorare le performance~~
+- [X] ~~ottimizzare il popup di aggiunta carte~~
+- [X] ~~Funzionalità di esportazione mazzi in formato TXT e JSON~~
+- [X] ~~Funzionalità di importazione mazzi da URL o file~~
     - ~~import da url rotto~~
-- ~~aggiornare l'index dei mazzi~~
-- ~~limitare le notifiche telegram durante l'invio dei batch~~
-- ~~miglioramento pagina utenti per la gestione di admin~~
-- ~~Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update) (il progetto java si trova nella cartella WebScrapingStarWars, che è un clone del repository https://github.com/RickyMandich/WebScrapingStarWars.git)~~
-- ~~Sistema di versionamento per i mazzi~~
-- ~~gestire l'attributo get "name" nella pagina carte per impostare già il filtro, attenzione che si refresha con un oninput o simile, quindi non basta un value="{{ $_GET['nome'] }} nel capo input del filtro del nome~~
-- ~~riscrivi completamente l'aggiornamento del DB con nuove carte prendendole direttamente dall'api del sito ufficiale (esempio di api singola carta: "https://admin.starwarsunlimited.com/api/card/" + cid + "?locale=it", puoi trovare un esempio di json nella cartella example, esempio di api elenco carte: "https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&pagination[page]=" + page + "&pagination[pageSize]=10", puoi trovare un esempio di json nella cartella example), cerca di semplificare e ottimizzare il più possibile il processo mantenendo un sistema di notifiche tramite telegram per comunicare lo stato delle operazioni, gestisci tutto con un'unico messaggio che viene modificato nel tempo e gestisci anche il fatto che venga effettuata una verifica che la carta non sia già presente, manda una mail a tutti gli utenti con le carte aggiunte e agli admin con le carte che hanno lanciato errori/eccezioni o che erano già presenti, inserisci anche il motivo specifico per cui non sono state inserite~~
-- ~~creare un pagina admin "errori" che mostra tutti gli errori che si sono verificati e che permette di segnarli come completati, devono venire salvati quando si creano (oltre alla già presente gestione con visualizzazione dettagliata per gli admin e notifica tramite telegram e tramite mail), visto che stiamo creando una nuova pagina bisogna anche aggiungere il relativo pulsante (direi che basta nel pannello admin), decidi tu in base a cosa ti sembra più opportuno se creare una nuova entità nel DB o se gestirlo tramite file json~~
-- ~~aggiornare la documentazione~~
-- ~~generazione di una guida avanzata e comprensione completa del progetto~~
-- ~~aggiungere i pulsanti "segna come ignorato" e "segna come risolto" nell'elenco degli errori e nella mail di comunicazione, nella mail metti anche il link all'errore~~
-- ~~aggiungere pulsanti per segnare come risolti o ignorati tutti i nuovi errori, e possibilità di selezione multipla per assegnare stati specifici a errori selezionati~~
-- ~~sistemare i filtri per unica~~
-- ~~creare pagina admin di gestione espansioni e rotazioni~~
-- ~~sistemare la gestione dei messaggi telegram~~
-- aggiungere il link al filtro per espansione quando si preme sopra alla relativa espansione nella carta
+- [X] ~~aggiornare l'index dei mazzi~~
+- [X] ~~limitare le notifiche telegram durante l'invio dei batch~~
+- [X] ~~miglioramento pagina utenti per la gestione di admin~~
+- [X] ~~Migrazione del sistema di webscraping da Java a Laravel (integrazione nella pagina update) (il progetto java si trova nella cartella WebScrapingStarWars, che è un clone del repository https://github.com/RickyMandich/WebScrapingStarWars.git)~~
+- [X] ~~Sistema di versionamento per i mazzi~~
+- [X] ~~gestire l'attributo get "name" nella pagina carte per impostare già il filtro, attenzione che si refresha con un oninput o simile, quindi non basta un value="{{ $_GET['nome'] }} nel capo input del filtro del nome~~
+- [X] ~~riscrivi completamente l'aggiornamento del DB con nuove carte prendendole direttamente dall'api del sito ufficiale (esempio di api singola carta: "https://admin.starwarsunlimited.com/api/card/" + cid + "?locale=it", puoi trovare un esempio di json nella cartella example, esempio di api elenco carte: "https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&pagination[page]=" + page + "&pagination[pageSize]=10", puoi trovare un esempio di json nella cartella example), cerca di semplificare e ottimizzare il più possibile il processo mantenendo un sistema di notifiche tramite telegram per comunicare lo stato delle operazioni, gestisci tutto con un'unico messaggio che viene modificato nel tempo e gestisci anche il fatto che venga effettuata una verifica che la carta non sia già presente, manda una mail a tutti gli utenti con le carte aggiunte e agli admin con le carte che hanno lanciato errori/eccezioni o che erano già presenti, inserisci anche il motivo specifico per cui non sono state inserite~~
+- [X] ~~creare un pagina admin "errori" che mostra tutti gli errori che si sono verificati e che permette di segnarli come completati, devono venire salvati quando si creano (oltre alla già presente gestione con visualizzazione dettagliata per gli admin e notifica tramite telegram e tramite mail), visto che stiamo creando una nuova pagina bisogna anche aggiungere il relativo pulsante (direi che basta nel pannello admin), decidi tu in base a cosa ti sembra più opportuno se creare una nuova entità nel DB o se gestirlo tramite file json~~
+- [X] ~~aggiornare la documentazione~~
+- [X] ~~generazione di una guida avanzata e comprensione completa del progetto~~
+- [X] ~~aggiungere i pulsanti "segna come ignorato" e "segna come risolto" nell'elenco degli errori e nella mail di comunicazione, nella mail metti anche il link all'errore~~
+- [X] ~~aggiungere pulsanti per segnare come risolti o ignorati tutti i nuovi errori, e possibilità di selezione multipla per assegnare stati specifici a errori selezionati~~
+- [X] ~~sistemare i filtri per unica~~
+- [X] ~~creare pagina admin di gestione espansioni e rotazioni~~
+- [X] ~~sistemare la gestione dei messaggi telegram~~
+- [X] aggiungere il link al filtro per espansione quando si preme sopra alla relativa espansione nella carta
 
 
 ## Funzionalità Future
