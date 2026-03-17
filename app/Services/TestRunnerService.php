@@ -27,19 +27,22 @@ class TestRunnerService
             mkdir(dirname($logPath), 0755, true);
         }
 
-        // Lancia il comando 'php artisan test' come sottoprocesso CLI
-        // Questo evita l'errore di variabili mancanti (come 'argv') tipico delle richieste web
-        $process = new Process([PHP_BINARY, 'artisan', 'test', "--log-junit={$logPath}"]);
-        $process->setWorkingDirectory(base_path());
-        $process->setTimeout(300); // 5 minuti di timeout
-        
+        // Mock dell'ambiente CLI per Collision/PHPUnit in contesto web
+        // Questo risolve l'errore "Undefined array key 'argv'"
+        if (!isset($_SERVER['argv'])) {
+            $_SERVER['argv'] = [base_path('artisan'), 'test'];
+            $_SERVER['argc'] = count($_SERVER['argv']);
+        }
+
         $startTime = microtime(true);
-        $process->run();
+        
+        // Eseguiamo i test tramite Artisan
+        $exitCode = Artisan::call('test', ["--log-junit" => $logPath]);
+        
         $duration = microtime(true) - $startTime;
 
-        $output = $process->getOutput() ?: $process->getErrorOutput();
-        $exitCode = $process->getExitCode();
-        $passed = $process->isSuccessful();
+        $output = Artisan::output();
+        $passed = ($exitCode === 0);
         
         $result = TestResult::create([
             'test_name' => 'Suite Completa Feature Tests',
