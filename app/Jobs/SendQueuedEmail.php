@@ -276,6 +276,9 @@ class SendQueuedEmail implements ShouldQueue
             $data['expansion'] = $mailable->expansion ?? [];
         } elseif ($mailable instanceof \App\Mail\ImportErrorsNotification) {
             $data['stats'] = $mailable->stats ?? [];
+        } elseif ($mailable instanceof \App\Mail\AdministratorAnnouncement) {
+            $data['subject'] = $mailable->subject ?? '';
+            $data['messageBody'] = $mailable->messageBody ?? '';
         }
 
         // Debug logging for mailable class detection
@@ -331,6 +334,12 @@ class SendQueuedEmail implements ShouldQueue
             case 'App\\Mail\\ImportErrorsNotification':
                 $stats = $this->mailableData['stats'] ?? [];
                 return new \App\Mail\ImportErrorsNotification($stats);
+
+            case 'App\\Mail\\AdministratorAnnouncement':
+                return new \App\Mail\AdministratorAnnouncement(
+                    $this->mailableData['subject'] ?? '',
+                    $this->mailableData['messageBody'] ?? ''
+                );
 
             default:
                 // Fallback: try to create with reflection

@@ -84,6 +84,11 @@
                                                 <span class="col-9">costo:</span>
                                                 <span class="m-auto text-warning align-self-end col-3">${carta.costo}</span> <br>
                                             </div>
+                                            <div class="row mb-1">
+                                                <div class="col-12">
+                                                    ${(carta.aspects || []).map(a => `<span class="badge" style="background-color: ${a.colore}; font-size: 0.7rem; color: ${a.nome === 'Eroismo' ? '#000' : '#fff'}">${a.nome}</span>`).join(' ')}
+                                                </div>
+                                            </div>
                                             <div class="row">
                                                 <span class="col-9">potenza:</span>
                                                 <span class="m-auto text-danger align-self-end col-3">${carta.potenza || '-'}</span> <br>

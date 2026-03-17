@@ -228,21 +228,11 @@ class SearchFilter extends Component
                 ->pluck('tipo');
         });
 
-        $this->aspettiPrimari = Cache::remember('cards_filter_aspetti_primari', 3600, function () {
-            return Card::select('aspettoPrimario')
-                ->distinct()
-                ->whereNotNull('aspettoPrimario')
-                ->orderBy('aspettoPrimario')
-                ->pluck('aspettoPrimario');
+        $this->aspettiPrimari = Cache::remember('cards_filter_aspetti', 3600, function () {
+            return \App\Models\Aspect::orderBy('nome')->pluck('nome');
         });
 
-        $this->aspettiSecondari = Cache::remember('cards_filter_aspetti_secondari', 3600, function () {
-            return Card::select('aspettoSecondario')
-                ->distinct()
-                ->whereNotNull('aspettoSecondario')
-                ->orderBy('aspettoSecondario')
-                ->pluck('aspettoSecondario');
-        });
+        $this->aspettiSecondari = $this->aspettiPrimari; // Reuso la stessa lista
 
         $this->rarita_options = Cache::remember('cards_filter_rarita', 3600, function () {
             return Card::select('rarita')
@@ -326,7 +316,7 @@ class SearchFilter extends Component
             }
         }
 
-        $query = Card::query();
+        $query = Card::query()->with('aspects');
 
         // Filtro per nome
         if (!empty($this->nome)) {
@@ -348,14 +338,17 @@ class SearchFilter extends Component
             $query->where('tipo', $this->tipo);
         }
 
-        // Filtro per aspetto primario
+        // Filtro per aspetti (nuova gestione many-to-many)
         if (!empty($this->aspettoPrimario)) {
-            $query->where('aspettoPrimario', $this->aspettoPrimario);
+            $query->whereHas('aspects', function($q) {
+                $q->where('nome', $this->aspettoPrimario);
+            });
         }
 
-        // Filtro per aspetto secondario
         if (!empty($this->aspettoSecondario)) {
-            $query->where('aspettoSecondario', $this->aspettoSecondario);
+            $query->whereHas('aspects', function($q) {
+                $q->where('nome', $this->aspettoSecondario);
+            });
         }
 
         // Filtro per rarità
@@ -554,7 +547,7 @@ class SearchFilter extends Component
      */
     public function loadAllCards()
     {
-        $results = Card::all();
+        $results = Card::with('aspects')->get();
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$results->isEmpty()) {

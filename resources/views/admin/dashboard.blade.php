@@ -139,30 +139,45 @@
                                     <h6><i class="fas fa-tools me-1"></i>Strumenti Amministrativi</h6>
                                 </div>
                                 <div class="card-body">
-                                    <div class="d-grid gap-2">
-                                        <a href="{{ route('users.index') }}" class="btn btn-outline-primary">
-                                            <i class="fas fa-users me-2"></i>Gestione Utenti
-                                        </a>
-                                        <a href="{{ route('admin.query') }}" class="btn btn-outline-secondary">
-                                            <i class="fas fa-database me-2"></i>Query Database
-                                        </a>
-                                        <a href="{{ route('admin.logs') }}" class="btn btn-outline-warning">
-                                            <i class="fas fa-file-alt me-2"></i>Gestione Logs
-                                        </a>
+                                    <h6 class="text-muted border-bottom pb-2 mb-3"><i class="fas fa-database me-2"></i>Gestione Dati</h6>
+                                    <div class="d-grid gap-2 mb-4">
                                         <a href="{{ route('carte.update') }}" class="btn btn-outline-success">
                                             <i class="fas fa-sync-alt me-2"></i>Aggiorna Database Carte
-                                        </a>
-                                        <a href="/api/telegram/setup-webhook" class="btn btn-outline-info" target="_blank">
-                                            <i class="fas fa-robot me-2"></i>Imposta Webhook Telegram
                                         </a>
                                         <a href="{{ route('admin.expansions') }}" class="btn btn-outline-info">
                                             <i class="fas fa-layer-group me-2"></i>Gestione Espansioni
                                         </a>
-                                        <a href="{{ route('admin.decks') }}" class="btn btn-outline-info">
-                                            <i class="fas fa-layer-group me-2"></i>Gestione Mazzi
+                                        <a href="{{ route('admin.query') }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-database me-2"></i>Query Database
+                                        </a>
+                                    </div>
+
+                                    <h6 class="text-muted border-bottom pb-2 mb-3"><i class="fas fa-users me-2"></i>Gestione Utenti & Comunicazione</h6>
+                                    <div class="d-grid gap-2 mb-4">
+                                        <a href="{{ route('users.index') }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-users me-2"></i>Gestione Utenti
+                                        </a>
+                                        <a href="{{ route('admin.announcement.create') }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-bullhorn me-2"></i>Invia Avviso agli Utenti
+                                        </a>
+                                    </div>
+
+                                    <h6 class="text-muted border-bottom pb-2 mb-3"><i class="fas fa-microscope me-2"></i>Monitoraggio & Sistema</h6>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ route('admin.tests.index') }}" class="btn btn-outline-info">
+                                            <i class="fas fa-vial me-2"></i>Storico Test di Sistema
+                                        </a>
+                                        <a href="{{ route('admin.logs') }}" class="btn btn-outline-warning">
+                                            <i class="fas fa-file-alt me-2"></i>Gestione Logs
                                         </a>
                                         <a href="{{ route('admin.errors') }}" class="btn btn-outline-danger">
                                             <i class="fas fa-exclamation-triangle me-2"></i>Gestione Errori
+                                        </a>
+                                        <a href="{{ route('admin.decks') }}" class="btn btn-outline-info">
+                                            <i class="fas fa-layer-group me-2"></i>Gestione Mazzi
+                                        </a>
+                                        <a href="/api/telegram/setup-webhook" class="btn btn-outline-secondary" target="_blank">
+                                            <i class="fas fa-robot me-2"></i>Webhook Telegram
                                         </a>
                                     </div>
                                 </div>

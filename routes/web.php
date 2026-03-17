@@ -7,6 +7,8 @@ use App\Http\Controllers\ExpansionsController;
 use App\Http\Controllers\JobController;
 
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\TestResultsController;
+use App\Http\Controllers\AdminAnnouncementController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -116,6 +118,14 @@ Route::get('/admin/logs/download', [App\Http\Controllers\LogsController::class, 
 Route::patch('/admin/errors/{error}', [AdminController::class, 'updateError'])->name("admin.errors.update")->middleware('auth');
 Route::get('/admin/errors/quick-action/{error}/{action}', [AdminController::class, 'quickActionError'])->name("admin.errors.quick-action")->middleware('auth');
 Route::post('/admin/errors/batch-action', [AdminController::class, 'batchActionErrors'])->name("admin.errors.batch-action")->middleware('auth');
+
+// Gestione risultati test (solo admin)
+Route::get('/admin/tests', [TestResultsController::class, 'index'])->name('admin.tests.index')->middleware('auth');
+Route::get('/admin/tests/{id}', [TestResultsController::class, 'show'])->name('admin.tests.show')->middleware('auth');
+
+// Gestione Annunci (solo admin)
+Route::get('/admin/announcement', [AdminAnnouncementController::class, 'create'])->name('admin.announcement.create')->middleware('auth');
+Route::post('/admin/announcement/send', [AdminAnnouncementController::class, 'send'])->name('admin.announcement.send')->middleware('auth');
 
 // Gestione espansioni (solo admin)
 Route::get('/admin/expansions', [ExpansionsController::class, 'index'])->name("admin.expansions")->middleware('auth');

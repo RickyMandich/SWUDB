@@ -12,7 +12,7 @@ use App\Mail\NewExpansionEmail;
 use App\Models\Card;
 use App\Models\User;
 use App\Models\Expansion;
-
+use App\Services\TestRunnerService;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Http;
@@ -86,7 +86,7 @@ class CardsController extends Controller
      * @return \App\Models\Card|null The card model or null if not found
      */
     public function api($espansione, $numero){
-        return Card::where('numero', $numero)->where('espansione', $espansione)->first();
+        return Card::with('aspects')->where('numero', $numero)->where('espansione', $espansione)->first();
     }
 
     /**
@@ -97,7 +97,7 @@ class CardsController extends Controller
      * @return array Array containing [count, collection] of cards
      */
     public function apis($espansione){
-        $ret = Card::where('espansione', $espansione)->get();
+        $ret = Card::with('aspects')->where('espansione', $espansione)->get();
         return [$ret->count(), $ret];
     }
 
@@ -110,7 +110,7 @@ class CardsController extends Controller
      * @return \Illuminate\View\View The card detail view with navigation
      */
     public function show($espansione, $numero){
-        $carta = Card::where('numero', $numero)->where('espansione', $espansione)->first();
+        $carta = Card::with('aspects')->where('numero', $numero)->where('espansione', $espansione)->first();
         $next = Card::where('numero', '>', $numero)->where('espansione', $espansione)->orderBy('numero')->first();
         $back = Card::where('numero', '<', $numero)->where('espansione', $espansione)->orderByDesc('numero')->first();
         return view('carte.show', ["carta" => $carta, "numero" => $numero, "espansione" => $espansione, "next" => $next, "back" => $back]);
@@ -330,18 +330,17 @@ class CardsController extends Controller
         $cardData['arena'] = (!empty($arenas) && isset($arenas[0])) ? ($arenas[0]['attributes']['name'] ?? null) : null;
 
         // Extract aspects
+        // Extract aspects (new many-to-many management)
         $aspects = $attributes['aspects']['data'] ?? [];
-        if (!empty($aspects) && isset($aspects[0])) {
-            $cardData['aspettoPrimario'] = $this->translateAspect($aspects[0]['attributes']['name'] ?? '');
-        }
-        if (count($aspects) > 1 && isset($aspects[1])) {
-            $cardData['aspettoSecondario'] = $this->translateAspect($aspects[1]['attributes']['name'] ?? '');
-        }
+        $cardData['aspects'] = array_map(function($aspect) {
+            return $this->translateAspect($aspect['attributes']['name'] ?? '');
+        }, $aspects);
 
         // Handle aspect duplicates
         $aspectDuplicates = $attributes['aspectDuplicates']['data'] ?? [];
         if (!empty($aspectDuplicates) && !empty($aspects) && isset($aspects[0])) {
-            $cardData['aspettoSecondario'] = $this->translateAspect($aspects[0]['attributes']['name'] ?? '');
+            // Se duplicato, l'API restituisce un array vuoto o speciale, ma noi vogliamo assicurarci
+            // che se c'è un set di aspetti preferenziali, venga rispettato.
         }
 
         // Extract type
@@ -379,16 +378,8 @@ class CardsController extends Controller
         }
 
         // Handle aspect ordering (secondary should be Nero/Bianco if different from primary)
-        if (isset($cardData['aspettoPrimario']) && isset($cardData['aspettoSecondario'])) {
-            if ($cardData['aspettoPrimario'] !== $cardData['aspettoSecondario'] &&
-                !in_array($cardData['aspettoSecondario'], ['Bianco', 'Nero']) &&
-                !empty($cardData['aspettoSecondario'])) {
-                // Swap primary and secondary
-                $temp = $cardData['aspettoPrimario'];
-                $cardData['aspettoPrimario'] = $cardData['aspettoSecondario'];
-                $cardData['aspettoSecondario'] = $temp;
-            }
-        }
+        // Ordering logic is handled by the aspects array now.
+        // If we want to keep specific logic for primary/secondary display, it should be done here.
 
         // Add unique symbol to name if unique
         if ($cardData['unica']) {
@@ -396,7 +387,7 @@ class CardsController extends Controller
         }
 
         // Handle token cards
-        if (strpos($cardData['tipo'], 'Segnalin') !== false) {
+        if (is_string($cardData['nome']) && strpos($cardData['nome'], 'Segnalin') !== false) {
             $cardData['espansione'] = "T" . $cardData['espansione'];
         }
 
@@ -579,6 +570,17 @@ class CardsController extends Controller
 
         $this->writeScanLog("=== INIZIO SCANSIONE API ===", $logFile);
         $this->writeScanLog("Thread ID: {$threadId}", $logFile);
+
+        // 1. Esecuzione Test Pre-Scansione
+        $this->writeScanLog("Esecuzione test pre-scansione...", $logFile);
+        $testRunner = new \App\Services\TestRunnerService();
+        if (!$testRunner->runTests()) {
+            $errorMsg = "❌ SCANSIONE ABORTITA: I test di sistema sono falliti. Gli amministratori sono stati notificati.";
+            $this->writeScanLog($errorMsg, $logFile);
+            \App\Events\ThreadMessageCreated::dispatch($threadId, $errorMsg);
+            return;
+        }
+        $this->writeScanLog("Test superati con successo. Procedo con la scansione.", $logFile);
 
         try {
             // Check if thread already exists (called from TelegramController)
@@ -983,8 +985,17 @@ class CardsController extends Controller
                     $carta->cid = $cardCid;
                     $carta->espansione = $cardData["espansione"];
                     $carta->numero = $cardData["numero"];
-                    $carta->aspettoPrimario = $cardData["aspettoPrimario"] ?? null;
-                    $carta->aspettoSecondario = $cardData["aspettoSecondario"] ?? null;
+                    // Sync aspects (many-to-many) with order
+                    if (isset($cardData['aspects'])) {
+                        $aspectIds = \App\Models\Aspect::whereIn('nome', $cardData['aspects'])->get()->pluck('id', 'nome');
+                        $syncData = [];
+                        foreach ($cardData['aspects'] as $index => $aspectName) {
+                            if (isset($aspectIds[$aspectName])) {
+                                $syncData[$aspectIds[$aspectName]] = ['sort_order' => $index];
+                            }
+                        }
+                        $carta->aspects()->sync($syncData);
+                    }
                     $carta->unica = $cardData["unica"] ?? false;
                     $carta->nome = $cardData["nome"];
                     $carta->titolo = $cardData["titolo"] ?? "";

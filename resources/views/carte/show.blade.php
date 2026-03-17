@@ -26,12 +26,14 @@
                                         <td>{{ $carta->numero }}</td>
                                     </tr>
                                     <tr>
-                                        <th scope="row">aspettoPrimario</th>
-                                        <td>{{ $carta->aspettoPrimario }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">aspettoSecondario</th>
-                                        <td>{{ $carta->aspettoSecondario }}</td>
+                                        <th scope="row">aspetti</th>
+                                        <td>
+                                            @foreach($carta->aspects as $aspetto)
+                                                <span class="badge" style="background-color: {{ $aspetto->colore }}; color: {{ $aspetto->nome == 'Eroismo' ? '#000' : '#fff' }};">
+                                                    {{ $aspetto->nome }}
+                                                </span>
+                                            @endforeach
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th scope="row">tipo</th>

@@ -107,54 +107,62 @@
                                 </li>
                             @endif
                         @else
-                        <li class="nav-item dropdown">
-                            <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                {{ Auth::user()->name }}
-                            </a>
-
-                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <a class="dropdown-item" href="{{ route('dashboard') }}">
-                                    <i class="fas fa-tachometer-alt me-1"></i>{{ __('custom.Dashboard') }}
-                                </a>
-
-                                <div class="dropdown-divider"></div>
-
-                                <a class="dropdown-item" href="{{ route('logout') }}"
-                                   onclick="event.preventDefault();
-                                                 document.getElementById('logout-form').submit();">
-                                    <i class="fas fa-sign-out-alt me-1"></i>{{ __('custom.Logout') }}
-                                </a>
-
-                                @if(Auth::admin())
-                                    <div class="dropdown-divider"></div>
-                                    <h6 class="dropdown-header">
+                            @if(Auth::admin())
+                                <li class="nav-item dropdown">
+                                    <a id="adminDropdown" class="nav-link dropdown-toggle text-warning" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
                                         <i class="fas fa-shield-alt me-1"></i>Amministrazione
-                                    </h6>
-                                    <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
-                                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard Admin
                                     </a>
-                                    <a class="dropdown-item" href="{{ route('users.index') }}">
-                                        <i class="fas fa-users me-1"></i>Gestione Utenti
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('query') }}">
-                                        <i class="fas fa-database me-1"></i>{{ __('custom.query') }}
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.logs') }}">
-                                        <i class="fas fa-file-alt me-1"></i>Gestione Logs
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.errors') }}">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>Gestione Errori
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.expansions') }}">
-                                        <i class="fas fa-layer-group me-1"></i>Gestione Espansioni
-                                    </a>
-                                @endif
+                                    <div class="dropdown-menu dropdown-menu-end shadow border-warning" aria-labelledby="adminDropdown">
+                                        <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
+                                            <i class="fas fa-tachometer-alt me-2 text-warning"></i>Dashboard Admin
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="{{ route('carte.update') }}">
+                                            <i class="fas fa-sync-alt me-2"></i>Import Carte
+                                        </a>
+                                        <a class="dropdown-item" href="{{ route('users.index') }}">
+                                            <i class="fas fa-users me-2"></i>Gestione Utenti
+                                        </a>
+                                        <a class="dropdown-item" href="{{ route('admin.announcement.create') }}">
+                                            <i class="fas fa-bullhorn me-2"></i>Invia Annuncio
+                                        </a>
+                                        <a class="dropdown-item" href="{{ route('admin.tests.index') }}">
+                                            <i class="fas fa-vial me-2"></i>Test di Sistema
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="{{ route('admin.logs') }}">
+                                            <i class="fas fa-file-alt me-2"></i>Logs
+                                        </a>
+                                        <a class="dropdown-item" href="{{ route('admin.errors') }}">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>Errori
+                                        </a>
+                                    </div>
+                                </li>
+                            @endif
 
-                                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                                    @csrf
-                                </form>
-                            </div>
-                        </li>
+                            <li class="nav-item dropdown">
+                                <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                                    <i class="fas fa-user-circle me-1"></i>{{ Auth::user()->name }}
+                                </a>
+
+                                <div class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="navbarDropdown">
+                                    <a class="dropdown-item" href="{{ route('dashboard') }}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>{{ __('custom.Dashboard') }}
+                                    </a>
+
+                                    <div class="dropdown-divider"></div>
+
+                                    <a class="dropdown-item text-danger" href="{{ route('logout') }}"
+                                       onclick="event.preventDefault();
+                                                     document.getElementById('logout-form').submit();">
+                                        <i class="fas fa-sign-out-alt me-2"></i>{{ __('custom.Logout') }}
+                                    </a>
+
+                                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                                        @csrf
+                                    </form>
+                                </div>
+                            </li>
                         @endguest
                     </ul>
                 </div>

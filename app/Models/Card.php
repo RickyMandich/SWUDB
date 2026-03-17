@@ -19,8 +19,6 @@ class Card extends Model{
         'cid',
         'espansione',
         'numero',
-        'aspettoPrimario',
-        'aspettoSecondario',
         'unica',
         'nome',
         'titolo',
@@ -75,8 +73,6 @@ class Card extends Model{
         'cid' => 'string',
         'espansione' => 'string',
         'numero' => 'integer',
-        'aspettoPrimario' => 'string',
-        'aspettoSecondario' => 'string',
         'unica' => 'boolean',
         'nome' => 'string',
         'titolo' => 'string',
@@ -174,5 +170,18 @@ class Card extends Model{
     public function decks()
     {
         return $this->compositions()->with('deck');
+    }
+
+    /**
+     * Get the aspects for this card.
+     * Ottiene gli aspetti per questa carta.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function aspects()
+    {
+        return $this->belongsToMany(Aspect::class, 'card_aspect', 'card_cid', 'aspect_id', 'cid', 'id')
+                    ->withPivot('sort_order')
+                    ->orderByPivot('sort_order', 'asc');
     }
 }
