@@ -23,6 +23,21 @@ use App\Services\EmailLogService;
 class JobController extends Controller
 {
     /**
+     * Get the absolute path for job-specific log files
+     * Ottiene il percorso assoluto per i file di log specifici dei job
+     *
+     * @return string The absolute path to the log file
+     */
+    private static function getJobLogPath($filename = 'debug-fire.log')
+    {
+        $dir = storage_path('logs/jobs');
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        return $dir . '/' . $filename;
+    }
+
+    /**
      * Add a new card to the database from external API data
      * Aggiunge una nuova carta al database da dati API esterni
      *
@@ -39,18 +54,18 @@ class JobController extends Controller
         }
 
         $last = "inizio";
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard.log", "inizio addCard \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard.log'), "inizio addCard \n\n", FILE_APPEND);
         
         try {
             // Check if card data is passed as JSON
             $cardJson = $request->input('card');
             if ($cardJson) {
                 $card = json_decode($cardJson, true);
-                if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
+                if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
             } else {
                 // Fallback to individual parameters
                 $card = $request->all();
-                if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard.log", "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
+                if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
             }
 
             $last = "creazione-carta";
@@ -106,14 +121,14 @@ class JobController extends Controller
             $carta->save();
             
             echo "Carta '{$carta->nome}' aggiunta con successo!\n";
-            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "success addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "success addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
             
         } catch(\Exception $e){
             echo "eccezione ".$e->getMessage() . " <strong>at</strong> " . $last;
-            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
         }
         
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-addCard-end.log", "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown'). " \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown'). " \n\n", FILE_APPEND);
     }
 
     /**
@@ -159,6 +174,9 @@ class JobController extends Controller
      * @return void Sends or edits message in Telegram or logs errors
      */
     public function sendThreadMessage(Request $request){
+        // Prevent process termination when socket is closed
+        ignore_user_abort(true);
+
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
         }
@@ -183,7 +201,7 @@ class JobController extends Controller
                 ]);
                 
                 if(env("APP_DEBUG_LOG")) {
-                    file_put_contents(__DIR__ . "/debug-threadMessage.log", 
+                    file_put_contents(self::getJobLogPath('debug-threadMessage.log'), 
                         "Edited thread message [{$threadId}] ID {$existingMessageId}: {$message}" . 
                         ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
                 }
@@ -200,7 +218,7 @@ class JobController extends Controller
                     \App\Services\ThreadManager::setTelegramMessageId($threadId, $messageId);
                     
                     if(env("APP_DEBUG_LOG")) {
-                        file_put_contents(__DIR__ . "/debug-threadMessage.log", 
+                        file_put_contents(self::getJobLogPath('debug-threadMessage.log'), 
                             "Sent new thread message [{$threadId}] ID {$messageId}: {$message}" . 
                             ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
                     }
@@ -210,7 +228,7 @@ class JobController extends Controller
         } catch (\Exception $e) {
             \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
             if(env("APP_DEBUG_LOG")) {
-                file_put_contents(__DIR__ . "/debug-threadMessage.log", 
+                file_put_contents(self::getJobLogPath('debug-threadMessage.log'), 
                     "Error in thread message [{$threadId}]: " . $e->getMessage() . "\n", FILE_APPEND);
             }
         }
@@ -231,9 +249,10 @@ class JobController extends Controller
     public static function fireAndForgetGet($url, $data = []) {
         $query = http_build_query($data);
         $parts = parse_url($url);
+        $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             return false;
         }
 
@@ -242,7 +261,7 @@ class JobController extends Controller
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
         $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
 
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget: $url?$query (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget: $url?$query (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         // Ricostruisci la query string
         $path = $parts['path'];
@@ -255,18 +274,20 @@ class JobController extends Controller
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
             return false;
         }
 
         $out = "GET " . $path . " HTTP/1.1\r\n";
         $out .= "Host: " . $host . "\r\n";
+        $out .= "User-Agent: SWUDB-Bot/1.0\r\n";
         $out .= "Connection: Close\r\n\r\n";
 
         fwrite($fp, $out);
+        usleep(10000); // 10ms delay to ensure request is received
         fclose($fp);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget SUCCESS sent to $host" . "\n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget SUCCESS sent to $host" . "\n\n", FILE_APPEND);
 
         return true;
     }
@@ -285,9 +306,10 @@ class JobController extends Controller
      */
     public static function fireAndForgetPost($url, $data = []) {
         $parts = parse_url($url);
+        $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             return false;
         }
 
@@ -303,26 +325,28 @@ class JobController extends Controller
 
         $postData = http_build_query($data);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST: $url (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST: $url (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
+            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
             return false;
         }
 
         $out = "POST " . $path . " HTTP/1.1\r\n";
         $out .= "Host: " . $host . "\r\n";
+        $out .= "User-Agent: SWUDB-Bot/1.0\r\n";
         $out .= "Content-Type: application/x-www-form-urlencoded\r\n";
         $out .= "Content-Length: " . strlen($postData) . "\r\n";
         $out .= "Connection: Close\r\n\r\n";
         $out .= $postData;
 
         fwrite($fp, $out);
+        usleep(10000); // 10ms delay
         fclose($fp);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST SUCCESS sent to $host" . "\n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST SUCCESS sent to $host" . "\n\n", FILE_APPEND);
 
         return true;
     }

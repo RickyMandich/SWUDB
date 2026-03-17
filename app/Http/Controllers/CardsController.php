@@ -568,6 +568,10 @@ class CardsController extends Controller
      */
     public function scanAPI(Request $request)
     {
+        // Prevent process termination when socket is closed
+        ignore_user_abort(true);
+        set_time_limit(0);
+
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
         }
@@ -693,6 +697,10 @@ class CardsController extends Controller
      */
     public function processNewCards(Request $request)
     {
+        // Prevent process termination when socket is closed
+        ignore_user_abort(true);
+        set_time_limit(0);
+
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
         }
