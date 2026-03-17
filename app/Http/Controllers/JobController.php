@@ -230,12 +230,19 @@ class JobController extends Controller
      */
     public static function fireAndForgetGet($url, $data = []) {
         $query = http_build_query($data);
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget: $url?$query" . "\n\n", FILE_APPEND);
         $parts = parse_url($url);
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
+            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             return false;
         }
+
+        $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
+        $host = $parts['host'];
+        $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
+        $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
+
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget: $url?$query (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         // Ricostruisci la query string
         $path = $parts['path'];
@@ -245,18 +252,21 @@ class JobController extends Controller
             $path .= '?' . $query;
         }
 
-        $fp = fsockopen($parts['host'], $parts['port'] ?? 80, $errno, $errstr, 30);
+        $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
+            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
             return false;
         }
 
         $out = "GET " . $path . " HTTP/1.1\r\n";
-        $out .= "Host: " . $parts['host'] . "\r\n";
+        $out .= "Host: " . $host . "\r\n";
         $out .= "Connection: Close\r\n\r\n";
 
         fwrite($fp, $out);
         fclose($fp);
+
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget SUCCESS sent to $host" . "\n\n", FILE_APPEND);
 
         return true;
     }
@@ -274,15 +284,18 @@ class JobController extends Controller
      * @return bool True if request was sent successfully, false on error
      */
     public static function fireAndForgetPost($url, $data = []) {
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST: $url, " . http_build_query($data) . "\n\n", FILE_APPEND);
         $parts = parse_url($url);
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
+            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             return false;
         }
 
+        $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
         $host = $parts['host'];
-        $port = $parts['port'] ?? 80;
+        $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
+        $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
+        
         $path = $parts['path'];
         if (isset($parts['query']) && $parts['query'] !== '') {
             $path .= '?' . $parts['query'];
@@ -290,9 +303,12 @@ class JobController extends Controller
 
         $postData = http_build_query($data);
 
-        $fp = fsockopen($host, $port, $errno, $errstr, 30);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST: $url (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
+
+        $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
+            if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
             return false;
         }
 
@@ -306,7 +322,7 @@ class JobController extends Controller
         fwrite($fp, $out);
         fclose($fp);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fine fire post \n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents(__DIR__ . "/debug-fire.log", "fireAndForget POST SUCCESS sent to $host" . "\n\n", FILE_APPEND);
 
         return true;
     }

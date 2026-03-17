@@ -652,11 +652,18 @@ class CardsController extends Controller
                     file_put_contents(storage_path("app/new_cards_process.json"), json_encode($processData));
 
                     $this->writeScanLog("=== FINE SCANSIONE, INIZIO ELABORAZIONE DETTAGLI ===", $logFile);
+                    $this->writeScanLog("Lancio processNewCards in background via fireAndForgetGet", $logFile);
 
                     // NOW launch detailed card processing (only after scan is complete)
-                    JobController::fireAndForgetGet(route('carte.processNewCards', ['threadId' => $threadId]), [
+                    $success = JobController::fireAndForgetGet(route('carte.processNewCards', ['threadId' => $threadId]), [
                         "token" => env('JOB_TOKEN')
                     ]);
+
+                    if ($success) {
+                        $this->writeScanLog("Segnale di avvio processNewCards inviato con successo", $logFile);
+                    } else {
+                        $this->writeScanLog("ERRORE: Impossibile inviare segnale di avvio a processNewCards", $logFile);
+                    }
 
                 } else {
                     $this->writeScanLog("Nessuna nuova carta trovata", $logFile);
