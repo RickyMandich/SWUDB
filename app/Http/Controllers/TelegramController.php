@@ -146,6 +146,9 @@ class TelegramController extends Controller
         $this->currentThreadId = ThreadManager::generateThreadId('scan');
         $this->logToBot("Thread ID generato: " . $this->currentThreadId);
 
+        // Inizializza il thread con il chatId per le notifiche di progresso
+        ThreadManager::updateThread($this->currentThreadId, "Avvio scansione...", false, null, $chatId);
+
         try {
             // Chiama la tua logica esistente (sostituisce la chiamata HTTP)
             $this->logToBot("Avvio triggerUpdate()...");

@@ -168,7 +168,7 @@ class JobController extends Controller
         $isComplete = (bool) $request->input('isComplete', false);
 
         $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
-        $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
+        $chatId = \App\Services\ThreadManager::getChatId($threadId) ?? env('TELEGRAM_CHAT_ID', '5533337157');
 
         try {
             // Check if we have an existing message to edit

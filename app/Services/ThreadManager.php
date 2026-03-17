@@ -36,9 +36,10 @@ class ThreadManager
      * @param string $message Initial or updated message content
      * @param bool $isComplete Whether this message marks the thread as complete
      * @param int|null $telegramMessageId Optional Telegram message ID for editing
+     * @param string|null $chatId Optional Telegram chat ID for current execution context
      * @return void
      */
-    public static function updateThread(string $threadId, string $message, bool $isComplete = false, ?int $telegramMessageId = null): void
+    public static function updateThread(string $threadId, string $message, bool $isComplete = false, ?int $telegramMessageId = null, ?string $chatId = null): void
     {
         $cacheKey = self::CACHE_PREFIX . $threadId;
         $existingThread = Cache::get($cacheKey);
@@ -47,7 +48,8 @@ class ThreadManager
             'message' => $message,
             'timestamp' => time(),
             'isComplete' => $isComplete,
-            'telegramMessageId' => $telegramMessageId ?? ($existingThread['telegramMessageId'] ?? null)
+            'telegramMessageId' => $telegramMessageId ?? ($existingThread['telegramMessageId'] ?? null),
+            'chatId' => $chatId ?? ($existingThread['chatId'] ?? null)
         ];
 
         Cache::put($cacheKey, $threadData, self::CACHE_TTL);
@@ -72,6 +74,20 @@ class ThreadManager
         $cacheKey = self::CACHE_PREFIX . $threadId;
         $threadData = Cache::get($cacheKey);
         return $threadData['telegramMessageId'] ?? null;
+    }
+
+    /**
+     * Get the Telegram chat ID for a thread
+     * Ottiene l'ID della chat Telegram per un thread
+     *
+     * @param string $threadId The thread identifier
+     * @return string|null The Telegram chat ID or null if not set
+     */
+    public static function getChatId(string $threadId): ?string
+    {
+        $cacheKey = self::CACHE_PREFIX . $threadId;
+        $threadData = Cache::get($cacheKey);
+        return $threadData['chatId'] ?? null;
     }
 
     /**
