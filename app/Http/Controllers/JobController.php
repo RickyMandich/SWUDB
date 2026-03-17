@@ -258,18 +258,28 @@ class JobController extends Controller
 
         $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
         $host = $parts['host'];
+
+        // FIX: If host is localhost, use the domain from APP_URL to ensure SSL works correctly
+        if ($host === 'localhost' || $host === '127.0.0.1') {
+            $appUrl = env('APP_URL', 'https://www.unlimiteddb.net');
+            $appParts = parse_url($appUrl);
+            if (isset($appParts['host'])) {
+                $host = $appParts['host'];
+            }
+        }
+
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
         $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
-
-        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget: $url?$query (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         // Ricostruisci la query string
         $path = $parts['path'];
         if (isset($parts['query']) && $parts['query'] !== '') {
-            $path .= '?' . $parts['query'] . '&' . $query;
+            $path .= '?' . $parts['query'] . ($query !== '' ? '&' . $query : '');
         } elseif ($query !== '') {
             $path .= '?' . $query;
         }
+
+        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget GET: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
@@ -315,6 +325,16 @@ class JobController extends Controller
 
         $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
         $host = $parts['host'];
+
+        // FIX: If host is localhost, use the domain from APP_URL to ensure SSL works correctly
+        if ($host === 'localhost' || $host === '127.0.0.1') {
+            $appUrl = env('APP_URL', 'https://www.unlimiteddb.net');
+            $appParts = parse_url($appUrl);
+            if (isset($appParts['host'])) {
+                $host = $appParts['host'];
+            }
+        }
+
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
         $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
         
@@ -325,7 +345,7 @@ class JobController extends Controller
 
         $postData = http_build_query($data);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST: $url (Host: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
+        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
