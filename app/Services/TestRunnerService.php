@@ -20,26 +20,32 @@ class TestRunnerService
     public function runTests()
     {
         $runId = Str::uuid()->toString();
+        $logPath = storage_path("logs/tests/{$runId}.xml");
         
-        // Per semplicità e compatibilità, eseguiamo i test tramite Artisan
-        // In produzione potrebbe servire un comando shell per catturare output dettagliato
-        $exitCode = Artisan::call('test', ['--log-junit' => storage_path("logs/tests/{$runId}.xml")]);
-        $output = Artisan::output();
+        // Assicuriamoci che la directory dei log esista
+        if (!file_exists(dirname($logPath))) {
+            mkdir(dirname($logPath), 0755, true);
+        }
 
-        // Nota: Artisan::call('test') potrebbe non restituire l'output completo o log in tempo reale.
-        // Se necessario, usiamo Symfony Process.
+        // Lancia il comando 'php artisan test' come sottoprocesso CLI
+        // Questo evita l'errore di variabili mancanti (come 'argv') tipico delle richieste web
+        $process = new Process([PHP_BINARY, 'artisan', 'test', "--log-junit={$logPath}"]);
+        $process->setWorkingDirectory(base_path());
+        $process->setTimeout(300); // 5 minuti di timeout
         
-        $passed = ($exitCode === 0);
+        $startTime = microtime(true);
+        $process->run();
+        $duration = microtime(true) - $startTime;
 
-        // Salviamo il risultato generale (per ora come log complessivo o scorporato)
-        // In un'implementazione reale, parseremmo il file JUnit XML per ogni test case.
-        // Per ora salviamo un record per l'intera esecuzione.
+        $output = $process->getOutput() ?: $process->getErrorOutput();
+        $exitCode = $process->getExitCode();
+        $passed = $process->isSuccessful();
         
         $result = TestResult::create([
             'test_name' => 'Suite Completa Feature Tests',
             'status' => $passed,
             'output' => $output,
-            'duration' => 0, // Opzionale
+            'duration' => round($duration, 2),
             'run_id' => $runId,
         ]);
 
