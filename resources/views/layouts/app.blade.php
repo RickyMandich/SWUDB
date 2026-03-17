@@ -129,6 +129,9 @@
                                         <a class="dropdown-item" href="{{ route('admin.tests.index') }}">
                                             <i class="fas fa-vial me-2"></i>Test di Sistema
                                         </a>
+                                        <a class="dropdown-item" href="{{ route('admin.query') }}">
+                                            <i class="fas fa-database me-2"></i>Query Database
+                                        </a>
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item" href="{{ route('admin.logs') }}">
                                             <i class="fas fa-file-alt me-2"></i>Logs

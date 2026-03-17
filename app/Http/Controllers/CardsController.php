@@ -32,9 +32,10 @@ class CardsController extends Controller
      * @param string|null $espansione Optional expansion code to filter by
      * @return \Illuminate\View\View The cards index view with filtered results
      */
-    public function index(Request $request){
+    public function index(Request $request)
+    {
         $get = $request->all();
-        if(!isset($get["nome"])){
+        if (!isset($get["nome"])) {
             $get["nome"] = "";
         }
         $title = "Carte";
@@ -59,12 +60,13 @@ class CardsController extends Controller
      * @param int $numero2 Second card's number
      * @return string Debug output showing comparison details or error message
      */
-    public function compare($espansione1, $numero1, $espansione2, $numero2) {
-        if(isset($espansione1) and isset($numero1) and isset($espansione2) and isset($numero2)){
-            $cards = Card::where(function($query) use ($espansione1, $numero1) {
+    public function compare($espansione1, $numero1, $espansione2, $numero2)
+    {
+        if (isset($espansione1) and isset($numero1) and isset($espansione2) and isset($numero2)) {
+            $cards = Card::where(function ($query) use ($espansione1, $numero1) {
                 $query->where('espansione', $espansione1)
                     ->where('numero', $numero1);
-            })->orWhere(function($query) use ($espansione2, $numero2) {
+            })->orWhere(function ($query) use ($espansione2, $numero2) {
                 $query->where('espansione', $espansione2)
                     ->where('numero', $numero2);
             })->get();
@@ -72,7 +74,7 @@ class CardsController extends Controller
             CardsController::mergeSort($cards, true);
             $output = ob_get_clean();
             return view("carte.update", ["output" => $output]);
-        }else{
+        } else {
             return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
         }
     }
@@ -85,7 +87,8 @@ class CardsController extends Controller
      * @param int $numero The card number
      * @return \App\Models\Card|null The card model or null if not found
      */
-    public function api($espansione, $numero){
+    public function api($espansione, $numero)
+    {
         return Card::with('aspects')->where('numero', $numero)->where('espansione', $espansione)->first();
     }
 
@@ -96,7 +99,8 @@ class CardsController extends Controller
      * @param string $espansione The expansion code
      * @return array Array containing [count, collection] of cards
      */
-    public function apis($espansione){
+    public function apis($espansione)
+    {
         $ret = Card::with('aspects')->where('espansione', $espansione)->get();
         return [$ret->count(), $ret];
     }
@@ -109,13 +113,14 @@ class CardsController extends Controller
      * @param int $numero The card number
      * @return \Illuminate\View\View The card detail view with navigation
      */
-    public function show($espansione, $numero){
+    public function show($espansione, $numero)
+    {
         $carta = Card::with('aspects')->where('numero', $numero)->where('espansione', $espansione)->first();
         $next = Card::where('numero', '>', $numero)->where('espansione', $espansione)->orderBy('numero')->first();
         $back = Card::where('numero', '<', $numero)->where('espansione', $espansione)->orderByDesc('numero')->first();
         return view('carte.show', ["carta" => $carta, "numero" => $numero, "espansione" => $espansione, "next" => $next, "back" => $back]);
     }
-    
+
     /**
      * Get the scan log file path for current session
      * Ottiene il percorso del file di log per la sessione corrente
@@ -278,7 +283,7 @@ class CardsController extends Controller
 
             if ($logFile && $cardData) {
                 $cardInfo = ($cardData['nome'] ?? 'N/A') . " " . ($cardData['titolo'] ?? '') .
-                           " (" . ($cardData['espansione'] ?? 'N/A') . "-" . ($cardData['numero'] ?? 'N/A') . ")";
+                    " (" . ($cardData['espansione'] ?? 'N/A') . "-" . ($cardData['numero'] ?? 'N/A') . ")";
                 $this->writeScanLog("Carta elaborata con successo: {$cardInfo}", $logFile);
             }
 
@@ -332,7 +337,7 @@ class CardsController extends Controller
         // Extract aspects
         // Extract aspects (new many-to-many management)
         $aspects = $attributes['aspects']['data'] ?? [];
-        $cardData['aspects'] = array_map(function($aspect) {
+        $cardData['aspects'] = array_map(function ($aspect) {
             return $this->translateAspect($aspect['attributes']['name'] ?? '');
         }, $aspects);
 
@@ -371,9 +376,9 @@ class CardsController extends Controller
             $deployText = $attributes['deployBoxStyled'] ?? null;
             if ($deployText) {
                 $cardData['descrizione'] = "<strong>-----NON SCHIERATO-----</strong><br>" .
-                                         $cardData['descrizione'] .
-                                         "<strong>-----SCHIERATO-----</strong><br>" .
-                                         $deployText;
+                    $cardData['descrizione'] .
+                    "<strong>-----SCHIERATO-----</strong><br>" .
+                    $deployText;
             }
         }
 
@@ -387,7 +392,7 @@ class CardsController extends Controller
         }
 
         // Handle token cards
-        if (is_string($cardData['nome']) && strpos($cardData['nome'], 'Segnalin') !== false) {
+        if ((isset($cardData['tipo']) && is_string($cardData['tipo']) && strpos($cardData['tipo'], 'Segnalin') !== false)) {
             $cardData['espansione'] = "T" . $cardData['espansione'];
         }
 
@@ -510,7 +515,8 @@ class CardsController extends Controller
      *
      * @return \Illuminate\View\View The update result view with import statistics
      */
-    public function startImport($externalThreadId = null){
+    public function startImport($externalThreadId = null)
+    {
         Log::info("Starting card import process with API integration");
 
         // Use external thread ID if provided, otherwise generate a new one
@@ -560,7 +566,8 @@ class CardsController extends Controller
      * @param Request $request HTTP request containing threadId and token
      * @return void Outputs status messages directly
      */
-    public function scanAPI(Request $request){
+    public function scanAPI(Request $request)
+    {
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
         }
@@ -577,11 +584,11 @@ class CardsController extends Controller
         if (!$testRunner->runTests($logFile)) {
             $errorMsg = "❌ SCANSIONE ABORTITA: I test di sistema sono falliti. Controllare la Dashboard Admin per dettagli.";
             $this->writeScanLog($errorMsg, $logFile);
-            
+
             // Informiamo il thread Telegram del blocco
             \App\Events\ThreadMessageCreated::dispatch($threadId, "❌ SCANSIONE ANNULLATA: I test pre-scansione hanno rilevato errori. Controlla lo storico test.");
-            
-            return; 
+
+            return;
         } else {
             $this->writeScanLog("✅ Test superati con successo. Procedo con la scansione.", $logFile);
         }
@@ -681,7 +688,8 @@ class CardsController extends Controller
      * @param Request $request HTTP request containing threadId and token
      * @return void
      */
-    public function processNewCards(Request $request){
+    public function processNewCards(Request $request)
+    {
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
         }
@@ -811,7 +819,7 @@ class CardsController extends Controller
                 if ($jsonLogFile === $logFile) {
                     $jsonLogFile .= '.json';
                 }
-                
+
                 // Ensure array of objects structure as requested
                 file_put_contents($jsonLogFile, json_encode($originalJsonData, JSON_PRETTY_PRINT));
                 $this->writeScanLog("Salvato file JSON originale: " . basename($jsonLogFile), $logFile);
@@ -1145,7 +1153,7 @@ class CardsController extends Controller
         if (!empty($toInsert)) {
             // Prepare cards data with links for email template
             $cardsData = [];
-            foreach($toInsert as $card){
+            foreach ($toInsert as $card) {
                 $espansione = $card["espansione"] ?? 'N/A';
                 $numero = $card["numero"] ?? 'N/A';
                 $nome = $card["nome"] ?? 'N/A';
@@ -1287,9 +1295,10 @@ class CardsController extends Controller
      * @param array $element Card element to check for existence
      * @return bool True if card exists, false otherwise
      */
-    public static function contain($array, $element){
-        foreach($array as $el){
-            if($el["espansione"] === $element["espansione"] && $el["numero"] === $element["numero"]){
+    public static function contain($array, $element)
+    {
+        foreach ($array as $el) {
+            if ($el["espansione"] === $element["espansione"] && $el["numero"] === $element["numero"]) {
                 return true;
             }
         }
@@ -1314,7 +1323,8 @@ class CardsController extends Controller
      * @param bool $verbose Whether to output detailed comparison steps
      * @return int -1 if el1 < el2, 1 if el1 > el2, 0 if equal
      */
-    public static function compareElements(&$el1, &$el2, $verbose) {
+    public static function compareElements(&$el1, &$el2, $verbose)
+    {
         // Converto gli elementi in array se sono modelli Eloquent
         if (is_object($el1) && method_exists($el1, 'toArray')) {
             $el1 = $el1->toArray();
@@ -1324,12 +1334,12 @@ class CardsController extends Controller
         }
 
         // Funzione helper per accesso sicuro agli array
-        $getValue = function($element, $key, $default = '') {
+        $getValue = function ($element, $key, $default = '') {
             return isset($element[$key]) ? $element[$key] : $default;
         };
 
-        if($verbose){
-            echo "Confronto tra ".$getValue($el1, "nome")." e ".$getValue($el2, "nome")."<br>";
+        if ($verbose) {
+            echo "Confronto tra " . $getValue($el1, "nome") . " e " . $getValue($el2, "nome") . "<br>";
         }
 
         // Definisco l'ordine dei tipi generici
@@ -1340,9 +1350,9 @@ class CardsController extends Controller
 
         // Definisco l'ordine dei tipi specifici
         $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
-        
+
         // Funzione per ottenere il peso del tipo
-        $getGenericTipoWeight = function($element) use ($genericTipoOrder) {
+        $getGenericTipoWeight = function ($element) use ($genericTipoOrder) {
             // Converto l'elemento in array se è un modello Eloquent
             if (is_object($element) && method_exists($element, 'toArray')) {
                 $element = $element->toArray();
@@ -1351,43 +1361,79 @@ class CardsController extends Controller
             $index = array_search($tipo, $genericTipoOrder);
             return $index !== false ? $index : count($genericTipoOrder);
         };
-        
+
         // Funzione per ottenere il peso dell'aspetto primario
-        $getPrimaryAspectWeight = function($element) use ($primaryAspectOrder) {
-            // Converto l'elemento in array se è un modello Eloquent
-            if (is_object($element) && method_exists($element, 'toArray')) {
-                $element = $element->toArray();
+        $getPrimaryAspectWeight = function ($element) use ($primaryAspectOrder) {
+            // Se abbiamo la relazione aspects caricata
+            if (isset($element['aspects']) && is_array($element['aspects'])) {
+                $aspects = $element['aspects'];
+                foreach ($aspects as $a) {
+                    $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
+                    if ($pivot && (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) == 0) {
+                        $aspetto = is_object($a) ? $a->nome : ($a['nome'] ?? '');
+                        $index = array_search($aspetto, $primaryAspectOrder);
+                        return $index !== false ? $index : count($primaryAspectOrder);
+                    }
+                }
             }
+
+            // Fallback legacy
             $aspetto = isset($element['aspettoPrimario']) ? $element['aspettoPrimario'] : '';
             $index = array_search($aspetto, $primaryAspectOrder);
             return $index !== false ? $index : count($primaryAspectOrder);
         };
-        
+
         // Funzione per verificare la presenza di Dark/Light nell'aspetto secondario
-        $getSecondaryAspectWeight = function($element) {
-            // Converto l'elemento in array se è un modello Eloquent
-            if (is_object($element) && method_exists($element, 'toArray')) {
-                $element = $element->toArray();
+        $getSecondaryAspectWeight = function ($element) {
+            // Se abbiamo la relazione aspects caricata (Collection)
+            if (isset($element['aspects']) && is_array($element['aspects'])) {
+                $aspects = $element['aspects'];
+                // Cerchiamo l'aspetto con sort_order = 1 (secondario)
+                $secondaryAspect = null;
+                foreach ($aspects as $a) {
+                    $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
+                    if ($pivot && (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) == 1) {
+                        $secondaryAspect = is_object($a) ? $a->nome : ($a['nome'] ?? '');
+                        break;
+                    }
+                }
+
+                if (!$secondaryAspect)
+                    return 3;
+
+                if ($secondaryAspect === 'Nero')
+                    return 0;
+                if ($secondaryAspect === 'Bianco')
+                    return 1;
+
+                // Controllo se è uguale al primario (sort_order = 0)
+                $primaryAspect = null;
+                foreach ($aspects as $a) {
+                    $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
+                    if ($pivot && (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) == 0) {
+                        $primaryAspect = is_object($a) ? $a->nome : ($a['nome'] ?? '');
+                        break;
+                    }
+                }
+
+                if ($secondaryAspect === $primaryAspect)
+                    return 2;
+                return 3;
             }
+
+            // Fallback legacy (se le colonne esistono ancora nell'array)
             $aspettoSecondario = isset($element['aspettoSecondario']) ? $element['aspettoSecondario'] : '';
-
-            if ($aspettoSecondario === 'Nero') {
+            if ($aspettoSecondario === 'Nero')
                 return 0;
-            }
-
-            if ($aspettoSecondario === 'Bianco') {
+            if ($aspettoSecondario === 'Bianco')
                 return 1;
-            }
-
             $aspettoPrimario = isset($element["aspettoPrimario"]) ? $element["aspettoPrimario"] : '';
-            if ($aspettoSecondario === $aspettoPrimario) {
+            if ($aspettoSecondario === $aspettoPrimario)
                 return 2;
-            }
-
             return 3;
         };
 
-        $getSpecificTipoWeight = function($element) use ($specificTipoOrder){
+        $getSpecificTipoWeight = function ($element) use ($specificTipoOrder) {
             // Converto l'elemento in array se è un modello Eloquent
             if (is_object($element) && method_exists($element, 'toArray')) {
                 $element = $element->toArray();
@@ -1396,143 +1442,143 @@ class CardsController extends Controller
             $index = array_search($tipo, $specificTipoOrder);
             return $index !== false ? $index : count($specificTipoOrder);
         };
-        
 
-        
+
+
         // Confronto per tipo generico
         $tipoWeight1 = $getGenericTipoWeight($el1);
         $tipoWeight2 = $getGenericTipoWeight($el2);
-        
+
         if ($tipoWeight1 < $tipoWeight2) {
-            if($verbose){
-                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del tipo generico<br>";
+            if ($verbose) {
+                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo generico<br>";
             }
             return -1;
         }
 
         if ($tipoWeight1 > $tipoWeight2) {
-            if($verbose){
-                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del tipo generico<br>";
+            if ($verbose) {
+                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo generico<br>";
             }
             return 1;
         }
 
-        if($verbose){
-            echo "le carte sono dello stesso tipo generico(".$getValue($el1, "tipo").")<br>";
+        if ($verbose) {
+            echo "le carte sono dello stesso tipo generico(" . $getValue($el1, "tipo") . ")<br>";
         }
-        
+
         // Se i tipi sono uguali, confronto per aspetto primario
         $primaryAspectWeight1 = $getPrimaryAspectWeight($el1);
         $primaryAspectWeight2 = $getPrimaryAspectWeight($el2);
-        
+
         if ($primaryAspectWeight1 < $primaryAspectWeight2) {
-            if($verbose){
-                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base dell'aspetto primario<br>";
+            if ($verbose) {
+                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base dell'aspetto primario<br>";
             }
             return -1;
         }
 
         if ($primaryAspectWeight1 > $primaryAspectWeight2) {
-            if($verbose){
-                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base dell'aspetto primario<br>";
+            if ($verbose) {
+                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base dell'aspetto primario<br>";
             }
             return 1;
         }
 
-        if($verbose){
-            echo "le carte hanno lo stesso aspetto primario (".$getValue($el1, "aspettoPrimario").")<br>";
+        if ($verbose) {
+            echo "le carte hanno lo stesso aspetto primario (" . $getValue($el1, "aspettoPrimario") . ")<br>";
         }
-        
+
         // Se gli aspetti primari sono uguali, confronto per aspetto secondario
         $secondaryAspectWeight1 = $getSecondaryAspectWeight($el1);
         $secondaryAspectWeight2 = $getSecondaryAspectWeight($el2);
-        
+
         if ($secondaryAspectWeight1 < $secondaryAspectWeight2) {
-            if($verbose){
-                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base dell'aspetto secondario<br>";
+            if ($verbose) {
+                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base dell'aspetto secondario<br>";
             }
             return -1;
         }
 
         if ($secondaryAspectWeight1 > $secondaryAspectWeight2) {
-            if($verbose){
-                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base dell'aspetto secondario<br>";
+            if ($verbose) {
+                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base dell'aspetto secondario<br>";
             }
             return 1;
         }
 
-        if($verbose){
-            echo "le carte hanno lo stesso aspetto secondario (".$getValue($el1, "aspettoSecondario").")<br>";
+        if ($verbose) {
+            echo "le carte hanno lo stesso aspetto secondario (" . $getValue($el1, "aspettoSecondario") . ")<br>";
         }
-        
+
         // Se aspetto secondario è uguale, confronto per tipo specifico
         $tipoWeight1 = $getSpecificTipoWeight($el1);
         $tipoWeight2 = $getSpecificTipoWeight($el2);
-        
+
         if ($tipoWeight1 < $tipoWeight2) {
-            if($verbose){
-                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del tipo specifico<br>";
+            if ($verbose) {
+                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo specifico<br>";
             }
             return -1;
         }
 
         if ($tipoWeight1 > $tipoWeight2) {
-            if($verbose){
-                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del tipo specifico<br>";
+            if ($verbose) {
+                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo specifico<br>";
             }
             return 1;
         }
 
-        if($verbose){
-            echo "le carte hanno lo stesso tipo specifico (".$getValue($el1, "tipo").")<br>";
+        if ($verbose) {
+            echo "le carte hanno lo stesso tipo specifico (" . $getValue($el1, "tipo") . ")<br>";
         }
 
         // Se tipo specifico è uguale, confronto per costo (in ordine crescente)
-        if($getValue($el1, "tipo") != "Leader"){
+        if ($getValue($el1, "tipo") != "Leader") {
             $costo1 = $getValue($el1, "costo", 0);
             $costo2 = $getValue($el2, "costo", 0);
             if ($costo1 < $costo2) {
-                if($verbose){
-                    echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del costo<br>";
+                if ($verbose) {
+                    echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del costo<br>";
                 }
                 return -1;
             }
 
             if ($costo1 > $costo2) {
-                if($verbose){
-                    echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del costo<br>";
+                if ($verbose) {
+                    echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del costo<br>";
                 }
                 return 1;
             }
 
-            if($verbose){
-                echo "le carte hanno lo stesso costo (".$getValue($el1, "costo").")<br>";
+            if ($verbose) {
+                echo "le carte hanno lo stesso costo (" . $getValue($el1, "costo") . ")<br>";
             }
         }
 
         // Se nome è uguali, confronto per uscita (formato aaaa mm gg)
         $espansione1 = $getValue($el1, "espansione");
         $espansione2 = $getValue($el2, "espansione");
-        if($espansione1 != $espansione2){
+        if ($espansione1 != $espansione2) {
             $uscita1 = $getValue($el1, "uscita");
             $uscita2 = $getValue($el2, "uscita");
             $compareDate = strcmp($uscita1, $uscita2);
             if ($compareDate < 0) {
-                if($verbose){
-                    echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base dell'uscita<br>";
+                if ($verbose) {
+                    echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base dell'uscita<br>";
                 }
                 return -1;
             }
 
             if ($compareDate > 0) {
-                if($verbose){
-                    echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base dell'uscita<br>";
+                if ($verbose) {
+                    echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base dell'uscita<br>";
                 }
                 return 1;
             }
 
-            if($verbose){
-                echo "le carte hanno la stessa uscita (".$getValue($el1, "uscita").")<br>";
+            if ($verbose) {
+                echo "le carte hanno la stessa uscita (" . $getValue($el1, "uscita") . ")<br>";
             }
         }
 
@@ -1540,23 +1586,23 @@ class CardsController extends Controller
         $numero1 = $getValue($el1, "numero", 0);
         $numero2 = $getValue($el2, "numero", 0);
         if ($numero1 < $numero2) {
-            if($verbose){
-                echo $getValue($el1, "nome")." viene prima di ".$getValue($el2, "nome")." sulla base del numero<br>";
+            if ($verbose) {
+                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del numero<br>";
             }
             return -1;
         }
-        
+
         if ($numero1 > $numero2) {
-            if($verbose){
-                echo $getValue($el2, "nome")." viene prima di ".$getValue($el1, "nome")." sulla base del numero<br>";
+            if ($verbose) {
+                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del numero<br>";
             }
             return 1;
         }
 
-        if($verbose){
+        if ($verbose) {
             echo "è la stessa carta<br>";
         }
-        
+
         // Se tutti i criteri sono uguali
         return 0;
     }
@@ -1577,7 +1623,8 @@ class CardsController extends Controller
      * @param bool $verbose Whether to enable verbose output during comparison
      * @return array|\Illuminate\Support\Collection The sorted data in the same format as input
      */
-    public static function mergeSort(&$data, $verbose = false) {
+    public static function mergeSort(&$data, $verbose = false)
+    {
         // Determino se l'input è una collezione o un array
         $isCollection = $data instanceof \Illuminate\Support\Collection;
 
@@ -1609,7 +1656,7 @@ class CardsController extends Controller
                 $leftElement = $leftArray[$leftIndex];
                 $rightElement = $rightArray[$rightIndex];
 
-                try{
+                try {
                     if (CardsController::compareElements($leftElement, $rightElement, $verbose) <= 0) {
                         $result->push($leftArray[$leftIndex]);
                         $leftIndex++;
@@ -1617,7 +1664,7 @@ class CardsController extends Controller
                         $result->push($rightArray[$rightIndex]);
                         $rightIndex++;
                     }
-                }catch(\Error $e){
+                } catch (\Error $e) {
                     throw $e;
                 }
             }

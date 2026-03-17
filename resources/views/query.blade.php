@@ -79,7 +79,9 @@
                                 <thead class="table-dark">
                                     <tr>
                                         @foreach($columns as $column)
-                                            <th>{{ $column }}</th>
+                                            @if($column !== 'aspettoPrimario' && $column !== 'aspettoSecondario')
+                                                <th>{{ $column }}</th>
+                                            @endif
                                         @endforeach
                                     </tr>
                                 </thead>
@@ -87,19 +89,21 @@
                                     @foreach($result as $row)
                                         <tr>
                                             @foreach($columns as $column)
-                                                <td>
-                                                    @php
-                                                        $rowArray = (array)$row;
-                                                        $value = $rowArray[$column] ?? '';
-                                                    @endphp
-                                                    @if(isset($sorted) and $sorted)
-                                                        <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
-                                                    @endif
-                                                    {!! $value !!}
-                                                    @if(isset($sorted) and $sorted)
-                                                        </a>
-                                                    @endif
-                                                </td>
+                                                @if($column !== 'aspettoPrimario' && $column !== 'aspettoSecondario')
+                                                    <td>
+                                                        @php
+                                                            $rowArray = (array)$row;
+                                                            $value = $rowArray[$column] ?? '';
+                                                        @endphp
+                                                        @if(isset($sorted) and $sorted)
+                                                            <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
+                                                        @endif
+                                                        {!! $value !!}
+                                                        @if(isset($sorted) and $sorted)
+                                                            </a>
+                                                        @endif
+                                                    </td>
+                                                @endif
                                             @endforeach
                                         </tr>
                                     @endforeach
