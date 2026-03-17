@@ -31,11 +31,24 @@ class TestRunnerService
         }
 
         // Mock dell'ambiente CLI per Collision/PHPUnit in contesto web
-        // Questo risolve l'errore "Undefined array key 'argv'"
+        // Questo risolve l'errore "Undefined array key 'argv'" e "Undefined constant 'STDOUT'"
         if (!isset($_SERVER['argv'])) {
             $this->log("Simulazione ambiente CLI (argv/argc)", $debugLogPath);
             $_SERVER['argv'] = [base_path('artisan'), 'test'];
             $_SERVER['argc'] = count($_SERVER['argv']);
+        }
+
+        if (!defined('STDOUT')) {
+            $this->log("Definizione costante STDOUT", $debugLogPath);
+            define('STDOUT', fopen('php://stdout', 'w'));
+        }
+        if (!defined('STDERR')) {
+            $this->log("Definizione costante STDERR", $debugLogPath);
+            define('STDERR', fopen('php://stderr', 'w'));
+        }
+        if (!defined('STDIN')) {
+            $this->log("Definizione costante STDIN", $debugLogPath);
+            define('STDIN', fopen('php://stdin', 'r'));
         }
 
         $startTime = microtime(true);
