@@ -57,10 +57,10 @@
 - [X] sistemare la gestione dei messaggi telegram
 - [X] aggiungere il link al filtro per espansione quando si preme sopra alla relativa espansione nella carta
 
-- [ ] aggiustare la gestione dei token (i segnalini fanno parte del set "T{espansione}" e non "{espansione}")
-- [ ] sistemare tabella carte (colonne ora di troppo per gli aspetti e sistemare il filtro per la nuova versione degli aspetti)
-- [ ] sistemare gli ordinamenti
-- [ ] aggiungere il pulsante admin per fare le query nel menu a tendina
+- [X] aggiustare la gestione dei token (i segnalini fanno parte del set "T{espansione}" e non "{espansione}")
+- [X] sistemare tabella carte (colonne ora di troppo per gli aspetti e sistemare il filtro per la nuova versione degli aspetti)
+- [X] sistemare gli ordinamenti
+- [X] aggiungere il pulsante admin per fare le query nel menu a tendina
 
 ## Funzionalità Future
 - Funzionalità di condivisione social

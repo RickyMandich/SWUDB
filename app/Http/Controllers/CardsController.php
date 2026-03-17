@@ -1345,8 +1345,8 @@ class CardsController extends Controller
         // Definisco l'ordine dei tipi generici
         $genericTipoOrder = ['Leader', 'Base'];
 
-        // Definisco l'ordine degli aspetti primari
-        $primaryAspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo', "Nero", "Bianco"];
+        // Definisco l'ordine degli aspetti
+        $aspectOrder = ['Blu', 'Verde', 'Rosso', 'Giallo', 'Nero', 'Bianco'];
 
         // Definisco l'ordine dei tipi specifici
         $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
@@ -1362,75 +1362,10 @@ class CardsController extends Controller
             return $index !== false ? $index : count($genericTipoOrder);
         };
 
-        // Funzione per ottenere il peso dell'aspetto primario
-        $getPrimaryAspectWeight = function ($element) use ($primaryAspectOrder) {
-            // Se abbiamo la relazione aspects caricata
-            if (isset($element['aspects']) && is_array($element['aspects'])) {
-                $aspects = $element['aspects'];
-                foreach ($aspects as $a) {
-                    $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
-                    if ($pivot && (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) == 0) {
-                        $aspetto = is_object($a) ? $a->nome : ($a['nome'] ?? '');
-                        $index = array_search($aspetto, $primaryAspectOrder);
-                        return $index !== false ? $index : count($primaryAspectOrder);
-                    }
-                }
-            }
-
-            // Fallback legacy
-            $aspetto = isset($element['aspettoPrimario']) ? $element['aspettoPrimario'] : '';
-            $index = array_search($aspetto, $primaryAspectOrder);
-            return $index !== false ? $index : count($primaryAspectOrder);
-        };
-
-        // Funzione per verificare la presenza di Dark/Light nell'aspetto secondario
-        $getSecondaryAspectWeight = function ($element) {
-            // Se abbiamo la relazione aspects caricata (Collection)
-            if (isset($element['aspects']) && is_array($element['aspects'])) {
-                $aspects = $element['aspects'];
-                // Cerchiamo l'aspetto con sort_order = 1 (secondario)
-                $secondaryAspect = null;
-                foreach ($aspects as $a) {
-                    $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
-                    if ($pivot && (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) == 1) {
-                        $secondaryAspect = is_object($a) ? $a->nome : ($a['nome'] ?? '');
-                        break;
-                    }
-                }
-
-                if (!$secondaryAspect)
-                    return 3;
-
-                if ($secondaryAspect === 'Nero')
-                    return 0;
-                if ($secondaryAspect === 'Bianco')
-                    return 1;
-
-                // Controllo se è uguale al primario (sort_order = 0)
-                $primaryAspect = null;
-                foreach ($aspects as $a) {
-                    $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
-                    if ($pivot && (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) == 0) {
-                        $primaryAspect = is_object($a) ? $a->nome : ($a['nome'] ?? '');
-                        break;
-                    }
-                }
-
-                if ($secondaryAspect === $primaryAspect)
-                    return 2;
-                return 3;
-            }
-
-            // Fallback legacy (se le colonne esistono ancora nell'array)
-            $aspettoSecondario = isset($element['aspettoSecondario']) ? $element['aspettoSecondario'] : '';
-            if ($aspettoSecondario === 'Nero')
-                return 0;
-            if ($aspettoSecondario === 'Bianco')
-                return 1;
-            $aspettoPrimario = isset($element["aspettoPrimario"]) ? $element["aspettoPrimario"] : '';
-            if ($aspettoSecondario === $aspettoPrimario)
-                return 2;
-            return 3;
+        // Funzione per ottenere il peso di un aspetto
+        $getAspectWeight = function ($aspetto) use ($aspectOrder) {
+            $index = array_search($aspetto, $aspectOrder);
+            return $index !== false ? $index : count($aspectOrder);
         };
 
         $getSpecificTipoWeight = function ($element) use ($specificTipoOrder) {
@@ -1467,49 +1402,49 @@ class CardsController extends Controller
             echo "le carte sono dello stesso tipo generico(" . $getValue($el1, "tipo") . ")<br>";
         }
 
-        // Se i tipi sono uguali, confronto per aspetto primario
-        $primaryAspectWeight1 = $getPrimaryAspectWeight($el1);
-        $primaryAspectWeight2 = $getPrimaryAspectWeight($el2);
+        // Confronto per aspetti (nuova gestione unificata)
+        $aspects1 = isset($el1['aspects']) ? $el1['aspects'] : [];
+        $aspects2 = isset($el2['aspects']) ? $el2['aspects'] : [];
 
-        if ($primaryAspectWeight1 < $primaryAspectWeight2) {
-            if ($verbose) {
-                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base dell'aspetto primario<br>";
+        // Estraggo i nomi degli aspetti ordinati per sort_order
+        $aspectNames1 = [];
+        foreach ($aspects1 as $a) {
+            $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
+            $order = $pivot ? (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) : 0;
+            $aspectNames1[$order] = is_object($a) ? $a->nome : ($a['nome'] ?? '');
+        }
+        ksort($aspectNames1);
+
+        $aspectNames2 = [];
+        foreach ($aspects2 as $a) {
+            $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
+            $order = $pivot ? (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) : 0;
+            $aspectNames2[$order] = is_object($a) ? $a->nome : ($a['nome'] ?? '');
+        }
+        ksort($aspectNames2);
+
+        $maxAspects = max(empty($aspectNames1) ? 0 : max(array_keys($aspectNames1)), empty($aspectNames2) ? 0 : max(array_keys($aspectNames2)));
+
+        for ($i = 0; $i <= $maxAspects; $i++) {
+            $asp1 = isset($aspectNames1[$i]) ? $aspectNames1[$i] : null;
+            $asp2 = isset($aspectNames2[$i]) ? $aspectNames2[$i] : null;
+
+            if ($asp1 === $asp2) continue;
+
+            $weight1 = $asp1 ? $getAspectWeight($asp1) : count($aspectOrder);
+            $weight2 = $asp2 ? $getAspectWeight($asp2) : count($aspectOrder);
+
+            if ($weight1 < $weight2) {
+                if ($verbose) echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " per l'aspetto livello $i<br>";
+                return -1;
             }
-            return -1;
-        }
-
-        if ($primaryAspectWeight1 > $primaryAspectWeight2) {
-            if ($verbose) {
-                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base dell'aspetto primario<br>";
+            if ($weight1 > $weight2) {
+                if ($verbose) echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " per l'aspetto livello $i<br>";
+                return 1;
             }
-            return 1;
         }
 
-        if ($verbose) {
-            echo "le carte hanno lo stesso aspetto primario (" . $getValue($el1, "aspettoPrimario") . ")<br>";
-        }
-
-        // Se gli aspetti primari sono uguali, confronto per aspetto secondario
-        $secondaryAspectWeight1 = $getSecondaryAspectWeight($el1);
-        $secondaryAspectWeight2 = $getSecondaryAspectWeight($el2);
-
-        if ($secondaryAspectWeight1 < $secondaryAspectWeight2) {
-            if ($verbose) {
-                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base dell'aspetto secondario<br>";
-            }
-            return -1;
-        }
-
-        if ($secondaryAspectWeight1 > $secondaryAspectWeight2) {
-            if ($verbose) {
-                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base dell'aspetto secondario<br>";
-            }
-            return 1;
-        }
-
-        if ($verbose) {
-            echo "le carte hanno lo stesso aspetto secondario (" . $getValue($el1, "aspettoSecondario") . ")<br>";
-        }
+        if ($verbose) echo "Le carte hanno gli stessi aspetti<br>";
 
         // Se aspetto secondario è uguale, confronto per tipo specifico
         $tipoWeight1 = $getSpecificTipoWeight($el1);
@@ -1554,6 +1489,19 @@ class CardsController extends Controller
             if ($verbose) {
                 echo "le carte hanno lo stesso costo (" . $getValue($el1, "costo") . ")<br>";
             }
+        }
+
+        // Se il costo è uguale, confronto alfabetico
+        $nome1 = $getValue($el1, "nome");
+        $nome2 = $getValue($el2, "nome");
+        $compareNome = strcmp($nome1, $nome2);
+        if ($compareNome < 0) {
+            if ($verbose) echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " in ordine alfabetico<br>";
+            return -1;
+        }
+        if ($compareNome > 0) {
+            if ($verbose) echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " in ordine alfabetico<br>";
+            return 1;
         }
 
         // Se nome è uguali, confronto per uscita (formato aaaa mm gg)

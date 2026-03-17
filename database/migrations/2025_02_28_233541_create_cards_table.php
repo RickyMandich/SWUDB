@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
 
     protected array $tags = ['cards'];
 
@@ -19,8 +18,6 @@ return new class extends Migration
                 $table->string('cid', 15)->unique();
                 $table->string('espansione', 10);
                 $table->decimal('numero', 3, 0);
-                $table->string('aspettoPrimario', 100)->nullable();
-                $table->string('aspettoSecondario', 100)->nullable();
                 $table->boolean('unica')->default(0);
                 $table->string('nome', 100);
                 $table->string('titolo', 100)->default("");
