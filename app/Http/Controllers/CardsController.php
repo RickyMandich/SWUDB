@@ -241,7 +241,7 @@ class CardsController extends Controller
      * @param string|null $logFile Log file path for this session
      * @return array|null Card data array or null if failed
      */
-    private function getCardDetailsFromAPI($cardId, $logFile = null)
+    private function getCardDetailsFromAPI($cardId, $logFile = null, &$originalData = null)
     {
         $url = "https://admin.starwarsunlimited.com/api/card/{$cardId}?locale=it";
 
@@ -263,6 +263,7 @@ class CardsController extends Controller
 
             $jsonData = $response->json();
             $data = $jsonData['data'] ?? null;
+            $originalData = $data;
 
             if (!$data) {
                 $errorMsg = "Nessun dato trovato per carta {$cardId}";
@@ -702,12 +703,14 @@ class CardsController extends Controller
             $checkpoint = [];
             $startIndex = 0;
             $toInsert = [];
+            $originalJsonData = [];
 
             if (file_exists($checkpointFile)) {
                 $checkpoint = json_decode(file_get_contents($checkpointFile), true);
                 if ($checkpoint && $checkpoint['threadId'] === $threadId) {
                     $startIndex = $checkpoint['lastProcessedIndex'] + 1;
                     $toInsert = $checkpoint['processedCards'] ?? [];
+                    $originalJsonData = $checkpoint['originalJsonData'] ?? [];
                     $this->writeScanLog("=== RIPRESA DA CHECKPOINT ===", $logFile);
                     $this->writeScanLog("Ripresa dall'indice: {$startIndex}", $logFile);
                     $this->writeScanLog("Carte già elaborate: " . count($toInsert), $logFile);
@@ -734,9 +737,13 @@ class CardsController extends Controller
                 $cardId = $newCardIds[$index];
                 $this->writeScanLog("Elaborazione carta " . ($index + 1) . "/" . count($newCardIds) . ": {$cardId}", $logFile);
 
-                $cardData = $this->getCardDetailsFromAPI($cardId, $logFile);
+                $originalData = null;
+                $cardData = $this->getCardDetailsFromAPI($cardId, $logFile, $originalData);
                 if ($cardData) {
                     $toInsert[] = $cardData;
+                    if ($originalData) {
+                        $originalJsonData[] = $originalData;
+                    }
                     $processedCount++;
 
                     $cardInfo = ($cardData['espansione'] ?? 'N/A') . "-" . ($cardData['numero'] ?? 'N/A') . " " . ($cardData['nome'] ?? 'N/A');
@@ -757,6 +764,7 @@ class CardsController extends Controller
                         'threadId' => $threadId,
                         'lastProcessedIndex' => $index,
                         'processedCards' => $toInsert,
+                        'originalJsonData' => $originalJsonData,
                         'timestamp' => time()
                     ];
                     file_put_contents($checkpointFile, json_encode($checkpointData));
@@ -772,6 +780,7 @@ class CardsController extends Controller
                         'threadId' => $threadId,
                         'lastProcessedIndex' => $index,
                         'processedCards' => $toInsert,
+                        'originalJsonData' => $originalJsonData,
                         'timestamp' => time()
                     ];
                     file_put_contents($checkpointFile, json_encode($checkpointData));
@@ -789,6 +798,18 @@ class CardsController extends Controller
             // Processing completed
             $this->writeScanLog("=== ELABORAZIONE COMPLETATA ===", $logFile);
             $this->writeScanLog("Carte elaborate con successo: " . count($toInsert) . "/" . count($newCardIds), $logFile);
+
+            // Salvataggio JSON originale con lo stesso nome del log
+            if (!empty($originalJsonData) && $logFile) {
+                $jsonLogFile = preg_replace('/\.log$/', '.json', $logFile);
+                if ($jsonLogFile === $logFile) {
+                    $jsonLogFile .= '.json';
+                }
+                
+                // Ensure array of objects structure as requested
+                file_put_contents($jsonLogFile, json_encode($originalJsonData, JSON_PRETTY_PRINT));
+                $this->writeScanLog("Salvato file JSON originale: " . basename($jsonLogFile), $logFile);
+            }
 
             // Clean up checkpoint file
             if (file_exists($checkpointFile)) {

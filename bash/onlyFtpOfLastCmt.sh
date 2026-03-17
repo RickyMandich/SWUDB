@@ -1,19 +1,36 @@
+# Leggi le credenziali FTP dal file .env
+if [ -f .env ]; then
+    FTP_SERVER=$(grep "^FTP_SERVER=" .env | cut -d '=' -f2- | sed 's/^"//' | sed 's/"$//')
+    FTP_USERNAME=$(grep "^FTP_USERNAME=" .env | cut -d '=' -f2- | sed 's/^"//' | sed 's/"$//')
+    FTP_PASSWORD=$(grep "^FTP_PASSWORD=" .env | cut -d '=' -f2- | sed 's/^"//' | sed 's/"$//')
+    FTP_PORT=$(grep "^FTP_PORT=" .env | cut -d '=' -f2- | sed 's/^"//' | sed 's/"$//')
+else
+    echo "Errore: File .env non trovato"
+    exit 1
+fi
+
 # Funzione per caricare i file su FTP a partire dal commit
 function uploadFilesFromCommit() {
-    # Ottieni l'elenco dei file modificati nell'ultimo commit
-    changedFiles=$(git diff-tree --no-commit-id --name-only -r HEAD)
+    # Itera sui file modificati e carica ciascuno di essi (usando while read per gestire spazi nei nomi)
+    git diff-tree --no-commit-id --name-only -r HEAD | while IFS= read -r file; do
+        # Salta righe vuote
+        [ -z "$file" ] && continue
 
-    # Itera sui file modificati e carica ciascuno di essi
-    for file in $changedFiles; do
+        # Salta file dentro cartelle escluse
+        if [[ "$file" == node_modules/* || "$file" == vendor/* || "$file" == */.obsidian/* ]]; then
+            echo "Skipping $file (excluded directory)"
+            continue
+        fi
+
         # Costruisci il percorso FTP per il file
         local relativePath=$(dirname "$file")
         local fileName=$(basename "$file")
-        local ftpRequest="ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/$relativePath/$fileName"
+        local ftpRequest="ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_SERVER}:${FTP_PORT}/$relativePath/$fileName"
 
         # Esegui il comando curl per caricare il file
         local curlCommand="curl -T \"$file\" \"$ftpRequest\" --ftp-pasv --ftp-create-dirs"
         echo -e "$curlCommand"
-        
+
         # Esegui curl e cattura l'output e il codice di uscita
         local curlOutput
         curlOutput=$(eval "$curlCommand" 2>&1)
@@ -24,12 +41,12 @@ function uploadFilesFromCommit() {
             # Se l'errore è "Failed to open/read local data", rimuovi il file dal server
             if [[ "$curlOutput" == *"Failed to open/read local data"* ]]; then
                 echo "Errore durante il caricamento di $file. Rimozione dal server in corso..."
-                
+
                 # Comando per eliminare il file dal server FTP
-                local deleteCommand="curl -Q \"DELE $relativePath/$fileName\" \"ftp://swudb:Minecraft35%3F@ftp.swudb.altervista.org:21/\" --ftp-pasv"
+                local deleteCommand="curl -Q \"DELE $relativePath/$fileName\" \"ftp://${FTP_USERNAME}:${FTP_PASSWORD}@${FTP_SERVER}:${FTP_PORT}/\" --ftp-pasv"
                 echo -e "$deleteCommand"
                 eval "$deleteCommand"
-                
+
                 echo "File $relativePath/$fileName rimosso dal server."
             else
                 # Per altri tipi di errori, mostra l'output di curl
@@ -46,4 +63,3 @@ function uploadFilesFromCommit() {
 uploadFilesFromCommit
 
 sleep 1
-clear
