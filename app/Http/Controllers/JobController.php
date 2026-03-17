@@ -259,22 +259,20 @@ class JobController extends Controller
         $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
         $host = $parts['host'];
 
-        // FIX: If host is localhost, use the domain from APP_URL to ensure SSL works correctly
-        if ($host === 'localhost' || $host === '127.0.0.1') {
-            $appUrl = env('APP_URL', 'https://www.unlimiteddb.net');
-            $appParts = parse_url($appUrl);
-            if (isset($appParts['host'])) {
-                $host = $appParts['host'];
-            }
+        // FIX: Force use of www.unlimiteddb.net for SSL consistency
+        // SSL certificate is likely for www. whereas internal APP_URL might be non-www or localhost
+        if ($host === 'localhost' || $host === '127.0.0.1' || strtolower($host) === 'unlimiteddb.net') {
+            $host = 'www.unlimiteddb.net';
         }
 
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
         $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
 
-        // Ricostruisci la query string
+        // Ricostruisci la query string in modo robusto
         $path = $parts['path'];
-        if (isset($parts['query']) && $parts['query'] !== '') {
-            $path .= '?' . $parts['query'] . ($query !== '' ? '&' . $query : '');
+        $existingQuery = $parts['query'] ?? '';
+        if ($existingQuery !== '') {
+            $path .= '?' . $existingQuery . ($query !== '' ? '&' . $query : '');
         } elseif ($query !== '') {
             $path .= '?' . $query;
         }
@@ -303,15 +301,11 @@ class JobController extends Controller
     }
 
     /**
-     * Execute a fire-and-forget POST request without waiting for response
-     * Esegue una richiesta POST "fire-and-forget" senza aspettare la risposta
+     * Sends an asynchronous POST request using fsockopen (fire and forget).
+     * Invia una richiesta POST asincrona usando fsockopen.
      *
-     * This method sends an HTTP POST request asynchronously using raw sockets,
-     * allowing the calling process to continue without waiting for the response.
-     * Useful for triggering background processes with form data.
-     *
-     * @param string $url The target URL for the POST request
-     * @param array $data Form data to send in the POST body
+     * @param string $url The destination URL
+     * @param array $data Data to send in the body
      * @return bool True if request was sent successfully, false on error
      */
     public static function fireAndForgetPost($url, $data = []) {
@@ -326,21 +320,18 @@ class JobController extends Controller
         $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
         $host = $parts['host'];
 
-        // FIX: If host is localhost, use the domain from APP_URL to ensure SSL works correctly
-        if ($host === 'localhost' || $host === '127.0.0.1') {
-            $appUrl = env('APP_URL', 'https://www.unlimiteddb.net');
-            $appParts = parse_url($appUrl);
-            if (isset($appParts['host'])) {
-                $host = $appParts['host'];
-            }
+        // FIX: Force use of www.unlimiteddb.net for SSL consistency
+        if ($host === 'localhost' || $host === '127.0.0.1' || strtolower($host) === 'unlimiteddb.net') {
+            $host = 'www.unlimiteddb.net';
         }
 
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
         $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
         
         $path = $parts['path'];
-        if (isset($parts['query']) && $parts['query'] !== '') {
-            $path .= '?' . $parts['query'];
+        $existingQuery = $parts['query'] ?? '';
+        if ($existingQuery !== '') {
+            $path .= '?' . $existingQuery;
         }
 
         $postData = http_build_query($data);
