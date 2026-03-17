@@ -69,7 +69,7 @@ class TestRunnerService
             // Crea dati temporanei
             $aspect = \App\Models\Aspect::create(['nome' => 'Test Aspect', 'slug' => 'test-aspect', 'colore' => '#000000']);
             $card = \App\Models\Card::create([
-                'cid' => 'test-sim-1', 'nome' => 'Test Card Sim', 'numero' => 9991, 
+                'cid' => 'test-sim-1', 'nome' => 'Test Card Sim', 'numero' => 999, 
                 'espansione' => 'TEST', 'tipo' => 'Unità', 'costo' => 1, 'rarita' => 'C',
                 'descrizione' => 'Test', 'tratti' => 'Test', 'artista' => 'Test'
             ]);
@@ -138,8 +138,8 @@ class TestRunnerService
             // Simuliamo il salvataggio diretto invece della request POST per evitare problemi di CSRF/Sessione in-process
             $deck = \App\Models\Deck::create([
                 'nome' => 'Mazzo Test Sim',
-                'user' => $user->id,
-                'pubblico' => 1
+                'codUtente' => $user->id,
+                'public' => 1
             ]);
             
             if (!$deck->exists) throw new \Exception("Creazione mazzo fallita");
