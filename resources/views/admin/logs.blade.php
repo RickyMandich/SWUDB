@@ -59,10 +59,15 @@
                             </div>
                         @else
                             <div class="position-relative">
-                                <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" 
-                                        onclick="copyToClipboard()" style="z-index: 10;">
-                                    <i class="fas fa-copy me-1"></i>Copia
-                                </button>
+                                <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                                    <a href="{{ route('admin.logs.download', ['path' => $currentPath]) }}" class="btn btn-sm btn-outline-primary me-2" title="Scarica file originale">
+                                        <i class="fas fa-download me-1"></i>Scarica
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary" 
+                                            onclick="copyToClipboard()">
+                                        <i class="fas fa-copy me-1"></i>Copia
+                                    </button>
+                                </div>
 
                                 @if(!empty($fileContent['truncated']))
                                     <div class="alert alert-info m-3">

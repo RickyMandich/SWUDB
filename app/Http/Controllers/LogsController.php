@@ -44,6 +44,32 @@ class LogsController extends Controller
     }
 
     /**
+     * Download log file
+     * Scarica file di log
+     *
+     * @param Request $request HTTP request with mandatory path parameter
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\RedirectResponse|\Illuminate\Contracts\View\View Download file or error redirect
+     */
+    public function download(Request $request)
+    {
+        if (!Auth::admin()) {
+            return view("errors.403");
+        }
+
+        $currentPath = $request->get('path', '');
+        $logsBasePath = storage_path('logs');
+        
+        // Sanitize and validate path
+        $fullPath = $this->sanitizePath($logsBasePath, $currentPath);
+        
+        if (!$fullPath || !File::exists($fullPath) || !File::isFile($fullPath)) {
+            return redirect()->route('admin.logs')->with('error', 'File non valido o inesistente');
+        }
+
+        return response()->download($fullPath);
+    }
+
+    /**
      * Sanitize and validate path to prevent directory traversal
      * Sanifica e valida il percorso per prevenire directory traversal
      *

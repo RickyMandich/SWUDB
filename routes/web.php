@@ -112,6 +112,7 @@ Route::get('/admin/decks', [AdminController::class, 'decks'])->name("admin.decks
 Route::get('/admin/errors', [AdminController::class, 'errors'])->name("admin.errors")->middleware('auth');
 Route::get('/admin/errors/{error}', [AdminController::class, 'showError'])->name("admin.errors.show")->middleware('auth');
 Route::get('/admin/logs', [App\Http\Controllers\LogsController::class, 'index'])->name("admin.logs")->middleware('auth');
+Route::get('/admin/logs/download', [App\Http\Controllers\LogsController::class, 'download'])->name("admin.logs.download")->middleware('auth');
 Route::patch('/admin/errors/{error}', [AdminController::class, 'updateError'])->name("admin.errors.update")->middleware('auth');
 Route::get('/admin/errors/quick-action/{error}/{action}', [AdminController::class, 'quickActionError'])->name("admin.errors.quick-action")->middleware('auth');
 Route::post('/admin/errors/batch-action', [AdminController::class, 'batchActionErrors'])->name("admin.errors.batch-action")->middleware('auth');

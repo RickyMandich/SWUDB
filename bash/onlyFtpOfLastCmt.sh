@@ -1,3 +1,4 @@
+#!/bin/bash
 # Leggi le credenziali FTP dal file .env
 if [ -f .env ]; then
     FTP_SERVER=$(grep "^FTP_SERVER=" .env | cut -d '=' -f2- | sed 's/^"//' | sed 's/"$//')
