@@ -26,30 +26,21 @@ class TestRunnerService
         $results = [];
         $allPassed = true;
 
-        try {
-            // Test 1: Ricerca Carte e Aspetti
-            $results[] = $this->simulateCardSearchTest($debugLogPath);
-            
-            // Test 2: Accesso Admin e Logs
-            $results[] = $this->simulateAdminToolsTest($debugLogPath);
-            
-            // Test 3: Gestione Mazzi
-            $results[] = $this->simulateDeckManagementTest($debugLogPath);
-
-        } catch (\Throwable $e) {
-            $this->log("❌ ERRORE CRITICO durante la simulazione: " . $e->getMessage(), $debugLogPath);
-            $allPassed = false;
-            $results[] = ['name' => 'Errore Sistema', 'passed' => false, 'message' => $e->getMessage()];
-        }
+        // Test 1: Ricerca Carte e Aspetti
+        $results[] = $this->simulateCardSearchTest($debugLogPath);
+        
+        // Test 2: Accesso Admin e Logs
+        $results[] = $this->simulateAdminToolsTest($debugLogPath);
+        
+        // Test 3: Gestione Mazzi
+        $results[] = $this->simulateDeckManagementTest($debugLogPath);
 
         // Calcolo esito finale
-        foreach ($results as $res) {
-            if (!$res['passed']) $allPassed = false;
-        }
-
-        // Salvataggio nel database
         $output = "";
         foreach ($results as $res) {
+            if (!$res['passed']) {
+                $allPassed = false;
+            }
             $output .= ($res['passed'] ? "✅" : "❌") . " " . $res['name'] . ": " . ($res['message'] ?? 'OK') . "\n";
         }
 
@@ -62,11 +53,9 @@ class TestRunnerService
         ]);
 
         if (!$allPassed) {
-            $this->log("Esito: FALLITO. Invio notifiche...", $debugLogPath);
-            // Non inviamo notifiche se richiesto dall'utente durante il debug silente
-            // Ma l'utente ha chiesto di poter capire se si è bloccato, quindi il log file è ok.
+            $this->log("Esito Finale: FALLITO.", $debugLogPath);
         } else {
-            $this->log("Esito: SUCCESSO.", $debugLogPath);
+            $this->log("Esito Finale: SUCCESSO.", $debugLogPath);
         }
 
         return $allPassed;
@@ -75,38 +64,33 @@ class TestRunnerService
     protected function simulateCardSearchTest($logPath)
     {
         $this->log("Esecuzione simulazione: Ricerca Carte...", $logPath);
-        
-        return \DB::transaction(function() {
-            try {
-                // Crea dati temporanei
-                $aspect = \App\Models\Aspect::create(['nome' => 'Test Aspect', 'slug' => 'test-aspect', 'colore' => '#000000']);
-                $card = \App\Models\Card::create([
-                    'cid' => 'test-sim-1', 'nome' => 'Test Card Sim', 'numero' => 9991, 
-                    'espansione' => 'TEST', 'tipo' => 'Unità', 'costo' => 1, 'rarita' => 'C',
-                    'descrizione' => 'Test', 'tratti' => 'Test', 'artista' => 'Test'
-                ]);
-                
-                // Verifica esistenza nel DB
-                if (!\App\Models\Card::where('cid', 'test-sim-1')->exists()) {
-                    throw new \Exception("Salvataggio card fallito");
-                }
-
-                // Simula rotta /carte (solo controllo 200)
-                $response = $this->simulateGet('/carte');
-                if ($response->getStatusCode() !== 200) {
-                    throw new \Exception("Rotta /carte ha restituito " . $response->getStatusCode());
-                }
-
-                return ['name' => 'Ricerca Carte', 'passed' => true];
-            } catch (\Exception $e) {
-                return ['name' => 'Ricerca Carte', 'passed' => false, 'message' => $e->getMessage()];
-            } finally {
-                // Il rollback è automatico se lanciamo eccezione, ma qui vogliamo forzarlo sempre
-                throw new \Exception('Rollback voluto');
+        \DB::beginTransaction();
+        try {
+            // Crea dati temporanei
+            $aspect = \App\Models\Aspect::create(['nome' => 'Test Aspect', 'slug' => 'test-aspect', 'colore' => '#000000']);
+            $card = \App\Models\Card::create([
+                'cid' => 'test-sim-1', 'nome' => 'Test Card Sim', 'numero' => 9991, 
+                'espansione' => 'TEST', 'tipo' => 'Unità', 'costo' => 1, 'rarita' => 'C',
+                'descrizione' => 'Test', 'tratti' => 'Test', 'artista' => 'Test'
+            ]);
+            
+            // Verifica esistenza nel DB
+            if (!\App\Models\Card::where('cid', 'test-sim-1')->exists()) {
+                throw new \Exception("Salvataggio card fallito");
             }
-        }, 1) === true ?: ['name' => 'Ricerca Carte', 'passed' => true]; 
-        // Nota: Il transaction restituirà il risultato se tutto va bene.
-        // Useremo un approccio più pulito sotto.
+
+            // Simula rotta /carte (solo controllo 200)
+            $response = $this->simulateGet('/carte');
+            if ($response->getStatusCode() !== 200) {
+                throw new \Exception("Rotta /carte ha restituito " . $response->getStatusCode());
+            }
+
+            \DB::rollBack();
+            return ['name' => 'Ricerca Carte', 'passed' => true];
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return ['name' => 'Ricerca Carte', 'passed' => false, 'message' => $e->getMessage()];
+        }
     }
 
     // Per brevità e sicurezza, implementiamo una versione semplificata che usa transazioni manuali

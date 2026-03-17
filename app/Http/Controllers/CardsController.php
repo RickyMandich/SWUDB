@@ -575,14 +575,13 @@ class CardsController extends Controller
         $this->writeScanLog("Esecuzione test pre-scansione...", $logFile);
         $testRunner = new \App\Services\TestRunnerService();
         if (!$testRunner->runTests($logFile)) {
-            $errorMsg = "⚠️ ATTENZIONE: I test di sistema non sono stati superati. Controllare la Dashboard Admin per dettagli.";
-            $this->writeScanLog("❌ " . $errorMsg, $logFile);
+            $errorMsg = "❌ SCANSIONE ABORTITA: I test di sistema sono falliti. Controllare la Dashboard Admin per dettagli.";
+            $this->writeScanLog($errorMsg, $logFile);
             
-            // Informiamo il thread Telegram dell'errore tecnico
-            \App\Events\ThreadMessageCreated::dispatch($threadId, "⚠️ I test pre-scansione hanno rilevato un problema critico. Controlla lo storico test.");
+            // Informiamo il thread Telegram del blocco
+            \App\Events\ThreadMessageCreated::dispatch($threadId, "❌ SCANSIONE ANNULLATA: I test pre-scansione hanno rilevato errori. Controlla lo storico test.");
             
-            // In questa fase di debug, non fermiamo la scansione se i test falliscono per errore tecnico
-            // return; 
+            return; 
         } else {
             $this->writeScanLog("✅ Test superati con successo. Procedo con la scansione.", $logFile);
         }
