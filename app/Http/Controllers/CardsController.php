@@ -73,7 +73,7 @@ class CardsController extends Controller
             ob_start();
             CardsController::mergeSort($cards, true);
             $output = ob_get_clean();
-            return view("carte.update", ["output" => $output]);
+            return $output;
         } else {
             return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
         }
@@ -600,7 +600,7 @@ class CardsController extends Controller
         try {
             // Check if thread already exists (called from TelegramController)
             $existingThread = ThreadManager::getThread($threadId);
-            
+
             // Dispatch initial progress message
             ThreadMessageCreated::dispatch($threadId, "Recupero lista carte dall'API...");
 
@@ -1364,7 +1364,7 @@ class CardsController extends Controller
                 $allAspects = \App\Models\Aspect::all(['nome', 'order']);
                 $aspectWeightMap = [];
                 foreach ($allAspects as $asp) {
-                    $aspectWeightMap[$asp->nome] = (int)$asp->order;
+                    $aspectWeightMap[$asp->nome] = (int) $asp->order;
                 }
             } catch (\Exception $e) {
                 // Fallback in caso di errore (es. tabella non ancora migrata)
@@ -1398,11 +1398,13 @@ class CardsController extends Controller
         $tipoWeight2 = $getGenericTipoWeight($el2);
 
         if ($tipoWeight1 < $tipoWeight2) {
-            if ($verbose) echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo generico<br>";
+            if ($verbose)
+                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo generico<br>";
             return -1;
         }
         if ($tipoWeight1 > $tipoWeight2) {
-            if ($verbose) echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo generico<br>";
+            if ($verbose)
+                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo generico<br>";
             return 1;
         }
 
@@ -1411,7 +1413,7 @@ class CardsController extends Controller
         $aspects2 = isset($el2['aspects']) ? $el2['aspects'] : [];
 
         // Estraggo i nomi degli aspetti ordinati per sort_order (pivot)
-        $extractAspects = function($aspects) {
+        $extractAspects = function ($aspects) {
             $names = [];
             foreach ($aspects as $a) {
                 $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
@@ -1426,24 +1428,29 @@ class CardsController extends Controller
         $aspectNames2 = $extractAspects($aspects2);
 
         $maxOrder = 0;
-        if (!empty($aspectNames1)) $maxOrder = max($maxOrder, max(array_keys($aspectNames1)));
-        if (!empty($aspectNames2)) $maxOrder = max($maxOrder, max(array_keys($aspectNames2)));
+        if (!empty($aspectNames1))
+            $maxOrder = max($maxOrder, max(array_keys($aspectNames1)));
+        if (!empty($aspectNames2))
+            $maxOrder = max($maxOrder, max(array_keys($aspectNames2)));
 
         for ($i = 0; $i <= $maxOrder; $i++) {
             $asp1 = isset($aspectNames1[$i]) ? $aspectNames1[$i] : null;
             $asp2 = isset($aspectNames2[$i]) ? $aspectNames2[$i] : null;
 
-            if ($asp1 === $asp2) continue;
+            if ($asp1 === $asp2)
+                continue;
 
             $weight1 = $asp1 ? $getAspectWeight($asp1) : 1000;
             $weight2 = $asp2 ? $getAspectWeight($asp2) : 1000;
 
             if ($weight1 < $weight2) {
-                if ($verbose) echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " per l'aspetto livello $i<br>";
+                if ($verbose)
+                    echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " per l'aspetto livello $i<br>";
                 return -1;
             }
             if ($weight1 > $weight2) {
-                if ($verbose) echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " per l'aspetto livello $i<br>";
+                if ($verbose)
+                    echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " per l'aspetto livello $i<br>";
                 return 1;
             }
         }
@@ -1453,32 +1460,38 @@ class CardsController extends Controller
         $specificWeight2 = $getSpecificTipoWeight($el2);
 
         if ($specificWeight1 < $specificWeight2) {
-            if ($verbose) echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo specifico<br>";
+            if ($verbose)
+                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo specifico<br>";
             return -1;
         }
         if ($specificWeight1 > $specificWeight2) {
-            if ($verbose) echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo specifico<br>";
+            if ($verbose)
+                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo specifico<br>";
             return 1;
         }
 
         // 4. Confronto per costo
-        $cost1 = (int)$getValue($el1, 'costo', 0);
-        $cost2 = (int)$getValue($el2, 'costo', 0);
-        if ($cost1 < $cost2) return -1;
-        if ($cost1 > $cost2) return 1;
+        $cost1 = (int) $getValue($el1, 'costo', 0);
+        $cost2 = (int) $getValue($el2, 'costo', 0);
+        if ($cost1 < $cost2)
+            return -1;
+        if ($cost1 > $cost2)
+            return 1;
 
         // 5. Confronto alfabetico per nome
         $nameCompare = strcmp($getValue($el1, 'nome'), $getValue($el2, 'nome'));
-        if ($nameCompare !== 0) return $nameCompare;
+        if ($nameCompare !== 0)
+            return $nameCompare;
 
         // 6. Confronto per espansione
         $esp1 = $getValue($el1, 'espansione');
         $esp2 = $getValue($el2, 'espansione');
-        if ($esp1 != $esp2) return strcmp($esp1, $esp2);
+        if ($esp1 != $esp2)
+            return strcmp($esp1, $esp2);
 
         // 7. Confronto per numero
-        $num1 = (int)$getValue($el1, 'numero', 0);
-        $num2 = (int)$getValue($el2, 'numero', 0);
+        $num1 = (int) $getValue($el1, 'numero', 0);
+        $num2 = (int) $getValue($el2, 'numero', 0);
         return $num1 <=> $num2;
     }
 
