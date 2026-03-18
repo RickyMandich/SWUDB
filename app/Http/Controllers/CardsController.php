@@ -63,7 +63,7 @@ class CardsController extends Controller
     public function compare($espansione1, $numero1, $espansione2, $numero2)
     {
         if (isset($espansione1) and isset($numero1) and isset($espansione2) and isset($numero2)) {
-            $cards = Card::where(function ($query) use ($espansione1, $numero1) {
+            $cards = Card::with('aspects')->where(function ($query) use ($espansione1, $numero1) {
                 $query->where('espansione', $espansione1)
                     ->where('numero', $numero1);
             })->orWhere(function ($query) use ($espansione2, $numero2) {
@@ -1408,6 +1408,8 @@ class CardsController extends Controller
             return 1;
         }
 
+        if ($verbose) echo "Le carte sono dello stesso tipo generico (" . $getValue($el1, "tipo") . ")<br>";
+
         // 2. Confronto per aspetti (nuova gestione unificata basata su order in DB)
         $aspects1 = isset($el1['aspects']) ? $el1['aspects'] : [];
         $aspects2 = isset($el2['aspects']) ? $el2['aspects'] : [];
@@ -1455,6 +1457,8 @@ class CardsController extends Controller
             }
         }
 
+        if ($verbose) echo "Le carte hanno gli stessi aspetti<br>";
+
         // 3. Confronto per tipo specifico (Unità < Miglioria < Evento)
         $specificWeight1 = $getSpecificTipoWeight($el1);
         $specificWeight2 = $getSpecificTipoWeight($el2);
@@ -1470,6 +1474,8 @@ class CardsController extends Controller
             return 1;
         }
 
+        if ($verbose) echo "Le carte hanno lo stesso tipo specifico<br>";
+
         // 4. Confronto per costo
         $cost1 = (int) $getValue($el1, 'costo', 0);
         $cost2 = (int) $getValue($el2, 'costo', 0);
@@ -1477,6 +1483,8 @@ class CardsController extends Controller
             return -1;
         if ($cost1 > $cost2)
             return 1;
+
+        if ($verbose) echo "Le carte hanno lo stesso costo (" . $cost1 . ")<br>";
 
         // 5. Confronto alfabetico per nome
         $nameCompare = strcmp($getValue($el1, 'nome'), $getValue($el2, 'nome'));
