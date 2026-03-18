@@ -15,9 +15,9 @@ Il componente offre filtri per tutti gli attributi del model `Card`:
 - **Titolo**: Ricerca testuale con debounce
 - **Espansione**: Select con tutte le espansioni disponibili
 - **Tipo**: Select con tutti i tipi di carta
-- **Aspetto Primario**: Select con tutti gli aspetti primari
-- **Aspetto Secondario**: Select con tutti gli aspetti secondari
+- **Aspetti**: Multi-select con tutti gli aspetti disponibili (Vigilanza, Autorità, etc.)
 - **Rarità**: Select con tutte le rarità disponibili
+- **Rotazione**: Select con le rotazioni disponibili delle espansioni
 - **Unica**: Select per carte uniche
 
 **Filtri Avanzati (collassabili):**

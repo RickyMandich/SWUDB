@@ -25,17 +25,15 @@ class SearchFilter extends Component
     public $titolo = '';
     public $espansione = '';
     public $tipo = '';
-    public $aspettoPrimario = '';
-    public $aspettoSecondario = '';
+    public $aspetti = []; // Ora è un array per la selezione multipla
     public $rarita = '';
+    public $rotazione = ''; // Nuovo filtro per rotazione
     public $costoMin = null;
     public $costoMax = null;
     public $potenzaMin = null;
     public $potenzaMax = null;
     public $vitaMin = null;
     public $vitaMax = null;
-
-    // Valori massimi dinamici dal database
     public $maxCostoDb = 999;
     public $maxPotenzaDb = 999;
     public $maxVitaDb = 999;
@@ -53,9 +51,9 @@ class SearchFilter extends Component
     // Proprietà per le opzioni dei select
     public $espansioni = [];
     public $tipi = [];
-    public $aspettiPrimari = [];
-    public $aspettiSecondari = [];
+    public $aspetti_options = []; // Opzioni per gli aspetti
     public $rarita_options = [];
+    public $rotazioni = []; // Opzioni per il filtro rotazione
     public $arene = [];
     public $artisti = [];
 
@@ -138,9 +136,9 @@ class SearchFilter extends Component
             'titolo' => 'titolo',
             'espansione' => 'espansione',
             'tipo' => 'tipo',
-            'aspettoPrimario' => 'aspettoPrimario',
-            'aspettoSecondario' => 'aspettoSecondario',
+            'aspetti' => 'aspetti',
             'rarita' => 'rarita',
+            'rotazione' => 'rotazione',
             'costoMin' => 'costoMin',
             'costoMax' => 'costoMax',
             'potenzaMin' => 'potenzaMin',
@@ -156,6 +154,11 @@ class SearchFilter extends Component
         foreach ($paramMap as $param => $property) {
             if (isset($this->initialParams[$param]) && $this->initialParams[$param] !== '') {
                 $value = $this->initialParams[$param];
+
+                // Gestione array per aspetti
+                if ($param === 'aspetti' && !is_array($value)) {
+                    $value = explode(',', $value);
+                }
 
                 // Convert numeric parameters
                 // Converti parametri numerici
@@ -186,9 +189,9 @@ class SearchFilter extends Component
             !empty($this->titolo) ||
             !empty($this->espansione) ||
             !empty($this->tipo) ||
-            !empty($this->aspettoPrimario) ||
-            !empty($this->aspettoSecondario) ||
+            !empty($this->aspetti) ||
             !empty($this->rarita) ||
+            !empty($this->rotazione) ||
             $this->costoMin !== null ||
             $this->costoMax !== null ||
             $this->potenzaMin !== null ||
@@ -228,17 +231,24 @@ class SearchFilter extends Component
                 ->pluck('tipo');
         });
 
-        $this->aspettiPrimari = Cache::remember('cards_filter_aspetti', 3600, function () {
-            return \App\Models\Aspect::orderBy('nome')->pluck('nome');
+        $this->aspetti_options = Cache::remember('cards_filter_aspetti', 3600, function () {
+            return \App\Models\Aspect::orderBy('order')->pluck('nome');
         });
-
-        $this->aspettiSecondari = $this->aspettiPrimari; // Reuso la stessa lista
 
         $this->rarita_options = Cache::remember('cards_filter_rarita', 3600, function () {
             return Card::select('rarita')
                 ->distinct()
                 ->orderBy('rarita')
                 ->pluck('rarita');
+        });
+
+        $this->rotazioni = Cache::remember('cards_filter_rotazioni', 3600, function () {
+            return \App\Models\Expansion::select('rotazione')
+                ->distinct()
+                ->whereNotNull('rotazione')
+                ->where('rotazione', '!=', '')
+                ->orderBy('rotazione')
+                ->pluck('rotazione');
         });
 
         $this->arene = Cache::remember('cards_filter_arene', 3600, function () {
@@ -287,9 +297,9 @@ class SearchFilter extends Component
         $this->titolo = is_array($this->titolo) ? (string) ($this->titolo[0] ?? '') : (string) $this->titolo;
         $this->espansione = is_array($this->espansione) ? (string) ($this->espansione[0] ?? '') : (string) $this->espansione;
         $this->tipo = is_array($this->tipo) ? (string) ($this->tipo[0] ?? '') : (string) $this->tipo;
-        $this->aspettoPrimario = is_array($this->aspettoPrimario) ? (string) ($this->aspettoPrimario[0] ?? '') : (string) $this->aspettoPrimario;
-        $this->aspettoSecondario = is_array($this->aspettoSecondario) ? (string) ($this->aspettoSecondario[0] ?? '') : (string) $this->aspettoSecondario;
+        // aspetti è già un array
         $this->rarita = is_array($this->rarita) ? (string) ($this->rarita[0] ?? '') : (string) $this->rarita;
+        $this->rotazione = is_array($this->rotazione) ? (string) ($this->rotazione[0] ?? '') : (string) $this->rotazione;
         $this->tratti = is_array($this->tratti) ? (string) ($this->tratti[0] ?? '') : (string) $this->tratti;
         $this->arena = is_array($this->arena) ? (string) ($this->arena[0] ?? '') : (string) $this->arena;
         $this->artista = is_array($this->artista) ? (string) ($this->artista[0] ?? '') : (string) $this->artista;
@@ -338,22 +348,25 @@ class SearchFilter extends Component
             $query->where('tipo', $this->tipo);
         }
 
-        // Filtro per aspetti (nuova gestione many-to-many)
-        if (!empty($this->aspettoPrimario)) {
-            $query->whereHas('aspects', function($q) {
-                $q->where('nome', $this->aspettoPrimario);
-            });
-        }
-
-        if (!empty($this->aspettoSecondario)) {
-            $query->whereHas('aspects', function($q) {
-                $q->where('nome', $this->aspettoSecondario);
-            });
+        // Filtro per aspetti (nuova gestione many-to-many con selezione multipla)
+        if (!empty($this->aspetti)) {
+            foreach ($this->aspetti as $aspetto) {
+                $query->whereHas('aspects', function ($q) use ($aspetto) {
+                    $q->where('nome', $aspetto);
+                });
+            }
         }
 
         // Filtro per rarità
         if (!empty($this->rarita)) {
             $query->where('rarita', $this->rarita);
+        }
+
+        // Filtro per rotazione
+        if (!empty($this->rotazione)) {
+            $query->whereHas('expansion', function($q) {
+                $q->where('rotazione', $this->rotazione);
+            });
         }
 
         // Filtro per costo (solo se specificato)
@@ -447,12 +460,12 @@ class SearchFilter extends Component
             $params['espansione'] = $this->espansione;
         if (!empty($this->tipo))
             $params['tipo'] = $this->tipo;
-        if (!empty($this->aspettoPrimario))
-            $params['aspettoPrimario'] = $this->aspettoPrimario;
-        if (!empty($this->aspettoSecondario))
-            $params['aspettoSecondario'] = $this->aspettoSecondario;
+        if (!empty($this->aspetti))
+            $params['aspetti'] = implode(',', $this->aspetti);
         if (!empty($this->rarita))
             $params['rarita'] = $this->rarita;
+        if (!empty($this->rotazione))
+            $params['rotazione'] = $this->rotazione;
         if ($this->costoMin !== null)
             $params['costoMin'] = $this->costoMin;
         if ($this->costoMax !== null)
@@ -499,9 +512,9 @@ class SearchFilter extends Component
         $this->titolo = '';
         $this->espansione = '';
         $this->tipo = '';
-        $this->aspettoPrimario = '';
-        $this->aspettoSecondario = '';
+        $this->aspetti = [];
         $this->rarita = '';
+        $this->rotazione = '';
         $this->costoMin = null;
         $this->costoMax = null;
         $this->potenzaMin = null;
@@ -583,11 +596,7 @@ class SearchFilter extends Component
     {
         $this->applyFilters();
     }
-    public function updatedAspettoPrimario()
-    {
-        $this->applyFilters();
-    }
-    public function updatedAspettoSecondario()
+    public function updatedAspetti()
     {
         $this->applyFilters();
     }
@@ -632,6 +641,10 @@ class SearchFilter extends Component
         $this->applyFilters();
     }
     public function updatedArtista()
+    {
+        $this->applyFilters();
+    }
+    public function updatedRotazione()
     {
         $this->applyFilters();
     }

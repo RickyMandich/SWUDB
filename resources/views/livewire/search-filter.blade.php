@@ -75,30 +75,19 @@
                         </select>
                     </div>
 
-                    <!-- Aspetto Primario -->
-                    <div class="col-md-4">
-                        <label for="aspettoPrimario" class="form-label fw-bold">Aspetto Primario</label>
-                        <select wire:model.live="aspettoPrimario" class="form-select" id="aspettoPrimario">
-                            <option value="">Tutti gli aspetti</option>
-                            @foreach($aspettiPrimari as $asp)
+                    <!-- Aspetti -->
+                    <div class="col-md-8">
+                        <label for="aspetti" class="form-label fw-bold">Aspetti (Selezione Multipla)</label>
+                        <select wire:model.live="aspetti" class="form-select" id="aspetti" multiple size="4">
+                            @foreach($aspetti_options as $asp)
                                 <option value="{{ $asp }}">{{ $asp }}</option>
                             @endforeach
                         </select>
-                    </div>
-
-                    <!-- Aspetto Secondario -->
-                    <div class="col-md-4">
-                        <label for="aspettoSecondario" class="form-label fw-bold">Aspetto Secondario</label>
-                        <select wire:model.live="aspettoSecondario" class="form-select" id="aspettoSecondario">
-                            <option value="">Tutti gli aspetti</option>
-                            @foreach($aspettiSecondari as $asp)
-                                <option value="{{ $asp }}">{{ $asp }}</option>
-                            @endforeach
-                        </select>
+                        <small class="text-muted">Tieni premuto Ctrl (o Cmd) per selezionare più aspetti</small>
                     </div>
 
                     <!-- Rarità -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="rarita" class="form-label fw-bold">Rarità</label>
                         <select wire:model.live="rarita" class="form-select" id="rarita">
                             <option value="">Tutte le rarità</option>
@@ -109,12 +98,23 @@
                     </div>
 
                     <!-- Unica -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="unica" class="form-label fw-bold">Carta Unica</label>
                         <select wire:model.live="unica" class="form-select" id="unica">
                             <option value="">Tutte</option>
                             <option value="1">Solo uniche</option>
                             <option value="0">Solo non uniche</option>
+                        </select>
+                    </div>
+
+                    <!-- Rotazione -->
+                    <div class="col-md-4">
+                        <label for="rotazione" class="form-label fw-bold">Rotazione</label>
+                        <select wire:model.live="rotazione" class="form-select" id="rotazione">
+                            <option value="">Tutte le rotazioni</option>
+                            @foreach($rotazioni as $rot)
+                                <option value="{{ $rot }}">{{ $rot }}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>

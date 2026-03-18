@@ -131,9 +131,9 @@ class Card extends Model{
         // Cache dei filtri
         Cache::forget('cards_filter_espansioni');
         Cache::forget('cards_filter_tipi');
-        Cache::forget('cards_filter_aspetti_primari');
-        Cache::forget('cards_filter_aspetti_secondari');
+        Cache::forget('cards_filter_aspetti');
         Cache::forget('cards_filter_rarita');
+        Cache::forget('cards_filter_rotazioni');
         Cache::forget('cards_filter_arene');
         Cache::forget('cards_filter_artisti');
         Cache::forget('cards_filter_max_values');
