@@ -1008,17 +1008,18 @@ class CardsController extends Controller
                     $carta->cid = $cardCid;
                     $carta->espansione = $cardData["espansione"];
                     $carta->numero = $cardData["numero"];
-                    // Sync aspects (many-to-many) with order
+                    // Prepara i dati per il sync degli aspetti (many-to-many) con ordine
+                    $syncData = [];
                     if (isset($cardData['aspects'])) {
-                        $aspectIds = \App\Models\Aspect::whereIn('nome', $cardData['aspects'])->get()->pluck('id', 'nome');
-                        $syncData = [];
-                        foreach ($cardData['aspects'] as $index => $aspectName) {
+                        $aspectNames = is_array($cardData['aspects']) ? $cardData['aspects'] : [$cardData['aspects']];
+                        $aspectIds = \App\Models\Aspect::whereIn('nome', $aspectNames)->get()->pluck('id', 'nome');
+                        foreach ($aspectNames as $index => $aspectName) {
                             if (isset($aspectIds[$aspectName])) {
                                 $syncData[$aspectIds[$aspectName]] = ['sort_order' => $index];
                             }
                         }
-                        $carta->aspects()->sync($syncData);
                     }
+
                     $carta->unica = $cardData["unica"] ?? false;
                     $carta->nome = $cardData["nome"];
                     $carta->titolo = $cardData["titolo"] ?? "";
@@ -1056,6 +1057,11 @@ class CardsController extends Controller
 
                     // Save card to database
                     $carta->save();
+
+                    // Sync aspects after save (necessary for new cards to have an ID)
+                    if (!empty($syncData)) {
+                        $carta->aspects()->sync($syncData);
+                    }
                     $insertedCount++;
 
                     // Collect inserted card for notification
