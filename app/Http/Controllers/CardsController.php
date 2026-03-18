@@ -1376,8 +1376,8 @@ class CardsController extends Controller
         // Gli aspetti con primary = true sono quelli colorati (Vigilanza, Autorità, Aggressione, Astuzia)
         // Usiamo unique('id') per assicurarci che aspetti identici (es. doppia Vigilanza) 
         // non vengano contati come "aspetti multipli" ai fini della priorità.
-        $Prim1 = $el1->aspects->where('primary', true)->unique('id');
-        $Prim2 = $el2->aspects->where('primary', true)->unique('id');
+        $Prim1 = $el1->aspects->where('primary', 1)->unique('id');
+        $Prim2 = $el2->aspects->where('primary', 1)->unique('id');
 
         if ($verbose) {
             echo "&nbsp;&nbsp;- Aspetti primari: " . $Prim1->count() . " vs " . $Prim2->count() . "<br>";
