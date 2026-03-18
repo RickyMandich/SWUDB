@@ -1417,6 +1417,7 @@ class CardsController extends Controller
         // Se hanno gli stessi aspetti iniziali ma uno ne ha di più
         if ($aspetti1->count() !== $aspetti2->count()) {
             $res = $aspetti1->count() <=> $aspetti2->count();
+            $res *= -1;
             if ($verbose)
                 echo "&nbsp;&nbsp;- Numero aspetti: " . $aspetti1->count() . " vs " . $aspetti2->count() . " -> ESITO: $res<br>";
             return $res;
