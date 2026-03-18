@@ -1440,7 +1440,7 @@ class CardsController extends Controller
         }
 
         // 5. Costo (costo) - ascending order
-        if ($el1->costo !== $el2->costo) {
+        if ($el1->tipo !== 'Leader' && $el1->costo !== $el2->costo) {
             $res = $el1->costo <=> $el2->costo;
             if ($verbose)
                 echo "&nbsp;&nbsp;- Costo: " . $el1->costo . " vs " . $el2->costo . " -> ESITO: $res<br>";
