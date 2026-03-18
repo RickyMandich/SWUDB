@@ -338,7 +338,7 @@ class CardsController extends Controller
         // Extract aspects (new many-to-many management)
         $aspects = $attributes['aspects']['data'] ?? [];
         $cardData['aspects'] = array_map(function ($aspect) {
-            return $this->translateAspect($aspect['attributes']['name'] ?? '');
+            return $this->getAspectDbName($aspect['attributes']['name'] ?? '');
         }, $aspects);
 
         // Handle aspect duplicates
@@ -400,24 +400,19 @@ class CardsController extends Controller
     }
 
     /**
-     * Translate aspect names from English to Italian
-     * Traduce i nomi degli aspetti dall'inglese all'italiano
+     * Map aspect names from API to database names
+     * Mappa i nomi degli aspetti dall'API ai nomi del database
      *
-     * @param string $aspect English aspect name
-     * @return string Italian aspect name
+     * @param string $aspect API aspect name
+     * @return string Database aspect name
      */
-    private function translateAspect($aspect)
+    private function getAspectDbName($aspect)
     {
-        $translations = [
-            'Vigilanza' => 'Blu',
-            'Malvagità' => 'Nero',
-            'Eroismo' => 'Bianco',
-            'Autorità' => 'Verde',
-            'Offensiva' => 'Rosso',
-            'Astuzia' => 'Giallo',
+        $mapping = [
+            'Offensiva' => 'Aggressione',
         ];
 
-        return $translations[$aspect] ?? $aspect;
+        return $mapping[$aspect] ?? $aspect;
     }
 
     /**
@@ -1390,7 +1385,14 @@ class CardsController extends Controller
                 }
             } catch (\Exception $e) {
                 // Fallback in caso di errore (es. tabella non ancora migrata)
-                $aspectWeightMap = ['Blu' => 0, 'Verde' => 1, 'Rosso' => 2, 'Giallo' => 3, 'Nero' => 4, 'Bianco' => 5];
+                $aspectWeightMap = [
+                    'Vigilanza' => 0,
+                    'Autorità' => 1,
+                    'Aggressione' => 2,
+                    'Astuzia' => 3,
+                    'Malvagità' => 4,
+                    'Eroismo' => 5
+                ];
             }
         }
 
