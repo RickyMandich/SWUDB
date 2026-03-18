@@ -1013,10 +1013,20 @@ class CardsController extends Controller
                     if (isset($cardData['aspects'])) {
                         $aspectNames = is_array($cardData['aspects']) ? $cardData['aspects'] : [$cardData['aspects']];
                         $aspectIds = \App\Models\Aspect::whereIn('nome', $aspectNames)->get()->pluck('id', 'nome');
+                        
+                        if ($logFile) {
+                            $this->writeScanLog("DEBUG ASPI: Nomi aspetti da API: " . json_encode($aspectNames), $logFile);
+                            $this->writeScanLog("DEBUG ASPI: ID aspetti trovati in DB: " . json_encode($aspectIds), $logFile);
+                        }
+
                         foreach ($aspectNames as $index => $aspectName) {
                             if (isset($aspectIds[$aspectName])) {
                                 $syncData[$aspectIds[$aspectName]] = ['sort_order' => $index];
                             }
+                        }
+
+                        if ($logFile) {
+                            $this->writeScanLog("DEBUG ASPI: syncData preparato: " . json_encode($syncData), $logFile);
                         }
                     }
 
@@ -1060,7 +1070,13 @@ class CardsController extends Controller
 
                     // Sync aspects after save (necessary for new cards to have an ID)
                     if (!empty($syncData)) {
-                        $carta->aspects()->sync($syncData);
+                        if ($logFile) {
+                            $this->writeScanLog("DEBUG ASPI: Chiamata sync() per carta {$carta->cid}...", $logFile);
+                        }
+                        $result = $carta->aspects()->sync($syncData);
+                        if ($logFile) {
+                            $this->writeScanLog("DEBUG ASPI: Risultato sync(): " . json_encode($result), $logFile);
+                        }
                     }
                     $insertedCount++;
 
