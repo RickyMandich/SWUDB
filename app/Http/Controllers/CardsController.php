@@ -1399,16 +1399,16 @@ class CardsController extends Controller
 
         if ($tipoWeight1 < $tipoWeight2) {
             if ($verbose)
-                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo generico<br>";
+                echo $getValue($el1, "nome") . " (Peso: " . $tipoWeight1 . ") viene prima di " . $getValue($el2, "nome") . " (Peso: " . $tipoWeight2 . ") sulla base del tipo generico (" . $getValue($el1, "tipo") . " vs " . $getValue($el2, "tipo") . ")<br>";
             return -1;
         }
         if ($tipoWeight1 > $tipoWeight2) {
             if ($verbose)
-                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo generico<br>";
+                echo $getValue($el2, "nome") . " (Peso: " . $tipoWeight2 . ") viene prima di " . $getValue($el1, "nome") . " (Peso: " . $tipoWeight1 . ") sulla base del tipo generico (" . $getValue($el2, "tipo") . " vs " . $getValue($el1, "tipo") . ")<br>";
             return 1;
         }
 
-        if ($verbose) echo "Le carte sono dello stesso tipo generico (" . $getValue($el1, "tipo") . ")<br>";
+        if ($verbose) echo "Le carte sono dello stesso tipo generico (" . $getValue($el1, "tipo") . ") con lo stesso peso (" . $tipoWeight1 . ")<br>";
 
         // 2. Confronto per aspetti (nuova gestione unificata basata su order in DB)
         $aspects1 = isset($el1['aspects']) ? $el1['aspects'] : [];
@@ -1439,25 +1439,27 @@ class CardsController extends Controller
             $asp1 = isset($aspectNames1[$i]) ? $aspectNames1[$i] : null;
             $asp2 = isset($aspectNames2[$i]) ? $aspectNames2[$i] : null;
 
-            if ($asp1 === $asp2)
+            if ($asp1 === $asp2) {
+                if ($verbose && $asp1 !== null) echo "Aspetto livello $i identico: " . $asp1 . "<br>";
                 continue;
+            }
 
             $weight1 = $asp1 ? $getAspectWeight($asp1) : 1000;
             $weight2 = $asp2 ? $getAspectWeight($asp2) : 1000;
 
             if ($weight1 < $weight2) {
                 if ($verbose)
-                    echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " per l'aspetto livello $i<br>";
+                    echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " per l'aspetto livello $i (" . ($asp1 ?: 'Nessuno') . " [Peso: $weight1] vs " . ($asp2 ?: 'Nessuno') . " [Peso: $weight2])<br>";
                 return -1;
             }
             if ($weight1 > $weight2) {
                 if ($verbose)
-                    echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " per l'aspetto livello $i<br>";
+                    echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " per l'aspetto livello $i (" . ($asp2 ?: 'Nessuno') . " [Peso: $weight2] vs " . ($asp1 ?: 'Nessuno') . " [Peso: $weight1])<br>";
                 return 1;
             }
         }
 
-        if ($verbose) echo "Le carte hanno gli stessi aspetti<br>";
+        if ($verbose) echo "Le carte hanno gli stessi aspetti (" . implode(', ', $aspectNames1) . ")<br>";
 
         // 3. Confronto per tipo specifico (Unità < Miglioria < Evento)
         $specificWeight1 = $getSpecificTipoWeight($el1);
@@ -1465,41 +1467,55 @@ class CardsController extends Controller
 
         if ($specificWeight1 < $specificWeight2) {
             if ($verbose)
-                echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " sulla base del tipo specifico<br>";
+                echo $getValue($el1, "nome") . " (Peso: " . $specificWeight1 . ") viene prima di " . $getValue($el2, "nome") . " (Peso: " . $specificWeight2 . ") sulla base del tipo specifico (" . $getValue($el1, "tipo") . " vs " . $getValue($el2, "tipo") . ")<br>";
             return -1;
         }
         if ($specificWeight1 > $specificWeight2) {
             if ($verbose)
-                echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " sulla base del tipo specifico<br>";
+                echo $getValue($el2, "nome") . " (Peso: " . $specificWeight2 . ") viene prima di " . $getValue($el1, "nome") . " (Peso: " . $specificWeight1 . ") sulla base del tipo specifico (" . $getValue($el2, "tipo") . " vs " . $getValue($el1, "tipo") . ")<br>";
             return 1;
         }
 
-        if ($verbose) echo "Le carte hanno lo stesso tipo specifico<br>";
+        if ($verbose) echo "Le carte hanno lo stesso tipo specifico (" . $getValue($el1, "tipo") . ") con peso " . $specificWeight1 . "<br>";
 
         // 4. Confronto per costo
         $cost1 = (int) $getValue($el1, 'costo', 0);
         $cost2 = (int) $getValue($el2, 'costo', 0);
-        if ($cost1 < $cost2)
+        if ($cost1 < $cost2) {
+            if ($verbose) echo $getValue($el1, "nome") . " viene prima per costo minore (" . $cost1 . " vs " . $cost2 . ")<br>";
             return -1;
-        if ($cost1 > $cost2)
+        }
+        if ($cost1 > $cost2) {
+            if ($verbose) echo $getValue($el2, "nome") . " viene prima per costo minore (" . $cost2 . " vs " . $cost1 . ")<br>";
             return 1;
+        }
 
         if ($verbose) echo "Le carte hanno lo stesso costo (" . $cost1 . ")<br>";
 
         // 5. Confronto alfabetico per nome
         $nameCompare = strcmp($getValue($el1, 'nome'), $getValue($el2, 'nome'));
-        if ($nameCompare !== 0)
-            return $nameCompare;
+        if ($nameCompare < 0) {
+            if ($verbose) echo $getValue($el1, "nome") . " viene prima alfabeticamente di " . $getValue($el2, "nome") . "<br>";
+            return -1;
+        }
+        if ($nameCompare > 0) {
+            if ($verbose) echo $getValue($el2, "nome") . " viene prima alfabeticamente di " . $getValue($el1, "nome") . "<br>";
+            return 1;
+        }
 
         // 6. Confronto per espansione
         $esp1 = $getValue($el1, 'espansione');
         $esp2 = $getValue($el2, 'espansione');
-        if ($esp1 != $esp2)
-            return strcmp($esp1, $esp2);
+        if ($esp1 != $esp2) {
+            $res = strcmp($esp1, $esp2);
+            if ($verbose) echo "Confronto espansione: $esp1 vs $esp2 -> " . ($res < 0 ? $esp1 : $esp2) . " vince<br>";
+            return $res;
+        }
 
         // 7. Confronto per numero
         $num1 = (int) $getValue($el1, 'numero', 0);
         $num2 = (int) $getValue($el2, 'numero', 0);
+        if ($verbose && $num1 !== $num2) echo "Confronto numero: $num1 vs $num2<br>";
         return $num1 <=> $num2;
     }
 
