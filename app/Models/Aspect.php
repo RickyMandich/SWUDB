@@ -6,7 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Aspect extends Model
 {
-    protected $fillable = ['nome', 'colore', 'slug', 'order'];
+    protected $fillable = [
+        'nome',
+        'colore',
+        'slug',
+        'order',
+        'primary'
+    ];
 
     /**
      * Get the cards that have this aspect.

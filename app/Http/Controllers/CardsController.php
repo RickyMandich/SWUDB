@@ -1008,7 +1008,7 @@ class CardsController extends Controller
                     if (isset($cardData['aspects'])) {
                         $aspectNames = is_array($cardData['aspects']) ? $cardData['aspects'] : [$cardData['aspects']];
                         $aspectIds = \App\Models\Aspect::whereIn('nome', $aspectNames)->get()->pluck('id', 'nome');
-                        
+
                         if ($logFile) {
                             $this->writeScanLog("DEBUG ASPI: Nomi aspetti da API: " . json_encode($aspectNames), $logFile);
                             $this->writeScanLog("DEBUG ASPI: ID aspetti trovati in DB: " . json_encode($aspectIds), $logFile);
@@ -1338,209 +1338,128 @@ class CardsController extends Controller
      * Confronta due elementi carta per l'ordinamento con regole di priorità dettagliate
      *
      * This is a complex comparison function that sorts cards by multiple criteria in order:
-     * 1. Generic type (Leader, Base vs others)
-     * 2. Primary aspect (Blu, Verde, Rosso, Giallo, Nero, Bianco)
-     * 3. Secondary aspect (Nero, Bianco, same as primary, others)
+     * 1. Generic type (first Leader then Base then others)
+     * 2. First all the card with more than one aspect where `primary` is true, then the other
+     * 3. Aspects (ordered via column order in the aspects table)
      * 4. Specific type (Unità, Miglioria, Evento)
-     * 5. Cost (costo) - ascending order, except for Leaders
-     * 6. Release date (uscita) - for different expansions
-     * 7. Card number (numero) - final tie-breaker
+     * 5. Cost (costo) - ascending order
+     * 6. alphabetical order of the name
+     * 7. expansion `uscita`
+     * 8. card number `numero`
      *
-     * @param array &$el1 First card element (passed by reference)
-     * @param array &$el2 Second card element (passed by reference)
+     * @param Card &$el1 First card element (passed by reference)
+     * @param Card &$el2 Second card element (passed by reference)
      * @param bool $verbose Whether to output detailed comparison steps
      * @return int -1 if el1 < el2, 1 if el1 > el2, 0 if equal
      */
-    public static function compareElements(&$el1, &$el2, $verbose)
+    public static function compareElements(Card &$el1, Card &$el2, bool $verbose)
     {
-        // Converto gli elementi in array se sono modelli Eloquent
-        if (is_object($el1) && method_exists($el1, 'toArray')) {
-            $el1 = $el1->toArray();
-        }
-        if (is_object($el2) && method_exists($el2, 'toArray')) {
-            $el2 = $el2->toArray();
-        }
-
-        // Funzione helper per accesso sicuro agli array
-        $getValue = function ($element, $key, $default = '') {
-            return isset($element[$key]) ? $element[$key] : $default;
-        };
-
         if ($verbose) {
-            echo "Confronto tra " . $getValue($el1, "nome") . " e " . $getValue($el2, "nome") . "<br>";
+            echo "Confronto: " . $el1->id . " (" . $el1->nome . ") vs " . $el2->id . " (" . $el2->nome . ")<br>";
         }
 
-        // Definisco l'ordine dei tipi generici
-        $genericTipoOrder = ['Leader', 'Base'];
+        // 1. Tipo generico (Leader > Base > altri)
+        $prioTipoGenerico = [
+            'Leader' => 0,
+            'Base' => 1
+        ];
 
-        // Definisco l'ordine degli aspetti (dinamico dal database)
-        static $aspectWeightMap = null;
-        if ($aspectWeightMap === null) {
-            try {
-                // Tenta di caricare gli ordini dal database
-                $allAspects = \App\Models\Aspect::all(['nome', 'order']);
-                $aspectWeightMap = [];
-                foreach ($allAspects as $asp) {
-                    $aspectWeightMap[$asp->nome] = (int) $asp->order;
-                }
-            } catch (\Exception $e) {
-                // Fallback in caso di errore (es. tabella non ancora migrata)
-                $aspectWeightMap = [
-                    'Vigilanza' => 0,
-                    'Autorità' => 1,
-                    'Aggressione' => 2,
-                    'Astuzia' => 3,
-                    'Malvagità' => 4,
-                    'Eroismo' => 5
-                ];
-            }
-        }
+        $p1 = $prioTipoGenerico[$el1->tipo] ?? 2;
+        $p2 = $prioTipoGenerico[$el2->tipo] ?? 2;
 
-        // Definisco l'ordine dei tipi specifici
-        $specificTipoOrder = ['Unità', 'Miglioria', 'Evento'];
-
-        // Funzione per ottenere il peso del tipo
-        $getGenericTipoWeight = function ($element) use ($genericTipoOrder) {
-            $tipo = is_array($element) ? ($element['tipo'] ?? '') : ($element->tipo ?? '');
-            $index = array_search($tipo, $genericTipoOrder);
-            return $index !== false ? $index : count($genericTipoOrder);
-        };
-
-        // Funzione per ottenere il peso di un aspetto
-        $getAspectWeight = function ($aspetto) use ($aspectWeightMap) {
-            return isset($aspectWeightMap[$aspetto]) ? $aspectWeightMap[$aspetto] : 999;
-        };
-
-        $getSpecificTipoWeight = function ($element) use ($specificTipoOrder) {
-            $tipo = is_array($element) ? ($element['tipo'] ?? '') : ($element->tipo ?? '');
-            $index = array_search($tipo, $specificTipoOrder);
-            return $index !== false ? $index : count($specificTipoOrder);
-        };
-
-        // 1. Confronto per tipo generico (Leader < Base < Altro)
-        $tipoWeight1 = $getGenericTipoWeight($el1);
-        $tipoWeight2 = $getGenericTipoWeight($el2);
-
-        if ($tipoWeight1 < $tipoWeight2) {
-            if ($verbose)
-                echo $getValue($el1, "nome") . " (Peso: " . $tipoWeight1 . ") viene prima di " . $getValue($el2, "nome") . " (Peso: " . $tipoWeight2 . ") sulla base del tipo generico (" . $getValue($el1, "tipo") . " vs " . $getValue($el2, "tipo") . ")<br>";
-            return -1;
-        }
-        if ($tipoWeight1 > $tipoWeight2) {
-            if ($verbose)
-                echo $getValue($el2, "nome") . " (Peso: " . $tipoWeight2 . ") viene prima di " . $getValue($el1, "nome") . " (Peso: " . $tipoWeight1 . ") sulla base del tipo generico (" . $getValue($el2, "tipo") . " vs " . $getValue($el1, "tipo") . ")<br>";
-            return 1;
-        }
-
-        if ($verbose) echo "Le carte sono dello stesso tipo generico (" . $getValue($el1, "tipo") . ") con lo stesso peso (" . $tipoWeight1 . ")<br>";
-
-        // 2. Confronto per aspetti (nuova gestione unificata basata su order in DB)
-        $aspects1 = isset($el1['aspects']) ? $el1['aspects'] : [];
-        $aspects2 = isset($el2['aspects']) ? $el2['aspects'] : [];
-
-        // Estraggo i nomi degli aspetti ordinati per sort_order (pivot)
-        $extractAspects = function ($aspects) {
-            $names = [];
-            foreach ($aspects as $a) {
-                $pivot = is_object($a) ? $a->pivot : ($a['pivot'] ?? null);
-                $order = $pivot ? (is_object($pivot) ? $pivot->sort_order : $pivot['sort_order']) : 0;
-                $names[$order] = is_object($a) ? $a->nome : ($a['nome'] ?? '');
-            }
-            ksort($names);
-            return $names;
-        };
-
-        $aspectNames1 = $extractAspects($aspects1);
-        $aspectNames2 = $extractAspects($aspects2);
-
-        $maxOrder = 0;
-        if (!empty($aspectNames1))
-            $maxOrder = max($maxOrder, max(array_keys($aspectNames1)));
-        if (!empty($aspectNames2))
-            $maxOrder = max($maxOrder, max(array_keys($aspectNames2)));
-
-        for ($i = 0; $i <= $maxOrder; $i++) {
-            $asp1 = isset($aspectNames1[$i]) ? $aspectNames1[$i] : null;
-            $asp2 = isset($aspectNames2[$i]) ? $aspectNames2[$i] : null;
-
-            if ($asp1 === $asp2) {
-                if ($verbose && $asp1 !== null) echo "Aspetto livello $i identico: " . $asp1 . "<br>";
-                continue;
-            }
-
-            $weight1 = $asp1 ? $getAspectWeight($asp1) : 1000;
-            $weight2 = $asp2 ? $getAspectWeight($asp2) : 1000;
-
-            if ($weight1 < $weight2) {
-                if ($verbose)
-                    echo $getValue($el1, "nome") . " viene prima di " . $getValue($el2, "nome") . " per l'aspetto livello $i (" . ($asp1 ?: 'Nessuno') . " [Peso: $weight1] vs " . ($asp2 ?: 'Nessuno') . " [Peso: $weight2])<br>";
-                return -1;
-            }
-            if ($weight1 > $weight2) {
-                if ($verbose)
-                    echo $getValue($el2, "nome") . " viene prima di " . $getValue($el1, "nome") . " per l'aspetto livello $i (" . ($asp2 ?: 'Nessuno') . " [Peso: $weight2] vs " . ($asp1 ?: 'Nessuno') . " [Peso: $weight1])<br>";
-                return 1;
-            }
-        }
-
-        if ($verbose) echo "Le carte hanno gli stessi aspetti (" . implode(', ', $aspectNames1) . ")<br>";
-
-        // 3. Confronto per tipo specifico (Unità < Miglioria < Evento)
-        $specificWeight1 = $getSpecificTipoWeight($el1);
-        $specificWeight2 = $getSpecificTipoWeight($el2);
-
-        if ($specificWeight1 < $specificWeight2) {
-            if ($verbose)
-                echo $getValue($el1, "nome") . " (Peso: " . $specificWeight1 . ") viene prima di " . $getValue($el2, "nome") . " (Peso: " . $specificWeight2 . ") sulla base del tipo specifico (" . $getValue($el1, "tipo") . " vs " . $getValue($el2, "tipo") . ")<br>";
-            return -1;
-        }
-        if ($specificWeight1 > $specificWeight2) {
-            if ($verbose)
-                echo $getValue($el2, "nome") . " (Peso: " . $specificWeight2 . ") viene prima di " . $getValue($el1, "nome") . " (Peso: " . $specificWeight1 . ") sulla base del tipo specifico (" . $getValue($el2, "tipo") . " vs " . $getValue($el1, "tipo") . ")<br>";
-            return 1;
-        }
-
-        if ($verbose) echo "Le carte hanno lo stesso tipo specifico (" . $getValue($el1, "tipo") . ") con peso " . $specificWeight1 . "<br>";
-
-        // 4. Confronto per costo
-        $cost1 = (int) $getValue($el1, 'costo', 0);
-        $cost2 = (int) $getValue($el2, 'costo', 0);
-        if ($cost1 < $cost2) {
-            if ($verbose) echo $getValue($el1, "nome") . " viene prima per costo minore (" . $cost1 . " vs " . $cost2 . ")<br>";
-            return -1;
-        }
-        if ($cost1 > $cost2) {
-            if ($verbose) echo $getValue($el2, "nome") . " viene prima per costo minore (" . $cost2 . " vs " . $cost1 . ")<br>";
-            return 1;
-        }
-
-        if ($verbose) echo "Le carte hanno lo stesso costo (" . $cost1 . ")<br>";
-
-        // 5. Confronto alfabetico per nome
-        $nameCompare = strcmp($getValue($el1, 'nome'), $getValue($el2, 'nome'));
-        if ($nameCompare < 0) {
-            if ($verbose) echo $getValue($el1, "nome") . " viene prima alfabeticamente di " . $getValue($el2, "nome") . "<br>";
-            return -1;
-        }
-        if ($nameCompare > 0) {
-            if ($verbose) echo $getValue($el2, "nome") . " viene prima alfabeticamente di " . $getValue($el1, "nome") . "<br>";
-            return 1;
-        }
-
-        // 6. Confronto per espansione
-        $esp1 = $getValue($el1, 'espansione');
-        $esp2 = $getValue($el2, 'espansione');
-        if ($esp1 != $esp2) {
-            $res = strcmp($esp1, $esp2);
-            if ($verbose) echo "Confronto espansione: $esp1 vs $esp2 -> " . ($res < 0 ? $esp1 : $esp2) . " vince<br>";
+        if ($p1 !== $p2) {
+            $res = $p1 <=> $p2;
+            if ($verbose) echo "&nbsp;&nbsp;- Priorità tipo generico: $p1 vs $p2 -> ESITO: $res<br>";
             return $res;
         }
 
-        // 7. Confronto per numero
-        $num1 = (int) $getValue($el1, 'numero', 0);
-        $num2 = (int) $getValue($el2, 'numero', 0);
-        if ($verbose && $num1 !== $num2) echo "Confronto numero: $num1 vs $num2<br>";
-        return $num1 <=> $num2;
+        // 2. Più di un aspetto primario distinto (doppio aspetto colorato)
+        // Gli aspetti con primary = true sono quelli colorati (Vigilanza, Autorità, Aggressione, Astuzia)
+        // Usiamo unique('id') per assicurarci che aspetti identici (es. doppia Vigilanza) 
+        // non vengano contati come "aspetti multipli" ai fini della priorità.
+        $countPrim1 = $el1->aspects->where('primary', true)->unique('id')->count();
+        $countPrim2 = $el2->aspects->where('primary', true)->unique('id')->count();
+
+        // Prima quelli con più di uno distinto (prio 0), poi gli altri (prio 1)
+        $pPrim1 = ($countPrim1 > 1) ? 0 : 1;
+        $pPrim2 = ($countPrim2 > 1) ? 0 : 1;
+
+        if ($pPrim1 !== $pPrim2) {
+            $res = $pPrim1 <=> $pPrim2;
+            if ($verbose) echo "&nbsp;&nbsp;- Doppio aspetto primario: $countPrim1 vs $countPrim2 -> ESITO: $res<br>";
+            return $res;
+        }
+
+        // 3. Aspetti (ordinati via colonna 'order' nella tabella aspects)
+        $aspetti1 = $el1->aspects;
+        $aspetti2 = $el2->aspects;
+
+        $maxIter = min($aspetti1->count(), $aspetti2->count());
+        for ($i = 0; $i < $maxIter; $i++) {
+            if ($aspetti1[$i]->order !== $aspetti2[$i]->order) {
+                $res = $aspetti1[$i]->order <=> $aspetti2[$i]->order;
+                if ($verbose) echo "&nbsp;&nbsp;- Ordine aspetti al pos $i: " . $aspetti1[$i]->nome . " (" . $aspetti1[$i]->order . ") vs " . $aspetti2[$i]->nome . " (" . $aspetti2[$i]->order . ") -> ESITO: $res<br>";
+                return $res;
+            }
+        }
+
+        // Se hanno gli stessi aspetti iniziali ma uno ne ha di più
+        if ($aspetti1->count() !== $aspetti2->count()) {
+            $res = $aspetti1->count() <=> $aspetti2->count();
+            if ($verbose) echo "&nbsp;&nbsp;- Numero aspetti: " . $aspetti1->count() . " vs " . $aspetti2->count() . " -> ESITO: $res<br>";
+            return $res;
+        }
+
+        // 4. Tipo specifico (Unità, Miglioria, Evento)
+        $prioTipoSpecifico = [
+            'Unità' => 0,
+            'Miglioria' => 1,
+            'Evento' => 2
+        ];
+
+        $ps1 = $prioTipoSpecifico[$el1->tipo] ?? 3;
+        $ps2 = $prioTipoSpecifico[$el2->tipo] ?? 3;
+
+        if ($ps1 !== $ps2) {
+            $res = $ps1 <=> $ps2;
+            if ($verbose) echo "&nbsp;&nbsp;- Priorità tipo specifico: " . $el1->tipo . " vs " . $el2->tipo . " -> ESITO: $res<br>";
+            return $res;
+        }
+
+        // 5. Costo (costo) - ascending order
+        if ($el1->costo !== $el2->costo) {
+            $res = $el1->costo <=> $el2->costo;
+            if ($verbose) echo "&nbsp;&nbsp;- Costo: " . $el1->costo . " vs " . $el2->costo . " -> ESITO: $res<br>";
+            return $res;
+        }
+
+        // 6. ordine alfabetico del nome
+        $nomeCmp = strcasecmp($el1->nome, $el2->nome);
+        if ($nomeCmp !== 0) {
+            $res = ($nomeCmp > 0) ? 1 : -1;
+            if ($verbose) echo "&nbsp;&nbsp;- Nome: " . $el1->nome . " vs " . $el2->nome . " -> ESITO: $res<br>";
+            return $res;
+        }
+
+        // 7. espansione uscita
+        $u1 = (string)$el1->uscita;
+        $u2 = (string)$el2->uscita;
+        if ($u1 !== $u2) {
+            $res = strcmp($u1, $u2);
+            $res = ($res > 0) ? 1 : -1;
+            if ($verbose) echo "&nbsp;&nbsp;- Uscita espansione: $u1 vs $u2 -> ESITO: $res<br>";
+            return $res;
+        }
+
+        // 8. numero carta
+        if ($el1->numero !== $el2->numero) {
+            $res = $el1->numero <=> $el2->numero;
+            if ($verbose) echo "&nbsp;&nbsp;- Numero carta: " . $el1->numero . " vs " . $el2->numero . " -> ESITO: $res<br>";
+            return $res;
+        }
+
+        if ($verbose) echo "&nbsp;&nbsp;- Carte identiche ai fini dell'ordinamento!<br>";
+        return 0;
     }
 
     /**

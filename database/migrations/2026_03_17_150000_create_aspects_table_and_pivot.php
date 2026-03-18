@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -19,6 +18,8 @@ return new class extends Migration
                 $table->string('nome', 50)->unique();
                 $table->string('colore', 20)->nullable();
                 $table->string('slug', 50)->unique();
+                $table->integer('order')->default(0);
+                $table->boolean('primary')->default(true);
                 $table->timestamps();
             });
         }
@@ -30,22 +31,22 @@ return new class extends Migration
                 $table->string('card_cid', 15);
                 $table->unsignedBigInteger('aspect_id');
                 $table->integer('sort_order')->default(0);
-                
+
                 $table->foreign('card_cid')->references('cid')->on('Cards')->onDelete('cascade');
                 $table->foreign('aspect_id')->references('id')->on('aspects')->onDelete('cascade');
-                
+
                 $table->unique(['card_cid', 'aspect_id']);
             });
         }
 
         // 3. Popola gli aspetti predefiniti (se non esistono)
         $defaultAspects = [
-            ['nome' => 'Vigilanza', 'colore' => '#4073d4', 'slug' => 'vigilanza'],
-            ['nome' => 'Autorità', 'colore' => '#6faf2f', 'slug' => 'autorita'],
-            ['nome' => 'Aggressione', 'colore' => '#d72323', 'slug' => 'aggressione'],
-            ['nome' => 'Astuzia', 'colore' => '#f2e82b', 'slug' => 'astuzia'],
-            ['nome' => 'Eroismo', 'colore' => '#ffffff', 'slug' => 'eroismo'],
-            ['nome' => 'Malvagità', 'colore' => '#000000', 'slug' => 'malvagita'],
+            ['nome' => 'Vigilanza', 'colore' => '#4073d4', 'slug' => 'vigilanza', 'order' => 1, 'primary' => true],
+            ['nome' => 'Autorità', 'colore' => '#6faf2f', 'slug' => 'autorita', 'order' => 2, 'primary' => true],
+            ['nome' => 'Aggressione', 'colore' => '#d72323', 'slug' => 'aggressione', 'order' => 3, 'primary' => true],
+            ['nome' => 'Astuzia', 'colore' => '#f2e82b', 'slug' => 'astuzia', 'order' => 4, 'primary' => true],
+            ['nome' => 'Malvagità', 'colore' => '#000000', 'slug' => 'malvagita', 'order' => 5, 'primary' => false],
+            ['nome' => 'Eroismo', 'colore' => '#ffffff', 'slug' => 'eroismo', 'order' => 6, 'primary' => false],
         ];
 
         foreach ($defaultAspects as $aspect) {
@@ -56,12 +57,13 @@ return new class extends Migration
         $cards = DB::table('Cards')->get();
         foreach ($cards as $card) {
             $aspectsToSync = [];
-            
+
             if ($card->aspettoPrimario) {
                 $aspectId = DB::table('aspects')->where('nome', $card->aspettoPrimario)->value('id');
-                if ($aspectId) $aspectsToSync[0] = $aspectId;
+                if ($aspectId)
+                    $aspectsToSync[0] = $aspectId;
             }
-            
+
             if ($card->aspettoSecondario) {
                 $aspectId = DB::table('aspects')->where('nome', $card->aspettoSecondario)->value('id');
                 if ($aspectId && !isset($aspectsToSync[0]) || ($aspectId && $aspectsToSync[0] != $aspectId)) {
