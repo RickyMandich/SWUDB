@@ -1376,17 +1376,27 @@ class CardsController extends Controller
         // Gli aspetti con primary = true sono quelli colorati (Vigilanza, Autorità, Aggressione, Astuzia)
         // Usiamo unique('id') per assicurarci che aspetti identici (es. doppia Vigilanza) 
         // non vengano contati come "aspetti multipli" ai fini della priorità.
-        $countPrim1 = $el1->aspects->where('primary', true)->unique('id')->count();
-        $countPrim2 = $el2->aspects->where('primary', true)->unique('id')->count();
+        $Prim1 = $el1->aspects->where('primary', true)->unique('id');
+        $Prim2 = $el2->aspects->where('primary', true)->unique('id');
+
+        if ($verbose) {
+            echo "&nbsp;&nbsp;- Aspetti primari: " . $Prim1->count() . " vs " . $Prim2->count() . "<br>";
+            foreach ($Prim1 as $aspect) {
+                echo "&nbsp;&nbsp;&nbsp;&nbsp;- " . $aspect->nome . " (" . $aspect->order . ")<br>";
+            }
+            foreach ($Prim2 as $aspect) {
+                echo "&nbsp;&nbsp;&nbsp;&nbsp;- " . $aspect->nome . " (" . $aspect->order . ")<br>";
+            }
+        }
 
         // Prima quelli con più di uno distinto (prio 0), poi gli altri (prio 1)
-        $pPrim1 = ($countPrim1 > 1) ? 0 : 1;
-        $pPrim2 = ($countPrim2 > 1) ? 0 : 1;
+        $pPrim1 = ($Prim1->count() > 1) ? 0 : 1;
+        $pPrim2 = ($Prim2->count() > 1) ? 0 : 1;
 
         if ($pPrim1 !== $pPrim2) {
             $res = $pPrim1 <=> $pPrim2;
             if ($verbose)
-                echo "&nbsp;&nbsp;- Doppio aspetto primario: $countPrim1 vs $countPrim2 -> ESITO: $res<br>";
+                echo "&nbsp;&nbsp;- Doppio aspetto primario: " . $Prim1->count() . " vs " . $Prim2->count() . " -> ESITO: $res<br>";
             return $res;
         }
 
