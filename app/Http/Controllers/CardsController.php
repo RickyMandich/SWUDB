@@ -70,9 +70,7 @@ class CardsController extends Controller
                 $query->where('espansione', $espansione2)
                     ->where('numero', $numero2);
             })->get();
-            ob_start();
-            CardsController::mergeSort($cards, true);
-            $output = ob_get_clean();
+            $output = CardsController::compareElements($cards[0], $cards[1], true);
             return $output;
         } else {
             return "Please provide espansione1, numero1, espansione2, and numero2 in the query parameters.";
@@ -1369,7 +1367,8 @@ class CardsController extends Controller
 
         if ($p1 !== $p2) {
             $res = $p1 <=> $p2;
-            if ($verbose) echo "&nbsp;&nbsp;- Priorità tipo generico: $p1 vs $p2 -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Priorità tipo generico: $p1 vs $p2 -> ESITO: $res<br>";
             return $res;
         }
 
@@ -1386,7 +1385,8 @@ class CardsController extends Controller
 
         if ($pPrim1 !== $pPrim2) {
             $res = $pPrim1 <=> $pPrim2;
-            if ($verbose) echo "&nbsp;&nbsp;- Doppio aspetto primario: $countPrim1 vs $countPrim2 -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Doppio aspetto primario: $countPrim1 vs $countPrim2 -> ESITO: $res<br>";
             return $res;
         }
 
@@ -1398,7 +1398,8 @@ class CardsController extends Controller
         for ($i = 0; $i < $maxIter; $i++) {
             if ($aspetti1[$i]->order !== $aspetti2[$i]->order) {
                 $res = $aspetti1[$i]->order <=> $aspetti2[$i]->order;
-                if ($verbose) echo "&nbsp;&nbsp;- Ordine aspetti al pos $i: " . $aspetti1[$i]->nome . " (" . $aspetti1[$i]->order . ") vs " . $aspetti2[$i]->nome . " (" . $aspetti2[$i]->order . ") -> ESITO: $res<br>";
+                if ($verbose)
+                    echo "&nbsp;&nbsp;- Ordine aspetti al pos $i: " . $aspetti1[$i]->nome . " (" . $aspetti1[$i]->order . ") vs " . $aspetti2[$i]->nome . " (" . $aspetti2[$i]->order . ") -> ESITO: $res<br>";
                 return $res;
             }
         }
@@ -1406,7 +1407,8 @@ class CardsController extends Controller
         // Se hanno gli stessi aspetti iniziali ma uno ne ha di più
         if ($aspetti1->count() !== $aspetti2->count()) {
             $res = $aspetti1->count() <=> $aspetti2->count();
-            if ($verbose) echo "&nbsp;&nbsp;- Numero aspetti: " . $aspetti1->count() . " vs " . $aspetti2->count() . " -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Numero aspetti: " . $aspetti1->count() . " vs " . $aspetti2->count() . " -> ESITO: $res<br>";
             return $res;
         }
 
@@ -1422,14 +1424,16 @@ class CardsController extends Controller
 
         if ($ps1 !== $ps2) {
             $res = $ps1 <=> $ps2;
-            if ($verbose) echo "&nbsp;&nbsp;- Priorità tipo specifico: " . $el1->tipo . " vs " . $el2->tipo . " -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Priorità tipo specifico: " . $el1->tipo . " vs " . $el2->tipo . " -> ESITO: $res<br>";
             return $res;
         }
 
         // 5. Costo (costo) - ascending order
         if ($el1->costo !== $el2->costo) {
             $res = $el1->costo <=> $el2->costo;
-            if ($verbose) echo "&nbsp;&nbsp;- Costo: " . $el1->costo . " vs " . $el2->costo . " -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Costo: " . $el1->costo . " vs " . $el2->costo . " -> ESITO: $res<br>";
             return $res;
         }
 
@@ -1437,28 +1441,32 @@ class CardsController extends Controller
         $nomeCmp = strcasecmp($el1->nome, $el2->nome);
         if ($nomeCmp !== 0) {
             $res = ($nomeCmp > 0) ? 1 : -1;
-            if ($verbose) echo "&nbsp;&nbsp;- Nome: " . $el1->nome . " vs " . $el2->nome . " -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Nome: " . $el1->nome . " vs " . $el2->nome . " -> ESITO: $res<br>";
             return $res;
         }
 
         // 7. espansione uscita
-        $u1 = (string)$el1->uscita;
-        $u2 = (string)$el2->uscita;
+        $u1 = (string) $el1->uscita;
+        $u2 = (string) $el2->uscita;
         if ($u1 !== $u2) {
             $res = strcmp($u1, $u2);
             $res = ($res > 0) ? 1 : -1;
-            if ($verbose) echo "&nbsp;&nbsp;- Uscita espansione: $u1 vs $u2 -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Uscita espansione: $u1 vs $u2 -> ESITO: $res<br>";
             return $res;
         }
 
         // 8. numero carta
         if ($el1->numero !== $el2->numero) {
             $res = $el1->numero <=> $el2->numero;
-            if ($verbose) echo "&nbsp;&nbsp;- Numero carta: " . $el1->numero . " vs " . $el2->numero . " -> ESITO: $res<br>";
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Numero carta: " . $el1->numero . " vs " . $el2->numero . " -> ESITO: $res<br>";
             return $res;
         }
 
-        if ($verbose) echo "&nbsp;&nbsp;- Carte identiche ai fini dell'ordinamento!<br>";
+        if ($verbose)
+            echo "&nbsp;&nbsp;- Carte identiche ai fini dell'ordinamento!<br>";
         return 0;
     }
 
