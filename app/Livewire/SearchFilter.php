@@ -231,8 +231,8 @@ class SearchFilter extends Component
                 ->pluck('tipo');
         });
 
-        $this->aspetti_options = Cache::remember('cards_filter_aspetti', 3600, function () {
-            return \App\Models\Aspect::orderBy('order')->pluck('nome');
+        $this->aspetti_options = Cache::remember('cards_filter_aspetti_models', 3600, function () {
+            return \App\Models\Aspect::orderBy('order')->get();
         });
 
         $this->rarita_options = Cache::remember('cards_filter_rarita', 3600, function () {

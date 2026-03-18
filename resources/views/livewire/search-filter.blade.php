@@ -75,15 +75,26 @@
                         </select>
                     </div>
 
-                    <!-- Aspetti -->
+                    <!-- Aspetti (Toggle Buttons) -->
                     <div class="col-md-8">
-                        <label for="aspetti" class="form-label fw-bold">Aspetti (Selezione Multipla)</label>
-                        <select wire:model.live="aspetti" class="form-select" id="aspetti" multiple size="4">
+                        <label class="form-label fw-bold d-block">Aspetti</label>
+                        <div class="d-flex flex-wrap gap-2">
                             @foreach($aspetti_options as $asp)
-                                <option value="{{ $asp }}">{{ $asp }}</option>
+                                @php
+                                    $bgColor = $asp->colore ?? '#6c757d';
+                                    $textColor = ($asp->nome === 'Eroismo' || $bgColor === '#ffffff') ? '#000' : '#fff';
+                                @endphp
+                                <div class="form-check-inline m-0">
+                                    <input type="checkbox" class="btn-check" id="aspect-{{ $asp->id }}" 
+                                        wire:model.live="aspetti" value="{{ $asp->nome }}" autocomplete="off">
+                                    <label class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm border-2" 
+                                        for="aspect-{{ $asp->id }}"
+                                        style="--bs-btn-active-bg: {{ $bgColor }}; --bs-btn-active-border-color: {{ $bgColor }}; --bs-btn-active-color: {{ $textColor }};">
+                                        {{ $asp->nome }}
+                                    </label>
+                                </div>
                             @endforeach
-                        </select>
-                        <small class="text-muted">Tieni premuto Ctrl (o Cmd) per selezionare più aspetti</small>
+                        </div>
                     </div>
 
                     <!-- Rarità -->
