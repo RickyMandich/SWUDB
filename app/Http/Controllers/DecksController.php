@@ -16,7 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-class DecksController extends Controller{
+class DecksController extends Controller
+{
     /**
      * Display a listing of all accessible decks (user's own + public decks)
      * Mostra l'elenco di tutti i mazzi accessibili (propri dell'utente + mazzi pubblici)
@@ -26,19 +27,20 @@ class DecksController extends Controller{
      *
      * @return \Illuminate\View\View The decks index view with all accessible decks
      */
-    public function index(){
+    public function index()
+    {
         $decks = [];
-        if(auth()->check()){
+        if (auth()->check()) {
             $decksUser = Deck::where("codUtente", auth()->user()->id)
-                            ->where("nome", "!=", "Collezione")
-                            ->get();
-            foreach($decksUser as $deck){
+                ->where("nome", "!=", "Collezione")
+                ->get();
+            foreach ($decksUser as $deck) {
                 $deck->utente = User::where("id", $deck->codUtente)->first()->name;
                 $decks[$deck->id] = $deck;
             }
         }
-        $decksPublic = Deck::where("public", 1)->where("codUtente", "!=", Auth::user()!= null ? Auth::user()->id : -1)->orderBy("codUtente")->get();
-        foreach($decksPublic as $deck){
+        $decksPublic = Deck::where("public", 1)->where("codUtente", "!=", Auth::user() != null ? Auth::user()->id : -1)->orderBy("codUtente")->get();
+        foreach ($decksPublic as $deck) {
             $deck->utente = User::where("id", $deck->codUtente)->first()->name;
             $deck->dirtyName = "$deck->nome di $deck->utente";
             $decks[$deck->id] = $deck;
@@ -61,14 +63,15 @@ class DecksController extends Controller{
      * @param string $deck The deck name (URL encoded with + for spaces)
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse The deck view or error/redirect
      */
-    public function show($user, $deck){
+    public function show($user, $deck)
+    {
         // Verifica esistenza dell'utente
-        if(User::where("name", $user)->first() == null){
+        if (User::where("name", $user)->first() == null) {
             return view("errors.406");
         }
 
         // Verifica esistenza del mazzo
-        if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
+        if (Deck::where("nome", str_replace("+", " ", $deck))->first() == null) {
             return view("errors.405");
         }
 
@@ -76,28 +79,30 @@ class DecksController extends Controller{
         if (str_replace("+", " ", $deck) === "Collezione") {
             return redirect()->route('collezione');
         }
-        
+
         // Se utente e mazzo esistono, procedi
         $proprietario = Auth::check() ? Auth()->user()->id == User::where("name", $user)->first()->id : false;
 
         // Recupera il mazzo
         $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
-                    ->where("codUtente",
-                        User::where("name", $user)
-                        ->first()
-                        ->id)
-                    ->first();
+            ->where(
+                "codUtente",
+                User::where("name", $user)
+                    ->first()
+                    ->id
+            )
+            ->first();
 
         // Verifica autorizzazioni: proprietario, mazzo pubblico, o admin
         if (!$proprietario && !$mazzo->public && !Auth::admin()) {
             return view("errors.403");
         }
-        
+
         // Recupera le carte del mazzo usando le relazioni Eloquent
         $compositions = $mazzo->compositions()->with('card')->get();
 
         // Trasforma le composizioni in un formato compatibile con il codice esistente
-        $cards = $compositions->map(function($composition) {
+        $cards = $compositions->map(function ($composition) {
             if ($composition->card) {
                 $card = $composition->card;
                 $card->copie = $composition->copie;
@@ -149,20 +154,23 @@ class DecksController extends Controller{
      * @param string $deck The deck name (URL encoded)
      * @return \Illuminate\Http\RedirectResponse Redirect with success/error messages
      */
-    public function store(Request $request, $user, $deck){
-        if(User::where("name", $user)->first() == null){
+    public function store(Request $request, $user, $deck)
+    {
+        if (User::where("name", $user)->first() == null) {
             return redirect()->route("mazzi")->with("error", "Utente non trovato");
-        }else if(Deck::where("nome", str_replace("+", " ", $deck))->first() == null){
+        } else if (Deck::where("nome", str_replace("+", " ", $deck))->first() == null) {
             return redirect()->route("mazzi")->with("error", "Mazzo non trovato");
-        }else if($request->input("carte") != null){
+        } else if ($request->input("carte") != null) {
             $mazzo = Deck::where("nome", str_replace("+", " ", $deck))
-                        ->where("codUtente", 
-                            User::where("name", $user)
-                            ->first()
-                            ->id)
-                        ->first();
-            foreach($request->input("carte") as $card => $value){
-                try{
+                ->where(
+                    "codUtente",
+                    User::where("name", $user)
+                        ->first()
+                        ->id
+                )
+                ->first();
+            foreach ($request->input("carte") as $card => $value) {
+                try {
                     $value = explode("-", $value);
                     $card = explode("-", $card);
                     $operazione = $value[0];
@@ -170,9 +178,9 @@ class DecksController extends Controller{
                     $espansione = $card[0];
                     $numero = $card[1];
                     $composizione = Composition::where("idMazzo", $mazzo->id)
-                    ->where("espansione", $espansione)
-                    ->where("numero", $numero)
-                    ->first();
+                        ->where("espansione", $espansione)
+                        ->where("numero", $numero)
+                        ->first();
                     $vars = [
                         "operazione" => $operazione,
                         "copie" => $copie,
@@ -180,48 +188,49 @@ class DecksController extends Controller{
                         "numero" => $numero,
                         "composizione" => $composizione
                     ];
-                    if($operazione == "A"){
-                        if($composizione == null){
+                    if ($operazione == "A") {
+                        if ($composizione == null) {
                             $vars["if"] = "addToNull";
                             $composizione = new Composition();
                             $composizione->idMazzo = $mazzo->id;
                             $composizione->espansione = $espansione;
                             $composizione->numero = $numero;
                             $composizione->copie = $copie;
-                            $composizione->id = $mazzo->id."-".$espansione."-".$numero;
+                            $composizione->id = $mazzo->id . "-" . $espansione . "-" . $numero;
                             $composizione->save();
-                        }else{
+                        } else {
                             $vars["if"] = "addToValue";
                             $composizione->copie += $copie;
                             $composizione->save();
                         }
-                    }else if($operazione == "R"){
-                        if($composizione == null){
+                    } else if ($operazione == "R") {
+                        if ($composizione == null) {
                             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("warning", "Non puoi rimuovere una carta che non hai nel mazzo");
-                        }else{
-                            if($composizione->copie - $copie <= 0){
+                        } else {
+                            if ($composizione->copie - $copie <= 0) {
                                 $vars["if"] = "removeFromNull";
                                 $composizione->delete();
-                            }else{
+                            } else {
                                 $vars["if"] = "removeFromValue";
                                 $composizione->copie -= $copie;
                                 $composizione->save();
                             }
                         }
                     }
-                }catch(\Exception $e){
-                    return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("error", "Errore durante il salvataggio del mazzo: ".$e->getMessage());
-                }finally{
+                } catch (\Exception $e) {
+                    return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("error", "Errore durante il salvataggio del mazzo: " . $e->getMessage());
+                } finally {
                     $vars["msg"] = "sono arrivato alla fine";
                 }
-            };
+            }
+            ;
 
             // Increment deck version after successful modifications
             // Incrementa la versione del mazzo dopo modifiche riuscite
             $mazzo->incrementVersion();
 
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("success", "Mazzo salvato con successo (versione " . $mazzo->getVersionString() . ")");
-        }else{
+        } else {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])->with("warning", "Non hai aggiunto o rimosso nessuna carta");
         }
     }
@@ -239,21 +248,22 @@ class DecksController extends Controller{
      * @param Request $request HTTP request containing 'nome' and 'public' parameters
      * @return \Illuminate\Http\RedirectResponse Redirect to deck view or error page
      */
-    public function create(Request $request){
-        if(auth()->check()){
+    public function create(Request $request)
+    {
+        if (auth()->check()) {
             // Impedisce la creazione di mazzi chiamati "Collezione"
-            if($request->input("nome") === "Collezione"){
+            if ($request->input("nome") === "Collezione") {
                 return redirect()->route("mazzi")->with("warning", "Il nome 'Collezione' è riservato");
             }
 
-            if(Deck::where("nome", $request->input("nome"))->where("codUtente", Auth::user()->id)->first() == null){
+            if (Deck::where("nome", $request->input("nome"))->where("codUtente", Auth::user()->id)->first() == null) {
                 $mazzo = new Deck();
                 $mazzo->nome = $request->input("nome");
                 $mazzo->public = $request->input("public") == true;
                 $mazzo->codUtente = Auth::user()->id;
                 $mazzo->save();
                 return redirect()->route("mazzo", ["user" => Auth::user()->name, "mazzo" => str_replace(" ", "+", $mazzo->nome)])->with("success", "Mazzo creato con successo");
-            }else{
+            } else {
                 return redirect()->route("mazzo", ["user" => Auth::user()->name, "mazzo" => str_replace(" ", "+", $request->input("nome"))])->with("warning", "Questo mazzo esiste già");
             }
         }
@@ -290,8 +300,8 @@ class DecksController extends Controller{
 
         // Verifica che il mazzo esista e appartenga all'utente autenticato
         $mazzo = Deck::where("nome", $deckName)
-                    ->where("codUtente", auth()->user()->id)
-                    ->first();
+            ->where("codUtente", auth()->user()->id)
+            ->first();
 
         if (!$mazzo) {
             return redirect()->route("mazzi")->with("error", "Mazzo non trovato o non hai i permessi per eliminarlo");
@@ -344,8 +354,8 @@ class DecksController extends Controller{
 
         // Verifica che il mazzo esista e appartenga all'utente autenticato
         $mazzo = Deck::where("nome", $deckName)
-                    ->where("codUtente", auth()->user()->id)
-                    ->first();
+            ->where("codUtente", auth()->user()->id)
+            ->first();
 
         if (!$mazzo) {
             return redirect()->route("mazzi")->with("error", "Mazzo non trovato o non hai i permessi per modificarlo");
@@ -395,12 +405,12 @@ class DecksController extends Controller{
         // Validazione del nuovo nome
         if (empty($nuovoNome)) {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
-                           ->with("error", "Il nome del mazzo non può essere vuoto");
+                ->with("error", "Il nome del mazzo non può essere vuoto");
         }
 
         if (strlen($nuovoNome) > 500) {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
-                           ->with("error", "Il nome del mazzo non può superare i 500 caratteri");
+                ->with("error", "Il nome del mazzo non può superare i 500 caratteri");
         }
 
         // Verifica che l'utente esista
@@ -411,8 +421,8 @@ class DecksController extends Controller{
 
         // Verifica che il mazzo esista e appartenga all'utente autenticato
         $mazzo = Deck::where("nome", $deckName)
-                    ->where("codUtente", auth()->user()->id)
-                    ->first();
+            ->where("codUtente", auth()->user()->id)
+            ->first();
 
         if (!$mazzo) {
             return redirect()->route("mazzi")->with("error", "Mazzo non trovato o non hai i permessi per modificarlo");
@@ -421,24 +431,24 @@ class DecksController extends Controller{
         // Impedisce la rinominazione della collezione
         if ($deckName === "Collezione") {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
-                           ->with("warning", "Non puoi rinominare la collezione");
+                ->with("warning", "Non puoi rinominare la collezione");
         }
 
         // Impedisce l'uso del nome riservato "Collezione"
         if ($nuovoNome === "Collezione") {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
-                           ->with("warning", "Il nome 'Collezione' è riservato");
+                ->with("warning", "Il nome 'Collezione' è riservato");
         }
 
         // Verifica che non esista già un mazzo con il nuovo nome
         $mazzoEsistente = Deck::where("nome", $nuovoNome)
-                             ->where("codUtente", auth()->user()->id)
-                             ->where("id", "!=", $mazzo->id)
-                             ->first();
+            ->where("codUtente", auth()->user()->id)
+            ->where("id", "!=", $mazzo->id)
+            ->first();
 
         if ($mazzoEsistente) {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
-                           ->with("warning", "Esiste già un mazzo con questo nome");
+                ->with("warning", "Esiste già un mazzo con questo nome");
         }
 
         try {
@@ -449,10 +459,10 @@ class DecksController extends Controller{
 
             // Reindirizza al mazzo con il nuovo nome
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => str_replace(" ", "+", $nuovoNome)])
-                           ->with("success", "Mazzo rinominato da {$vecchioNome} a {$nuovoNome}");
+                ->with("success", "Mazzo rinominato da {$vecchioNome} a {$nuovoNome}");
         } catch (\Exception $e) {
             return redirect()->route("mazzo", ["user" => $user, "mazzo" => $deck])
-                           ->with("error", "Errore durante la rinominazione: " . $e->getMessage());
+                ->with("error", "Errore durante la rinominazione: " . $e->getMessage());
         }
     }
 
@@ -469,7 +479,8 @@ class DecksController extends Controller{
      *
      * @return \Illuminate\View\View The collection view with cards, statistics and debug info
      */
-    public function collezione(Request $request){
+    public function collezione(Request $request)
+    {
         $user = Auth::user();
 
         // Se è specificato un utente nel parametro e l'utente corrente è admin
@@ -483,8 +494,8 @@ class DecksController extends Controller{
 
         // Cerca collezione esistente
         $collezione = Deck::where('codUtente', $user->id)
-                         ->where('nome', 'Collezione')
-                         ->first();
+            ->where('nome', 'Collezione')
+            ->first();
 
         // Se non esiste, creala (solo per l'utente corrente, non per altri utenti visualizzati dagli admin)
         if (!$collezione && (!$targetUserName || !Auth::admin())) {
@@ -511,7 +522,7 @@ class DecksController extends Controller{
         $compositions = $collezione->compositions()->with('card')->get();
 
         // Trasforma le composizioni in un formato compatibile con il codice esistente
-        $cards = $compositions->map(function($composition) {
+        $cards = $compositions->map(function ($composition) {
             if ($composition->card) {
                 $card = $composition->card;
                 $card->copie = $composition->copie;
@@ -537,20 +548,20 @@ class DecksController extends Controller{
 
         // Conta carte per range di valori
         $carteAltoValore = Card::where('costo', '>', 10)
-                              ->orWhere('potenza', '>', 10)
-                              ->orWhere('vita', '>', 10)
-                              ->count();
+            ->orWhere('potenza', '>', 10)
+            ->orWhere('vita', '>', 10)
+            ->count();
 
         // Esempi di carte con valori alti
         $carteEsempio = Card::where('costo', '>', 10)
-                           ->orWhere('potenza', '>', 10)
-                           ->orWhere('vita', '>', 10)
-                           ->take(5)
-                           ->get()
-                           ->map(function($card) {
-                               return $card->snippet . " (C:{$card->costo}, P:{$card->potenza}, V:{$card->vita})";
-                           })
-                           ->toArray();
+            ->orWhere('potenza', '>', 10)
+            ->orWhere('vita', '>', 10)
+            ->take(5)
+            ->get()
+            ->map(function ($card) {
+                return $card->snippet . " (C:{$card->costo}, P:{$card->potenza}, V:{$card->vita})";
+            })
+            ->toArray();
 
         // Aggiungi debug info aggiornato
         $debugInfo = [
@@ -593,13 +604,14 @@ class DecksController extends Controller{
      * @param Request $request HTTP request with 'espansione', 'numero', 'copie' parameters
      * @return \Illuminate\Http\JsonResponse JSON response indicating success or error
      */
-    public function updateCollezione(Request $request){
+    public function updateCollezione(Request $request)
+    {
         $user = Auth::user();
 
         // Trova la collezione dell'utente
         $collezione = Deck::where('codUtente', $user->id)
-                         ->where('nome', 'Collezione')
-                         ->first();
+            ->where('nome', 'Collezione')
+            ->first();
 
         if (!$collezione) {
             return response()->json(['error' => 'Collezione non trovata'], 404);
@@ -611,9 +623,9 @@ class DecksController extends Controller{
 
         // Trova la composizione esistente
         $composizione = Composition::where('idMazzo', $collezione->id)
-                                  ->where('espansione', $espansione)
-                                  ->where('numero', $numero)
-                                  ->first();
+            ->where('espansione', $espansione)
+            ->where('numero', $numero)
+            ->first();
 
         $hasChanges = false;
 
@@ -638,7 +650,7 @@ class DecksController extends Controller{
                 $composizione->espansione = $espansione;
                 $composizione->numero = $numero;
                 $composizione->copie = $copie;
-                $composizione->id = $collezione->id."-".$espansione."-".$numero;
+                $composizione->id = $collezione->id . "-" . $espansione . "-" . $numero;
                 $composizione->save();
                 $hasChanges = true;
             }
@@ -662,14 +674,17 @@ class DecksController extends Controller{
      * @param bool $public Whether to search only public decks
      * @return \Illuminate\Database\Eloquent\Collection Collection of matching decks
      */
-    public function api($user, $nome, $public){
+    public function api($user, $nome, $public)
+    {
         return Deck::where("nome", "like", "%$nome%")
-                ->where("codUtente",
-                    User::where("name", "like", "%$user%")
+            ->where(
+                "codUtente",
+                User::where("name", "like", "%$user%")
                     ->first()
-                    ->id)
-                ->where("public", $public)
-                ->get();
+                    ->id
+            )
+            ->where("public", $public)
+            ->get();
     }
 
     /**
@@ -749,8 +764,8 @@ class DecksController extends Controller{
         }
 
         $deckModel = Deck::where("nome", str_replace("+", " ", $deck))
-                         ->where("codUtente", $userModel->id)
-                         ->first();
+            ->where("codUtente", $userModel->id)
+            ->first();
         if (!$deckModel) {
             return null;
         }
@@ -759,7 +774,7 @@ class DecksController extends Controller{
         $compositions = $deckModel->compositions()->with('card')->get();
 
         // Trasforma le composizioni in un formato compatibile con il codice esistente
-        $cards = $compositions->map(function($composition) {
+        $cards = $compositions->map(function ($composition) {
             if ($composition->card) {
                 $card = $composition->card;
                 $card->copie = $composition->copie;
@@ -796,7 +811,7 @@ class DecksController extends Controller{
         $sideboard = []; // Per ora vuoto, ma preparato per future implementazioni
 
         foreach ($deckData['cards'] as $card) {
-            $cardLine = $card->copie . " | " . $card->nome;
+            $cardLine = $card->copie . " | " . $card->espansione . "-" . $card->numero . " | " . $card->nome;
             if (!empty($card->titolo)) {
                 $cardLine .= " | " . $card->titolo;
             }
@@ -1067,7 +1082,7 @@ class DecksController extends Controller{
                 \Log::error('Download failed', ['url' => $apiUrl]);
                 return response()->json([
                     'error' => 'Impossibile scaricare il file dall\'URL fornito. ' .
-                              'Verifica che l\'URL sia corretto e accessibile.',
+                        'Verifica che l\'URL sia corretto e accessibile.',
                     'debug' => [
                         'original_url' => $url,
                         'api_url' => $apiUrl
@@ -1086,7 +1101,7 @@ class DecksController extends Controller{
             if (str_starts_with(trim($content), '<!doctype') || str_starts_with(trim($content), '<html')) {
                 return response()->json([
                     'error' => 'L\'URL ha restituito una pagina HTML invece dei dati del mazzo. ' .
-                              'Verifica che l\'URL sia corretto.',
+                        'Verifica che l\'URL sia corretto.',
                     'debug' => [
                         'content_type' => 'HTML',
                         'content_preview' => substr($content, 0, 200),
@@ -1278,7 +1293,7 @@ class DecksController extends Controller{
             }
 
             // Filtra le carte non valide
-            $validCards = array_filter($cards, function($card) {
+            $validCards = array_filter($cards, function ($card) {
                 return $card !== null;
             });
 
@@ -1370,7 +1385,7 @@ class DecksController extends Controller{
         if (!empty($title)) {
             $query->where('titolo', $title);
         } else {
-            $query->where(function($q) {
+            $query->where(function ($q) {
                 $q->where('titolo', '')->orWhereNull('titolo');
             });
         }
