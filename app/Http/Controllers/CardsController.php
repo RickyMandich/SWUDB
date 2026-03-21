@@ -1350,18 +1350,10 @@ class CardsController extends Controller
      * @param bool $verbose Whether to output detailed comparison steps
      * @return int -1 if el1 < el2, 1 if el1 > el2, 0 if equal
      */
-    public static function compareElements(&$el1, &$el2, bool $verbose)
+    public static function compareElements(Card &$el1, Card &$el2, bool $verbose)
     {
-        // Helper per accesso ai dati (oggetto o array)
-        $getVal = function($el, $key) {
-            if (is_object($el)) {
-                return $el->{$key} ?? null;
-            }
-            return $el[$key] ?? null;
-        };
-
         if ($verbose) {
-            echo "Confronto: " . $getVal($el1, 'id') . " (" . $getVal($el1, 'nome') . ") vs " . $getVal($el2, 'id') . " (" . $getVal($el2, 'nome') . ")<br>";
+            echo "Confronto: " . $el1->id . " (" . $el1->nome . ") vs " . $el2->id . " (" . $el2->nome . ")<br>";
         }
 
         // 1. Tipo generico (Leader > Base > altri)
@@ -1370,8 +1362,8 @@ class CardsController extends Controller
             'Base' => 1
         ];
 
-        $p1 = $prioTipoGenerico[$getVal($el1, 'tipo')] ?? 2;
-        $p2 = $prioTipoGenerico[$getVal($el2, 'tipo')] ?? 2;
+        $p1 = $prioTipoGenerico[$el1->tipo] ?? 2;
+        $p2 = $prioTipoGenerico[$el2->tipo] ?? 2;
 
         if ($p1 !== $p2) {
             $res = $p1 <=> $p2;
@@ -1381,21 +1373,8 @@ class CardsController extends Controller
         }
 
         // 2. Più di un aspetto primario distinto
-        // Solo se sono modelli Eloquent con relazione aspects caricate
-        $Prim1 = collect();
-        $Prim2 = collect();
-
-        if ($el1 instanceof Card) {
-            $Prim1 = $el1->aspects->where('primary', 1)->unique('id');
-        } elseif (is_array($el1) && isset($el1['aspects']) && is_array($el1['aspects'])) {
-            $Prim1 = collect($el1['aspects'])->where('primary', 1)->unique('id');
-        }
-
-        if ($el2 instanceof Card) {
-            $Prim2 = $el2->aspects->where('primary', 1)->unique('id');
-        } elseif (is_array($el2) && isset($el2['aspects']) && is_array($el2['aspects'])) {
-            $Prim2 = collect($el2['aspects'])->where('primary', 1)->unique('id');
-        }
+        $Prim1 = $el1->aspects->where('primary', 1)->unique('id');
+        $Prim2 = $el2->aspects->where('primary', 1)->unique('id');
 
         if ($verbose) {
             echo "&nbsp;&nbsp;- Aspetti primari: " . $Prim1->count() . " vs " . $Prim2->count() . "<br>";
@@ -1413,33 +1392,15 @@ class CardsController extends Controller
         }
 
         // 3. Aspetti
-        $aspetti1 = collect();
-        $aspetti2 = collect();
-
-        if ($el1 instanceof Card) {
-            $aspetti1 = $el1->aspects;
-        } elseif (is_array($el1) && isset($el1['aspects']) && is_array($el1['aspects'])) {
-            $aspetti1 = collect($el1['aspects']);
-        }
-
-        if ($el2 instanceof Card) {
-            $aspetti2 = $el2->aspects;
-        } elseif (is_array($el2) && isset($el2['aspects']) && is_array($el2['aspects'])) {
-            $aspetti2 = collect($el2['aspects']);
-        }
+        $aspetti1 = $el1->aspects;
+        $aspetti2 = $el2->aspects;
 
         $maxIter = min($aspetti1->count(), $aspetti2->count());
         for ($i = 0; $i < $maxIter; $i++) {
-            $ord1 = is_object($aspetti1[$i]) ? ($aspetti1[$i]->order ?? 99) : ($aspetti1[$i]['order'] ?? 99);
-            $ord2 = is_object($aspetti2[$i]) ? ($aspetti2[$i]->order ?? 99) : ($aspetti2[$i]['order'] ?? 99);
-            
-            if ($ord1 !== $ord2) {
-                $res = $ord1 <=> $ord2;
-                if ($verbose) {
-                    $nome1 = is_object($aspetti1[$i]) ? $aspetti1[$i]->nome : ($aspetti1[$i]['nome'] ?? 'N/A');
-                    $nome2 = is_object($aspetti2[$i]) ? $aspetti2[$i]->nome : ($aspetti2[$i]['nome'] ?? 'N/A');
-                    echo "&nbsp;&nbsp;- Ordine aspetti al pos $i: $nome1 ($ord1) vs $nome2 ($ord2) -> ESITO: $res<br>";
-                }
+            if ($aspetti1[$i]->order !== $aspetti2[$i]->order) {
+                $res = $aspetti1[$i]->order <=> $aspetti2[$i]->order;
+                if ($verbose)
+                    echo "&nbsp;&nbsp;- Ordine aspetti al pos $i: " . $aspetti1[$i]->nome . " (" . $aspetti1[$i]->order . ") vs " . $aspetti2[$i]->nome . " (" . $aspetti2[$i]->order . ") -> ESITO: $res<br>";
                 return $res;
             }
         }
@@ -1458,42 +1419,36 @@ class CardsController extends Controller
             'Evento' => 2
         ];
 
-        $tipo1 = $getVal($el1, 'tipo');
-        $tipo2 = $getVal($el2, 'tipo');
-        $ps1 = $prioTipoSpecifico[$tipo1] ?? 3;
-        $ps2 = $prioTipoSpecifico[$tipo2] ?? 3;
+        $ps1 = $prioTipoSpecifico[$el1->tipo] ?? 3;
+        $ps2 = $prioTipoSpecifico[$el2->tipo] ?? 3;
 
         if ($ps1 !== $ps2) {
             $res = $ps1 <=> $ps2;
             if ($verbose)
-                echo "&nbsp;&nbsp;- Priorità tipo specifico: $tipo1 vs $tipo2 -> ESITO: $res<br>";
+                echo "&nbsp;&nbsp;- Priorità tipo specifico: " . $el1->tipo . " vs " . $el2->tipo . " -> ESITO: $res<br>";
             return $res;
         }
 
         // 5. Costo
-        $costo1 = $getVal($el1, 'costo');
-        $costo2 = $getVal($el2, 'costo');
-        if ($tipo1 !== 'Leader' && $costo1 !== $costo2) {
-            $res = ($costo1 ?? 0) <=> ($costo2 ?? 0);
+        if ($el1->tipo !== 'Leader' && $el1->costo !== $el2->costo) {
+            $res = ($el1->costo ?? 0) <=> ($el2->costo ?? 0);
             if ($verbose)
-                echo "&nbsp;&nbsp;- Costo: $costo1 vs $costo2 -> ESITO: $res<br>";
+                echo "&nbsp;&nbsp;- Costo: " . $el1->costo . " vs " . $el2->costo . " -> ESITO: $res<br>";
             return $res;
         }
 
         // 6. Nome
-        $nome1 = $getVal($el1, 'nome');
-        $nome2 = $getVal($el2, 'nome');
-        $nomeCmp = strcasecmp($nome1 ?? '', $nome2 ?? '');
+        $nomeCmp = strcasecmp($el1->nome ?? '', $el2->nome ?? '');
         if ($nomeCmp !== 0) {
             $res = ($nomeCmp > 0) ? 1 : -1;
             if ($verbose)
-                echo "&nbsp;&nbsp;- Nome: $nome1 vs $nome2 -> ESITO: $res<br>";
+                echo "&nbsp;&nbsp;- Nome: " . $el1->nome . " vs " . $el2->nome . " -> ESITO: $res<br>";
             return $res;
         }
 
         // 7. Uscita
-        $u1 = (string)$getVal($el1, 'uscita');
-        $u2 = (string)$getVal($el2, 'uscita');
+        $u1 = (string)$el1->uscita;
+        $u2 = (string)$el2->uscita;
         if ($u1 !== $u2) {
             $res = strcmp($u1, $u2) > 0 ? 1 : -1;
             if ($verbose)
@@ -1502,12 +1457,10 @@ class CardsController extends Controller
         }
 
         // 8. Numero
-        $num1 = $getVal($el1, 'numero');
-        $num2 = $getVal($el2, 'numero');
-        if ($num1 !== $num2) {
-            $res = ($num1 ?? 0) <=> ($num2 ?? 0);
+        if ($el1->numero !== $el2->numero) {
+            $res = ($el1->numero ?? 0) <=> ($el2->numero ?? 0);
             if ($verbose)
-                echo "&nbsp;&nbsp;- Numero carta: $num1 vs $num2 -> ESITO: $res<br>";
+                echo "&nbsp;&nbsp;- Numero carta: " . $el1->numero . " vs " . $el2->numero . " -> ESITO: $res<br>";
             return $res;
         }
 

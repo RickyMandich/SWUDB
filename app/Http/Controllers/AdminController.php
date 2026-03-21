@@ -77,26 +77,17 @@ class AdminController extends Controller
 
                     if ($hasRequiredAttributes) {
                         try {
-                            // Converte gli oggetti stdClass in array per il mergeSort
-                            $resultArray = array_map(fn($item) => (array) $item, $result);
-
-                            // Se manca l'attributo uscita, lo recupera dalla tabella expansions
-                            $needsUscita = !array_key_exists('uscita', $firstResult);
-                            if ($needsUscita) {
-                                $expansions = \App\Models\Expansion::all()->keyBy('espansione');
-                                $resultArray = array_map(function($item) use ($expansions) {
-                                    if (isset($expansions[$item['espansione']])) {
-                                        $item['uscita'] = $expansions[$item['espansione']]->uscita;
-                                    }
-                                    return $item;
-                                }, $resultArray);
-                            }
-
-                            // Applica il mergeSort
-                            $sortedResult = CardsController::mergeSort($resultArray);
+                            // Hydrate the raw database results into Card models for sorting compatibility
+                            $cardsModels = \App\Models\Card::hydrate(array_map(fn($item) => (array) $item, $result));
+                            
+                            // Preload aspects relationship for accurate sorting
+                            $cardsModels->load('aspects');
+                            
+                            // Applica il mergeSort (ora supporta solo modelli come richiesto)
+                            $sortedResult = CardsController::mergeSort($cardsModels);
 
                             // Converte di nuovo in oggetti stdClass per mantenere la compatibilità con la view
-                            $result = array_map(fn($item) => (object) $item, $sortedResult);
+                            $result = $sortedResult->map(fn($item) => (object) $item->toArray())->all();
                             $sortApplied = true;
                         } catch (\Exception $e) {
                             // Se il mergeSort fallisce, mantieni l'ordine originale

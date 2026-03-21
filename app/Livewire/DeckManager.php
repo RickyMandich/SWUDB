@@ -449,22 +449,24 @@ class DeckManager extends Component
             $this->distribuzionePerCosto = [];
         }
 
-        // Calcola distribuzione per aspetto (correlazione primario-secondario)
+        // Calcola distribuzione per aspetto (gestione many-to-many)
         $this->distribuzionePerAspetto = collect($carteDettagliate)
             ->map(function($carta) {
-                $primario = $carta['aspettoPrimario'] ?? null;
-                $secondario = $carta['aspettoSecondario'] ?? null;
-
-                // Gestisce aspetti primari vuoti o null
-                if (empty($primario)) {
-                    $primario = 'nessun aspetto';
+                // Nuova gestione con la tabelle degli aspetti many-to-many
+                $aspects = $carta['aspects'] ?? [];
+                
+                if (empty($aspects)) {
+                    return 'nessun aspetto';
                 }
 
-                if ($secondario && !empty($secondario)) {
-                    return $primario . ' / ' . $secondario;
-                } else {
-                    return $primario;
+                // Prepara i nomi degli aspetti ordinati (sono già ordinati dal model/toArray)
+                $aspectNames = collect($aspects)->pluck('nome')->filter()->toArray();
+                
+                if (empty($aspectNames)) {
+                    return 'nessun aspetto';
                 }
+
+                return implode(' / ', $aspectNames);
             })
             ->countBy()
             ->sortDesc()

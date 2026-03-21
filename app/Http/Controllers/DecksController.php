@@ -768,6 +768,13 @@ class DecksController extends Controller{
             return null;
         })->filter(); // Rimuove i null
 
+        // Applica l'ordinamento ufficiale mergeSort prima dell'esportazione
+        if (!$cards->isEmpty()) {
+            // Assicuriamoci che gli aspetti siano precaricati per l'ordinamento
+            $cards->load('aspects');
+            $cards = CardsController::mergeSort($cards);
+        }
+
         return [
             'user' => $userModel,
             'deck' => $deckModel,
