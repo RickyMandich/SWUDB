@@ -112,21 +112,9 @@ class DecksController extends Controller{
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$cards->isEmpty()) {
-            // Converte la Collection di modelli Eloquent in array associativi per il sorting
-            $cardsArray = $cards->map(function($card) {
-                // Usa toArray() per preservare tutti gli attributi del modello
-                if (is_object($card) && method_exists($card, 'toArray')) {
-                    $cardArray = $card->toArray();
-                    // Preserva il campo copie che è stato aggiunto dinamicamente
-                    if (isset($card->copie)) {
-                        $cardArray['copie'] = $card->copie;
-                    }
-                    return $cardArray;
-                } else {
-                    return (array) $card;
-                }
-            });
-            $cards = CardsController::mergeSort($cardsArray);
+            // Assicuriamoci che gli aspetti siano precaricati per l'ordinamento
+            $cards->load('aspects');
+            $cards = CardsController::mergeSort($cards);
         }
 
         // Recupera tutte le carte disponibili

@@ -172,7 +172,7 @@ class CollezioneManager extends Component
      */
     public function applyFilters()
     {
-        $query = Card::query();
+        $query = Card::query()->with('aspects');
 
         // Applica tutti i filtri come nel componente SearchFilter
         if (!empty($this->nome)) {
@@ -263,7 +263,7 @@ class CollezioneManager extends Component
      */
     public function loadAllCards()
     {
-        $results = Card::all();
+        $results = Card::with('aspects')->get();
         
         // Applica l'ordinamento usando il metodo del controller
         if (!$results->isEmpty()) {
