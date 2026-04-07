@@ -292,24 +292,32 @@ class SearchFilter extends Component
      */
     public function applyFilters()
     {
+        // Helper function per estrarre in modo sicuro un valore scalare da eventuali array annidati
+        $getScalar = function($val) {
+            while (is_array($val)) {
+                $val = empty($val) ? '' : reset($val);
+            }
+            return (string) $val;
+        };
+
         // Assicura che i filtri siano scalari (non array) e gestisce i tipi corretti
-        $this->nome = is_array($this->nome) ? (string) ($this->nome[0] ?? '') : (string) $this->nome;
-        $this->titolo = is_array($this->titolo) ? (string) ($this->titolo[0] ?? '') : (string) $this->titolo;
-        $this->espansione = is_array($this->espansione) ? (string) ($this->espansione[0] ?? '') : (string) $this->espansione;
-        $this->tipo = is_array($this->tipo) ? (string) ($this->tipo[0] ?? '') : (string) $this->tipo;
+        $this->nome = $getScalar($this->nome);
+        $this->titolo = $getScalar($this->titolo);
+        $this->espansione = $getScalar($this->espansione);
+        $this->tipo = $getScalar($this->tipo);
         // aspetti è già un array
-        $this->rarita = is_array($this->rarita) ? (string) ($this->rarita[0] ?? '') : (string) $this->rarita;
-        $this->rotazione = is_array($this->rotazione) ? (string) ($this->rotazione[0] ?? '') : (string) $this->rotazione;
-        $this->tratti = is_array($this->tratti) ? (string) ($this->tratti[0] ?? '') : (string) $this->tratti;
-        $this->arena = is_array($this->arena) ? (string) ($this->arena[0] ?? '') : (string) $this->arena;
-        $this->artista = is_array($this->artista) ? (string) ($this->artista[0] ?? '') : (string) $this->artista;
+        $this->rarita = $getScalar($this->rarita);
+        $this->rotazione = $getScalar($this->rotazione);
+        $this->tratti = $getScalar($this->tratti);
+        $this->arena = $getScalar($this->arena);
+        $this->artista = $getScalar($this->artista);
 
         // Normalizza i valori vuoti o array dei filtri numerici in null
         foreach (['costoMin', 'costoMax', 'potenzaMin', 'potenzaMax', 'vitaMin', 'vitaMax', 'unica'] as $field) {
             $val = $this->$field;
 
-            // Se è un array, prendi il primo elemento
-            if (is_array($val)) {
+            // Se è un array annidato, estrai il valore più interno
+            while (is_array($val)) {
                 $val = !empty($val) ? reset($val) : null;
             }
 
