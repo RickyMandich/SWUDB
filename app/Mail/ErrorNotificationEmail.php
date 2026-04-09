@@ -44,7 +44,9 @@ class ErrorNotificationEmail extends Mailable
     public function __construct(Throwable $exception, ?string $requestUrl = null, ?string $requestMethod = null, ?string $userAgent = null, $systemError = null)
     {
         $this->exception = $exception;
-        $this->errorMessage = $exception->getMessage();
+        
+        $msg = $exception->getMessage();
+        $this->errorMessage = is_array($msg) ? json_encode($msg) : (string) $msg;
         $this->errorFile = $exception->getFile();
         $this->errorLine = $exception->getLine();
         $this->requestUrl = $requestUrl;

@@ -33,7 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             try {
                 $systemError = SystemError::create([
                     'exception_class' => get_class($e),
-                    'message' => $e->getMessage(),
+                    'message' => is_array($e->getMessage()) ? json_encode($e->getMessage()) : (string) $e->getMessage(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                     'trace' => $e->getTraceAsString(),
@@ -50,7 +50,8 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             // Invia messaggio Telegram
-            MessageCreated::dispatch("Errore: " . $e->getMessage());
+            $safeMessage = is_array($e->getMessage()) ? json_encode($e->getMessage()) : (string) $e->getMessage();
+            MessageCreated::dispatch("Errore: " . $safeMessage);
 
             // Invia email a tutti gli admin usando la coda
             // Send email to all admins using queue

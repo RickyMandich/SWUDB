@@ -29,7 +29,6 @@ class CardsController extends Controller
      * It supports filtering by expansion code and card name, with automatic sorting.
      *
      * @param Request $request The HTTP request containing search parameters
-     * @param string|null $espansione Optional expansion code to filter by
      * @return \Illuminate\View\View The cards index view with filtered results
      */
     public function index(Request $request)
@@ -176,59 +175,93 @@ class CardsController extends Controller
         $allCardIds = [];
         $page = 1;
         $pageFinished = false;
+        $pageSize = 10;
+        
+        try {
+            while (!$pageFinished) {
+                $url = "https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][\$null]=true&pagination[page]={$page}&pagination[pageSize]={$pageSize}";
 
-        $this->writeScanLog("Inizio recupero tutti i CID", $logFile);
+                $this->writeScanLog("Chiamata API pagina {$page}: {$url}", $logFile);
 
-        while (!$pageFinished) {
-            $url = "https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][\$null]=true&pagination[page]={$page}&pagination[pageSize]=10";
+                $maxRetries = 3;
+                $retryCount = 0;
+                $success = false;
+                $response = null;
 
-            $this->writeScanLog("Chiamata API pagina {$page}: {$url}", $logFile);
+                while ($retryCount <= $maxRetries && !$success) {
+                    try {
+                        $response = Http::timeout(30)->get($url);
 
-            try {
-                $response = Http::timeout(30)->get($url);
-
-                if (!$response->successful()) {
-                    $errorMsg = "Errore API alla pagina {$page}: " . $response->status();
-                    $this->writeScanLog($errorMsg, $logFile);
-                    $this->sendTelegramAlert($errorMsg);
-                    ThreadMessageCreated::dispatch($threadId, $errorMsg);
-                    break;
-                }
-
-                $jsonData = $response->json();
-                $cards = $jsonData['data'] ?? [];
-
-                $this->writeScanLog("Pagina {$page}: trovate " . count($cards) . " carte", $logFile);
-
-                foreach ($cards as $card) {
-                    $cardId = $card['attributes']['cardUid'] ?? null;
-                    if ($cardId) {
-                        $allCardIds[] = $cardId;
-                        $this->writeScanLog("Trovato CID: {$cardId}", $logFile);
+                        if ($response->successful()) {
+                            $success = true;
+                        } else {
+                            $status = $response->status();
+                            // Retry on transient server errors (502, 503, 504)
+                            if (in_array($status, [502, 503, 504]) && $retryCount < $maxRetries) {
+                                $retryCount++;
+                                $waitSec = $retryCount * 5; // Exponential backoff: 5s, 10s, 15s
+                                $retryMsg = "⚠️ Errore {$status} alla pagina {$page}. Tentativo di ripristino {$retryCount}/{$maxRetries} tra {$waitSec}s...";
+                                $this->writeScanLog($retryMsg, $logFile);
+                                ThreadMessageCreated::dispatch($threadId, $retryMsg);
+                                sleep($waitSec);
+                            } else {
+                                // Non-retryable error or max retries reached
+                                $errorMsg = "❌ Errore API alla pagina {$page}: " . $status;
+                                $this->writeScanLog($errorMsg, $logFile);
+                                $this->sendTelegramAlert($errorMsg);
+                                ThreadMessageCreated::dispatch($threadId, $errorMsg);
+                                break 2; // Exit the while (!$pageFinished) loop
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        if ($retryCount < $maxRetries) {
+                            $retryCount++;
+                            $waitSec = $retryCount * 5;
+                            $retryMsg = "⚠️ Eccezione alla pagina {$page}: " . $e->getMessage() . ". Riprovo {$retryCount}/{$maxRetries} tra {$waitSec}s...";
+                            $this->writeScanLog($retryMsg, $logFile);
+                            sleep($waitSec);
+                        } else {
+                            throw $e; // Rethrow to be caught by outer try-catch
+                        }
                     }
                 }
 
-                // Check if we've reached the last page
-                $pagination = $jsonData['meta']['pagination'] ?? [];
-                $currentPage = $pagination['page'] ?? $page;
-                $totalPages = $pagination['pageCount'] ?? $page;
+                if ($success && $response) {
+                    $jsonData = $response->json();
+                    $cards = $jsonData['data'] ?? [];
 
-                $pageFinished = $currentPage >= $totalPages;
-                $this->writeScanLog("Pagina {$currentPage} di {$totalPages} completata", $logFile);
+                    $this->writeScanLog("Pagina {$page}: trovate " . count($cards) . " carte", $logFile);
 
-                if ($page % 5 === 0) {
-                    ThreadMessageCreated::dispatch($threadId, "Elaborate {$page} pagine API...");
+                    foreach ($cards as $card) {
+                        $cardId = $card['attributes']['cardUid'] ?? null;
+                        if ($cardId) {
+                            $allCardIds[] = $cardId;
+                            $this->writeScanLog("Trovato CID: {$cardId}", $logFile);
+                        }
+                    }
+
+                    // Check if we've reached the last page
+                    $pagination = $jsonData['meta']['pagination'] ?? [];
+                    $currentPage = $pagination['page'] ?? $page;
+                    $totalPages = $pagination['pageCount'] ?? $page;
+
+                    $pageFinished = $currentPage >= $totalPages;
+                    $this->writeScanLog("Pagina {$currentPage} di {$totalPages} completata", $logFile);
+
+                    if ($page % 5 === 0) {
+                        ThreadMessageCreated::dispatch($threadId, "Elaborate {$page} pagine API...");
+                    }
+
+                    $page++;
+                } else {
+                    $pageFinished = true; // Stop if we can't get a successful response
                 }
-
-                $page++;
-
-            } catch (\Exception $e) {
-                $errorMsg = "Eccezione durante chiamata API pagina {$page}: " . $e->getMessage();
-                $this->writeScanLog($errorMsg, $logFile);
-                $this->sendTelegramAlert($errorMsg);
-                ThreadMessageCreated::dispatch($threadId, $errorMsg);
-                break;
             }
+        } catch (\Exception $e) {
+            $errorMsg = "Eccezione durante recupero CID: " . $e->getMessage();
+            $this->writeScanLog($errorMsg, $logFile);
+            $this->sendTelegramAlert($errorMsg);
+            ThreadMessageCreated::dispatch($threadId, $errorMsg);
         }
 
         $finalMsg = "Completato recupero CID: " . count($allCardIds) . " carte totali";
@@ -242,6 +275,7 @@ class CardsController extends Controller
      *
      * @param string $cardId The card ID (cid)
      * @param string|null $logFile Log file path for this session
+     * @param array|null $originalData Output parameter for raw API data
      * @return array|null Card data array or null if failed
      */
     private function getCardDetailsFromAPI($cardId, $logFile = null, &$originalData = null)
@@ -252,18 +286,55 @@ class CardsController extends Controller
             $this->writeScanLog("Chiamata API dettagli carta: {$url}", $logFile);
         }
 
-        try {
-            $response = Http::timeout(30)->get($url);
+        $maxRetries = 3;
+        $retryCount = 0;
+        $success = false;
+        $response = null;
 
-            if (!$response->successful()) {
-                $errorMsg = "Errore recupero dettagli carta {$cardId}: " . $response->status();
-                if ($logFile) {
-                    $this->writeScanLog($errorMsg, $logFile);
+        while ($retryCount <= $maxRetries && !$success) {
+            try {
+                $response = Http::timeout(30)->get($url);
+
+                if ($response->successful()) {
+                    $success = true;
+                } else {
+                    $status = $response->status();
+                    if (in_array($status, [502, 503, 504]) && $retryCount < $maxRetries) {
+                        $retryCount++;
+                        $waitSec = $retryCount * 2; // Shorter backoff for individual card details
+                        if ($logFile) {
+                            $this->writeScanLog("⚠️ Errore {$status} per carta {$cardId}. Riprovo {$retryCount}/{$maxRetries} tra {$waitSec}s...", $logFile);
+                        }
+                        sleep($waitSec);
+                    } else {
+                        $errorMsg = "Errore recupero dettagli carta {$cardId}: " . $status;
+                        if ($logFile) {
+                            $this->writeScanLog($errorMsg, $logFile);
+                        }
+                        Log::error($errorMsg);
+                        return null;
+                    }
                 }
-                Log::error($errorMsg);
-                return null;
+            } catch (\Exception $e) {
+                if ($retryCount < $maxRetries) {
+                    $retryCount++;
+                    $waitSec = $retryCount * 2;
+                    if ($logFile) {
+                        $this->writeScanLog("⚠️ Eccezione per carta {$cardId}: " . $e->getMessage() . ". Riprovo {$retryCount}/{$maxRetries} tra {$waitSec}s...", $logFile);
+                    }
+                    sleep($waitSec);
+                } else {
+                    $errorMsg = "Eccezione definitiva per carta {$cardId}: " . $e->getMessage();
+                    if ($logFile) {
+                        $this->writeScanLog($errorMsg, $logFile);
+                    }
+                    Log::error($errorMsg);
+                    return null;
+                }
             }
+        }
 
+        if ($success && $response) {
             $jsonData = $response->json();
             $data = $jsonData['data'] ?? null;
             $originalData = $data;
@@ -286,15 +357,9 @@ class CardsController extends Controller
             }
 
             return $cardData;
-
-        } catch (\Exception $e) {
-            $errorMsg = "Eccezione durante recupero dettagli carta {$cardId}: " . $e->getMessage();
-            if ($logFile) {
-                $this->writeScanLog($errorMsg, $logFile);
-            }
-            Log::error($errorMsg);
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -390,8 +455,9 @@ class CardsController extends Controller
         }
 
         // Handle token cards
-        if ((isset($cardData['tipo']) && is_string($cardData['tipo']) && strpos($cardData['tipo'], 'Segnalin') !== false)) {
-            $cardData['espansione'] = "T" . $cardData['espansione'];
+        $tipo = $cardData['tipo'] ?? '';
+        if (is_string($tipo) && strpos($tipo, 'Segnalin') !== false) {
+            $cardData['espansione'] = "T" . ($cardData['espansione'] ?? '');
         }
 
         return $cardData;

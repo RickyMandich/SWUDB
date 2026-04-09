@@ -162,8 +162,9 @@ class SendQueuedEmail implements ShouldQueue
     {
         $jobId = $this->job ? $this->job->getJobId() : 'fire-and-forget';
         $attempt = $this->job ? $this->attempts() : 1;
-
-        $message = "Errore invio email a: {$this->to} - {$e->getMessage()}";
+        
+        $errorMessage = is_array($e->getMessage()) ? json_encode($e->getMessage()) : (string) $e->getMessage();
+        $message = "Errore invio email a: {$this->to} - {$errorMessage}";
         if ($this->logContext) {
             $message .= " - Contesto: {$this->logContext}";
         }
@@ -177,6 +178,24 @@ class SendQueuedEmail implements ShouldQueue
             'attempt' => $attempt
         ]);
 
+        // Registra l'errore nel database degli errori di sistema se possibile
+        try {
+            \App\Models\SystemError::create([
+                'exception_class' => get_class($e),
+                'message' => "Job Email Send Error: " . $errorMessage,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_url' => 'Background Job (Email Queue)',
+                'request_method' => 'JOB',
+                'user_agent' => 'SWUDB-Bot/1.0',
+                'status' => 'new'
+            ]);
+        } catch (\Exception $dbError) {
+            // Silently fail if database is not accessible
+            Log::warning('Failed to log email queue error to database', ['error' => $dbError->getMessage()]);
+        }
+
         // Send Telegram notification
         MessageCreated::dispatch($message);
 
@@ -185,7 +204,7 @@ class SendQueuedEmail implements ShouldQueue
             'to' => $this->to,
             'mailable' => $this->mailableClass,
             'context' => $this->logContext,
-            'error' => $e->getMessage(),
+            'error' => $errorMessage,
             'job_id' => $jobId,
             'attempt' => $attempt
         ]);
@@ -201,8 +220,9 @@ class SendQueuedEmail implements ShouldQueue
     public function failed(\Throwable $exception)
     {
         $jobId = $this->job ? $this->job->getJobId() : 'fire-and-forget';
-
-        $message = "Invio email fallito definitivamente a: {$this->to} dopo {$this->tries} tentativi - {$exception->getMessage()}";
+        
+        $errorMessage = is_array($exception->getMessage()) ? json_encode($exception->getMessage()) : (string) $exception->getMessage();
+        $message = "Invio email fallito definitivamente a: {$this->to} dopo {$this->tries} tentativi - {$errorMessage}";
         if ($this->logContext) {
             $message .= " - Contesto: {$this->logContext}";
         }
@@ -215,6 +235,23 @@ class SendQueuedEmail implements ShouldQueue
             'job_id' => $jobId,
             'max_tries' => $this->tries
         ]);
+        
+        // Registra nel database errori se possibile
+        try {
+            \App\Models\SystemError::create([
+                'exception_class' => get_class($exception),
+                'message' => "Job Email Permanent Failure: " . $errorMessage,
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => $exception->getTraceAsString(),
+                'request_url' => 'Background Job (Email Queue)',
+                'request_method' => 'JOB_FAILED',
+                'user_agent' => 'SWUDB-Bot/1.0',
+                'status' => 'new'
+            ]);
+        } catch (\Exception $dbError) {
+            // Silently fail
+        }
 
         // Send Telegram notification
         MessageCreated::dispatch($message);
@@ -224,7 +261,7 @@ class SendQueuedEmail implements ShouldQueue
             'to' => $this->to,
             'mailable' => $this->mailableClass,
             'context' => $this->logContext,
-            'error' => $exception->getMessage(),
+            'error' => $errorMessage,
             'job_id' => $jobId
         ]);
     }
@@ -309,7 +346,13 @@ class SendQueuedEmail implements ShouldQueue
             case 'App\\Mail\\ErrorNotificationEmail':
                 // Create a generic exception from stored data
                 $errorMessage = $this->mailableData['error_message'] ?? 'Unknown error';
-                $exception = new \Exception($errorMessage);
+                
+                // Assicura che il messaggio sia una stringa per evitare "Array to string conversion"
+                if (is_array($errorMessage)) {
+                    $errorMessage = json_encode($errorMessage);
+                }
+                
+                $exception = new \Exception((string) $errorMessage);
 
                 return new \App\Mail\ErrorNotificationEmail(
                     $exception,
