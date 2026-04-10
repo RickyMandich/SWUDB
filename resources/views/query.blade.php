@@ -94,6 +94,10 @@
                                                         @php
                                                             $rowArray = (array)$row;
                                                             $value = $rowArray[$column] ?? '';
+                                                            if (is_array($value) || is_object($value)) {
+                                                                // Convert to JSON for display
+                                                                $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+                                                            }
                                                         @endphp
                                                         @if(isset($sorted) and $sorted)
                                                             <a href="{{ route('carta', ['espansione' => $row->espansione, 'numero' => $row->numero]) }}" target="_blank">
