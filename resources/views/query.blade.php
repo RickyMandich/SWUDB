@@ -26,7 +26,7 @@
                                 <strong>Nota:</strong> Le query senza <code>ORDER BY</code>
                                 verranno automaticamente ordinate usando l'algoritmo mergeSort personalizzato,
                                 purché i risultati contengano tutti gli attributi necessari
-                                (nome, tipo, aspettoPrimario, aspettoSecondario, costo, numero, espansione).
+                                (cid, nome, tipo, costo, numero, espansione).
                                 L'attributo <code>uscita</code> viene recuperato automaticamente dalla tabella <code>expansions</code> se mancante.
                                 <br>
                                 <i class="fas fa-keyboard me-1"></i>
@@ -79,7 +79,7 @@
                                 <thead class="table-dark">
                                     <tr>
                                         @foreach($columns as $column)
-                                            @if($column !== 'aspettoPrimario' && $column !== 'aspettoSecondario')
+                                            @if($column !== 'cid')
                                                 <th>{{ $column }}</th>
                                             @endif
                                         @endforeach
@@ -89,7 +89,7 @@
                                     @foreach($result as $row)
                                         <tr>
                                             @foreach($columns as $column)
-                                                @if($column !== 'aspettoPrimario' && $column !== 'aspettoSecondario')
+                                                @if($column !== 'cid')
                                                     <td>
                                                         @php
                                                             $rowArray = (array)$row;

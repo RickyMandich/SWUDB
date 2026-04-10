@@ -63,7 +63,7 @@ class AdminController extends Controller
                 if (!$hasOrderBy && !empty($result)) {
                     // Verifica che i risultati abbiano gli attributi necessari per il mergeSort
                     // uscita non è necessaria, può essere recuperata dalla tabella espansione
-                    $requiredAttributes = ['nome', 'tipo', 'aspettoPrimario', 'aspettoSecondario', 'costo', 'numero', 'espansione'];
+                    $requiredAttributes = ['cid', 'nome', 'tipo', 'costo', 'numero', 'espansione'];
                     $firstResult = (array) $result[0];
                     $hasRequiredAttributes = true;
                     $missingAttributes = [];
