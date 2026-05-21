@@ -126,4 +126,8 @@ return [
 
     'RESEND_API_KEY' => env('RESEND_API_KEY'),
 
+    'providers' => [
+        App\Providers\AuthMacroServiceProvider::class,
+    ],
+
 ];
