@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class AuthMacroServiceProvider extends ServiceProvider
@@ -29,12 +30,13 @@ class AuthMacroServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Auth::macro('admin', function () {
-            // Example using a dedicated admin guard:
-            // return Auth::guard('admin')->check();
-
-            // Example using an `is_admin` boolean column on the default user:
             $user = Auth::user();
-            return $user && $user->is_admin; // change attribute name if different
+            $isAdmin = $user && $user->is_admin; // adjust column if needed
+            Log::info('Auth::admin check', [
+                'user_id' => $user ? $user->id : null,
+                'is_admin' => $isAdmin,
+            ]);
+            return $isAdmin;
         });
     }
 }
