@@ -31,7 +31,7 @@ class AuthMacroServiceProvider extends ServiceProvider
     {
         Auth::macro('admin', function () {
             $user = Auth::user();
-            $isAdmin = $user && $user->is_admin; // adjust column if needed
+            $isAdmin = $user && ($user->admin == 1); // check admin column
             Log::info('Auth::admin check', [
                 'user_id' => $user ? $user->id : null,
                 'is_admin' => $isAdmin,
