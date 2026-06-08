@@ -259,10 +259,12 @@ class JobController extends Controller
         $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
         $host = $parts['host'];
 
-        // FIX: Force use of www.unlimiteddb.net for SSL consistency
-        // SSL certificate is likely for www. whereas internal APP_URL might be non-www or localhost
-        if ($host === 'localhost' || $host === '127.0.0.1' || strtolower($host) === 'unlimiteddb.net') {
-            $host = 'www.unlimiteddb.net';
+        // Use the host from the configured APP_URL for SSL consistency
+        // This respects the domain set in .env (e.g., https://swudb.altervista.org)
+        $appUrl = config('app.url');
+        $appHost = $appUrl ? parse_url($appUrl, PHP_URL_HOST) : null;
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', 'unlimiteddb.net']) && $appHost) {
+            $host = $appHost;
         }
 
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
@@ -320,9 +322,12 @@ class JobController extends Controller
         $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
         $host = $parts['host'];
 
-        // FIX: Force use of www.unlimiteddb.net for SSL consistency
-        if ($host === 'localhost' || $host === '127.0.0.1' || strtolower($host) === 'unlimiteddb.net') {
-            $host = 'www.unlimiteddb.net';
+        // Use the host from the configured APP_URL for SSL consistency
+        // This respects the domain set in .env (e.g., https://swudb.altervista.org)
+        $appUrl = config('app.url');
+        $appHost = $appUrl ? parse_url($appUrl, PHP_URL_HOST) : null;
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', 'unlimiteddb.net']) && $appHost) {
+            $host = $appHost;
         }
 
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
