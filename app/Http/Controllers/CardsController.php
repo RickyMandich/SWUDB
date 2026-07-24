@@ -1424,8 +1424,9 @@ class CardsController extends Controller
 
         // 0. Rotazione
 
-        $set1 = Expansion::where("espansione", "=", $el1->id);
+        $set1 = Expansion::where("espansione", "=", $el1->id)->get();
         if ($verbose) {
+            var_dump($set1);
             echo gettype($set1);
         }
         $rot1 = $set1->first()->rotazione;
