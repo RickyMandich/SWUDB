@@ -1422,20 +1422,6 @@ class CardsController extends Controller
             echo "Confronto: " . $el1->id . " (" . $el1->nome . ") vs " . $el2->id . " (" . $el2->nome . ")<br>";
         }
 
-        // 0. Rotazione
-
-        $set1 = Expansion::where("espansione", "=", $el1->espansione)->get();
-        $rot1 = $set1->first()->rotazione;
-        $set2 = Expansion::where("espansione", "=", $el2->espansione);
-        $rot2 = $set2->first()->rotazione;
-
-        if ($rot1 !== $rot2) {
-            $res = $rot1 <=> $rot2;
-            if ($verbose)
-                echo "&nbsp;&nbsp;- Priorità rotazione: $rot1 vs $rot2 -> ESITO: $res<br>";
-            return $res;
-        }
-
         // 1. Tipo generico (Leader > Base > altri)
         $prioTipoGenerico = [
             'Leader' => 0,
@@ -1449,6 +1435,20 @@ class CardsController extends Controller
             $res = $p1 <=> $p2;
             if ($verbose)
                 echo "&nbsp;&nbsp;- Priorità tipo generico: $p1 vs $p2 -> ESITO: $res<br>";
+            return $res;
+        }
+
+        // 1,5. Rotazione
+
+        $set1 = Expansion::where("espansione", "=", $el1->espansione)->get();
+        $rot1 = $set1->first()->rotazione;
+        $set2 = Expansion::where("espansione", "=", $el2->espansione);
+        $rot2 = $set2->first()->rotazione;
+
+        if ($rot1 !== $rot2) {
+            $res = $rot1 <=> $rot2;
+            if ($verbose)
+                echo "&nbsp;&nbsp;- Priorità rotazione: $rot1 vs $rot2 -> ESITO: $res<br>";
             return $res;
         }
 
