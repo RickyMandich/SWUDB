@@ -113,7 +113,7 @@ class TelegramController extends Controller
                 $command = $message->getText();
                 $username = $message->getFrom()->getUsername() ?? 'utente_senza_username';
 
-                $this->sendMessage($message->getChat()->getId(), 'Comando preso in carica da UnlimitedDB.net [' . env('APP_VERSION') . ']');
+                $this->sendMessage($message->getChat()->getId(), 'Comando preso in carica da unlimiteddb.mandich.dev [' . env('APP_VERSION') . ']');
 
                 switch ($command) {
                     case '/scan':

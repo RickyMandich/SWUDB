@@ -1554,7 +1554,7 @@ class DecksController extends Controller
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_USERAGENT => 'UnlimitedDB.net Deck Importer',
+            CURLOPT_USERAGENT => 'UnlimitedDB.mandich.dev Deck Importer',
             CURLOPT_HTTPHEADER => [
                 'Accept: application/json, text/plain, */*',
                 'Accept-Language: en-US,en;q=0.9',

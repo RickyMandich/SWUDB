@@ -48,24 +48,28 @@ class JobController extends Controller
      * @param Request $request HTTP request containing card data and authentication token
      * @return void Outputs success/error messages directly
      */
-    public function addCard(Request $request){
+    public function addCard(Request $request)
+    {
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
         }
 
         $last = "inizio";
-        if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard.log'), "inizio addCard \n\n", FILE_APPEND);
-        
+        if (env("APP_DEBUG_LOG"))
+            file_put_contents(self::getJobLogPath('debug-addCard.log'), "inizio addCard \n\n", FILE_APPEND);
+
         try {
             // Check if card data is passed as JSON
             $cardJson = $request->input('card');
             if ($cardJson) {
                 $card = json_decode($cardJson, true);
-                if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
+                if (env("APP_DEBUG_LOG"))
+                    file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
             } else {
                 // Fallback to individual parameters
                 $card = $request->all();
-                if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
+                if (env("APP_DEBUG_LOG"))
+                    file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
             }
 
             $last = "creazione-carta";
@@ -93,42 +97,45 @@ class JobController extends Controller
 
             $last = "maxCopie3";
             $carta->maxCopie = 3;
-            
+
             $last = "maxCopie1leader";
-            if(str_contains(strtolower($carta->tipo), 'leader')){
+            if (str_contains(strtolower($carta->tipo), 'leader')) {
                 $carta->maxCopie = 1;
             }
-            
+
             $last = "maxCopie1leader-maxCopie1base";
-            if(str_contains(strtolower($carta->tipo), 'base')){
+            if (str_contains(strtolower($carta->tipo), 'base')) {
                 $carta->maxCopie = 1;
             }
-            
+
             $last = "maxCopie1-maxCopie15";
-            if(strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256){
+            if (strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256) {
                 $carta->maxCopie = 15;
             }
-            
+
             $last = "maxCopie15-maxCopie0";
-            if(str_contains(strtolower($carta->tipo), "segnalino")){
+            if (str_contains(strtolower($carta->tipo), "segnalino")) {
                 $carta->maxCopie = 0;
             }
-            
+
             $last = "maxCopie-creazione";
             unset($carta->creazione);
-            
+
             $last = "creazione-save";
             $carta->save();
-            
+
             echo "Carta '{$carta->nome}' aggiunta con successo!\n";
-            if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "success addCard " . $card["espansione"] . "-" . $card["numero"]. " \n\n", FILE_APPEND);
-            
-        } catch(\Exception $e){
-            echo "eccezione ".$e->getMessage() . " <strong>at</strong> " . $last;
-            if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "eccezione ".$e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
+            if (env("APP_DEBUG_LOG"))
+                file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "success addCard " . $card["espansione"] . "-" . $card["numero"] . " \n\n", FILE_APPEND);
+
+        } catch (\Exception $e) {
+            echo "eccezione " . $e->getMessage() . " <strong>at</strong> " . $last;
+            if (env("APP_DEBUG_LOG"))
+                file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "eccezione " . $e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
         }
-        
-        if(env("APP_DEBUG_LOG")) file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown'). " \n\n", FILE_APPEND);
+
+        if (env("APP_DEBUG_LOG"))
+            file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown') . " \n\n", FILE_APPEND);
     }
 
     /**
@@ -141,7 +148,8 @@ class JobController extends Controller
      * @param Request $request HTTP request containing 'message' and 'token' parameters
      * @return void Sends message to Telegram or logs errors
      */
-    public function sendMessage(Request $request){
+    public function sendMessage(Request $request)
+    {
         if ($request->input('token') !== env('JOB_TOKEN')) {
             abort(403);
         }
@@ -150,7 +158,7 @@ class JobController extends Controller
 
         $botToken = env('TELEGRAM_BOT_TOKEN', '7717265706:AAH5chf4Ae3vsFSt7158K-RFWdh9BudnnQc');
         $chatId = env('TELEGRAM_CHAT_ID', '5533337157');
-        
+
         try {
             Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
                 'chat_id' => $chatId,
@@ -173,7 +181,8 @@ class JobController extends Controller
      * @param Request $request HTTP request containing 'threadId', 'message', 'isComplete', and 'token' parameters
      * @return void Sends or edits message in Telegram or logs errors
      */
-    public function sendThreadMessage(Request $request){
+    public function sendThreadMessage(Request $request)
+    {
         // Prevent process termination when socket is closed
         ignore_user_abort(true);
 
@@ -191,7 +200,7 @@ class JobController extends Controller
         try {
             // Check if we have an existing message to edit
             $existingMessageId = \App\Services\ThreadManager::getTelegramMessageId($threadId);
-            
+
             if ($existingMessageId) {
                 // Edit the existing message
                 $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/editMessageText", [
@@ -199,11 +208,14 @@ class JobController extends Controller
                     'message_id' => $existingMessageId,
                     'text' => $message
                 ]);
-                
-                if(env("APP_DEBUG_LOG")) {
-                    file_put_contents(self::getJobLogPath('debug-threadMessage.log'), 
-                        "Edited thread message [{$threadId}] ID {$existingMessageId}: {$message}" . 
-                        ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
+
+                if (env("APP_DEBUG_LOG")) {
+                    file_put_contents(
+                        self::getJobLogPath('debug-threadMessage.log'),
+                        "Edited thread message [{$threadId}] ID {$existingMessageId}: {$message}" .
+                        ($isComplete ? " [COMPLETE]" : "") . "\n",
+                        FILE_APPEND
+                    );
                 }
             } else {
                 // Send a new message and store its ID
@@ -211,25 +223,31 @@ class JobController extends Controller
                     'chat_id' => $chatId,
                     'text' => $message
                 ]);
-                
+
                 $responseData = $response->json();
                 if (isset($responseData['result']['message_id'])) {
                     $messageId = $responseData['result']['message_id'];
                     \App\Services\ThreadManager::setTelegramMessageId($threadId, $messageId);
-                    
-                    if(env("APP_DEBUG_LOG")) {
-                        file_put_contents(self::getJobLogPath('debug-threadMessage.log'), 
-                            "Sent new thread message [{$threadId}] ID {$messageId}: {$message}" . 
-                            ($isComplete ? " [COMPLETE]" : "") . "\n", FILE_APPEND);
+
+                    if (env("APP_DEBUG_LOG")) {
+                        file_put_contents(
+                            self::getJobLogPath('debug-threadMessage.log'),
+                            "Sent new thread message [{$threadId}] ID {$messageId}: {$message}" .
+                            ($isComplete ? " [COMPLETE]" : "") . "\n",
+                            FILE_APPEND
+                        );
                     }
                 }
             }
-            
+
         } catch (\Exception $e) {
             \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
-            if(env("APP_DEBUG_LOG")) {
-                file_put_contents(self::getJobLogPath('debug-threadMessage.log'), 
-                    "Error in thread message [{$threadId}]: " . $e->getMessage() . "\n", FILE_APPEND);
+            if (env("APP_DEBUG_LOG")) {
+                file_put_contents(
+                    self::getJobLogPath('debug-threadMessage.log'),
+                    "Error in thread message [{$threadId}]: " . $e->getMessage() . "\n",
+                    FILE_APPEND
+                );
             }
         }
     }
@@ -246,13 +264,15 @@ class JobController extends Controller
      * @param array $data Query parameters to append to the URL
      * @return bool True if request was sent successfully, false on error
      */
-    public static function fireAndForgetGet($url, $data = []) {
+    public static function fireAndForgetGet($url, $data = [])
+    {
         $query = http_build_query($data);
         $parts = parse_url($url);
         $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
+            if (env("APP_DEBUG_LOG"))
+                file_put_contents($logPath, "fireAndForget ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             return false;
         }
 
@@ -263,7 +283,7 @@ class JobController extends Controller
         // This respects the domain set in .env (e.g., https://swudb.altervista.org)
         $appUrl = config('app.url');
         $appHost = $appUrl ? parse_url($appUrl, PHP_URL_HOST) : null;
-        if (in_array(strtolower($host), ['localhost', '127.0.0.1', 'unlimiteddb.net']) && $appHost) {
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', 'unlimiteddb.mandich.dev']) && $appHost) {
             $host = $appHost;
         }
 
@@ -279,12 +299,14 @@ class JobController extends Controller
             $path .= '?' . $query;
         }
 
-        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget GET: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
+        if (env("APP_DEBUG_LOG"))
+            file_put_contents($logPath, "fireAndForget GET: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
+            if (env("APP_DEBUG_LOG"))
+                file_put_contents($logPath, "fireAndForget ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
             return false;
         }
 
@@ -297,7 +319,8 @@ class JobController extends Controller
         usleep(10000); // 10ms delay to ensure request is received
         fclose($fp);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget SUCCESS sent to $host" . "\n\n", FILE_APPEND);
+        if (env("APP_DEBUG_LOG"))
+            file_put_contents($logPath, "fireAndForget SUCCESS sent to $host" . "\n\n", FILE_APPEND);
 
         return true;
     }
@@ -310,12 +333,14 @@ class JobController extends Controller
      * @param array $data Data to send in the body
      * @return bool True if request was sent successfully, false on error
      */
-    public static function fireAndForgetPost($url, $data = []) {
+    public static function fireAndForgetPost($url, $data = [])
+    {
         $parts = parse_url($url);
         $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
+            if (env("APP_DEBUG_LOG"))
+                file_put_contents($logPath, "fireAndForget POST ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             return false;
         }
 
@@ -326,13 +351,13 @@ class JobController extends Controller
         // This respects the domain set in .env (e.g., https://swudb.altervista.org)
         $appUrl = config('app.url');
         $appHost = $appUrl ? parse_url($appUrl, PHP_URL_HOST) : null;
-        if (in_array(strtolower($host), ['localhost', '127.0.0.1', 'unlimiteddb.net']) && $appHost) {
+        if (in_array(strtolower($host), ['localhost', '127.0.0.1', 'unlimiteddb.mandich.dev']) && $appHost) {
             $host = $appHost;
         }
 
         $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
         $remote_host = ($scheme === 'https' ? "ssl://" : "") . $host;
-        
+
         $path = $parts['path'];
         $existingQuery = $parts['query'] ?? '';
         if ($existingQuery !== '') {
@@ -341,12 +366,14 @@ class JobController extends Controller
 
         $postData = http_build_query($data);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
+        if (env("APP_DEBUG_LOG"))
+            file_put_contents($logPath, "fireAndForget POST: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
 
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
+            if (env("APP_DEBUG_LOG"))
+                file_put_contents($logPath, "fireAndForget POST ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
             return false;
         }
 
@@ -362,7 +389,8 @@ class JobController extends Controller
         usleep(10000); // 10ms delay
         fclose($fp);
 
-        if(env("APP_DEBUG_LOG")) file_put_contents($logPath, "fireAndForget POST SUCCESS sent to $host" . "\n\n", FILE_APPEND);
+        if (env("APP_DEBUG_LOG"))
+            file_put_contents($logPath, "fireAndForget POST SUCCESS sent to $host" . "\n\n", FILE_APPEND);
 
         return true;
     }
