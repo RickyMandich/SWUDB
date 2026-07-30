@@ -9,7 +9,12 @@ COPY public/ ./public/
 RUN npm run build
 
 # --- Stage 2: dipendenze PHP con Composer ---
-FROM composer:2 AS composer-builder
+# Si usa la stessa immagine php:8.2-fpm-alpine dello stage finale (non
+# l'immagine standalone "composer:2", che porta con sé un PHP proprio e può
+# cambiarne la versione senza preavviso, causando incompatibilità col
+# composer.lock del progetto). Composer viene copiato come binario.
+FROM php:8.2-fpm-alpine AS composer-builder
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
