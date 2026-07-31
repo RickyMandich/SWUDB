@@ -26,13 +26,13 @@ class EmailLogService
         $timestamp = now()->format('Y_m_d_H_i');
         $filename = "email_{$operation}_{$timestamp}.log";
         $logPath = storage_path("logs/mail/{$filename}");
-        
+
         // Ensure logs/mail directory exists
         $logDir = dirname($logPath);
         if (!File::exists($logDir)) {
             File::makeDirectory($logDir, 0755, true);
         }
-        
+
         // Write initial log header
         self::writeToFile($logPath, "=== INIZIO SESSIONE EMAIL - " . strtoupper($operation) . " ===");
         self::writeToFile($logPath, "Timestamp: " . now()->format('d/m/Y H:i:s'));
@@ -41,10 +41,10 @@ class EmailLogService
         self::writeToFile($logPath, "Provider: " . config('mail.default', 'unknown'));
         self::writeToFile($logPath, "Rate Limit: 2 email/secondo");
         self::writeToFile($logPath, "=====================================");
-        
+
         return $logPath;
     }
-    
+
     /**
      * Write a message to a specific email log file
      * Scrive un messaggio in un file di log email specifico
@@ -58,19 +58,19 @@ class EmailLogService
     {
         $timestamp = now()->format('H:i:s');
         $logMessage = "[{$timestamp}] [{$level}] {$message}\n";
-        
+
         // Ensure directory exists
         $logDir = dirname($logFile);
         if (!File::exists($logDir)) {
             File::makeDirectory($logDir, 0755, true);
         }
-        
-        file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
-        
+
+        // file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
+
         // Also log to Laravel log for backup
         Log::info("EMAIL: {$message}");
     }
-    
+
     /**
      * Log email queue operations
      * Registra operazioni di coda email
@@ -85,10 +85,10 @@ class EmailLogService
         if (!$logFile) {
             $logFile = self::getOrCreateQueueLogFile();
         }
-        
+
         self::writeToFile($logFile, $message, $level);
     }
-    
+
     /**
      * Log email sending operations
      * Registra operazioni di invio email
@@ -103,10 +103,10 @@ class EmailLogService
         if (!$logFile) {
             $logFile = self::getOrCreateSendLogFile();
         }
-        
+
         self::writeToFile($logFile, $message, $level);
     }
-    
+
     /**
      * Log email processor operations
      * Registra operazioni del processore email
@@ -121,10 +121,10 @@ class EmailLogService
         if (!$logFile) {
             $logFile = self::getOrCreateProcessorLogFile();
         }
-        
+
         self::writeToFile($logFile, $message, $level);
     }
-    
+
     /**
      * Log email errors with detailed information
      * Registra errori email con informazioni dettagliate
@@ -137,21 +137,21 @@ class EmailLogService
     public static function logError(string $operation, \Exception $exception, array $context = []): void
     {
         $errorLogFile = self::getOrCreateErrorLogFile();
-        
+
         self::writeToFile($errorLogFile, "=== ERRORE EMAIL - {$operation} ===", 'ERROR');
         self::writeToFile($errorLogFile, "Messaggio: " . $exception->getMessage(), 'ERROR');
         self::writeToFile($errorLogFile, "File: " . $exception->getFile(), 'ERROR');
         self::writeToFile($errorLogFile, "Linea: " . $exception->getLine(), 'ERROR');
-        
+
         if (!empty($context)) {
             self::writeToFile($errorLogFile, "Contesto: " . json_encode($context, JSON_PRETTY_PRINT), 'ERROR');
         }
-        
+
         self::writeToFile($errorLogFile, "Stack Trace:", 'ERROR');
         self::writeToFile($errorLogFile, $exception->getTraceAsString(), 'ERROR');
         self::writeToFile($errorLogFile, "=====================================", 'ERROR');
     }
-    
+
     /**
      * Log email statistics and metrics
      * Registra statistiche e metriche email
@@ -162,14 +162,14 @@ class EmailLogService
     public static function logStats(array $stats): void
     {
         $statsLogFile = self::getOrCreateStatsLogFile();
-        
+
         self::writeToFile($statsLogFile, "=== STATISTICHE EMAIL ===");
         foreach ($stats as $key => $value) {
             self::writeToFile($statsLogFile, "{$key}: {$value}");
         }
         self::writeToFile($statsLogFile, "========================");
     }
-    
+
     /**
      * Get or create the queue log file for today
      * Ottiene o crea il file di log coda per oggi
@@ -180,14 +180,14 @@ class EmailLogService
     {
         $date = now()->format('Y_m_d');
         $logFile = storage_path("logs/mail/queue_{$date}.log");
-        
+
         if (!File::exists($logFile)) {
             self::writeToFile($logFile, "=== LOG CODA EMAIL - " . now()->format('d/m/Y') . " ===");
         }
-        
+
         return $logFile;
     }
-    
+
     /**
      * Get or create the send log file for today
      * Ottiene o crea il file di log invio per oggi
@@ -198,14 +198,14 @@ class EmailLogService
     {
         $date = now()->format('Y_m_d');
         $logFile = storage_path("logs/mail/send_{$date}.log");
-        
+
         if (!File::exists($logFile)) {
             self::writeToFile($logFile, "=== LOG INVIO EMAIL - " . now()->format('d/m/Y') . " ===");
         }
-        
+
         return $logFile;
     }
-    
+
     /**
      * Get or create the processor log file for today
      * Ottiene o crea il file di log processore per oggi
@@ -216,14 +216,14 @@ class EmailLogService
     {
         $date = now()->format('Y_m_d');
         $logFile = storage_path("logs/mail/processor_{$date}.log");
-        
+
         if (!File::exists($logFile)) {
             self::writeToFile($logFile, "=== LOG PROCESSORE EMAIL - " . now()->format('d/m/Y') . " ===");
         }
-        
+
         return $logFile;
     }
-    
+
     /**
      * Get or create the error log file for today
      * Ottiene o crea il file di log errori per oggi
@@ -234,14 +234,14 @@ class EmailLogService
     {
         $date = now()->format('Y_m_d');
         $logFile = storage_path("logs/mail/errors_{$date}.log");
-        
+
         if (!File::exists($logFile)) {
             self::writeToFile($logFile, "=== LOG ERRORI EMAIL - " . now()->format('d/m/Y') . " ===");
         }
-        
+
         return $logFile;
     }
-    
+
     /**
      * Get or create the stats log file for today
      * Ottiene o crea il file di log statistiche per oggi
@@ -252,14 +252,14 @@ class EmailLogService
     {
         $date = now()->format('Y_m_d');
         $logFile = storage_path("logs/mail/stats_{$date}.log");
-        
+
         if (!File::exists($logFile)) {
             self::writeToFile($logFile, "=== LOG STATISTICHE EMAIL - " . now()->format('d/m/Y') . " ===");
         }
-        
+
         return $logFile;
     }
-    
+
     /**
      * Get the application version string
      * Ottiene la stringa versione dell'applicazione
@@ -271,10 +271,10 @@ class EmailLogService
         $primary = env('APP_VERSION_PRIMARY', '1');
         $secondary = env('APP_VERSION_SECONDARY', '0');
         $tertiary = env('APP_VERSION_TERTIARY', '0');
-        
+
         return "{$primary}.{$secondary}.{$tertiary}";
     }
-    
+
     /**
      * Clean up old log files (older than specified days)
      * Pulisce i file di log vecchi (più vecchi dei giorni specificati)
@@ -285,29 +285,29 @@ class EmailLogService
     public static function cleanupOldLogs(int $days = 30): int
     {
         $mailLogDir = storage_path('logs/mail');
-        
+
         if (!File::exists($mailLogDir)) {
             return 0;
         }
-        
+
         $cutoffDate = now()->subDays($days);
         $deletedCount = 0;
-        
+
         $files = File::files($mailLogDir);
-        
+
         foreach ($files as $file) {
             $fileTime = File::lastModified($file->getPathname());
-            
+
             if ($fileTime < $cutoffDate->timestamp) {
                 File::delete($file->getPathname());
                 $deletedCount++;
             }
         }
-        
+
         if ($deletedCount > 0) {
             self::logQueue("Pulizia log completata: {$deletedCount} file eliminati");
         }
-        
+
         return $deletedCount;
     }
 }

@@ -32,18 +32,18 @@ class SendThreadMessage
     {
         // Update thread state in the manager
         ThreadManager::updateThread($event->threadId, $event->message, $event->isComplete);
-        
+
         // Log debug information if enabled
         if (env("APP_DEBUG")) {
-            $debugMessage = "ThreadMessage [{$event->threadId}]: {$event->message}" . 
-                           ($event->isComplete ? " [COMPLETE]" : "");
-            file_put_contents(__DIR__ . "/debug-sendThreadMessage.log", 
-                             $debugMessage . "\n", FILE_APPEND);
+            $debugMessage = "ThreadMessage [{$event->threadId}]: {$event->message}" .
+                ($event->isComplete ? " [COMPLETE]" : "");
+            // file_put_contents(__DIR__ . "/debug-sendThreadMessage.log", 
+            //                  $debugMessage . "\n", FILE_APPEND);
         }
 
         // Prepare the message for Telegram with thread context
         $telegramMessage = $this->formatMessageForTelegram($event);
-        
+
         // Send the message via JobController
         JobController::fireAndForgetGet(route("job.sendThreadMessage"), [
             "threadId" => $event->threadId,
@@ -94,7 +94,7 @@ class SendThreadMessage
         // Extract the prefix part before the first underscore
         $parts = explode('_', $threadId);
         $prefix = $parts[0] ?? 'Process';
-        
+
         // Convert common prefixes to Italian
         $translations = [
             'import' => 'Importazione',
@@ -103,7 +103,7 @@ class SendThreadMessage
             'sync' => 'Sincronizzazione',
             'thread' => 'Processo'
         ];
-        
+
         return $translations[strtolower($prefix)] ?? ucfirst($prefix);
     }
 }

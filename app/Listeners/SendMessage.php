@@ -14,7 +14,8 @@ use App\Http\Controllers\JobController;
  * This listener responds to MessageCreated events by logging debug information
  * and dispatching a background job to process the message.
  */
-class SendMessage{
+class SendMessage
+{
 
     /**
      * Handle the MessageCreated event by logging and dispatching message job
@@ -23,8 +24,9 @@ class SendMessage{
      * @param MessageCreated $event The message created event containing message data
      * @return void
      */
-    public function handle(MessageCreated $event): void{
-        file_put_contents(__DIR__ . "/debug-sendMessage.log", route("job.sendMessage") . "\n\n", FILE_APPEND);
+    public function handle(MessageCreated $event): void
+    {
+        // file_put_contents(__DIR__ . "/debug-sendMessage.log", route("job.sendMessage") . "\n\n", FILE_APPEND);
         JobController::fireAndForgetGet(route("job.sendMessage"), ["message" => $event->message, "token" => env("JOB_TOKEN")]);
     }
 }
