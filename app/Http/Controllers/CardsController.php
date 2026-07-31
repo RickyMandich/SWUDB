@@ -643,13 +643,13 @@ class CardsController extends Controller
 
         // 1. Esecuzione Test Pre-Scansione
         $this->writeScanLog("Esecuzione test pre-scansione...", $logFile);
-        $testRunner = new \App\Services\TestRunnerService();
+        $testRunner = new TestRunnerService();
         if (!$testRunner->runTests($logFile)) {
             $errorMsg = "❌ SCANSIONE ABORTITA: I test di sistema sono falliti. Controllare la Dashboard Admin per dettagli.";
             $this->writeScanLog($errorMsg, $logFile);
 
             // Informiamo il thread Telegram del blocco
-            \App\Events\ThreadMessageCreated::dispatch($threadId, "❌ SCANSIONE ANNULLATA: I test pre-scansione hanno rilevato errori. Controlla lo storico test.");
+            ThreadMessageCreated::dispatch($threadId, "❌ SCANSIONE ANNULLATA: I test pre-scansione hanno rilevato errori. Controlla lo storico test.");
 
             return;
         } else {

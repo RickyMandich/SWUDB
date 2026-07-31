@@ -23,21 +23,6 @@ use App\Services\EmailLogService;
 class JobController extends Controller
 {
     /**
-     * Get the absolute path for job-specific log files
-     * Ottiene il percorso assoluto per i file di log specifici dei job
-     *
-     * @return string The absolute path to the log file
-     */
-    private static function getJobLogPath($filename = 'debug-fire.log')
-    {
-        $dir = storage_path('logs/jobs');
-        if (!file_exists($dir)) {
-            mkdir($dir, 0755, true);
-        }
-        return $dir . '/' . $filename;
-    }
-
-    /**
      * Add a new card to the database from external API data
      * Aggiunge una nuova carta al database da dati API esterni
      *
@@ -55,92 +40,89 @@ class JobController extends Controller
         }
 
         $last = "inizio";
-        if (env("APP_DEBUG_LOG"))
-            // file_put_contents(self::getJobLogPath('debug-addCard.log'), "inizio addCard \n\n", FILE_APPEND);
+        Log::debug("[JobController] addCard: inizio");
 
-            try {
-                // Check if card data is passed as JSON
-                $cardJson = $request->input('card');
-                if ($cardJson) {
-                    $card = json_decode($cardJson, true);
-                    if (env("APP_DEBUG_LOG")) {
-                        // file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
-                    }
-                } else {
-                    // Fallback to individual parameters
-                    $card = $request->all();
-                    if (env("APP_DEBUG_LOG")) {
-
-                        // file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
-                    }
-                }
-
-                $last = "creazione-carta";
-                $carta = new \App\Models\Card();
-                $carta->cid = $card['cid'];
-                $carta->nome = $card['nome'] ?? '';
-                $carta->espansione = $card['espansione'] ?? '';
-                $carta->numero = $card['numero'] ?? null;
-                $carta->aspettoPrimario = $card['aspettoPrimario'] ?? '';
-                $carta->aspettoSecondario = $card['aspettoSecondario'] ?? '';
-                $carta->unica = $card['unica'] ?? false;
-                $carta->titolo = $card['titolo'] ?? '';
-                $carta->tipo = $card['tipo'] ?? '';
-                $carta->rarita = $card['rarita'] ?? '';
-                $carta->costo = $card['costo'] ?? null;
-                $carta->vita = $card['vita'] ?? null;
-                $carta->potenza = $card['potenza'] ?? null;
-                $carta->descrizione = $card['descrizione'] ?? '';
-                $carta->tratti = $card['tratti'] ?? '';
-                $carta->arena = $card['arena'] ?? '';
-                $carta->artista = $card['artista'] ?? '';
-                $carta->frontArt = $card['frontArt'] ?? '';
-                $carta->backArt = $card['backArt'] ?? '';
-                $carta->uscita = $card['uscita'] ?? '';
-
-                $last = "maxCopie3";
-                $carta->maxCopie = 3;
-
-                $last = "maxCopie1leader";
-                if (str_contains(strtolower($carta->tipo), 'leader')) {
-                    $carta->maxCopie = 1;
-                }
-
-                $last = "maxCopie1leader-maxCopie1base";
-                if (str_contains(strtolower($carta->tipo), 'base')) {
-                    $carta->maxCopie = 1;
-                }
-
-                $last = "maxCopie1-maxCopie15";
-                if (strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256) {
-                    $carta->maxCopie = 15;
-                }
-
-                $last = "maxCopie15-maxCopie0";
-                if (str_contains(strtolower($carta->tipo), "segnalino")) {
-                    $carta->maxCopie = 0;
-                }
-
-                $last = "maxCopie-creazione";
-                unset($carta->creazione);
-
-                $last = "creazione-save";
-                $carta->save();
-
-                echo "Carta '{$carta->nome}' aggiunta con successo!\n";
-                if (env("APP_DEBUG_LOG")) {
-                    // file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "success addCard " . $card["espansione"] . "-" . $card["numero"] . " \n\n", FILE_APPEND);
-                }
-            } catch (\Exception $e) {
-                echo "eccezione " . $e->getMessage() . " <strong>at</strong> " . $last;
-                if (env("APP_DEBUG_LOG")) {
-                    // file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "eccezione " . $e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
-                }
+        try {
+            // Check if card data is passed as JSON
+            $cardJson = $request->input('card');
+            if ($cardJson) {
+                $card = json_decode($cardJson, true);
+                Log::debug("[JobController] addCard: card from JSON", ['card' => $card]);
+            } else {
+                // Fallback to individual parameters
+                $card = $request->all();
+                Log::debug("[JobController] addCard: card from params", ['card' => $card]);
             }
 
-        if (env("APP_DEBUG_LOG")) {
-            // file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown') . " \n\n", FILE_APPEND);
+            $last = "creazione-carta";
+            $carta = new \App\Models\Card();
+            $carta->cid = $card['cid'];
+            $carta->nome = $card['nome'] ?? '';
+            $carta->espansione = $card['espansione'] ?? '';
+            $carta->numero = $card['numero'] ?? null;
+            $carta->aspettoPrimario = $card['aspettoPrimario'] ?? '';
+            $carta->aspettoSecondario = $card['aspettoSecondario'] ?? '';
+            $carta->unica = $card['unica'] ?? false;
+            $carta->titolo = $card['titolo'] ?? '';
+            $carta->tipo = $card['tipo'] ?? '';
+            $carta->rarita = $card['rarita'] ?? '';
+            $carta->costo = $card['costo'] ?? null;
+            $carta->vita = $card['vita'] ?? null;
+            $carta->potenza = $card['potenza'] ?? null;
+            $carta->descrizione = $card['descrizione'] ?? '';
+            $carta->tratti = $card['tratti'] ?? '';
+            $carta->arena = $card['arena'] ?? '';
+            $carta->artista = $card['artista'] ?? '';
+            $carta->frontArt = $card['frontArt'] ?? '';
+            $carta->backArt = $card['backArt'] ?? '';
+            $carta->uscita = $card['uscita'] ?? '';
+
+            $last = "maxCopie3";
+            $carta->maxCopie = 3;
+
+            $last = "maxCopie1leader";
+            if (str_contains(strtolower($carta->tipo), 'leader')) {
+                $carta->maxCopie = 1;
+            }
+
+            $last = "maxCopie1leader-maxCopie1base";
+            if (str_contains(strtolower($carta->tipo), 'base')) {
+                $carta->maxCopie = 1;
+            }
+
+            $last = "maxCopie1-maxCopie15";
+            if (strtoupper($carta->espansione) == 'JTL' && $carta->numero == 256) {
+                $carta->maxCopie = 15;
+            }
+
+            $last = "maxCopie15-maxCopie0";
+            if (str_contains(strtolower($carta->tipo), "segnalino")) {
+                $carta->maxCopie = 0;
+            }
+
+            $last = "maxCopie-creazione";
+            unset($carta->creazione);
+
+            $last = "creazione-save";
+            $carta->save();
+
+            echo "Carta '{$carta->nome}' aggiunta con successo!\n";
+            Log::info("[JobController] addCard: successo", [
+                'espansione' => $card['espansione'] ?? 'unknown',
+                'numero' => $card['numero'] ?? 'unknown',
+            ]);
+        } catch (\Exception $e) {
+            echo "eccezione " . $e->getMessage() . " <strong>at</strong> " . $last;
+            Log::error("[JobController] addCard: eccezione", [
+                'message' => $e->getMessage(),
+                'at' => $last,
+            ]);
         }
+
+        Log::debug("[JobController] addCard: fine", [
+            'espansione' => $card['espansione'] ?? 'unknown',
+            'numero' => $card['numero'] ?? 'unknown',
+        ]);
     }
 
     /**
@@ -170,9 +152,8 @@ class JobController extends Controller
                 'text' => $message
             ]);
         } catch (\Exception $e) {
-            \Log::error("Errore Telegram: " . $e->getMessage());
+            Log::error("[JobController] sendMessage: errore Telegram", ['message' => $e->getMessage()]);
         }
-
     }
 
     /**
@@ -214,14 +195,12 @@ class JobController extends Controller
                     'text' => $message
                 ]);
 
-                if (env("APP_DEBUG_LOG")) {
-                    // file_put_contents(
-                    //     self::getJobLogPath('debug-threadMessage.log'),
-                    //     "Edited thread message [{$threadId}] ID {$existingMessageId}: {$message}" .
-                    //     ($isComplete ? " [COMPLETE]" : "") . "\n",
-                    //     FILE_APPEND
-                    // );
-                }
+                Log::debug("[JobController] sendThreadMessage: messaggio modificato", [
+                    'threadId' => $threadId,
+                    'messageId' => $existingMessageId,
+                    'message' => $message,
+                    'isComplete' => $isComplete,
+                ]);
             } else {
                 // Send a new message and store its ID
                 $response = Http::withoutVerifying()->get("https://api.telegram.org/bot{$botToken}/sendMessage", [
@@ -234,26 +213,19 @@ class JobController extends Controller
                     $messageId = $responseData['result']['message_id'];
                     \App\Services\ThreadManager::setTelegramMessageId($threadId, $messageId);
 
-                    if (env("APP_DEBUG_LOG")) {
-                        // file_put_contents(
-                        //     self::getJobLogPath('debug-threadMessage.log'),
-                        //     "Sent new thread message [{$threadId}] ID {$messageId}: {$message}" .
-                        //     ($isComplete ? " [COMPLETE]" : "") . "\n",
-                        //     FILE_APPEND
-                        // );
-                    }
+                    Log::debug("[JobController] sendThreadMessage: nuovo messaggio inviato", [
+                        'threadId' => $threadId,
+                        'messageId' => $messageId,
+                        'message' => $message,
+                        'isComplete' => $isComplete,
+                    ]);
                 }
             }
-
         } catch (\Exception $e) {
-            \Log::error("Errore Telegram Thread Message: " . $e->getMessage());
-            if (env("APP_DEBUG_LOG")) {
-                // file_put_contents(
-                //     self::getJobLogPath('debug-threadMessage.log'),
-                //     "Error in thread message [{$threadId}]: " . $e->getMessage() . "\n",
-                //     FILE_APPEND
-                // );
-            }
+            Log::error("[JobController] sendThreadMessage: errore", [
+                'threadId' => $threadId,
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -273,12 +245,9 @@ class JobController extends Controller
     {
         $query = http_build_query($data);
         $parts = parse_url($url);
-        $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if (env("APP_DEBUG_LOG")) {
-                // file_put_contents($logPath, "fireAndForget ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
-            }
+            Log::error("[JobController] fireAndForgetGet: URL non valido", ['url' => $url]);
             return false;
         }
 
@@ -305,16 +274,23 @@ class JobController extends Controller
             $path .= '?' . $query;
         }
 
-        if (env("APP_DEBUG_LOG")) {
-            // file_put_contents($logPath, "fireAndForget GET: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
-        }
+        Log::debug("[JobController] fireAndForgetGet: invio richiesta", [
+            'host' => $host,
+            'path' => $path,
+            'remote_host' => $remote_host,
+            'port' => $port,
+        ]);
 
-        $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
+        $fp = @fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if (env("APP_DEBUG_LOG")) {
-                // file_put_contents($logPath, "fireAndForget ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
-            }
+            Log::error("[JobController] fireAndForgetGet: fsockopen fallita", [
+                'host' => $host,
+                'remote_host' => $remote_host,
+                'port' => $port,
+                'errno' => $errno,
+                'errstr' => $errstr,
+            ]);
             return false;
         }
 
@@ -327,9 +303,10 @@ class JobController extends Controller
         usleep(10000); // 10ms delay to ensure request is received
         fclose($fp);
 
-        if (env("APP_DEBUG_LOG")) {
-            // file_put_contents($logPath, "fireAndForget SUCCESS sent to $host" . "\n\n", FILE_APPEND);
-        }
+        Log::debug("[JobController] fireAndForgetGet: richiesta inviata con successo", [
+            'host' => $host,
+            'path' => $path,
+        ]);
 
         return true;
     }
@@ -345,12 +322,9 @@ class JobController extends Controller
     public static function fireAndForgetPost($url, $data = [])
     {
         $parts = parse_url($url);
-        $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if (env("APP_DEBUG_LOG")) {
-                // file_put_contents($logPath, "fireAndForget POST ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
-            }
+            Log::error("[JobController] fireAndForgetPost: URL non valido", ['url' => $url]);
             return false;
         }
 
@@ -376,16 +350,23 @@ class JobController extends Controller
 
         $postData = http_build_query($data);
 
-        if (env("APP_DEBUG_LOG")) {
-            // file_put_contents($logPath, "fireAndForget POST: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
-        }
+        Log::debug("[JobController] fireAndForgetPost: invio richiesta", [
+            'host' => $host,
+            'path' => $path,
+            'remote_host' => $remote_host,
+            'port' => $port,
+        ]);
 
-        $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
+        $fp = @fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if (env("APP_DEBUG_LOG")) {
-                // file_put_contents($logPath, "fireAndForget POST ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
-            }
+            Log::error("[JobController] fireAndForgetPost: fsockopen fallita", [
+                'host' => $host,
+                'remote_host' => $remote_host,
+                'port' => $port,
+                'errno' => $errno,
+                'errstr' => $errstr,
+            ]);
             return false;
         }
 
@@ -401,9 +382,10 @@ class JobController extends Controller
         usleep(10000); // 10ms delay
         fclose($fp);
 
-        if (env("APP_DEBUG_LOG")) {
-            // file_put_contents($logPath, "fireAndForget POST SUCCESS sent to $host" . "\n\n", FILE_APPEND);
-        }
+        Log::debug("[JobController] fireAndForgetPost: richiesta inviata con successo", [
+            'host' => $host,
+            'path' => $path,
+        ]);
 
         return true;
     }
@@ -446,17 +428,17 @@ class JobController extends Controller
 
             if ($pendingJobs->isEmpty()) {
                 EmailLogService::logProcessor("Nessun job email in coda - terminazione", 'INFO', $logFile);
-                \Log::info('No pending email jobs to process');
+                Log::info('[JobController] processEmailQueue: nessun job email in coda');
                 return;
             }
 
             EmailLogService::logProcessor("Inizio elaborazione {$pendingJobs->count()} job email", 'INFO', $logFile);
-            \Log::info("Processing {$pendingJobs->count()} email jobs");
+            Log::info("[JobController] processEmailQueue: elaborazione job", ['count' => $pendingJobs->count()]);
 
             foreach ($pendingJobs as $jobRecord) {
                 // Check execution time limit
                 if ((time() - $startTime) > $maxExecutionTime) {
-                    \Log::info("Email queue processor: Time limit reached, processed {$processedCount} jobs");
+                    Log::info("[JobController] processEmailQueue: limite tempo raggiunto", ['processed' => $processedCount]);
 
                     // Restart the process if there are more jobs
                     $remainingJobs = \DB::table('jobs')
@@ -514,7 +496,7 @@ class JobController extends Controller
 
                         $processedCount++;
                         EmailLogService::logProcessor("✅ Job {$jobRecord->id} completato con successo", 'INFO', $logFile);
-                        \Log::info("Email job {$jobRecord->id} processed successfully");
+                        Log::info("[JobController] processEmailQueue: job completato", ['job_id' => $jobRecord->id]);
                     }
 
                 } catch (\Exception $e) {
@@ -523,7 +505,10 @@ class JobController extends Controller
                         'job_class' => $jobClass ?? 'unknown'
                     ]);
 
-                    \Log::error("Error processing email job {$jobRecord->id}: " . $e->getMessage());
+                    Log::error("[JobController] processEmailQueue: errore elaborazione job", [
+                        'job_id' => $jobRecord->id,
+                        'message' => $e->getMessage(),
+                    ]);
 
                     // Handle job failure
                     $this->handleFailedEmailJob($jobRecord, $e);
@@ -532,7 +517,7 @@ class JobController extends Controller
 
             EmailLogService::logProcessor("=== COMPLETAMENTO PROCESSORE EMAIL ===", 'INFO', $logFile);
             EmailLogService::logProcessor("Job elaborati: {$processedCount}", 'INFO', $logFile);
-            \Log::info("Email queue processing completed: {$processedCount} jobs processed");
+            Log::info("[JobController] processEmailQueue: completato", ['processed' => $processedCount]);
 
             // Check if there are more jobs to process
             $remainingJobs = \DB::table('jobs')
@@ -555,7 +540,7 @@ class JobController extends Controller
                 'execution_time' => (time() - $startTime) . 's'
             ]);
 
-            \Log::error('Email queue processor error: ' . $e->getMessage());
+            Log::error('[JobController] processEmailQueue: errore generale', ['message' => $e->getMessage()]);
             \App\Events\MessageCreated::dispatch('Errore processore coda email: ' . $e->getMessage());
         }
     }
@@ -606,7 +591,10 @@ class JobController extends Controller
             // Remove from jobs table
             \DB::table('jobs')->where('id', $jobRecord->id)->delete();
 
-            \Log::error("Email job {$jobRecord->id} failed permanently after {$attempts} attempts");
+            Log::error("[JobController] handleFailedEmailJob: job fallito definitivamente", [
+                'job_id' => $jobRecord->id,
+                'attempts' => $attempts,
+            ]);
             \App\Events\MessageCreated::dispatch("Job email fallito definitivamente: {$exception->getMessage()}");
 
         } else {
@@ -621,7 +609,11 @@ class JobController extends Controller
                     'available_at' => $retryAt
                 ]);
 
-            \Log::info("Email job {$jobRecord->id} scheduled for retry in {$backoffSeconds} seconds (attempt {$attempts})");
+            Log::info("[JobController] handleFailedEmailJob: retry pianificato", [
+                'job_id' => $jobRecord->id,
+                'attempt' => $attempts,
+                'backoff_seconds' => $backoffSeconds,
+            ]);
         }
     }
 }
