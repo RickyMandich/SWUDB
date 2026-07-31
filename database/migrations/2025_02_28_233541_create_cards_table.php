@@ -13,8 +13,8 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        if (!Schema::hasTable('Cards')) {
-            Schema::create('Cards', function (Blueprint $table) {
+        if (!Schema::hasTable('cards')) {
+            Schema::create('cards', function (Blueprint $table) {
                 $table->string('cid', 15)->unique();
                 $table->string('espansione', 10);
                 $table->decimal('numero', 3, 0);
@@ -43,6 +43,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('Cards');
+        Schema::dropIfExists('cards');
     }
 };
