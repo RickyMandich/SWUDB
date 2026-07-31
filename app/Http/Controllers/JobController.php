@@ -63,12 +63,13 @@ class JobController extends Controller
                 $cardJson = $request->input('card');
                 if ($cardJson) {
                     $card = json_decode($cardJson, true);
-                    if (env("APP_DEBUG_LOG"))
+                    if (env("APP_DEBUG_LOG")) {
                         // file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from JSON: " . json_encode($card) . "\n\n", FILE_APPEND);
+                    }
                 } else {
                     // Fallback to individual parameters
                     $card = $request->all();
-                    if (env("APP_DEBUG_LOG")){
+                    if (env("APP_DEBUG_LOG")) {
 
                         // file_put_contents(self::getJobLogPath('debug-addCard.log'), "card from params: " . json_encode($card) . "\n\n", FILE_APPEND);
                     }
@@ -127,17 +128,17 @@ class JobController extends Controller
                 $carta->save();
 
                 echo "Carta '{$carta->nome}' aggiunta con successo!\n";
-                if (env("APP_DEBUG_LOG")){
+                if (env("APP_DEBUG_LOG")) {
                     // file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "success addCard " . $card["espansione"] . "-" . $card["numero"] . " \n\n", FILE_APPEND);
                 }
             } catch (\Exception $e) {
                 echo "eccezione " . $e->getMessage() . " <strong>at</strong> " . $last;
-                if (env("APP_DEBUG_LOG")){
+                if (env("APP_DEBUG_LOG")) {
                     // file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "eccezione " . $e->getMessage() . " at " . "$last \n\n", FILE_APPEND);
                 }
             }
 
-        if (env("APP_DEBUG_LOG")){
+        if (env("APP_DEBUG_LOG")) {
             // file_put_contents(self::getJobLogPath('debug-addCard-end.log'), "end addCard " . ($card["espansione"] ?? 'unknown') . "-" . ($card["numero"] ?? 'unknown') . " \n\n", FILE_APPEND);
         }
     }
@@ -275,7 +276,7 @@ class JobController extends Controller
         $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if (env("APP_DEBUG_LOG")){
+            if (env("APP_DEBUG_LOG")) {
                 // file_put_contents($logPath, "fireAndForget ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             }
             return false;
@@ -304,15 +305,16 @@ class JobController extends Controller
             $path .= '?' . $query;
         }
 
-        if (env("APP_DEBUG_LOG")){
+        if (env("APP_DEBUG_LOG")) {
             // file_put_contents($logPath, "fireAndForget GET: $host$path (Remote: $remote_host, Port: $port)" . "\n\n", FILE_APPEND);
         }
 
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if (env("APP_DEBUG_LOG")){
+            if (env("APP_DEBUG_LOG")) {
                 // file_put_contents($logPath, "fireAndForget ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
+            }
             return false;
         }
 
@@ -346,7 +348,7 @@ class JobController extends Controller
         $logPath = self::getJobLogPath('debug-fire.log');
 
         if (!isset($parts['host']) || !isset($parts['path'])) {
-            if (env("APP_DEBUG_LOG")){
+            if (env("APP_DEBUG_LOG")) {
                 // file_put_contents($logPath, "fireAndForget POST ERROR: Invalid URL $url" . "\n\n", FILE_APPEND);
             }
             return false;
@@ -381,7 +383,7 @@ class JobController extends Controller
         $fp = fsockopen($remote_host, $port, $errno, $errstr, 30);
 
         if (!$fp) {
-            if (env("APP_DEBUG_LOG")){
+            if (env("APP_DEBUG_LOG")) {
                 // file_put_contents($logPath, "fireAndForget POST ERROR [$errno]: $errstr" . "\n\n", FILE_APPEND);
             }
             return false;
