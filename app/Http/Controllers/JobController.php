@@ -300,7 +300,8 @@ class JobController extends Controller
         $out .= "Connection: Close\r\n\r\n";
 
         fwrite($fp, $out);
-        usleep(10000); // 10ms delay to ensure request is received
+        stream_set_timeout($fp, 5);
+        fread($fp, 1); // forza l'attesa della risposta, garantendo che la richiesta sia stata inoltrata
         fclose($fp);
 
         Log::debug("[JobController] fireAndForgetGet: richiesta inviata con successo", [
