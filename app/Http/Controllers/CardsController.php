@@ -812,6 +812,11 @@ class CardsController extends Controller
             $batchSize = 50; // Increased batch size for checkpoints
             $checkpointInterval = 100; // Save checkpoint every 100 cards
 
+            // NUOVO: flush periodico nel DB per evitare accumulo in memoria
+            $dbFlushInterval = 150;
+            $totalInserted = [];
+            $totalExpansions = [];
+
             for ($index = $startIndex; $index < count($newCardIds); $index++) {
                 if (!isset($newCardIds[$index])) {
                     $this->writeScanLog("ERRORE: Indice {$index} non trovato nell'array newCardIds", $logFile);
@@ -855,6 +860,17 @@ class CardsController extends Controller
                     $this->writeScanLog("Checkpoint salvato all'indice: " . ($index + 1), $logFile);
                 }
 
+                // NUOVO: flush parziale nel DB per liberare memoria
+                if (count($toInsert) >= $dbFlushInterval) {
+                    $this->writeScanLog("Flush parziale nel DB: " . count($toInsert) . " carte", $logFile);
+                    $result = $this->insertCardsDirectly($toInsert, $threadId, $logFile);
+                    $totalInserted = array_merge($totalInserted, $result['cards'] ?? []);
+                    $totalExpansions = array_merge($totalExpansions, $result['expansions'] ?? []);
+
+                    $toInsert = [];
+                    $originalJsonData = [];
+                }
+
                 // Check execution time and break if approaching limits
                 if ((time() - ($_SERVER['REQUEST_TIME'] ?? time())) > 240) { // 4 minutes limit
                     $this->writeScanLog("Limite tempo raggiunto, salvataggio checkpoint e riavvio...", $logFile);
@@ -881,7 +897,7 @@ class CardsController extends Controller
 
             // Processing completed
             $this->writeScanLog("=== ELABORAZIONE COMPLETATA ===", $logFile);
-            $this->writeScanLog("Carte elaborate con successo: " . count($toInsert) . "/" . count($newCardIds), $logFile);
+            $this->writeScanLog("Carte elaborate con successo: " . ($processedCount) . "/" . count($newCardIds), $logFile);
 
             // Salvataggio JSON originale con lo stesso nome del log
             if (!empty($originalJsonData) && $logFile) {
@@ -890,8 +906,7 @@ class CardsController extends Controller
                     $jsonLogFile .= '.json';
                 }
 
-                // Ensure array of objects structure as requested
-                // file_put_contents($jsonLogFile, json_encode($originalJsonData, JSON_PRETTY_PRINT));
+                file_put_contents($jsonLogFile, json_encode($originalJsonData, JSON_PRETTY_PRINT));
                 $this->writeScanLog("Salvato file JSON originale: " . basename($jsonLogFile), $logFile);
             }
 
@@ -901,19 +916,22 @@ class CardsController extends Controller
                 $this->writeScanLog("Checkpoint rimosso", $logFile);
             }
 
-            ThreadMessageCreated::dispatch($threadId, "Completata elaborazione: " . count($toInsert) . " carte pronte per importazione");
-
+            // NUOVO: flush finale nel DB delle carte rimaste
             if (!empty($toInsert)) {
-                $this->writeScanLog("Avvio inserimento asincrono nel database", $logFile);
+                $this->writeScanLog("Flush finale nel DB: " . count($toInsert) . " carte", $logFile);
+                $result = $this->insertCardsDirectly($toInsert, $threadId, $logFile);
+                $totalInserted = array_merge($totalInserted, $result['cards'] ?? []);
+                $totalExpansions = array_merge($totalExpansions, $result['expansions'] ?? []);
+            }
 
-                // Avvia inserimento asincrono per evitare timeout
-                $this->startAsyncCardInsertion($toInsert, $threadId, $logFile);
+            $this->writeScanLog("=== INSERIMENTO NEL DB COMPLETATO ===", $logFile);
+            $this->writeScanLog("Totale carte inserite: " . count($totalInserted), $logFile);
 
-                // Mark thread as complete since the scan and processing is done
-                ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Avviato inserimento di " . count($toInsert) . " carte", true);
+            if (!empty($totalInserted)) {
+                $this->sendUnifiedNotifications($totalInserted, !empty($totalExpansions) ? $totalExpansions[0] : null);
+                ThreadMessageCreated::dispatch($threadId, "✅ Scansione completata! Inserite " . count($totalInserted) . " carte", true);
             } else {
-                $this->writeScanLog("Nessuna carta da importare", $logFile);
-                ThreadMessageCreated::dispatch($threadId, "Nessuna carta da importare", true);
+                ThreadMessageCreated::dispatch($threadId, "Nessuna carta inserita", true);
             }
 
         } catch (\Exception $e) {
