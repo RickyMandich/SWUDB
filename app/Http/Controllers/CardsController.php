@@ -712,7 +712,7 @@ class CardsController extends Controller
                         'logFile' => $logFile,
                         'threadId' => $threadId
                     ];
-                    // file_put_contents(storage_path("app/new_cards_process.json"), json_encode($processData));
+                    file_put_contents(storage_path("app/new_cards_process.json"), json_encode($processData));
 
                     $this->writeScanLog("=== FINE SCANSIONE, INIZIO ELABORAZIONE DETTAGLI ===", $logFile);
                     $this->writeScanLog("Lancio processNewCards in background via fireAndForgetGet", $logFile);
@@ -851,7 +851,7 @@ class CardsController extends Controller
                         'originalJsonData' => $originalJsonData,
                         'timestamp' => time()
                     ];
-                    // file_put_contents($checkpointFile, json_encode($checkpointData));
+                    file_put_contents($checkpointFile, json_encode($checkpointData));
                     $this->writeScanLog("Checkpoint salvato all'indice: " . ($index + 1), $logFile);
                 }
 
@@ -867,7 +867,7 @@ class CardsController extends Controller
                         'originalJsonData' => $originalJsonData,
                         'timestamp' => time()
                     ];
-                    // file_put_contents($checkpointFile, json_encode($checkpointData));
+                    file_put_contents($checkpointFile, json_encode($checkpointData));
 
                     // Restart the process
                     JobController::fireAndForgetGet(route('carte.processNewCards', ['threadId' => $threadId]), [
@@ -949,7 +949,7 @@ class CardsController extends Controller
             'timestamp' => time()
         ];
 
-        // file_put_contents(storage_path("app/cards_to_insert.json"), json_encode($insertData));
+        file_put_contents(storage_path("app/cards_to_insert.json"), json_encode($insertData));
 
         if ($logFile) {
             $this->writeScanLog("Dati salvati per inserimento asincrono: " . count($cards) . " carte", $logFile);
@@ -1173,7 +1173,7 @@ class CardsController extends Controller
                         'logFile' => $logFile,
                         'timestamp' => time()
                     ];
-                    // file_put_contents(storage_path("app/cards_to_insert.json"), json_encode($insertData));
+                    file_put_contents(storage_path("app/cards_to_insert.json"), json_encode($insertData));
 
                     // Restart the process
                     JobController::fireAndForgetGet(route('carte.insertCards', ['threadId' => $threadId]), [
