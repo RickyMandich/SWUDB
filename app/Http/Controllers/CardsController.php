@@ -1457,11 +1457,8 @@ class CardsController extends Controller
         }
 
         // 1,5. Rotazione
-
-        $set1 = Expansion::where("espansione", "=", $el1->espansione)->get();
-        $rot1 = $set1->first()->rotazione;
-        $set2 = Expansion::where("espansione", "=", $el2->espansione);
-        $rot2 = $set2->first()->rotazione;
+        $rot1 = $el1->expansion?->rotazione ?? '';
+        $rot2 = $el2->expansion?->rotazione ?? '';
 
         if ($rot1 !== $rot2) {
             $res = $rot1 <=> $rot2;

@@ -334,7 +334,7 @@ class SearchFilter extends Component
             }
         }
 
-        $query = Card::query()->with('aspects');
+        $query = Card::query()->with(['aspects', 'expansion']);
 
         // Filtro per nome
         if (!empty($this->nome)) {
@@ -568,7 +568,7 @@ class SearchFilter extends Component
      */
     public function loadAllCards()
     {
-        $results = Card::with('aspects')->get();
+        $results = Card::with(['aspects', 'expansion'])->get();
 
         // Applica l'ordinamento usando il metodo del controller
         if (!$results->isEmpty()) {

@@ -33,13 +33,17 @@ class DecksController extends Controller
         if (auth()->check()) {
             $decksUser = Deck::where("codUtente", auth()->user()->id)
                 ->where("nome", "!=", "Collezione")
+                ->orderByDesc("id")
                 ->get();
             foreach ($decksUser as $deck) {
                 $deck->utente = User::where("id", $deck->codUtente)->first()->name;
                 $decks[$deck->id] = $deck;
             }
         }
-        $decksPublic = Deck::where("public", 1)->where("codUtente", "!=", Auth::user() != null ? Auth::user()->id : -1)->orderBy("codUtente")->get();
+        $decksPublic = Deck::where("public", 1)
+            ->where("codUtente", "!=", Auth::user() != null ? Auth::user()->id : -1)->orderBy("codUtente")
+            ->orderByDesc("id")
+            ->get();
         foreach ($decksPublic as $deck) {
             $deck->utente = User::where("id", $deck->codUtente)->first()->name;
             $deck->dirtyName = "$deck->nome di $deck->utente";
