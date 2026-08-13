@@ -92,7 +92,7 @@ class DeckBuildManager extends Component
     {
         // Recupera le composizioni del mazzo
         $deckModel = Deck::find($this->deckObject->id);
-        $compositions = $deckModel->compositions()->with('card')->get();
+        $compositions = $deckModel->compositions()->with('card.aspects')->get();
 
         // Map collezioni
         $collezioneCompositions = Composition::where('idMazzo', $this->collezioneId)->get();
@@ -130,11 +130,17 @@ class DeckBuildManager extends Component
 
         // Applica mergeSort
         if (!$cards->isEmpty()) {
+            if (!$cards instanceof \Illuminate\Database\Eloquent\Collection) {
+                $cards = new \Illuminate\Database\Eloquent\Collection($cards->values());
+            }
             $cards->load('aspects');
             $cards = CardsController::mergeSort($cards);
         }
 
         if (!$missingCards->isEmpty()) {
+            if (!$missingCards instanceof \Illuminate\Database\Eloquent\Collection) {
+                $missingCards = new \Illuminate\Database\Eloquent\Collection($missingCards->values());
+            }
             $missingCards->load('aspects');
             $missingCards = CardsController::mergeSort($missingCards);
         }

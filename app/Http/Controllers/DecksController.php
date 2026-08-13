@@ -835,7 +835,7 @@ class DecksController extends Controller
             }
         }
 
-        $compositions = $deckModel->compositions()->with('card')->get();
+        $compositions = $deckModel->compositions()->with('card.aspects')->get();
         $missingCards = collect();
 
         foreach ($compositions as $comp) {
@@ -854,6 +854,9 @@ class DecksController extends Controller
         }
 
         if (!$missingCards->isEmpty()) {
+            if (!$missingCards instanceof \Illuminate\Database\Eloquent\Collection) {
+                $missingCards = new \Illuminate\Database\Eloquent\Collection($missingCards->values());
+            }
             $missingCards->load('aspects');
             $missingCards = CardsController::mergeSort($missingCards);
         }
