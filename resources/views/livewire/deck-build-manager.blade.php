@@ -3,15 +3,17 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <a href="{{ route('mazzo', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
-               class="btn btn-outline-secondary btn-sm mb-2">
+                class="btn btn-outline-secondary btn-sm mb-2">
                 <i class="fas fa-arrow-left me-1"></i>Torna al mazzo
             </a>
             <h1 class="h2 mb-0"><i class="fas fa-tools me-2 text-primary"></i>Build Mazzo: {{ $nome }}</h1>
-            <p class="text-muted mb-0">Proprietario mazzo: <strong>{{ $user }}</strong> | Confronto con la collezione di <strong>{{ Auth::user()->name }}</strong></p>
+            <p class="text-muted mb-0">Proprietario mazzo: <strong>{{ $user }}</strong> | Confronto con la collezione di
+                <strong>{{ Auth::user()->name }}</strong>
+            </p>
         </div>
         <div>
             <a href="{{ route('mazzo.build.export', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
-               class="btn btn-success">
+                class="btn btn-success">
                 <i class="fas fa-download me-1"></i>Scarica Lista Mancanti TXT
             </a>
         </div>
@@ -52,16 +54,14 @@
             <div class="card h-100 border-0 shadow-sm text-center">
                 <div class="card-body">
                     <span class="text-muted small text-uppercase font-monospace fw-bold">Completamento</span>
-                    <h2 class="display-6 fw-bold {{ $percentualeCompletamento == 100 ? 'text-success' : 'text-warning' }} my-1">
+                    <h2
+                        class="display-6 fw-bold {{ $percentualeCompletamento == 100 ? 'text-success' : 'text-warning' }} my-1">
                         {{ $percentualeCompletamento }}%
                     </h2>
                     <div class="progress mt-2" style="height: 6px;">
                         <div class="progress-bar {{ $percentualeCompletamento == 100 ? 'bg-success' : 'bg-warning' }}"
-                             role="progressbar"
-                             style="width: {{ $percentualeCompletamento }}%"
-                             aria-valuenow="{{ $percentualeCompletamento }}"
-                             aria-valuemin="0"
-                             aria-valuemax="100"></div>
+                            role="progressbar" style="width: {{ $percentualeCompletamento }}%"
+                            aria-valuenow="{{ $percentualeCompletamento }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
             </div>
@@ -75,31 +75,29 @@
                 <i class="fas fa-file-alt text-danger me-2"></i>Lista Carte Mancanti (Post-MergeSort)
             </h5>
             <div>
-                <button type="button"
-                        class="btn btn-outline-primary btn-sm me-1"
-                        onclick="copyMissingTxtToClipboard()">
+                <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="copyMissingTxtToClipboard()">
                     <i class="fas fa-copy me-1"></i>Copia negli Appunti
                 </button>
                 <a href="{{ route('mazzo.build.export', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
-                   class="btn btn-outline-success btn-sm">
+                    class="btn btn-outline-success btn-sm">
                     <i class="fas fa-file-download me-1"></i>Esporta TXT
                 </a>
             </div>
         </div>
         <div class="card-body">
             @if(!empty($missingTxt))
-                <textarea id="missingTxtContent"
-                          class="form-control font-monospace bg-light"
-                          rows="4"
-                          readonly>{{ $missingTxt }}</textarea>
+                <textarea id="missingTxtContent" class="form-control font-monospace bg-dark" rows="4"
+                    readonly>{{ $missingTxt }}</textarea>
                 <small class="text-muted mt-1 d-block">
-                    <i class="fas fa-info-circle me-1"></i>Formato: <code>{qty mancante}x {espansione} {numero} {nome} ({rarità})</code>
+                    <i class="fas fa-info-circle me-1"></i>Formato:
+                    <code>{qty mancante}x {espansione} {numero} {nome} ({rarità})</code>
                 </small>
             @else
                 <div class="alert alert-success mb-0 d-flex align-items-center" role="alert">
                     <i class="fas fa-check-circle fa-2x me-3"></i>
                     <div>
-                        <strong>Complimenti!</strong> Possiedi in collezione tutte le carte necessarie per completare questo mazzo!
+                        <strong>Complimenti!</strong> Possiedi in collezione tutte le carte necessarie per completare questo
+                        mazzo!
                     </div>
                 </div>
             @endif
@@ -112,28 +110,28 @@
             <div class="row g-2 align-items-center">
                 <div class="col-12 col-md-6">
                     <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text"
-                               class="form-control border-start-0 ps-0"
-                               placeholder="Cerca carta per nome o espansione..."
-                               wire:model.live.debounce.250ms="searchQuery">
+                        <span class="input-group-text bg-transparent border-end-0"><i
+                                class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0"
+                            placeholder="Cerca carta per nome o espansione..."
+                            wire:model.live.debounce.250ms="searchQuery">
                     </div>
                 </div>
                 <div class="col-12 col-md-6 text-md-end">
                     <div class="btn-group w-100 w-md-auto" role="group" aria-label="Filtro carte">
                         <button type="button"
-                                class="btn {{ $filtro === 'tutte' ? 'btn-primary' : 'btn-outline-secondary' }}"
-                                wire:click="$set('filtro', 'tutte')">
+                            class="btn {{ $filtro === 'tutte' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                            wire:click="$set('filtro', 'tutte')">
                             Tutte le carte
                         </button>
                         <button type="button"
-                                class="btn {{ $filtro === 'mancanti' ? 'btn-danger' : 'btn-outline-danger' }}"
-                                wire:click="$set('filtro', 'mancanti')">
+                            class="btn {{ $filtro === 'mancanti' ? 'btn-danger' : 'btn-outline-danger' }}"
+                            wire:click="$set('filtro', 'mancanti')">
                             Solo Mancanti
                         </button>
                         <button type="button"
-                                class="btn {{ $filtro === 'possedute' ? 'btn-success' : 'btn-outline-success' }}"
-                                wire:click="$set('filtro', 'possedute')">
+                            class="btn {{ $filtro === 'possedute' ? 'btn-success' : 'btn-outline-success' }}"
+                            wire:click="$set('filtro', 'possedute')">
                             Solo Possedute
                         </button>
                     </div>
@@ -182,14 +180,13 @@
                             <!-- Nome e Rarità -->
                             <td>
                                 <a href="{{ route('carta', ['espansione' => $carta->espansione, 'numero' => $carta->numero]) }}"
-                                   target="_blank"
-                                   class="fw-bold text-decoration-none text-dark">
+                                    target="_blank" class="fw-bold text-decoration-none text-light">
                                     {{ $carta->nome }}
                                 </a>
                                 @if(!empty($carta->titolo))
                                     <small class="text-muted d-block">{{ $carta->titolo }}</small>
                                 @endif
-                                <span class="badge bg-light text-dark border ms-1">{{ $carta->rarita }}</span>
+                                <span class="badge bg-dark {{ $carta->rarita }} border ms-1">{{ $carta->rarita }}</span>
                             </td>
 
                             <!-- Quantità nel Mazzo -->
@@ -200,19 +197,17 @@
                             <!-- Quantità in Collezione (Pulsanti + e -) -->
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button"
-                                            class="btn btn-outline-danger px-2"
-                                            wire:click="modificaCopiaCollezione('{{ $carta->espansione }}', {{ $carta->numero }}, -1)"
-                                            title="Rimuovi 1 copia dalla collezione">
+                                    <button type="button" class="btn btn-outline-danger px-2"
+                                        wire:click="modificaCopiaCollezione('{{ $carta->espansione }}', {{ $carta->numero }}, -1)"
+                                        title="Rimuovi 1 copia dalla collezione">
                                         <i class="fas fa-minus"></i>
                                     </button>
                                     <span class="btn btn-light disabled px-3 font-monospace fw-bold text-dark border">
                                         {{ $carta->copie_collezione }}
                                     </span>
-                                    <button type="button"
-                                            class="btn btn-outline-success px-2"
-                                            wire:click="modificaCopiaCollezione('{{ $carta->espansione }}', {{ $carta->numero }}, 1)"
-                                            title="Aggiungi 1 copia alla collezione">
+                                    <button type="button" class="btn btn-outline-success px-2"
+                                        wire:click="modificaCopiaCollezione('{{ $carta->espansione }}', {{ $carta->numero }}, 1)"
+                                        title="Aggiungi 1 copia alla collezione">
                                         <i class="fas fa-plus"></i>
                                     </button>
                                 </div>
