@@ -62,7 +62,7 @@
 
         <!-- Pulsanti di esportazione -->
         <div class="export-buttons mt-3">
-            <div class="btn-group" role="group" aria-label="Esporta mazzo">
+            <div class="btn-group" role="group" aria-label="Esporta e Build mazzo">
                 <a href="{{ route('mazzo.export.txt', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
                    class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-file-alt me-1"></i>Esporta TXT
@@ -71,6 +71,12 @@
                    class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-file-code me-1"></i>Esporta JSON
                 </a>
+                @auth
+                    <a href="{{ route('mazzo.build', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-tools me-1"></i>Build Mazzo
+                    </a>
+                @endauth
             </div>
         </div>
     </div>

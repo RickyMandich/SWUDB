@@ -758,6 +758,120 @@ class DecksController extends Controller
     }
 
     /**
+     * Mostra la vista di Build / Incrocio tra mazzo e collezione dell'utente loggato
+     *
+     * @param string $user Nome utente del proprietario del mazzo
+     * @param string $deck Nome del mazzo (URL encoded)
+     * @return \Illuminate\View\View|\Illuminate\Http\Response
+     */
+    public function build($user, $deck)
+    {
+        $userModel = User::where("name", $user)->first();
+        if (!$userModel) {
+            return view("errors.406");
+        }
+
+        $deckModel = Deck::where("nome", str_replace("+", " ", $deck))
+            ->where("codUtente", $userModel->id)
+            ->first();
+        if (!$deckModel) {
+            return view("errors.405");
+        }
+
+        $proprietario = Auth::check() && (Auth::id() == $userModel->id);
+
+        if (!$proprietario && !$deckModel->public && !Auth::admin()) {
+            return view("errors.403");
+        }
+
+        return view("mazzi.build", [
+            "nome" => $deckModel->nome,
+            "user" => $user,
+            "deck" => $deck,
+            "deckObject" => $deckModel,
+            "proprietario" => $proprietario,
+        ]);
+    }
+
+    /**
+     * Esporta in formato TXT la lista delle carte mancanti (post-mergesort)
+     *
+     * Formato: {qty mancante}x {carta.espansione} {carta.numero} {carta.nome} ({carta.rarita})
+     *
+     * @param string $user Nome utente del proprietario del mazzo
+     * @param string $deck Nome del mazzo (URL encoded)
+     * @return \Illuminate\Http\Response
+     */
+    public function exportBuildTxt($user, $deck)
+    {
+        $userModel = User::where("name", $user)->first();
+        if (!$userModel) {
+            return response('Utente non trovato', 404);
+        }
+
+        $deckModel = Deck::where("nome", str_replace("+", " ", $deck))
+            ->where("codUtente", $userModel->id)
+            ->first();
+        if (!$deckModel) {
+            return response('Mazzo non trovato', 404);
+        }
+
+        $proprietario = Auth::check() && (Auth::id() == $userModel->id);
+        if (!$proprietario && !$deckModel->public && !Auth::admin()) {
+            return response('Non autorizzato', 403);
+        }
+
+        $currentUser = Auth::user();
+        $collezione = Deck::where('codUtente', $currentUser->id)
+            ->where('nome', 'Collezione')
+            ->first();
+
+        $collezioneMap = [];
+        if ($collezione) {
+            $collezioneCompositions = Composition::where('idMazzo', $collezione->id)->get();
+            foreach ($collezioneCompositions as $comp) {
+                $key = $comp->espansione . '-' . $comp->numero;
+                $collezioneMap[$key] = ($collezioneMap[$key] ?? 0) + $comp->copie;
+            }
+        }
+
+        $compositions = $deckModel->compositions()->with('card')->get();
+        $missingCards = collect();
+
+        foreach ($compositions as $comp) {
+            if ($comp->card) {
+                $card = clone $comp->card;
+                $key = $card->espansione . '-' . $card->numero;
+                $copieMazzo = $comp->copie;
+                $copieCollezione = $collezioneMap[$key] ?? 0;
+                $copieMancanti = max(0, $copieMazzo - $copieCollezione);
+
+                if ($copieMancanti > 0) {
+                    $card->copie_mancanti = $copieMancanti;
+                    $missingCards->push($card);
+                }
+            }
+        }
+
+        if (!$missingCards->isEmpty()) {
+            $missingCards->load('aspects');
+            $missingCards = CardsController::mergeSort($missingCards);
+        }
+
+        $lines = [];
+        foreach ($missingCards as $card) {
+            $lines[] = "{$card->copie_mancanti}x {$card->espansione} {$card->numero} {$card->nome} ({$card->rarita})";
+        }
+
+        $content = implode("\n", $lines);
+        $filename = $this->sanitizeFilename($deckModel->nome . '_carte_mancanti') . '.txt';
+
+        return response($content)
+            ->header('Content-Type', 'text/plain')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
      * Recupera i dati del mazzo per l'esportazione
      */
     private function getDeckData($user, $deck)

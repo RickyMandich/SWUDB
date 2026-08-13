@@ -66,6 +66,10 @@ Route::get('/mazzo/{user}/{mazzo}/export/txt', [DecksController::class, 'exportT
 
 Route::get('/mazzo/{user}/{mazzo}/export/json', [DecksController::class, 'exportJson'])->name("mazzo.export.json");
 
+Route::get('/mazzo/{user}/{mazzo}/build', [DecksController::class, 'build'])->name("mazzo.build")->middleware('auth');
+
+Route::get('/mazzo/{user}/{mazzo}/build/export', [DecksController::class, 'exportBuildTxt'])->name("mazzo.build.export")->middleware('auth');
+
 Route::get('/mazzi/import', [DecksController::class, 'showImport'])->name("mazzi.import")->middleware('auth');
 
 Route::post('/mazzi/import/file', [DecksController::class, 'importFromFile'])->name("mazzi.import.file")->middleware('auth');
