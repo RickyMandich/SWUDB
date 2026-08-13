@@ -243,10 +243,9 @@
             alert('Nessuna carta mancante da copiare!');
             return;
         }
-        navigator.clipboard.writeText(textarea.value).then(() => {
-            alert('Lista carte mancanti copiata negli appunti!');
-        }).catch(err => {
-            console.error('Errore nella copia: ', err);
-        });
+        navigator.clipboard.writeText(textarea.value).then(() => { })
+            .catch(err => {
+                console.error('Errore nella copia: ', err);
+            });
     }
 </script>
