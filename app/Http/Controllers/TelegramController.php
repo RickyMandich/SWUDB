@@ -138,7 +138,7 @@ class TelegramController extends Controller
     }
 
     // Equivalente del tuo metodo executeScanCommand Java
-    private function executeScanCommand($username, $chatId)
+    public function executeScanCommand($username, $chatId)
     {
         $this->logToBot("=== ESECUZIONE COMANDO SCAN ===");
         $this->logToBot("Username: " . $username);
