@@ -8,4 +8,4 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('scan:execute')->weeklyOn(1, '00:00');
+Schedule::command('scan:execute')->weeklyOn(2, '00:00');
