@@ -52,6 +52,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | Valorizzata da APP_VERSION, definita in .env-overrides (tracciato in
+    | Git) e composta da APP_VERSION_TYPE/PRIMARY/SECONDARY/TERTIARY.
+    |
+    */
+    'version' => env('APP_VERSION', 'dev'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
