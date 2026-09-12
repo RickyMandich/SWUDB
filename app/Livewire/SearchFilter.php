@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 use App\Models\Card;
 use Illuminate\Support\Facades\Cache;
 
@@ -69,12 +70,6 @@ class SearchFilter extends Component
 
     // Stato del filtro principale (aperto/chiuso)
     public $mainFiltersOpen = false;
-
-    protected $listeners = [
-        'resetFilters' => 'resetAllFilters',
-        'applyFiltersForPopup' => 'getFilteredCardsForPopup',
-        'loadAllCards' => 'loadAllCards'
-    ];
 
     /**
      * Initialize the component with mode and optional initial filters
@@ -514,6 +509,7 @@ class SearchFilter extends Component
      *
      * @return void
      */
+    #[On('resetFilters')]
     public function resetAllFilters()
     {
         $this->nome = '';
@@ -554,6 +550,7 @@ class SearchFilter extends Component
      *
      * @return \Illuminate\Support\Collection The filtered cards collection
      */
+    #[On('applyFiltersForPopup')]
     public function getFilteredCardsForPopup()
     {
         $this->applyFilters();
@@ -566,6 +563,7 @@ class SearchFilter extends Component
      *
      * @return void
      */
+    #[On('loadAllCards')]
     public function loadAllCards()
     {
         $results = Card::with(['aspects', 'expansion'])->get();

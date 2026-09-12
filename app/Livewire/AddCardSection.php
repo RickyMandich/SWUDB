@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 /**
  * Livewire component for always-visible card addition section in deck management
@@ -24,11 +25,6 @@ class AddCardSection extends Component
     public $deckId;
     public $userId;
     public $currentDeckCards = [];
-
-    protected $listeners = [
-        'cardsFiltered' => 'updateFilteredCards',
-        'updateAvailableCards' => 'updateAvailableCards'
-    ];
 
     /**
      * Initialize the add card section component
@@ -56,6 +52,7 @@ class AddCardSection extends Component
      * @param array $cards Filtered cards from SearchFilter component
      * @return void
      */
+    #[On('cardsFiltered')]
     public function updateFilteredCards($cards)
     {
         $this->filteredCards = $cards;
@@ -71,6 +68,7 @@ class AddCardSection extends Component
      * @param array $currentDeckCards Current deck composition
      * @return void
      */
+    #[On('updateAvailableCards')]
     public function updateAvailableCards($currentDeckCards)
     {
         $this->currentDeckCards = $currentDeckCards;

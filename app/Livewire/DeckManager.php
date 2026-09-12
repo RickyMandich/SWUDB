@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 /**
  * Livewire component for comprehensive deck management and statistics
@@ -44,10 +45,6 @@ class DeckManager extends Component
     public $distribuzionePerAspetto = [];
     public $totaleCarteStatistiche = 0;
     
-    protected $listeners = [
-        'cardAdded' => 'addCard',
-        'refreshDeck' => '$refresh'
-    ];
     
     /**
      * Initialize the deck manager component with deck data and available cards
@@ -157,6 +154,7 @@ class DeckManager extends Component
      * @param array $data Array containing 'cardId' and 'copies' keys
      * @return void
      */
+    #[On('cardAdded')]
     public function addCard($data)
     {
         $cardId = $data['cardId'];
@@ -576,6 +574,21 @@ class DeckManager extends Component
         $this->dispatch('submitRenameForm', ['nuovo_nome' => $nuovoNome]);
     }
     
+    /**
+     * Handle the refreshDeck event by simply letting Livewire re-render
+     * Gestisce l'evento refreshDeck lasciando che Livewire re-renderizzi il componente
+     *
+     * Replaces the Livewire v2 '$refresh' magic listener value, which is not
+     * supported by the #[On] attribute in Livewire v3.
+     *
+     * @return void
+     */
+    #[On('refreshDeck')]
+    public function onRefreshDeck()
+    {
+        // Nessuna azione necessaria: qualunque richiesta Livewire ricalcola già il render
+    }
+
     public function render()
     {
         return view('livewire.deck-manager');
