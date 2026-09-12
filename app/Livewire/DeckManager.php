@@ -137,14 +137,20 @@ class DeckManager extends Component
      * Aggiunge più copie di una carta al mazzo, usando i dati completi della
      * carta forniti dal chiamante (dalla UI di ricerca/aggiunta della pagina)
      *
-     * @param array $data Array containing 'card' (full card data) and 'copies' keys
+     * NOTE: when a JS-side event carries multiple named keys (e.g.
+     * `{ card: ..., copies: ... }`), Livewire 3 passes each key as a separate
+     * named argument to the listener method, NOT as a single combined array.
+     * The parameter names here ($card, $copies) must therefore match the keys
+     * used in `Livewire.dispatchTo('deck-manager', 'cardAdded', { card, copies })`.
+     *
+     * @param array $card Full data of the card to add
+     * @param int $copies Number of copies to add
      * @return void
      */
     #[On('cardAdded')]
-    public function addCard($data)
+    public function addCard($card, $copies = 1)
     {
-        $cardData = $data['card'] ?? null;
-        $copies = $data['copies'] ?? 1;
+        $cardData = $card;
 
         if (!is_array($cardData) || (empty($cardData['id']) && empty($cardData['espansione']))) {
             return;
