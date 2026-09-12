@@ -126,9 +126,6 @@ class DecksController extends Controller
             $cards = CardsController::mergeSort($cards);
         }
 
-        // Recupera tutte le carte disponibili
-        $carte = Card::select("espansione", "numero", "nome", "titolo", "maxCopie")->get();
-        // return $carte;
         // Prepara i dati per la view utilizzando Livewire
         return view("mazzi.show", [
             "nome" => $mazzo->nome,
@@ -137,7 +134,6 @@ class DecksController extends Controller
             "proprietario" => $proprietario,
             "deck" => $deck,
             "deckObject" => $mazzo, // Pass the full Deck object for version info
-            "carte" => $carte,
             "size" => $copie,
         ]);
     }

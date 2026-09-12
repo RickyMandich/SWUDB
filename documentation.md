@@ -357,7 +357,8 @@ public function methodName($parameter, $options = [])
 #### Livewire Components (`app/Livewire/`)
 - **SearchFilter.php**: Sistema filtri avanzato con cache
 - **DeckManager.php**: Gestione mazzi con statistiche real-time
-- **AddCardPopUp.php**: Popup selezione carte con validazione
+- **DeckBuildManager.php**: Confronto mazzo/collezione per la pagina "Build"
+- **CollezioneManager.php**: Supporto alla gestione della collezione personale
 
 #### Jobs, Events, Listeners (`app/Jobs/`, `app/Events/`, `app/Listeners/`)
 - **ExecuteArtisanCommand.php**: Job per comandi Artisan asincroni
@@ -431,14 +432,22 @@ Gestione completa mazzi con:
 - Validazione regole gioco
 - Integrazione grafici JavaScript
 
-### AddCardPopUp
-**Percorso**: `app/Livewire/AddCardPopUp.php`
+**Nota architetturale importante**: questo componente NON tiene mai il catalogo completo
+delle carte come proprietà pubblica. Livewire re-invia ogni proprietà pubblica ad ogni
+interazione, quindi tenere l'intero catalogo qui (come avveniva in una versione precedente)
+faceva sì che ogni singolo click (anche solo un +/-) re-inviasse l'intero catalogo al
+server, superando il limite di dimensione richiesta del webserver (413 Request Entity Too
+Large). Il componente riceve invece i dati completi della singola carta aggiunta tramite
+l'evento browser `cardAdded` (dispatchato da `Livewire.dispatchTo('deck-manager',
+'cardAdded', {card, copies})` nella pagina `resources/views/livewire/deck-manager.blade.php`),
+e tiene solo lo stato del mazzo in lavorazione (`$mazzo`, `$aggiunte`, `$rimosse`), la cui
+dimensione è sempre limitata a quella di un mazzo, mai al catalogo intero.
 
-Popup per aggiunta carte ai mazzi con:
-- Ricerca integrata
-- Selezione quantità
-- Validazione limiti carte
-- UX ottimizzata mobile
+La sezione "Aggiungi carte" della pagina del mazzo usa il componente `SearchFilter` (in
+modalità `popup`) per la ricerca, e una griglia di carte generata via JavaScript puro (non
+un componente Livewire) per mostrare i risultati e gestire l'aggiunta — stesso pattern già
+usato in `carte/index.blade.php` e `collezione/index.blade.php`. In questo modo nessun
+componente Livewire della pagina tiene mai il catalogo carte come stato.
 
 ## Sicurezza
 
@@ -578,6 +587,17 @@ if ($this->vitaMin !== null || ($this->vitaMax !== null && $this->vitaMax < $thi
 - **Error logging** con stack traces
 - **Performance metrics** custom
 - **Database query monitoring**
+
+### Limiti di dimensione delle richieste (nginx / Livewire)
+
+Il file `docker/nginx/default.conf` imposta `client_max_body_size 20m;`. Questo limite
+esiste principalmente a protezione dei payload delle richieste Livewire (`/livewire/update`),
+che serializzano tutte le proprietà pubbliche dei componenti coinvolti ad ogni interazione.
+Per questo motivo nessun componente Livewire del progetto dovrebbe tenere il catalogo
+completo delle carte (o altre collezioni potenzialmente grandi) come proprietà pubblica: se
+in futuro se ne presenta la necessità, preferire di interrogare il database al bisogno, o
+passare solo i dati della singola carta interessata tramite eventi browser (vedi la nota
+architetturale su `DeckManager` più sopra).
 
 ## Contribuire al Progetto
 

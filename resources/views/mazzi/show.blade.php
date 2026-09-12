@@ -8,7 +8,6 @@
         :deckObject="$deckObject"
         :size="$size"
         :proprietario="$proprietario"
-        :carte="$carte"
         :mazzo="$mazzo"
     />
 @endsection

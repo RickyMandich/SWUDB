@@ -86,22 +86,9 @@
             <div class="col-12 col-lg-6">
                 <div class="mazzo">
                     <h3 class="mb-3">Mazzo</h3>
-                    <div class="contenuto">
+                    <div class="contenuto row">
                         @foreach($mazzo as $id => $carta)
-                            <span class="d-flex mt-4">
-                                {{ $carta['copie'] ?? 1 }}x
-                                @if ($proprietario)
-                                    <button type="button" wire:click="aumentaCopia('{{ $id }}')" class="btn btn-success rounded-0 rounded-start-1 border-end-0 py-1 px-2 lh-1">+</button>
-                                    <button type="button" wire:click="diminuisciCopia('{{ $id }}')" class="btn btn-danger rounded-0 rounded-end-1 border-start-0 py-1 px-2 lh-1">-</button>
-                                @endif
-                                @if(isset($carta['espansione']) && isset($carta['numero']) && !empty($carta['espansione']) && $carta['numero'] > 0)
-                                    <a href="{{ route('carta', ["espansione" => $carta["espansione"], "numero" => $carta["numero"]]) }}" target="_blank">
-                                        {{ $carta['snippet'] ?? '' }}
-                                    </a>
-                                @else
-                                    <span>{{ $carta['snippet'] ?? 'Carta non disponibile' }}</span>
-                                @endif
-                            </span>
+                            @include('mazzi.partials.deck-card-tile', ['carta' => $carta, 'id' => $id, 'showPlus' => $proprietario, 'showMinus' => $proprietario])
                         @endforeach
                     </div>
                 </div>
@@ -110,50 +97,31 @@
             @if ($proprietario)
                 <div class="col-12 col-lg-6">
                     <!-- Sezione aggiunta carte sempre visibile -->
-                    @livewire('add-card-section', [
-                        'userId' => $user,
-                        'deckId' => $deck,
-                        'currentDeckCards' => collect($mazzo)->mapWithKeys(function($card, $key) {
-                            return [$key => $card['copie']];
-                        })->toArray(),
-                        'availableCards' => $cards
-                    ])
+                    <div class="aggiungi-carte mb-4">
+                        <h3 class="mb-3">Aggiungi carte</h3>
+                        <div class="mb-3">
+                            @livewire('search-filter', ['mode' => 'popup'])
+                        </div>
+                        <div class="row" id="add-card-results">
+                            <div class="col-12 text-center text-muted py-3" id="add-card-initial-message">
+                                <i class="fas fa-search me-1"></i>Usa i filtri qui sopra per cercare le carte da aggiungere al mazzo.
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="aggiunte mb-4">
                         <h3>Carte aggiunte</h3>
-                        <div class="mb-4 contenuto">
+                        <div class="mb-4 contenuto row">
                             @foreach($aggiunte as $id => $carta)
-                                <span class="d-flex mt-4">
-                                    {{ $carta['copie'] ?? 1 }}x
-                                    @if ($proprietario)
-                                        <button type="button" wire:click="diminuisciCopia('{{ $id }}')" class="btn btn-danger rounded-1 border-0 py-1 px-2 lh-1">-</button>
-                                    @endif
-                                    @if(isset($carta['espansione']) && isset($carta['numero']) && !empty($carta['espansione']) && $carta['numero'] > 0)
-                                        <a href="{{ route('carta', ["espansione" => $carta["espansione"], "numero" => $carta["numero"]]) }}" target="_blank">
-                                            {{ $carta['snippet'] ?? '' }}
-                                        </a>
-                                    @else
-                                        <span>{{ $carta['snippet'] ?? 'Carta non disponibile' }}</span>
-                                    @endif
-                                </span>
+                                @include('mazzi.partials.deck-card-tile', ['carta' => $carta, 'id' => $id, 'showPlus' => false, 'showMinus' => true])
                             @endforeach
                         </div>
                     </div>
                     <div class="rimosse">
                         <h3>Carte rimosse</h3>
-                        <div class="mb-4 contenuto">
+                        <div class="mb-4 contenuto row">
                             @foreach($rimosse as $id => $carta)
-                                <span class="d-flex mt-4">
-                                    {{ $carta['copie'] ?? 1 }}x
-                                    <button type="button" wire:click="aumentaCopia('{{ $id }}')" class="btn btn-success rounded-1 border-0 py-1 px-2 lh-1">+</button>
-                                    @if(isset($carta['espansione']) && isset($carta['numero']) && !empty($carta['espansione']) && $carta['numero'] > 0)
-                                        <a href="{{ route('carta', ["espansione" => $carta["espansione"], "numero" => $carta["numero"]]) }}" target="_blank">
-                                            {{ $carta['snippet'] ?? '' }}
-                                        </a>
-                                    @else
-                                        <span>{{ $carta['snippet'] ?? 'Carta non disponibile' }}</span>
-                                    @endif
-                                </span>
+                                @include('mazzi.partials.deck-card-tile', ['carta' => $carta, 'id' => $id, 'showPlus' => true, 'showMinus' => false])
                             @endforeach
                         </div>
                     </div>
@@ -330,7 +298,153 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // Composizione corrente del mazzo (id => copie), usata dalla sezione "Aggiungi carte"
+        // per mostrare quante copie sono già presenti e limitare lo stepper al maxCopie.
+        // Viene aggiornata in tempo reale dall'evento 'deckCompositionChanged' di DeckManager,
+        // che invia solo questa piccola mappa (mai il catalogo completo delle carte).
+        let deckComposition = @json(collect($mazzo)->mapWithKeys(function($card, $key) {
+            return [$key => $card['copie'] ?? 1];
+        })->toArray());
+
+        function addCardRarityClass(rarita) {
+            return (rarita || '').toLowerCase().split(' ').join('');
+        }
+
+        function renderAddCardResults(cards) {
+            const container = document.getElementById('add-card-results');
+            if (!container) return;
+
+            if (!cards || cards.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-4">
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-search me-2"></i>Nessuna carta trovata con i filtri selezionati.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            cards.forEach(carta => {
+                html += buildAddCardTile(carta);
+            });
+            container.innerHTML = html;
+
+            container.querySelectorAll('.add-card-btn').forEach(btn => {
+                btn.addEventListener('click', () => stageAddCard(btn.dataset.cardId));
+            });
+
+            refreshAddCardButtons();
+        }
+
+        function buildAddCardTile(carta) {
+            const id = carta.id || `${carta.espansione}-${carta.numero}`;
+            const aspectsHtml = (carta.aspects || [])
+                .map(a => `<span class="badge me-1" style="background-color: ${a.colore}; font-size: 0.65rem; color: ${a.nome === 'Eroismo' ? '#000' : '#fff'}">${a.nome}</span>`)
+                .join('');
+            const cardaAttr = JSON.stringify(carta).replace(/"/g, '&quot;');
+
+            return `
+                <div class="col-12 col-sm-6 col-lg-4 mb-3 add-card-tile" data-card-id="${id}" data-max-copie="${carta.maxCopie ?? 3}" data-card="${cardaAttr}">
+                    <div class="innerCarta rounded-4 border-primary-subtle bg-secondary-subtle p-3 h-100">
+                        <div class="row">
+                            <div class="col-4">
+                                <img class="col-12" src="${carta.frontArt}" alt="immagine di ${carta.snippet}">
+                            </div>
+                            <div class="col-8">
+                                <h6 class="mb-1">${carta.snippet}</h6>
+                                <div class="mb-1">${aspectsHtml}</div>
+                                <div class="small">
+                                    <span class="text-warning">C:${carta.costo}</span>
+                                    <span class="text-danger ms-2">P:${carta.potenza || '-'}</span>
+                                    <span class="text-primary ms-2">V:${carta.vita || '-'}</span>
+                                </div>
+                                <div class="small ${addCardRarityClass(carta.rarita)}">${carta.rarita}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <span class="small text-muted add-card-count-label">nel mazzo: 0/${carta.maxCopie ?? 3}</span>
+                            <div class="d-flex align-items-center">
+                                <input type="number" class="form-control form-control-sm add-card-qty me-2" style="width: 60px;" value="1" min="1">
+                                <button type="button" class="btn btn-success btn-sm add-card-btn" data-card-id="${id}">
+                                    <i class="fas fa-plus me-1"></i>Aggiungi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function refreshAddCardButtons() {
+            document.querySelectorAll('.add-card-tile').forEach(tile => {
+                const id = tile.dataset.cardId;
+                const maxCopie = parseInt(tile.dataset.maxCopie) || 3;
+                const inDeck = deckComposition[id] || 0;
+                const remaining = Math.max(0, maxCopie - inDeck);
+
+                const label = tile.querySelector('.add-card-count-label');
+                if (label) label.textContent = `nel mazzo: ${inDeck}/${maxCopie}`;
+
+                const qtyInput = tile.querySelector('.add-card-qty');
+                const btn = tile.querySelector('.add-card-btn');
+
+                if (remaining <= 0) {
+                    if (qtyInput) qtyInput.disabled = true;
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-ban me-1"></i>Massimo raggiunto';
+                    }
+                } else {
+                    if (qtyInput) {
+                        qtyInput.disabled = false;
+                        qtyInput.max = remaining;
+                        if (parseInt(qtyInput.value) > remaining) {
+                            qtyInput.value = remaining;
+                        }
+                    }
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-plus me-1"></i>Aggiungi';
+                    }
+                }
+            });
+        }
+
+        function stageAddCard(cardId) {
+            const tile = document.querySelector(`.add-card-tile[data-card-id="${CSS.escape(cardId)}"]`);
+            if (!tile) return;
+
+            const qtyInput = tile.querySelector('.add-card-qty');
+            let copies = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+            if (copies < 1) copies = 1;
+
+            let carta;
+            try {
+                carta = JSON.parse(tile.dataset.card.replace(/&quot;/g, '"'));
+            } catch (e) {
+                console.error('Impossibile leggere i dati della carta da aggiungere', e);
+                return;
+            }
+
+            Livewire.dispatchTo('deck-manager', 'cardAdded', { card: carta, copies: copies });
+
+            if (qtyInput) qtyInput.value = 1;
+        }
+
         document.addEventListener('livewire:initialized', () => {
+            // Aggiornamento della composizione mazzo per la sezione "Aggiungi carte"
+            Livewire.on('deckCompositionChanged', (data) => {
+                deckComposition = data[0] || {};
+                refreshAddCardButtons();
+            });
+
+            // Risultati della ricerca carte da aggiungere (dispatchati da search-filter)
+            Livewire.on('cardsFiltered', (data) => {
+                renderAddCardResults(data[0]);
+            });
+
             // Gestione del form di salvataggio
             Livewire.on('submitSaveForm', (data) => {
                 // Rimuoviamo eventuali campi nascosti preesistenti

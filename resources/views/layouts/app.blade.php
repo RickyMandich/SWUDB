@@ -28,7 +28,14 @@
     .innerCarta{
         height: 100%;
     }
-    
+
+    .deck-card-tile-img{
+        width: 64px;
+        height: 90px;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+
     .comune{
         color: #8B4513;
     }

@@ -12,9 +12,18 @@ use Livewire\Attributes\On;
  * This component provides full deck management functionality including:
  * - Real-time card addition/removal with validation
  * - Comprehensive deck statistics calculation
- * - Integration with popup card selection
+ * - Integration with the page-level card search/add UI (via browser events)
  * - Automatic statistics updates and chart refresh
  * - Support for different card types (Leaders, Bases, Units, etc.)
+ *
+ * NOTE: this component intentionally does NOT hold the full card catalog as a
+ * public property. Livewire re-serializes every public property on each
+ * request, so keeping the whole catalog here made every interaction (even a
+ * simple +/-) re-send the entire catalog to the server, which could exceed
+ * the webserver's request size limit (413 Request Entity Too Large). Instead,
+ * the full data of a card being added is sent along with the 'cardAdded'
+ * event from the page's JS, and cards already in the deck already carry
+ * their own data.
  */
 class DeckManager extends Component
 {
@@ -24,7 +33,6 @@ class DeckManager extends Component
     public $deckObject;
     public $size;
     public $proprietario;
-    public $cards = [];
     public $deckCards = [];
 
     // Carta => numero di copie
@@ -44,11 +52,10 @@ class DeckManager extends Component
     public $distribuzionePerCosto = [];
     public $distribuzionePerAspetto = [];
     public $totaleCarteStatistiche = 0;
-    
-    
+
     /**
-     * Initialize the deck manager component with deck data and available cards
-     * Inizializza il componente gestore mazzo con dati del mazzo e carte disponibili
+     * Initialize the deck manager component with the current deck composition
+     * Inizializza il componente gestore mazzo con la composizione attuale del mazzo
      *
      * @param string $nome Deck name
      * @param string $user Deck owner username
@@ -56,11 +63,10 @@ class DeckManager extends Component
      * @param \App\Models\Deck $deckObject Full deck object with version info
      * @param int $size Current deck size (card count)
      * @param bool $proprietario Whether current user owns this deck
-     * @param array $carte Available cards from database
      * @param array $mazzo Current deck composition
      * @return void
      */
-    public function mount($nome, $user, $deck, $deckObject, $size, $proprietario, $carte, $mazzo)
+    public function mount($nome, $user, $deck, $deckObject, $size, $proprietario, $mazzo)
     {
         $this->nome = $nome;
         $this->user = $user;
@@ -68,30 +74,7 @@ class DeckManager extends Component
         $this->deckObject = $deckObject;
         $this->size = $size;
         $this->proprietario = $proprietario;
-        
-        // Converte le carte disponibili in un formato più facilmente utilizzabile
-        $this->cards = collect($carte)->mapWithKeys(function($card) {
-            // Converto l'elemento in array se è un modello Eloquent
-            if (is_object($card) && method_exists($card, 'toArray')) {
-                $card = $card->toArray();
-            } else {
-                $card = (array)$card;
-            }
 
-            // Accesso sicuro agli array con valori di default
-            $espansione = isset($card['espansione']) ? $card['espansione'] : '';
-            $numero = isset($card['numero']) ? $card['numero'] : 0;
-            $nome = isset($card['nome']) ? $card['nome'] : '';
-            $titolo = isset($card['titolo']) ? $card['titolo'] : '';
-
-            $key = $espansione . '-' . $numero;
-
-            // Crea uno snippet per ogni carta
-            $card['snippet'] = "$espansione-$numero - $nome".(strlen($titolo) > 0 ? ", ". strtoupper($titolo) : "");
-
-            return [$key => $card];
-        })->toArray();
-        
         // Inizializza il mazzo con le carte già presenti
         $this->mazzo = collect($mazzo)->mapWithKeys(function($card) {
             // Salva il valore di copie se è un oggetto prima della conversione
@@ -125,69 +108,75 @@ class DeckManager extends Component
         // Calcola le statistiche iniziali
         $this->calcolaStatistiche();
 
-        // Inizializza la sezione aggiunta carte
-        $this->updateAddCardSection();
+        // Comunica alla UI di aggiunta carte lo stato iniziale del mazzo
+        $this->dispatchDeckComposition();
     }
-    
+
     /**
-     * Update the add card section with current deck state
-     * Aggiorna la sezione aggiunta carte con lo stato attuale del mazzo
+     * Notify the page's card-add UI of the current deck composition
+     * Notifica alla UI di aggiunta carte della pagina la composizione attuale del mazzo
+     *
+     * Dispatches only a small map of "id => copie" (never the full card
+     * catalog), so this stays cheap regardless of catalog size.
      *
      * @return void
      */
-    public function updateAddCardSection()
+    public function dispatchDeckComposition()
     {
-        // Prepariamo un array con le carte attualmente nel mazzo e il loro conteggio
         $currentDeckCards = collect($this->mazzo)->mapWithKeys(function($card, $key) {
             $copie = isset($card['copie']) ? $card['copie'] : 1;
             return [$key => $copie];
         })->toArray();
 
-        // Aggiorniamo il componente sezione aggiunta carte con le carte disponibili
-        $this->dispatch('updateAvailableCards', $currentDeckCards);
+        $this->dispatch('deckCompositionChanged', $currentDeckCards);
     }
-    
+
     /**
-     * Add multiple copies of a card to the deck from popup selection
-     * Aggiunge più copie di una carta al mazzo dalla selezione popup
+     * Add multiple copies of a card to the deck, using the full card data
+     * supplied by the caller (from the page's card search/add UI)
+     * Aggiunge più copie di una carta al mazzo, usando i dati completi della
+     * carta forniti dal chiamante (dalla UI di ricerca/aggiunta della pagina)
      *
-     * @param array $data Array containing 'cardId' and 'copies' keys
+     * @param array $data Array containing 'card' (full card data) and 'copies' keys
      * @return void
      */
     #[On('cardAdded')]
     public function addCard($data)
     {
-        $cardId = $data['cardId'];
-        $copies = $data['copies'];
-        
+        $cardData = $data['card'] ?? null;
+        $copies = $data['copies'] ?? 1;
+
+        if (!is_array($cardData) || (empty($cardData['id']) && empty($cardData['espansione']))) {
+            return;
+        }
+
         $continua = true;
         for ($i = 0; $i < $copies && $continua; $i++) {
-            $continua = $this->aumentaCopia($cardId);
+            $continua = $this->aggiungiCartaAlMazzo($cardData);
         }
-        
-        // Aggiorniamo il conteggio totale delle carte e la sezione aggiunta carte
+
+        // Aggiorniamo il conteggio totale delle carte e la UI di aggiunta carte
         $this->refreshCardCount();
-        $this->updateAddCardSection();
+        $this->dispatchDeckComposition();
     }
-    
+
     /**
-     * Increase the copy count of a specific card in the deck
-     * Aumenta il numero di copie di una carta specifica nel mazzo
+     * Add a single copy of a (possibly brand new) card to the deck, using the
+     * given card data when the card is not already present in the deck
+     * Aggiunge una singola copia di una carta (eventualmente nuova) al mazzo,
+     * usando i dati forniti quando la carta non è ancora presente nel mazzo
      *
-     * @param string $id Card identifier in format "expansion-number"
+     * @param array $cardData Full data of the card to add
      * @return bool True if successful, false if max copies reached
      */
-    public function aumentaCopia($id)
+    private function aggiungiCartaAlMazzo($cardData)
     {
-        $aggiungi = true;
-        
-        // Verifichiamo se la carta è già nel mazzo
+        $id = $cardData['id'] ?? (($cardData['espansione'] ?? '') . '-' . ($cardData['numero'] ?? ''));
+
         if (isset($this->mazzo[$id])) {
-            // Controlliamo se abbiamo raggiunto il numero massimo di copie
             if ($this->mazzo[$id]['copie'] < $this->mazzo[$id]['maxCopie']) {
                 $this->mazzo[$id]['copie']++;
             } else {
-                // Mostriamo un messaggio tramite un evento o tramite una notifica di sistema
                 $this->dispatch('showMessage', [
                     'type' => 'warning',
                     'message' => 'Hai raggiunto il numero massimo di copie di questa carta'
@@ -195,33 +184,81 @@ class DeckManager extends Component
                 return false;
             }
         } else {
-            // La carta non è nel mazzo, la aggiungiamo
-            $this->mazzo[$id] = $this->cards[$id];
+            $this->mazzo[$id] = $cardData;
             $this->mazzo[$id]['copie'] = 1;
         }
-        
-        if ($aggiungi) {
-            if (isset($this->rimosse[$id])) {
-                if ($this->rimosse[$id]['copie'] > 1) {
-                    $this->rimosse[$id]['copie']--;
-                } else {
-                    unset($this->rimosse[$id]);
-                }
-            } else if (isset($this->aggiunte[$id])) {
-                $this->aggiunte[$id]['copie']++;
+
+        if (isset($this->rimosse[$id])) {
+            if ($this->rimosse[$id]['copie'] > 1) {
+                $this->rimosse[$id]['copie']--;
             } else {
-                $this->aggiunte[$id] = $this->cards[$id];
-                $this->aggiunte[$id]['copie'] = 1;
+                unset($this->rimosse[$id]);
             }
+        } else if (isset($this->aggiunte[$id])) {
+            $this->aggiunte[$id]['copie']++;
+        } else {
+            $this->aggiunte[$id] = $cardData;
+            $this->aggiunte[$id]['copie'] = 1;
+        }
+
+        return true;
+    }
+
+    /**
+     * Increase the copy count of a card already known to the component
+     * (already in the deck, or previously removed in this session)
+     * Aumenta il numero di copie di una carta già nota al componente (già
+     * nel mazzo, oppure rimossa in precedenza in questa sessione)
+     *
+     * Used by the "+" buttons in the "Mazzo" and "Carte rimosse" panels,
+     * where the card's data is always already available locally.
+     *
+     * @param string $id Card identifier in format "expansion-number"
+     * @return bool True if successful, false if max copies reached or no data available
+     */
+    public function aumentaCopia($id)
+    {
+        if (isset($this->mazzo[$id])) {
+            if ($this->mazzo[$id]['copie'] < $this->mazzo[$id]['maxCopie']) {
+                $this->mazzo[$id]['copie']++;
+            } else {
+                $this->dispatch('showMessage', [
+                    'type' => 'warning',
+                    'message' => 'Hai raggiunto il numero massimo di copie di questa carta'
+                ]);
+                return false;
+            }
+        } else if (isset($this->rimosse[$id])) {
+            // La carta era stata rimossa in questa sessione: ripristiniamola
+            // usando i dati già disponibili, senza bisogno del catalogo completo
+            $this->mazzo[$id] = $this->rimosse[$id];
+            $this->mazzo[$id]['copie'] = 1;
+        } else {
+            // Nessun dato disponibile per questa carta: non dovrebbe accadere,
+            // dato che questo metodo viene chiamato solo per carte già note
+            return false;
+        }
+
+        if (isset($this->rimosse[$id])) {
+            if ($this->rimosse[$id]['copie'] > 1) {
+                $this->rimosse[$id]['copie']--;
+            } else {
+                unset($this->rimosse[$id]);
+            }
+        } else if (isset($this->aggiunte[$id])) {
+            $this->aggiunte[$id]['copie']++;
+        } else {
+            $this->aggiunte[$id] = $this->mazzo[$id];
+            $this->aggiunte[$id]['copie'] = 1;
         }
 
         // Aggiorna le statistiche immediatamente quando chiamato dai pulsanti
         $this->refreshCardCount();
-        $this->updateAddCardSection();
+        $this->dispatchDeckComposition();
 
         return true;
     }
-    
+
     /**
      * Decrease the copy count of a specific card in the deck
      * Diminuisce il numero di copie di una carta specifica nel mazzo
@@ -232,12 +269,17 @@ class DeckManager extends Component
     public function diminuisciCopia($id)
     {
         if (isset($this->mazzo[$id])) {
+            // Conserviamo i dati della carta prima di un eventuale unset, per
+            // poterli riusare nel pannello "Carte rimosse" senza dipendere
+            // dal catalogo completo
+            $cardData = $this->mazzo[$id];
+
             if ($this->mazzo[$id]['copie'] > 1) {
                 $this->mazzo[$id]['copie']--;
             } else {
                 unset($this->mazzo[$id]);
             }
-            
+
             if (isset($this->aggiunte[$id])) {
                 if ($this->aggiunte[$id]['copie'] > 1) {
                     $this->aggiunte[$id]['copie']--;
@@ -247,12 +289,12 @@ class DeckManager extends Component
             } else if (isset($this->rimosse[$id])) {
                 $this->rimosse[$id]['copie']++;
             } else {
-                $this->rimosse[$id] = $this->cards[$id];
+                $this->rimosse[$id] = $cardData;
                 $this->rimosse[$id]['copie'] = 1;
             }
-            
+
             $this->refreshCardCount();
-            $this->updateAddCardSection();
+            $this->dispatchDeckComposition();
             return true;
         } else {
             $this->dispatch('showMessage', [
@@ -262,7 +304,7 @@ class DeckManager extends Component
             return false;
         }
     }
-    
+
     /**
      * Refresh the total card count and recalculate all deck statistics
      * Aggiorna il conteggio totale delle carte e ricalcola tutte le statistiche del mazzo
@@ -452,14 +494,14 @@ class DeckManager extends Component
             ->map(function($carta) {
                 // Nuova gestione con la tabelle degli aspetti many-to-many
                 $aspects = $carta['aspects'] ?? [];
-                
+
                 if (empty($aspects)) {
                     return 'nessun aspetto';
                 }
 
                 // Prepara i nomi degli aspetti ordinati (sono già ordinati dal model/toArray)
                 $aspectNames = collect($aspects)->pluck('nome')->filter()->toArray();
-                
+
                 if (empty($aspectNames)) {
                     return 'nessun aspetto';
                 }
@@ -474,7 +516,7 @@ class DeckManager extends Component
         $this->totaleCarteStatistiche = count($carteDettagliate);
     }
 
-    
+
     /**
      * Save the current deck changes by preparing form data and dispatching save event
      * Salva le modifiche attuali del mazzo preparando i dati del form e inviando l'evento di salvataggio
@@ -573,7 +615,7 @@ class DeckManager extends Component
         // Invia il form di rinominazione
         $this->dispatch('submitRenameForm', ['nuovo_nome' => $nuovoNome]);
     }
-    
+
     /**
      * Handle the refreshDeck event by simply letting Livewire re-render
      * Gestisce l'evento refreshDeck lasciando che Livewire re-renderizzi il componente
