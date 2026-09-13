@@ -12,7 +12,7 @@ class ScanCards extends Command
      *
      * @var string
      */
-    protected $signature = 'app:scan-cards';
+    protected $signature = 'cards:scan';
 
     /**
      * The console command description.
