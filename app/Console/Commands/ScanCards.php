@@ -19,7 +19,7 @@ class ScanCards extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Scan cards from StarWarsUnlimited API';
 
     /**
      * Execute the console command.

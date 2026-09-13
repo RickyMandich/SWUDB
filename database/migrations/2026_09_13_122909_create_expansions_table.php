@@ -12,10 +12,10 @@ return new class extends Migration {
     {
         Schema::create('expansions', function (Blueprint $table) {
             $table->string('expansion', 10)->primary();
-            $table->string('releaseDate', 65);
+            $table->date('legalDate')->nullable();
             $table->string('rotation', 1)->default('0');
             $table->boolean('confirmed')->default(false);
-            $table->string('mainExpansion', 10)->default('-1')->comment('ID espansione principale del gruppo, 0 se è principale, -1 se è standalone');
+            $table->string('mainExpansion', 10)->default('-1')->comment('ID espansione principale del gruppo, 0 se è principale, -1 se è standalone, nome espansione di riferimento se dipende da un\'altra');
         });
     }
 

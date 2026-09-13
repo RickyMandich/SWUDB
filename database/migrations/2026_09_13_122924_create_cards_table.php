@@ -29,6 +29,7 @@ return new class extends Migration {
             $table->string('frontArt', 200)->nullable();
             $table->string('backArt', 200)->nullable();
             $table->integer('maxCopies')->default(3);
+            $table->date('releaseDate')->nullable();
             $table->primary(['expansion', 'number']);
         });
     }
