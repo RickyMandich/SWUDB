@@ -161,8 +161,13 @@ enum DeckFormat: string
 php artisan make:model Deck -m
 php artisan make:migration create_deck_cards_table
 ```
-`decks`: `user_id`, `name`, `format` (string, castato a `DeckFormat`), `leader_cid`, `base_cid` (FK verso `cards.cid`), `is_public` (bool), **`version`** (int, default 1), **`previous_version_id`** (nullable, self-FK su `decks.id`).
-`deck_cards`: `deck_id`, `cid` (FK verso `cards.cid`), `quantity`.
+`decks`: `user_id`, `name`, `format` (string, castato a `DeckFormat`), `is_public` (bool), **`assembled`** (bool, default false — vedi Step 4.3), `version` (int, default 1), `previous_version_id` (nullable, self-FK su `decks.id`).
+
+**Niente `leader_cid`/`base_cid` su `decks`**: cardinalità e vincoli di leader/base dipendono dal formato (Eternal/Premier: 1 leader + 1 base; Twin Suns: 2 leader + 1 base, con vincolo che i due leader non possono essere uno "bianco" e uno "nero" — regola di formato, non di schema), quindi due colonne fisse non reggono Twin Suns. Il ruolo della carta nel mazzo va invece in `deck_cards`:
+
+`deck_cards`: `deck_id`, `cid` (FK verso `cards.cid`), `quantity`, **`role`** (string/enum: `leader`, `base`, `card`, default `card`).
+
+Così un mazzo Eternal/Premier ha esattamente una riga con `role = leader` e una con `role = base`; un mazzo Twin Suns ne ha due con `role = leader` e una con `role = base` — la cardinalità e il vincolo sull'allineamento dei due leader li verifica il validator del formato (Step 3.3), non lo schema.
 
 Sul versionamento: ogni volta che l'utente salva una nuova versione di un mazzo, crea una **nuova riga** in `decks` con `version` incrementato e `previous_version_id` che punta alla riga precedente — la catena delle versioni è così una relazione reale (self-FK), non un'inferenza basata sul nome del mazzo come nella vecchia versione (dove la collezione stessa era modellata come un mazzo speciale, distinto solo controllando se il nome conteneva la stringa "collezione" per decidere se applicare i limiti di formato — pattern fragile da non riportare). Per recuperare velocemente "l'ultima versione" di un mazzo, puoi aggiungere un indice/query che segue la catena `previous_version_id`, oppure un flag `is_current` da aggiornare quando crei una nuova versione (più comodo per le query, leggero da mantenere).
 
@@ -181,7 +186,7 @@ interface DeckFormatValidator
     public function validate(Deck $deck): array; // ritorna array di errori, vuoto se valido
 }
 ```
-Crea `PremierFormatValidator`, `EternalFormatValidator`, `TwinSunsFormatValidator` in `app/Services/DeckValidation/`, ciascuna con le proprie regole (limiti di copie per carta, leader/base ammessi, ecc. — da definire in base al regolamento ufficiale del formato).
+Crea `PremierFormatValidator`, `EternalFormatValidator`, `TwinSunsFormatValidator` in `app/Services/DeckValidation/`, ciascuna con le proprie regole. Da controllare tramite `deck_cards` filtrando per `role`: numero di leader ammessi (1 per Eternal/Premier, 2 per Twin Suns), esattamente 1 base, e per Twin Suns il vincolo che i due leader condividano lo stesso allineamento (non uno "bianco" e uno "nero") — oltre alle regole generali di formato (limiti di copie per carta, ecc. — da definire in base al regolamento ufficiale).
 
 **Step 3.4 — Factory per scegliere il validator giusto**
 ```php
@@ -233,7 +238,26 @@ Colonne: `user_id`, `cid` (FK verso `cards.cid`), `variant` (string/enum: `norma
 Pagina con ricerca carte (riusa i filtri della Fase 6) + bottone incrementa/decrementa quantità posseduta, salvato via una piccola interazione Alpine.js senza reload pagina.
 
 **Step 4.3 — Funzione "carte mancanti per un mazzo"**
-Query che confronta `deck_cards` del mazzo con `collection_cards` dell'utente e restituisce il delta — buon differenziatore rispetto a un semplice database carte.
+Quando l'utente vuole montare un mazzo, servono tre informazioni distinte:
+1. **carte possedute** sufficienti (da `collection_cards`)
+2. **carte mancanti** del tutto (non in collezione, o non in quantità sufficiente)
+3. se le possedute non bastano: quante sono **possedute ma già impegnate in altri mazzi attualmente montati** (`decks.assembled = true`)
+
+Logica di query, per un dato mazzo target:
+```php
+$required = $deck->deckCards; // cid => quantity richiesta
+$owned = CollectionCard::where('user_id', $userId)->pluck('quantity', 'cid'); // cid => quantità posseduta totale
+$reservedByOtherAssembledDecks = DeckCard::whereHas('deck', fn ($q) => $q->where('user_id', $userId)->where('assembled', true)->where('id', '!=', $deck->id))
+    ->selectRaw('cid, SUM(quantity) as qty')
+    ->groupBy('cid')
+    ->pluck('qty', 'cid');
+
+// per ogni cid richiesto:
+// disponibile_libera = owned[cid] - reservedByOtherAssembledDecks[cid]
+// mancante_del_tutto = max(0, required[cid] - owned[cid])
+// posseduta_ma_impegnata = max(0, min(required[cid], owned[cid]) - disponibile_libera) quando disponibile_libera < required[cid]
+```
+Così l'utente vede subito se gli conviene comprare carte mancanti oppure smontare un altro mazzo per liberarle.
 
 ☐ Fase 4 completata
 
@@ -243,19 +267,38 @@ Query che confronta `deck_cards` del mazzo con `collection_cards` dell'utente e 
 
 **Step 5.1 — Libreria per l'API Telegram**
 Usa direttamente la facade `Http` nativa di Laravel (https://laravel.com/docs/12.x/http-client) per chiamare l'API Telegram, senza aggiungere una libreria esterna dedicata. La vecchia versione (SWUDB) usava il pacchetto `telegram-bot/api`, ma l'ecosistema dei wrapper PHP per Telegram di quella fascia è in gran parte poco mantenuto o esplicitamente abbandonato (es. `vjik/telegram-bot-api`, deprecato dallo stesso autore) — per un bot con poche funzioni (scan, ricerca, notifica admin) non c'è un vero vantaggio nell'aggiungere quella dipendenza, mentre con `Http` hai pieno controllo e zero rischio di dover rimpiazzare un pacchetto abbandonato in futuro.
-Esempio invio messaggio:
+
+**Step 5.1bis — Crea `TelegramService`**
+Incapsula tutte le chiamate all'API Telegram in `app/Services/TelegramService.php`, invece di sparpagliare `Http::post(...)` nei vari punti che parlano col bot (webhook, notifiche admin, ricerca) — un unico posto da aggiornare se cambia qualcosa nell'API, e ogni metodo restituisce un risultato tipizzato invece di un array grezzo. Esempio di struttura:
 ```php
-Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
-    'chat_id' => $chatId,
-    'text' => $text,
-]);
+final readonly class TelegramActionResult
+{
+    public function __construct(
+        public bool $successful,
+        public ?int $messageId = null,
+        public ?string $errorDescription = null,
+        public array $raw = [],
+    ) {}
+}
+
+class TelegramService
+{
+    public function sendMessage(int|string $chatId, string $text, array $options = []): TelegramActionResult { /* ... */ }
+
+    public function sendPhoto(int|string $chatId, string $photoUrl, string $caption = '', array $options = []): TelegramActionResult { /* ... */ }
+
+    public function editMessage(int|string $chatId, int $messageId, string $text): TelegramActionResult { /* ... */ }
+
+    public function deleteMessage(int|string $chatId, int $messageId): TelegramActionResult { /* ... */ }
+}
 ```
+Ogni metodo chiama l'endpoint Telegram corrispondente (`sendMessage`, `sendPhoto`, `editMessageText`, `deleteMessage`) e traduce la risposta JSON di Telegram (`{"ok": true/false, "result": {...}, "description": "..."}`) in un `TelegramActionResult` — così chi chiama il servizio non deve mai leggere l'array grezzo di Telegram per sapere se l'operazione è andata a buon fine. Aggiungi altri metodi (es. `pinMessage`, `answerCallbackQuery`) man mano che ti servono, stessa struttura.
 
 **Step 5.2 — Webhook controller**
 ```
 php artisan make:controller TelegramController
 ```
-Riceve gli update di Telegram via webhook, instrada in base al comando (`/scan`, `/search <query>`).
+Riceve gli update di Telegram via webhook, instrada in base al comando (`/scan`, `/search <query>`), usando `TelegramService` per rispondere.
 
 **Step 5.3 — Comando `/scan` dal bot**
 Nel metodo che gestisce `/scan`, richiama la stessa logica della Fase 2:
@@ -265,19 +308,16 @@ Artisan::call('cards:scan');
 oppure dispaccia direttamente `ImportCardsFromSwuApiJob::dispatch()` — nessuna logica duplicata rispetto allo scan schedulato.
 
 **Step 5.4 — Comando `/search`**
-Query su `Card` (nome IT/EN, `LIKE` o full-text se il volume di carte lo giustifica), risposta formattata in Markdown Telegram con nome, set, testo carta.
+Query su `Card` (nome IT/EN, `LIKE` o full-text se il volume di carte lo giustifica). Risposta: prova prima `TelegramService::sendPhoto()` con l'immagine della carta (`image_url`) e didascalia (nome, espansione, testo carta); se l'invio della foto fallisce (es. URL immagine non raggiungibile, `TelegramActionResult::$successful === false`), fai fallback su `TelegramService::sendMessage()` con un messaggio di testo contenente il link alla pagina della carta sul sito.
 
 **Step 5.5 — Job di notifica admin**
 ```
 php artisan make:job NotifyAdminJob
 ```
 ```php
-public function handle(): void
+public function handle(TelegramService $telegram): void
 {
-    Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
-        'chat_id' => config('services.telegram.admin_chat_id'),
-        'text' => $this->message,
-    ]);
+    $telegram->sendMessage(config('services.telegram.admin_chat_id'), $this->message);
 }
 ```
 Richiamato da `ImportCardsFromSwuApiJob` a fine scan e da qualunque altro evento critico vorrai monitorare.
@@ -289,7 +329,7 @@ Richiamato da `ImportCardsFromSwuApiJob` a fine scan e da qualunque altro evento
 ## Fase 6 — UI/UX e funzioni comuni TCG
 
 **Step 6.1 — Ricerca/filtri carte**
-Form con filtri per set, aspetto, tipo, costo, testo libero; query Eloquent con `when()` per applicare i filtri solo se presenti.
+Ricerca **server-side pura**: form con filtri (espansione, aspetto, tipo, costo, testo libero) inviati via `GET`, il controller applica i filtri con `when()` su una query Eloquent e ritorna le carte compatibili — niente ricerca live/Alpine qui, ogni ricerca è un normale caricamento di pagina con i filtri in query string. Incapsula la costruzione della query in una classe dedicata (es. `app/Services/CardSearch.php`, con un metodo tipo `apply(Builder $query, array $filters): Builder`), perché la Fase 6bis userà la stessa identica logica per l'endpoint API di ricerca — un solo posto da mantenere per i filtri disponibili.
 
 **Step 6.2 — Statistiche mazzo**
 Pagina che mostra, per un mazzo: curva dei costi (grafico semplice), distribuzione per aspetto/tipo.
@@ -299,10 +339,11 @@ Definisci chiaramente nelle rotte quali sono accessibili senza login (catalogo, 
 
 **Step 6.4 — Pagina "Nuove uscite"**
 Elenco delle carte uscite più di recente, con filtro data:
-- rotta tipo `GET /nuove-uscite`, parametro query opzionale `since` (`YYYY-MM-DD`)
-- se `since` non è passato, default a un intervallo ragionevole (es. ultimi 30 giorni) o all'ultima espansione confermata — scegli tu il default
+- rotta tipo `GET /nuove-uscite`, parametro query opzionale `since` (`YYYY-MM-DD`) — quando specificato resta un intervallo **arbitrario**, a scelta dell'utente (mostra tutte le carte con `release_date >= since`, qualunque data scelga)
+- se `since` **non** è passato: il default non è un intervallo fisso arbitrario (es. "ultimi 30 giorni"), ma l'ultimo gruppo di carte pubblicate, cioè tutte le carte con `release_date` uguale alla data più recente presente in `cards` (`Card::max('release_date')`)
 - query di esempio (richiede prima il fix del punto 2 della Fase 2 — `cards.release_date` come vera colonna data):
 ```php
+$since = $request->query('since') ?? Card::max('release_date');
 Card::where('release_date', '>=', $since)->orderByDesc('release_date')->get();
 ```
 Nota: filtra direttamente su `cards.release_date`, non tramite `expansions.legal_date` — sono due date diverse e la pagina "nuove uscite" riguarda l'uscita della singola carta, non la legalità dell'espansione.
@@ -316,7 +357,7 @@ Riferimento: https://laravel.com/docs/12.x/queries#where-clauses (filtro data) e
 
 ## Fase 6bis — API REST pubblica
 
-> Riprende l'API della vecchia versione (endpoint carta singola, carte per espansione, ricerca mazzi) per sviluppatori terzi, con autenticazione Sanctum invece che aperta.
+> Riprende l'API della vecchia versione (endpoint carta singola, carte per espansione, ricerca mazzi) per sviluppatori terzi, con autenticazione Sanctum invece che aperta. **Principio generale**: dove possibile, le rotte API condividono lo stesso backend delle pagine UI (stessi filtri, stessa classe di query, es. `CardSearch` dello Step 6.1) e cambiano solo il formato di output (view Blade vs API Resource JSON) — così eviti di dover mantenere due implementazioni parallele della stessa logica di ricerca/filtro.
 
 **Step 6bis.1 — Installa Sanctum**
 ```
@@ -329,10 +370,11 @@ Riferimento: https://laravel.com/docs/12.x/sanctum
 In `routes/api.php`:
 ```php
 Route::get('/cards/{expansion}/{number}', [Api\CardController::class, 'show']);
-Route::get('/cards/expansion/{expansion}', [Api\CardController::class, 'byExpansion']);
+Route::get('/cards/search', [Api\CardController::class, 'search']); // stessi filtri della pagina di ricerca (Step 6.1)
 Route::get('/decks/{user}/{name}', [Api\DeckController::class, 'show']); // solo mazzi pubblici
 ```
-Questi non richiedono autenticazione (dati pubblici, già leggibili dal sito) — valuta comunque il rate limiting nativo di Laravel (`throttle:60,1` sul gruppo di rotte) per prevenire abusi.
+`Api\CardController::search()` riusa la stessa classe `CardSearch` del controller web (Step 6.1): stessi parametri, stesso comportamento, solo la risposta cambia (`CardResource::collection(...)` invece di una view).
+Questi endpoint non richiedono autenticazione (dati pubblici, già leggibili dal sito) — valuta comunque il rate limiting nativo di Laravel (`throttle:60,1` sul gruppo di rotte) per prevenire abusi.
 Riferimento: https://laravel.com/docs/12.x/routing#rate-limiting
 
 **Step 6bis.3 — Endpoint autenticati (se in futuro servono azioni, non solo letture)**
