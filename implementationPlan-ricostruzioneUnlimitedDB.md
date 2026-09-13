@@ -84,9 +84,26 @@ Aggiorna `APP_VERSION_*` ad ogni release, così `APP_VERSION` resta leggibile an
 
 ## Fase 0bis — Ambiente Docker locale per i test (porta 66, senza Traefik)
 
-> Obiettivo: poter testare l'app in Docker durante tutto lo sviluppo, con build/comportamento identici a quelli che avrà in produzione (Fase 7), ma senza dipendere da Traefik: nginx pubblica direttamente la porta sull'host.
+> Obiettivo: poter testare l'app in Docker durante tutto lo sviluppo, con build/comportamento **identici byte-per-byte** a quelli generati da `~/scripts/new-site.sh` sul server (Fase 7) — quello script infatti clona il repo e **sovrascrive** direttamente `Dockerfile`, `docker/entrypoint.sh`, `docker/nginx/default.conf` e crea `docker-compose.yml` da zero, poi li committa. Quindi qui non "inventiamo" un Dockerfile diverso: replichiamo esattamente quello che lo script genera, con solo le differenze di rete/porta necessarie a girare in locale senza Traefik. Se in futuro cambia `new-site.sh`, questi file locali vanno riallineati di conseguenza.
 
-**Step 0bis.1 — Crea il `Dockerfile`** nella root del progetto (stesso schema multi-stage già validato in SWUDB: build asset con Node, dipendenze PHP con Composer, immagine finale PHP-FPM):
+**Step 0bis.1 — Crea `.dockerignore`** nella root del progetto (identico a quello generato da `new-site.sh`, con un'aggiunta importante):
+```
+.env
+.git
+node_modules
+vendor
+bootstrap/cache/*.php
+```
+L'ultima riga non è nello script originale ma va aggiunta: senza, `bootstrap/cache/packages.php`/`services.php` (generati in locale quando installi pacchetti come dev-dependency, es. Breeze) finiscono nel contesto della build. Durante `composer install --no-dev`, quei pacchetti dev non vengono installati in `vendor/`, ma all'avvio di un qualunque comando Artisan (incluso `package:discover`, lanciato automaticamente da `composer dump-autoload`) Laravel legge per primo cosa quella cache stale e tenta di caricare un service provider che non esiste più → build che fallisce con `Class ... not found`. Vale anche per il deploy reale: se questi file finissero per errore committati nel repo, lo stesso identico errore si presenterebbe quando `new-site.sh` clona ed effettua la build sul server (vedi Step 0bis.1bis).
+
+**Step 0bis.1bis — Aggiungi a `.gitignore`** (attualmente mancante nel progetto):
+```
+/bootstrap/cache/*.php
+!bootstrap/cache/.gitkeep
+```
+Questa è la riga standard dei progetti Laravel, qui non presente perché il progetto è stato creato con `laravel new` e non l'ha inclusa di default nella versione installata. Evita di committare per sbaglio le cache compilate (config, routes, packages, services), che sono specifiche dell'ambiente in cui sono state generate.
+
+**Step 0bis.2 — Crea il `Dockerfile`** nella root del progetto, identico a quello generato da `new-site.sh` per gli altri siti (`php:8.2-fpm-alpine`, **non** una versione più recente: quello script sovrascriverà comunque questo file con `php:8.2-fpm-alpine` al primo deploy, quindi usare qui una versione diversa creerebbe un disallineamento tra quello che testi in locale e quello che gira davvero in produzione):
 ```dockerfile
 # --- Stage 1: build frontend assets con Vite ---
 FROM node:20-alpine AS node-builder
@@ -99,11 +116,11 @@ COPY public/ ./public/
 RUN npm run build
 
 # --- Stage 2: dipendenze PHP con Composer ---
-# Si usa la stessa immagine php:8.4-fpm-alpine dello stage finale (non
+# Si usa la stessa immagine php:8.2-fpm-alpine dello stage finale (non
 # l'immagine standalone "composer:2", che porta con se' un PHP proprio e puo'
 # cambiarne la versione senza preavviso, causando incompatibilita' col
 # composer.lock del progetto). Composer viene copiato come binario.
-FROM php:8.4-fpm-alpine AS composer-builder
+FROM php:8.2-fpm-alpine AS composer-builder
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY composer.json composer.lock ./
@@ -112,7 +129,7 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev
 
 # --- Stage 3: immagine finale PHP-FPM ---
-FROM php:8.4-fpm-alpine
+FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache \
     libpng-dev libzip-dev libxml2-dev oniguruma-dev \
@@ -121,7 +138,7 @@ RUN apk add --no-cache \
 WORKDIR /var/www/html
 
 COPY --from=composer-builder /app /var/www/html
-COPY --from=node-builder /app/public/build /var/www/html/public/build
+COPY --from=node-builder /app/public/build /opt/build-seed
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
@@ -132,19 +149,25 @@ ENTRYPOINT ["entrypoint.sh"]
 EXPOSE 9000
 CMD ["php-fpm"]
 ```
-Nota: l'immagine usa `php:8.4-fpm-alpine`, la versione più recente supportata da Laravel 12 — non deve necessariamente coincidere con la versione PHP che usi in locale per Composer/Artisan (8.2.29): quella conta solo per il vincolo minimo `^8.2` nel `composer.json`, l'immagine Docker può tranquillamente usarne una più recente e beneficiare delle ultime patch di sicurezza/performance.
+Nota sul `/opt/build-seed`: gli asset Vite vengono copiati lì invece che direttamente in `public/build`, perché in `docker-compose.yml` quella cartella è un volume Docker condiviso con nginx — se venisse popolata solo a build-time, il volume (che parte vuoto) la coprirebbe comunque al primo avvio. Il popolamento reale avviene a runtime, nell'entrypoint (step successivo). Se salti questo dettaglio, ottieni esattamente il bug che hai già avuto in produzione (errore MIME type sui file JS in `/build/assets`).
 
-**Step 0bis.2 — Crea `docker/entrypoint.sh`**:
+**Step 0bis.3 — Crea `docker/entrypoint.sh`**:
 ```sh
 #!/bin/sh
 set -e
 
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+if [ -d /opt/build-seed ]; then
+    rm -rf /var/www/html/public/build/*
+    cp -r /opt/build-seed/. /var/www/html/public/build/
+fi
+
 exec "$@"
 ```
+Questo copia gli asset da `/opt/build-seed` (dentro l'immagine) al volume condiviso `public/build` **ad ogni avvio** del container — così un rebuild con nuovi asset (nuovi hash Vite) si propaga sempre correttamente.
 
-**Step 0bis.3 — Crea `docker/nginx/default.conf`**:
+**Step 0bis.4 — Crea `docker/nginx/default.conf`**:
 ```nginx
 server {
     listen 80;
@@ -152,8 +175,6 @@ server {
     root /var/www/html/public;
     index index.php;
     charset utf-8;
-
-    client_max_body_size 20m;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
@@ -184,9 +205,17 @@ server {
     }
 }
 ```
-`server_name localhost` invece del dominio reale, dato che qui non c'e' Traefik a instradare per hostname.
+`server_name localhost` invece del dominio reale (in produzione `new-site.sh` lo sostituisce col dominio vero) — qui non c'è Traefik a instradare per hostname.
 
-**Step 0bis.4 — Crea `docker-compose.dev.yml`** nella root del progetto:
+**Step 0bis.5 — Crea `docker/mysql/init.sql`**:
+```sql
+CREATE USER IF NOT EXISTS 'unlimiteddb'@'172.30.0.10' IDENTIFIED BY '__DB_PASSWORD__';
+GRANT ALL PRIVILEGES ON unlimiteddb.* TO 'unlimiteddb'@'172.30.0.10';
+FLUSH PRIVILEGES;
+```
+Sostituisci `__DB_PASSWORD__` con lo stesso valore che metterai in `DB_PASSWORD` nel tuo `.env` (vedi nota sotto sul perché questa password non va lasciata vuota). `172.30.0.10` è l'IP statico che il container `app` avrà nella subnet dedicata a questo compose (vedi step successivo) — è lo stesso meccanismo di `new-site.sh`: l'utente applicativo può connettersi **solo** da quell'IP specifico, non da `%` (qualsiasi host), a differenza di quanto sembra suggerire un `DB_USERNAME`/`DB_PASSWORD` generico nel `.env`.
+
+**Step 0bis.6 — Crea `docker-compose.dev.yml`** nella root del progetto:
 ```yaml
 services:
   app:
@@ -196,13 +225,15 @@ services:
     volumes:
       - ./storage:/var/www/html/storage
       - ./.env:/var/www/html/.env:ro
+      - build_assets_dev:/var/www/html/public/build
     environment:
       - DB_HOST=db
       - DB_DATABASE=unlimiteddb
       - DB_USERNAME=unlimiteddb
       - DB_PASSWORD=${DB_PASSWORD}
     networks:
-      - internal
+      internal:
+        ipv4_address: 172.30.0.10
     depends_on:
       db:
         condition: service_healthy
@@ -216,6 +247,7 @@ services:
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./public:/var/www/html/public:ro
+      - build_assets_dev:/var/www/html/public/build:ro
     networks:
       - internal
     depends_on:
@@ -226,12 +258,11 @@ services:
     container_name: unlimiteddb_db_dev
     restart: unless-stopped
     environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_DATABASE=unlimiteddb
-      - MYSQL_USER=unlimiteddb
-      - MYSQL_PASSWORD=${DB_PASSWORD}
-      - MYSQL_RANDOM_ROOT_PASSWORD=yes
     volumes:
       - db_data_dev:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - internal
     healthcheck:
@@ -244,25 +275,32 @@ services:
 networks:
   internal:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
 
 volumes:
   db_data_dev:
+  build_assets_dev:
 ```
-Differenze rispetto al `docker-compose.yml` di produzione che creerai nella Fase 7 (stessa logica, stesso Dockerfile, stessa conf nginx):
-- niente rete esterna `proxy` ne' label `traefik.*` sul servizio `nginx`
+Differenze **volute** rispetto al `docker-compose.yml` che `new-site.sh` genererà in produzione (a parità di logica/immagini/entrypoint):
+- niente rete esterna `proxy` né label `traefik.*` sul servizio `nginx`
 - `nginx` pubblica direttamente `"66:80"` sull'host invece di essere instradato da Traefik
-- nomi container/volume con suffisso `_dev` per non entrare in conflitto se mai avvii anche lo stack di produzione sulla stessa macchina
+- subnet fissa `172.30.0.0/24` invece che scelta dinamicamente (in locale gira un solo sito, niente rischio di conflitto tra siti diversi come sul server condiviso)
+- nomi container/volume con suffisso `_dev`
 
-Nota sulla password: a differenza del compose di SWUDB (che usava `MYSQL_ALLOW_EMPTY_PASSWORD=yes`), qui viene richiesta una password reale tramite la variabile `DB_PASSWORD` letta dal tuo `.env` — anche in locale costa zero avere una password vera, e riduce il rischio se in futuro esponi per sbaglio la porta del DB. Assicurati che `DB_PASSWORD` in `.env` sia valorizzato prima di avviare il compose.
+Sulla password: `MYSQL_ALLOW_EMPTY_PASSWORD=yes` qui riguarda **solo l'utente root** di MariaDB (richiesto dall'immagine per il bootstrap, mai esposto fuori dalla rete Docker interna) — l'utente applicativo reale (`unlimiteddb`) viene creato da `docker/mysql/init.sql` con la password che avrai messo in `DB_PASSWORD` nel `.env`. Questo è esattamente il meccanismo di `new-site.sh`: **il valore che metti ora in `DB_PASSWORD` nel tuo `.env` locale è, a tutti gli effetti, la password che finirà anche in produzione**, dato che lo script legge quel campo direttamente dal `.env` del progetto. Impostalo fin da subito a una password vera, non lasciarlo vuoto.
 
-**Step 0bis.5 — Avvia e verifica**
+**Step 0bis.7 — Avvia e verifica**
 ```
 docker compose -f docker-compose.dev.yml up --build -d
 ```
 apri `http://localhost:66` e verifica che la pagina carichi. Per i log: `docker compose -f docker-compose.dev.yml logs -f app`.
 
-**Step 0bis.6 — Mantieni sincronizzati Dockerfile e nginx conf con la Fase 7**
-Quando in Fase 7 creerai il `docker-compose.yml` di produzione, riuserai lo stesso `Dockerfile` e lo stesso `docker/nginx/default.conf` di questo step (con `server_name` aggiornato al dominio reale) — se in futuro modifichi uno dei due file, verifica che il comportamento resti equivalente in entrambi gli ambienti.
+Se la build fallisce con un errore tipo `Class "...ServiceProvider" not found` durante `composer dump-autoload`, è il problema descritto allo Step 0bis.1: cancella `bootstrap/cache/packages.php` e `bootstrap/cache/services.php` (o lancia `php artisan optimize:clear`) e rilancia la build — verifica anche di aver creato `.dockerignore` come indicato.
+
+**Step 0bis.8 — Nota per la Fase 7**
+Quando arriverai alla Fase 7 ed eseguirai `new-site.sh` sul server, quello script **rigenererà da zero** `Dockerfile`, `docker/entrypoint.sh`, `docker/nginx/default.conf`, `docker/mysql/init.sql` e `docker-compose.yml` nel repo clonato sul server (e li committerà) — quindi non serve scrivere a mano una versione "di produzione" di questi file: quella cablata nello script è già la fonte di verità. Il lavoro fatto qui serve solo a testare in locale con lo stesso comportamento, non a preparare i file che finiranno in produzione.
 
 ☐ Fase 0bis completata
 
@@ -570,19 +608,16 @@ Definisci chiaramente nelle rotte quali sono accessibili senza login (catalogo, 
 
 ## Fase 7 — Deploy
 
-**Step 7.1 — Dockerfile applicativo**
-Riusa la struttura già validata in [[mandich-dev-infra]] per gli altri siti `*.mandich.dev`.
+**Step 7.1 — Lancia `~/scripts/new-site.sh` sul server**
+Non serve scrivere a mano Dockerfile/docker-compose.yml/nginx conf di produzione: lo script li genera lui (vedi Fase 0bis, Step 0bis.7) a partire dal repo che gli indichi, con dominio `unlimiteddb.mandich.dev`. Segui il flusso interattivo dello script (repo, `.env`, sottodominio, subnet assegnata in automatico, secrets GitHub, import DB opzionale).
 
-**Step 7.2 — Servizio queue worker**
-Nel `docker-compose`, aggiungi un servizio separato che lancia `php artisan queue:work --tries=3` in loop (o usa Supervisor nello stesso container applicativo) — deve restare sempre attivo, a differenza del container web che risponde solo alle richieste HTTP.
+**Step 7.2 — Servizio queue worker (non generato dallo script)**
+Lo script non crea un servizio queue worker: aggiungilo tu nel `docker-compose.yml` generato (o modifica lo script per includerlo di default nei prossimi siti), con `php artisan queue:work --tries=3` in loop, oppure Supervisor nello stesso container applicativo — deve restare sempre attivo, a differenza del container web che risponde solo alle richieste HTTP.
 
-**Step 7.3 — Scheduler**
-Assicurati che un vero cron di sistema (nel container) lanci `php artisan schedule:run` ogni minuto — è il meccanismo standard con cui Laravel esegue poi `cards:scan` alla frequenza configurata nella Fase 2.
+**Step 7.3 — Scheduler (non generato dallo script)**
+Allo stesso modo, assicurati che un vero cron di sistema (nel container o sull'host) lanci `php artisan schedule:run` ogni minuto — è il meccanismo con cui Laravel esegue poi `cards:scan` alla frequenza configurata nella Fase 2. Anche questo va aggiunto a mano, lo script attuale non lo prevede.
 
-**Step 7.4 — Integrazione Traefik**
-Segui `new-site.sh` come per gli altri siti, dominio `unlimiteddb.mandich.dev`.
-
-**Step 7.5 — Verifica post-deploy**
+**Step 7.4 — Verifica post-deploy**
 - il webhook Telegram punta al dominio giusto
 - il queue worker sta effettivamente consumando i job (controlla `failed_jobs` per errori)
 - lo scan schedulato parte al lunedì a mezzanotte come da requisito
