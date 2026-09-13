@@ -1,388 +1,71 @@
 # Implementation Plan — Ricostruzione UnlimitedDB (esercizio guidato)
 
-> Questo documento è una guida passo-passo pensata per essere eseguita manualmente da te, uno step alla volta. Ogni fase è divisa in step numerati con: cosa fare, comando/file esatto, perché, e link alla documentazione se qualcosa non torna.
+> Questo documento è una guida passo-passo pensata per essere eseguita manualmente da te. Le fasi già completate sono riassunte in breve (per non perdere lo storico delle decisioni prese); le fasi/step ancora da fare restano nel dettaglio completo.
 >
 > Ambiente di riferimento: progetto in `C:\Users\RickyMandich\PROJECT\unlimiteddb`, Laravel 12.12, PHP 8.2.29 (via cmd.exe, dove sono installati Composer/Laravel), MariaDB, Pest, Laravel Breeze per l'auth, deploy Docker+Traefik su VM Oracle (stesso schema degli altri siti `*.mandich.dev`).
+>
+> **Convenzione di codice**: ogni metodo non ovvio va documentato con PHPDoc bilingue (descrizione tecnica in inglese + descrizione discorsiva in italiano), come già fatto in SWUDB. Esempio:
+> ```php
+> /**
+>  * English technical description of the method
+>  * Descrizione italiana "alla buona" del metodo
+>  *
+>  * @param Type $parameter Description of parameter
+>  * @return ReturnType Description of return value
+>  */
+> ```
 
 ---
 
-## Fase 0 — Setup progetto
+## ✅ Fase 0 — Setup progetto (completata)
 
-**Step 0.1 — Verifica coerenza ambienti PHP**
-Hai PHP 8.4.24 in WSL ma Composer/Laravel girano su PHP 8.2.29 (cmd.exe). Decidi ora quale terminale userai per tutto il progetto (composer install, artisan, test) e resta coerente — mescolare i due può creare pacchetti incompatibili nel lockfile. Se vuoi restare con 8.2.29, va benissimo per Laravel 12; annotalo nel README.
-
-**Step 0.2 — Installa i pacchetti core**
-```
-composer require laravel/breeze --dev
-composer require spatie/laravel-permission
-```
-Perché: **Laravel Breeze** per lo scaffolding auth — a differenza di `laravel/ui` (in maintenance mode, non più evoluto da Laravel) è lo standard attualmente mantenuto e consigliato, e nella variante Blade usa esattamente lo stack Blade + Alpine.js già scelto per il progetto (niente Livewire), quindi non introduce nulla in più rispetto a quanto serve davvero. `spatie/laravel-permission` per i permessi granulari (vedi motivazione in fondo al documento, sezione Analisi).
-
-**Step 0.3 — Configura `.env`**
-Verifica/aggiorna in `.env`:
-```
-DB_CONNECTION=mariadb
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=unlimiteddb
-DB_USERNAME=...
-DB_PASSWORD=...
-
-QUEUE_CONNECTION=database
-```
-`QUEUE_CONNECTION=database` è la scelta di partenza (niente Redis da gestire in più); si può cambiare in seguito senza toccare il codice dei job.
-
-**Step 0.4 — Crea le tabelle base**
-```
-php artisan queue:table
-php artisan queue:failed-table
-php artisan migrate
-```
-Crea le tabelle `jobs` e `failed_jobs` necessarie per il driver queue `database`.
-
-**Step 0.5 — Pubblica e migra le tabelle di Spatie**
-```
-php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
-php artisan migrate
-```
-Riferimento: https://spatie.be/docs/laravel-permission/v6/installation-laravel
-
-**Step 0.6 — Verifica che tutto giri**
-```
-php artisan serve
-```
-apri `http://127.0.0.1:8000` e controlla che la pagina di default carichi senza errori.
-
-**Step 0.7 — Aggancia `.env-overrides` (pattern già usato in SWUDB)**
-Il file `.env-overrides` esiste già nella root del progetto (creato dal boilerplate) ma non era ancora agganciato — fatto in questo step.
-
-In `bootstrap/app.php`, **prima** di `Application::configure(...)`:
-```php
-// Carica le variabili non sensibili (es. APP_VERSION_*) da .env-overrides,
-// file tracciato in Git a differenza di .env. Va fatto PRIMA che Laravel
-// processi il suo .env principale: il repository usato da Laravel per
-// leggere il .env e' immutabile e non sovrascrive variabili gia' presenti
-// in $_ENV/$_SERVER, quindi impostandole qui vincono su quelle (se presenti)
-// nel .env vero e proprio.
-\Dotenv\Dotenv::createMutable(dirname(__DIR__), '.env-overrides')->safeLoad();
-```
-Verifica che `.env-overrides` **non** sia in `.gitignore` (deve restare tracciato in Git, a differenza di `.env`) — nel progetto attuale è già così, nessuna modifica necessaria a `.gitignore`.
-
-Contenuto di `.env-overrides` (versione iniziale del progetto):
-```
-APP_VERSION_TYPE=""
-APP_VERSION_PRIMARY=0
-APP_VERSION_SECONDARY=1
-APP_VERSION_TERTIARY=0
-APP_VERSION="${APP_VERSION_TYPE}${APP_VERSION_PRIMARY}.${APP_VERSION_SECONDARY}.${APP_VERSION_TERTIARY}"
-```
-Aggiorna `APP_VERSION_*` ad ogni release, così `APP_VERSION` resta leggibile anche in produzione (utile per debug/notifiche bot) senza esporre dati sensibili in Git.
-
-☐ Fase 0 completata
+- Breeze e `spatie/laravel-permission` installati
+- `.env` configurato (MariaDB, `QUEUE_CONNECTION=database`)
+- Tabelle `jobs`/`failed_jobs` e tabelle Spatie migrate
+- `.env-overrides` agganciato in `bootstrap/app.php` prima di `Application::configure()` (pattern SWUDB: variabili non sensibili come `APP_VERSION_*` tracciate in Git, a differenza di `.env`)
 
 ---
 
-## Fase 0bis — Ambiente Docker locale per i test (porta 66, senza Traefik)
+## ✅ Fase 0bis — Ambiente Docker locale (completata)
 
-> Obiettivo: poter testare l'app in Docker durante tutto lo sviluppo, con build/comportamento **identici byte-per-byte** a quelli generati da `~/scripts/new-site.sh` sul server (Fase 7) — quello script infatti clona il repo e **sovrascrive** direttamente `Dockerfile`, `docker/entrypoint.sh`, `docker/nginx/default.conf` e crea `docker-compose.yml` da zero, poi li committa. Quindi qui non "inventiamo" un Dockerfile diverso: replichiamo esattamente quello che lo script genera, con solo le differenze di rete/porta necessarie a girare in locale senza Traefik. Se in futuro cambia `new-site.sh`, questi file locali vanno riallineati di conseguenza.
+- `.dockerignore` creato, incluso `bootstrap/cache/*.php` (evita di portare nella build cache stale generate in locale con dev-dependency come Breeze — causa un errore `Class ... ServiceProvider not found` durante `composer dump-autoload --no-dev` se non escluso)
+- `.gitignore` aggiornato con `/bootstrap/cache/*.php` / `!bootstrap/cache/.gitkeep`, per lo stesso motivo (evitare che la cache stale finisca committata e riproduca lo stesso errore nel deploy reale via `new-site.sh`)
+- `Dockerfile`, `docker/entrypoint.sh`, `docker/nginx/default.conf`, `docker/mysql/init.sql`, `docker-compose.dev.yml` creati, identici (a parte rete/porta) a quanto genererà `new-site.sh` in produzione — `php:8.2-fpm-alpine`, fix MIME-type via `/opt/build-seed` + volume `build_assets`, utente DB reale ristretto per IP via `docker/mysql/init.sql`
+- Verificato funzionante su `http://localhost:66`
 
-**Step 0bis.1 — Crea `.dockerignore`** nella root del progetto (identico a quello generato da `new-site.sh`, con un'aggiunta importante):
-```
-.env
-.git
-node_modules
-vendor
-bootstrap/cache/*.php
-```
-L'ultima riga non è nello script originale ma va aggiunta: senza, `bootstrap/cache/packages.php`/`services.php` (generati in locale quando installi pacchetti come dev-dependency, es. Breeze) finiscono nel contesto della build. Durante `composer install --no-dev`, quei pacchetti dev non vengono installati in `vendor/`, ma all'avvio di un qualunque comando Artisan (incluso `package:discover`, lanciato automaticamente da `composer dump-autoload`) Laravel legge per primo cosa quella cache stale e tenta di caricare un service provider che non esiste più → build che fallisce con `Class ... not found`. Vale anche per il deploy reale: se questi file finissero per errore committati nel repo, lo stesso identico errore si presenterebbe quando `new-site.sh` clona ed effettua la build sul server (vedi Step 0bis.1bis).
-
-**Step 0bis.1bis — Aggiungi a `.gitignore`** (attualmente mancante nel progetto):
-```
-/bootstrap/cache/*.php
-!bootstrap/cache/.gitkeep
-```
-Questa è la riga standard dei progetti Laravel, qui non presente perché il progetto è stato creato con `laravel new` e non l'ha inclusa di default nella versione installata. Evita di committare per sbaglio le cache compilate (config, routes, packages, services), che sono specifiche dell'ambiente in cui sono state generate.
-
-**Step 0bis.2 — Crea il `Dockerfile`** nella root del progetto, identico a quello generato da `new-site.sh` per gli altri siti (`php:8.2-fpm-alpine`, **non** una versione più recente: quello script sovrascriverà comunque questo file con `php:8.2-fpm-alpine` al primo deploy, quindi usare qui una versione diversa creerebbe un disallineamento tra quello che testi in locale e quello che gira davvero in produzione):
-```dockerfile
-# --- Stage 1: build frontend assets con Vite ---
-FROM node:20-alpine AS node-builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY vite.config.js ./
-COPY resources/ ./resources/
-COPY public/ ./public/
-RUN npm run build
-
-# --- Stage 2: dipendenze PHP con Composer ---
-# Si usa la stessa immagine php:8.2-fpm-alpine dello stage finale (non
-# l'immagine standalone "composer:2", che porta con se' un PHP proprio e puo'
-# cambiarne la versione senza preavviso, causando incompatibilita' col
-# composer.lock del progetto). Composer viene copiato come binario.
-FROM php:8.2-fpm-alpine AS composer-builder
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
-COPY . .
-RUN composer dump-autoload --optimize --no-dev
-
-# --- Stage 3: immagine finale PHP-FPM ---
-FROM php:8.2-fpm-alpine
-
-RUN apk add --no-cache \
-    libpng-dev libzip-dev libxml2-dev oniguruma-dev \
-    && docker-php-ext-install pdo_mysql mbstring bcmath xml gd zip
-
-WORKDIR /var/www/html
-
-COPY --from=composer-builder /app /var/www/html
-COPY --from=node-builder /app/public/build /opt/build-seed
-
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT ["entrypoint.sh"]
-EXPOSE 9000
-CMD ["php-fpm"]
-```
-Nota sul `/opt/build-seed`: gli asset Vite vengono copiati lì invece che direttamente in `public/build`, perché in `docker-compose.yml` quella cartella è un volume Docker condiviso con nginx — se venisse popolata solo a build-time, il volume (che parte vuoto) la coprirebbe comunque al primo avvio. Il popolamento reale avviene a runtime, nell'entrypoint (step successivo). Se salti questo dettaglio, ottieni esattamente il bug che hai già avuto in produzione (errore MIME type sui file JS in `/build/assets`).
-
-**Step 0bis.3 — Crea `docker/entrypoint.sh`**:
-```sh
-#!/bin/sh
-set -e
-
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
-if [ -d /opt/build-seed ]; then
-    rm -rf /var/www/html/public/build/*
-    cp -r /opt/build-seed/. /var/www/html/public/build/
-fi
-
-exec "$@"
-```
-Questo copia gli asset da `/opt/build-seed` (dentro l'immagine) al volume condiviso `public/build` **ad ogni avvio** del container — così un rebuild con nuovi asset (nuovi hash Vite) si propaga sempre correttamente.
-
-**Step 0bis.4 — Crea `docker/nginx/default.conf`**:
-```nginx
-server {
-    listen 80;
-    server_name localhost;
-    root /var/www/html/public;
-    index index.php;
-    charset utf-8;
-
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
-
-    if (!-d $request_filename) {
-        rewrite ^/(.+)/$ /$1 permanent;
-    }
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
-
-    error_page 404 /index.php;
-
-    location ~ \.php$ {
-        fastcgi_pass app:9000;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
-        include fastcgi_params;
-    }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
-    }
-}
-```
-`server_name localhost` invece del dominio reale (in produzione `new-site.sh` lo sostituisce col dominio vero) — qui non c'è Traefik a instradare per hostname.
-
-**Step 0bis.5 — Crea `docker/mysql/init.sql`**:
-```sql
-CREATE USER IF NOT EXISTS 'unlimiteddb'@'172.30.0.10' IDENTIFIED BY '__DB_PASSWORD__';
-GRANT ALL PRIVILEGES ON unlimiteddb.* TO 'unlimiteddb'@'172.30.0.10';
-FLUSH PRIVILEGES;
-```
-Sostituisci `__DB_PASSWORD__` con lo stesso valore che metterai in `DB_PASSWORD` nel tuo `.env` (vedi nota sotto sul perché questa password non va lasciata vuota). `172.30.0.10` è l'IP statico che il container `app` avrà nella subnet dedicata a questo compose (vedi step successivo) — è lo stesso meccanismo di `new-site.sh`: l'utente applicativo può connettersi **solo** da quell'IP specifico, non da `%` (qualsiasi host), a differenza di quanto sembra suggerire un `DB_USERNAME`/`DB_PASSWORD` generico nel `.env`.
-
-**Step 0bis.6 — Crea `docker-compose.dev.yml`** nella root del progetto:
-```yaml
-services:
-  app:
-    build: .
-    container_name: unlimiteddb_app_dev
-    restart: unless-stopped
-    volumes:
-      - ./storage:/var/www/html/storage
-      - ./.env:/var/www/html/.env:ro
-      - build_assets_dev:/var/www/html/public/build
-    environment:
-      - DB_HOST=db
-      - DB_DATABASE=unlimiteddb
-      - DB_USERNAME=unlimiteddb
-      - DB_PASSWORD=${DB_PASSWORD}
-    networks:
-      internal:
-        ipv4_address: 172.30.0.10
-    depends_on:
-      db:
-        condition: service_healthy
-
-  nginx:
-    image: nginx:alpine
-    container_name: unlimiteddb_nginx_dev
-    restart: unless-stopped
-    ports:
-      - "66:80"
-    volumes:
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./public:/var/www/html/public:ro
-      - build_assets_dev:/var/www/html/public/build:ro
-    networks:
-      - internal
-    depends_on:
-      - app
-
-  db:
-    image: mariadb:11
-    container_name: unlimiteddb_db_dev
-    restart: unless-stopped
-    environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
-      - MYSQL_DATABASE=unlimiteddb
-    volumes:
-      - db_data_dev:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
-networks:
-  internal:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24
-
-volumes:
-  db_data_dev:
-  build_assets_dev:
-```
-Differenze **volute** rispetto al `docker-compose.yml` che `new-site.sh` genererà in produzione (a parità di logica/immagini/entrypoint):
-- niente rete esterna `proxy` né label `traefik.*` sul servizio `nginx`
-- `nginx` pubblica direttamente `"66:80"` sull'host invece di essere instradato da Traefik
-- subnet fissa `172.30.0.0/24` invece che scelta dinamicamente (in locale gira un solo sito, niente rischio di conflitto tra siti diversi come sul server condiviso)
-- nomi container/volume con suffisso `_dev`
-
-Sulla password: `MYSQL_ALLOW_EMPTY_PASSWORD=yes` qui riguarda **solo l'utente root** di MariaDB (richiesto dall'immagine per il bootstrap, mai esposto fuori dalla rete Docker interna) — l'utente applicativo reale (`unlimiteddb`) viene creato da `docker/mysql/init.sql` con la password che avrai messo in `DB_PASSWORD` nel `.env`. Questo è esattamente il meccanismo di `new-site.sh`: **il valore che metti ora in `DB_PASSWORD` nel tuo `.env` locale è, a tutti gli effetti, la password che finirà anche in produzione**, dato che lo script legge quel campo direttamente dal `.env` del progetto. Impostalo fin da subito a una password vera, non lasciarlo vuoto.
-
-**Step 0bis.7 — Avvia e verifica**
-```
-docker compose -f docker-compose.dev.yml up --build -d
-```
-apri `http://localhost:66` e verifica che la pagina carichi. Per i log: `docker compose -f docker-compose.dev.yml logs -f app`.
-
-Se la build fallisce con un errore tipo `Class "...ServiceProvider" not found` durante `composer dump-autoload`, è il problema descritto allo Step 0bis.1: cancella `bootstrap/cache/packages.php` e `bootstrap/cache/services.php` (o lancia `php artisan optimize:clear`) e rilancia la build — verifica anche di aver creato `.dockerignore` come indicato.
-
-**Step 0bis.8 — Nota per la Fase 7**
-Quando arriverai alla Fase 7 ed eseguirai `new-site.sh` sul server, quello script **rigenererà da zero** `Dockerfile`, `docker/entrypoint.sh`, `docker/nginx/default.conf`, `docker/mysql/init.sql` e `docker-compose.yml` nel repo clonato sul server (e li committerà) — quindi non serve scrivere a mano una versione "di produzione" di questi file: quella cablata nello script è già la fonte di verità. Il lavoro fatto qui serve solo a testare in locale con lo stesso comportamento, non a preparare i file che finiranno in produzione.
-
-☐ Fase 0bis completata
+**Promemoria per la Fase 7**: `new-site.sh` rigenera comunque da zero questi file sul server e li committa — quanto fatto qui serve a testare in locale con lo stesso comportamento, non è la versione che finirà in produzione.
 
 ---
 
 ## Fase 1 — Autenticazione e permessi
 
-**Step 1.1 — Installa lo scaffolding di Breeze**
-```
-php artisan breeze:install blade
-npm install && npm run build
-php artisan migrate
-```
-(la variante `blade` usa Blade + Alpine.js, coerente con la scelta già presa di non usare Livewire; Breeze crea anche le migration standard per `users`, `password_reset_tokens`, ecc.)
+### ✅ Fatto
+- Breeze (variante Blade) installato
+- Trait `HasRoles` aggiunto a `User`
+- `PermissionSeeder` creato e registrato in `DatabaseSeeder`, con permessi: `cards.import`, `cards.manage`, `decks.manage-any`, `collections.manage-any`, `users.manage`, `bot.notifications.receive`, ruolo `admin` con tutti i permessi
+- Verificato nel codice il 13/09: tutto corretto
 
-**Step 1.2 — Aggiungi il trait `HasRoles` al modello User**
-In `app/Models/User.php`:
+### 🔧 Da fare
+
+**Step 1.6 — Abilita la verifica email nativa**
+A differenza della vecchia versione (token custom a 60 caratteri, metodi ad-hoc), usa il meccanismo nativo di Laravel/Breeze:
 ```php
-use Spatie\Permission\Traits\HasRoles;
+// app/Models/User.php
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasRoles;
     // ...
 }
 ```
-
-**Step 1.3 — Definisci il set iniziale di permessi via seeder**
-Crea `database/seeders/PermissionSeeder.php`:
+Proteggi le rotte che richiedono email verificata con il middleware `verified`:
 ```php
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-
-class PermissionSeeder extends Seeder
-{
-    public function run(): void
-    {
-        $permissions = [
-            'cards.import',
-            'cards.manage',
-            'decks.manage-any',
-            'collections.manage-any',
-            'users.manage',
-            'bot.notifications.receive',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission);
-        }
-
-        $admin = Role::findOrCreate('admin');
-        $admin->givePermissionTo($permissions);
-    }
-}
-```
-Registra il seeder in `database/seeders/DatabaseSeeder.php` e lancia:
-```
-php artisan db:seed --class=PermissionSeeder
-```
-Perché array di permessi singoli e non ruoli hardcoded: puoi assegnare a un utente esattamente i permessi che ti servono, senza dover creare un nuovo "ruolo" ogni volta che cambia una combinazione. Il ruolo `admin` qui è solo una scorciatoia per assegnare tutti i permessi in un colpo.
-
-**Step 1.4 — Assegna il ruolo admin al tuo utente**
-Via `php artisan tinker`:
-```php
-$user = App\Models\User::find(1);
-$user->assignRole('admin');
-```
-
-**Step 1.5 — Proteggi le rotte/azioni con i permessi**
-Esempio in una route:
-```php
-Route::middleware(['auth', 'permission:cards.manage'])->group(function () {
-    // rotte gestione carte
+Route::middleware(['auth', 'verified'])->group(function () {
+    // rotte che richiedono email confermata
 });
 ```
-oppure nel codice:
-```php
-if (! $user->can('cards.manage')) {
-    abort(403);
-}
-```
-Riferimento: https://spatie.be/docs/laravel-permission/v6/basic-usage/middleware
+Breeze genera già le viste/route di verifica (`verify-email`, notifica automatica alla registrazione) — non serve altro codice custom.
+Riferimento: https://laravel.com/docs/12.x/verification
 
 ☐ Fase 1 completata
 
@@ -390,69 +73,67 @@ Riferimento: https://spatie.be/docs/laravel-permission/v6/basic-usage/middleware
 
 ## Fase 2 — Catalogo carte e import via queue
 
-**Step 2.1 — Migration `sets` e `cards`**
-```
-php artisan make:model Set -m
-php artisan make:model Card -m
-```
-Nella migration di `cards`, colonne indicative: `name_it`, `name_en`, `set_id` (FK), `rarity`, `type`, `text`, `cost`, `aspects` (json), `image_url`, `external_id` (id della carta secondo l'API ufficiale SWU, utile per il matching in fase di import/aggiornamento).
+### ✅ Fatto
+- Modelli `Expansion`, `Card` creati; migration `expansions`/`cards` create (nomi già corretti: `expansions` invece di `sets`, per evitare la keyword SQL `SET`)
+- `ImportCardsFromSwuApiJob` creato (`ShouldQueue`, `$tries = 3`, `$backoff = 60`)
+- Comando `cards:scan` creato, dispaccia il job
+- Chiamata `Schedule::command('cards:scan')->weeklyOn(1, '00:00')` aggiunta in `routes/console.php`
+- Worker testato in locale con `php artisan queue:work`
 
-**Step 2.2 — Crea il job di import**
+### 🔧 Da fare (verificato nel codice il 13/09 — nessuno di questi è ancora stato applicato)
+
+1. **Bug bloccante — `routes/console.php`**: manca `use Illuminate\Support\Facades\Schedule;` in cima al file. Così com'è, `Schedule::command(...)` dà errore "Class Schedule not found" (il file non ha namespace, quindi PHP cerca `\Schedule` nel namespace globale).
+2. **Aggiungi `cards.release_date`** (data, quando *quella carta* è uscita al pubblico) e **rinomina `expansions.releaseDate` in `legal_date`** (da quando le carte dell'espansione sono legali in torneo) — sono due concetti diversi, non un'unica data come nella vecchia versione. Entrambe come vero tipo `date`, non stringa libera.
+3. **Aggiungi gli aspetti come tabella dedicata**, non colonna `json`: `aspects` (id, name, color, slug, `order` per l'ordinamento in UI) + pivot `card_aspect` (cid, aspect_id). Permette di filtrare per aspetto con una join indicizzata invece che con query su JSON.
+4. **Convenzione pivot**: da qui in avanti (`card_aspect`, `deck_cards`, `collection_cards`, Fase 3/4) usa `cards.cid` (già univoco) come riferimento alla carta, non la coppia composita `(expansion, number)`.
+5. **Naming colonne in camelCase** (`releaseDate`, `mainExpansion`, `frontArt`, `backArt`, `maxCopies`): rinomina in snake_case (`main_expansion`, `front_art`, `back_art`, `max_copies`), coerente con `email_verified_at`/`created_at` già presenti altrove.
+6. **`mainExpansion` come stringa con valori sentinella** (`'-1'`/`'0'`): sostituisci con una vera FK nullable auto-referenziata su `expansions.expansion` (`null` = standalone), eventualmente con un booleano separato se ti serve distinguere "principale del gruppo" da "standalone".
+7. **`rotation` come stringa a 1 carattere**: cambia in `boolean` con `default(false)`, coerente con `confirmed` che nella stessa tabella è già boolean.
+8. **Aggiungi la FK** tra `cards.expansion` e `expansions.expansion` (`$table->foreign('expansion')->references('expansion')->on('expansions')`).
+9. **Implementa `ImportCardsFromSwuApiJob::handle()`** (attualmente solo commenti-placeholder). Endpoint ufficiali SWU (confermati da `documentation.md` della vecchia versione):
 ```
-php artisan make:job ImportCardsFromSwuApiJob
+GET https://admin.starwarsunlimited.com/api/card/{cid}?locale=it
+    # dettaglio di una singola carta
+GET https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&pagination[page]={page}&pagination[pageSize]=10
+    # lista carte paginata (il filtro variantOf esclude le varianti, solo carte "base")
 ```
-Struttura minima:
+Struttura:
 ```php
-class ImportCardsFromSwuApiJob implements ShouldQueue
+public function handle(): void
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
-
-    public $tries = 3;
-    public $backoff = 60;
-
-    public function handle(): void
-    {
-        // 1. chiama l'API ufficiale SWU (Http::get(...))
-        // 2. per ogni carta ricevuta, updateOrCreate su Card usando external_id come chiave
-        // 3. dispaccia NotifyAdminJob con il riepilogo (nuove carte trovate, eventuali errori)
-    }
+    // 1. Http::get('https://admin.starwarsunlimited.com/api/card-list', [...]), gestendo la paginazione
+    // 2. per ogni carta ricevuta, updateOrCreate su Card usando cid come chiave
+    // 3. eventuali errori (riga malformata, campo mancante) -> registrali in system_errors (Fase 2bis) invece di interrompere l'intero scan
+    // 4. dispaccia NotifyAdminJob con il riepilogo (nuove carte trovate, eventuali errori)
 }
 ```
-`$tries` e `$backoff` sostituiscono la gestione manuale dei retry che facevi con le chiamate ricorsive.
+10. Pulizia minore: `ScanCards::$description` è ancora il testo di default di Artisan ("Command description").
+11. **Copertura Pest per il job di import**: scrivi test che mockano la risposta HTTP dell'API SWU (`Http::fake()`) e verificano che `ImportCardsFromSwuApiJob` crei/aggiorni le carte correttamente, gestisca la paginazione e registri un `SystemError` sui dati malformati — questo è il modo corretto di verificare la logica di import (vedi anche Fase 2bis, dove si spiega perché non serve più una tabella `test_results`/`system_checks` separata).
+
 Riferimento: https://laravel.com/docs/12.x/queues#creating-jobs
 
-**Step 2.3 — Comando Artisan che dispaccia il job**
-```
-php artisan make:command ScanCards
-```
-```php
-class ScanCards extends Command
-{
-    protected $signature = 'cards:scan';
+---
 
-    public function handle(): void
-    {
-        ImportCardsFromSwuApiJob::dispatch();
-        $this->info('Scan carte accodato.');
-    }
-}
-```
-Questo comando sarà richiamato sia dal bot (comando `/scan`) sia dallo scheduler — logica scritta una sola volta.
+## Fase 2bis — Log errori scan (`system_errors`)
 
-**Step 2.4 — Schedula lo scan periodico**
-In `routes/console.php` (Laravel 12 usa questo file invece di `app/Console/Kernel.php`):
-```php
-Schedule::command('cards:scan')->weeklyOn(1, '00:00');
-```
-Riferimento: https://laravel.com/docs/12.x/scheduling#scheduling-artisan-commands
+> Nella vecchia versione: `system_errors` registrava gli errori dello scan per poterli risolvere con calma; `test_results` salvava l'esito di controlli di integrità eseguiti ad ogni scan. **`test_results` non viene riportata**: ora che il progetto ha una suite Pest vera, la correttezza della logica di import va verificata lì (Step 2 punto 11), contro un database di test — non con controlli post-hoc sui dati di produzione, che i test Pest non toccano comunque. `system_errors` invece resta: serve per problemi reali durante uno scan reale (API down, dati inattesi), cosa che nessun test scritto in anticipo può coprire del tutto.
 
-**Step 2.5 — Avvia il worker in locale per testare**
+**Step 2bis.1 — Migration `system_errors`**
 ```
-php artisan queue:work
+php artisan make:model SystemError -m
 ```
-in un terminale separato, poi lancia `php artisan cards:scan` in un altro e osserva il worker processare il job.
+Colonne: `source` (string, es. nome della classe/job che ha generato l'errore), `message` (text), `context` (json, per dati aggiuntivi come il cid della carta che ha causato il problema), `resolved` (bool, default false), `resolved_at` (nullable timestamp), timestamps.
 
-☐ Fase 2 completata
+**Step 2bis.2 — Aggiungi il permesso**
+Estendi `PermissionSeeder` (Fase 1) con `system.manage-errors`, così l'accesso alla pagina admin resta granulare come il resto del sistema permessi.
+
+**Step 2bis.3 — Pagina admin**
+Lista `system_errors` filtrabile per `resolved`, con azione per marcare come risolto. Protetta dal permesso dello step precedente (`Route::middleware(['auth', 'permission:system.manage-errors'])`).
+
+**Step 2bis.4 — Integrazione con `ImportCardsFromSwuApiJob`**
+Invece di lasciare che un'eccezione interrompa l'intero scan, cattura gli errori riga per riga e registra un `SystemError`, permettendo allo scan di continuare con le carte successive.
+
+☐ Fase 2bis completata
 
 ---
 
@@ -474,8 +155,10 @@ enum DeckFormat: string
 php artisan make:model Deck -m
 php artisan make:migration create_deck_cards_table
 ```
-`decks`: `user_id`, `name`, `format` (string, castato a `DeckFormat`), `leader_card_id`, `base_card_id`, `is_public` (bool).
-`deck_cards`: `deck_id`, `card_id`, `quantity`.
+`decks`: `user_id`, `name`, `format` (string, castato a `DeckFormat`), `leader_cid`, `base_cid` (FK verso `cards.cid`), `is_public` (bool), **`version`** (int, default 1), **`previous_version_id`** (nullable, self-FK su `decks.id`).
+`deck_cards`: `deck_id`, `cid` (FK verso `cards.cid`), `quantity`.
+
+Sul versionamento: ogni volta che l'utente salva una nuova versione di un mazzo, crea una **nuova riga** in `decks` con `version` incrementato e `previous_version_id` che punta alla riga precedente — la catena delle versioni è così una relazione reale (self-FK), non un'inferenza basata sul nome del mazzo come nella vecchia versione (dove la collezione stessa era modellata come un mazzo speciale, distinto solo controllando se il nome conteneva la stringa "collezione" per decidere se applicare i limiti di formato — pattern fragile da non riportare). Per recuperare velocemente "l'ultima versione" di un mazzo, puoi aggiungere un indice/query che segue la catena `previous_version_id`, oppure un flag `is_current` da aggiornare quando crei una nuova versione (più comodo per le query, leggero da mantenere).
 
 Nel modello `Deck`:
 ```php
@@ -522,6 +205,12 @@ public function update(User $user, Deck $deck): bool
 ```
 Riferimento: https://laravel.com/docs/12.x/authorization#creating-policies
 
+**Step 3.6 — Export/Import mazzi**
+Funzionalità della vecchia versione da riportare:
+- **Export**: genera un file `.txt` (formato ufficiale SWU, compatibile con gli altri programmi/siti del gioco) e un `.json` (formato proprio, più semplice da re-importare qui) a partire da `deck_cards`
+- **Import**: da file caricato (`.txt`/`.json`) o da URL esterno (altro sito SWUDB/UnlimitedDB) — valida il formato, verifica che ogni carta citata esista in `cards` (per `cid` o per nome+espansione a seconda del formato), e riporta all'utente eventuali carte non trovate invece di fallire silenziosamente
+- Vale la pena incapsulare export e import in classi dedicate (`DeckExporter`, `DeckImporter` in `app/Services/`) invece che nel controller, così restano testabili indipendentemente dalla request HTTP
+
 ☐ Fase 3 completata
 
 ---
@@ -532,7 +221,7 @@ Riferimento: https://laravel.com/docs/12.x/authorization#creating-policies
 ```
 php artisan make:migration create_collection_cards_table
 ```
-Colonne: `user_id`, `card_id`, `quantity`. Non serve una tabella `collections` separata se la collezione è implicitamente "tutte le collection_cards di un utente".
+Colonne: `user_id`, `cid` (FK verso `cards.cid`), `variant` (string/enum: `normal`, `foil`, `hyper`, `prestige`), `quantity`. Il foil e le altre varianti di stampa vivono **solo qui**, non nei mazzi (nella vecchia versione la tabella `compositions` tracciava foil per riga di mazzo, ma era un effetto collaterale del fatto che la collezione fosse modellata come un mazzo speciale — vedi Step 3.2). Chiave univoca composita `(user_id, cid, variant)` così ogni combinazione utente/carta/variante ha una sola riga con la quantità posseduta.
 
 **Step 4.2 — UI di gestione**
 Pagina con ricerca carte (riusa i filtri della Fase 6) + bottone incrementa/decrementa quantità posseduta, salvato via una piccola interazione Alpine.js senza reload pagina.
@@ -602,14 +291,61 @@ Pagina che mostra, per un mazzo: curva dei costi (grafico semplice), distribuzio
 **Step 6.3 — Separazione viste pubbliche/autenticate**
 Definisci chiaramente nelle rotte quali sono accessibili senza login (catalogo, mazzi pubblici) e quali richiedono `auth` (creare/modificare mazzi, collezione).
 
+**Step 6.4 — Pagina "Nuove uscite"**
+Elenco delle carte uscite più di recente, con filtro data:
+- rotta tipo `GET /nuove-uscite`, parametro query opzionale `since` (`YYYY-MM-DD`)
+- se `since` non è passato, default a un intervallo ragionevole (es. ultimi 30 giorni) o all'ultima espansione confermata — scegli tu il default
+- query di esempio (richiede prima il fix del punto 2 della Fase 2 — `cards.release_date` come vera colonna data):
+```php
+Card::where('release_date', '>=', $since)->orderByDesc('release_date')->get();
+```
+Nota: filtra direttamente su `cards.release_date`, non tramite `expansions.legal_date` — sono due date diverse e la pagina "nuove uscite" riguarda l'uscita della singola carta, non la legalità dell'espansione.
+- interfaccia: un semplice `<input type="date">` in un form GET che ricarica la pagina con `?since=...` in query string — nessun bisogno di Alpine.js per questa parte, è un filtro server-side
+
+Riferimento: https://laravel.com/docs/12.x/queries#where-clauses (filtro data) e https://laravel.com/docs/12.x/eloquent-relationships#one-to-many (relazione Card–Expansion, da definire nei modelli — al momento entrambi `Card` e `Expansion` sono ancora modelli vuoti)
+
 ☐ Fase 6 completata
+
+---
+
+## Fase 6bis — API REST pubblica
+
+> Riprende l'API della vecchia versione (endpoint carta singola, carte per espansione, ricerca mazzi) per sviluppatori terzi, con autenticazione Sanctum invece che aperta.
+
+**Step 6bis.1 — Installa Sanctum**
+```
+composer require laravel/sanctum
+php artisan install:api
+```
+Riferimento: https://laravel.com/docs/12.x/sanctum
+
+**Step 6bis.2 — Endpoint pubblici di sola lettura**
+In `routes/api.php`:
+```php
+Route::get('/cards/{expansion}/{number}', [Api\CardController::class, 'show']);
+Route::get('/cards/expansion/{expansion}', [Api\CardController::class, 'byExpansion']);
+Route::get('/decks/{user}/{name}', [Api\DeckController::class, 'show']); // solo mazzi pubblici
+```
+Questi non richiedono autenticazione (dati pubblici, già leggibili dal sito) — valuta comunque il rate limiting nativo di Laravel (`throttle:60,1` sul gruppo di rotte) per prevenire abusi.
+Riferimento: https://laravel.com/docs/12.x/routing#rate-limiting
+
+**Step 6bis.3 — Endpoint autenticati (se in futuro servono azioni, non solo letture)**
+Usa i token Sanctum (`$user->createToken('nome-token')`) per endpoint che modificano dati (es. sincronizzare la propria collezione da un'app esterna) — non necessario al day 1 se l'API resta di sola consultazione.
+
+**Step 6bis.4 — Risorse API (formato risposta)**
+```
+php artisan make:resource CardResource
+```
+Usa gli [API Resources](https://laravel.com/docs/12.x/eloquent-resources) di Laravel per controllare esattamente cosa esporre (es. non esporre colonne interne come `id` se usi `cid` come chiave pubblica), invece di restituire i modelli Eloquent grezzi.
+
+☐ Fase 6bis completata
 
 ---
 
 ## Fase 7 — Deploy
 
 **Step 7.1 — Lancia `~/scripts/new-site.sh` sul server**
-Non serve scrivere a mano Dockerfile/docker-compose.yml/nginx conf di produzione: lo script li genera lui (vedi Fase 0bis, Step 0bis.7) a partire dal repo che gli indichi, con dominio `unlimiteddb.mandich.dev`. Segui il flusso interattivo dello script (repo, `.env`, sottodominio, subnet assegnata in automatico, secrets GitHub, import DB opzionale).
+Non serve scrivere a mano Dockerfile/docker-compose.yml/nginx conf di produzione: lo script li genera lui (vedi Fase 0bis) a partire dal repo che gli indichi, con dominio `unlimiteddb.mandich.dev`. Segui il flusso interattivo dello script (repo, `.env`, sottodominio, subnet assegnata in automatico, secrets GitHub, import DB opzionale).
 
 **Step 7.2 — Servizio queue worker (non generato dallo script)**
 Lo script non crea un servizio queue worker: aggiungilo tu nel `docker-compose.yml` generato (o modifica lo script per includerlo di default nei prossimi siti), con `php artisan queue:work --tries=3` in loop, oppure Supervisor nello stesso container applicativo — deve restare sempre attivo, a differenza del container web che risponde solo alle richieste HTTP.
@@ -631,8 +367,10 @@ Allo stesso modo, assicurati che un vero cron di sistema (nel container o sull'h
 - **Queue reali invece di fireAndForget**: il vecchio sistema simulava thread con richieste HTTP POST ricorsive per aggirare l'assenza di code su Altervista — fragile, senza retry strutturato, errori persi nella risposta scartata. Le queue di Laravel danno retry/backoff/failed-jobs nativi. https://laravel.com/docs/12.x/queues
 - **Permessi granulari (Spatie)**: permessi singoli assegnabili liberamente, i "ruoli" sono solo scorciatoie per assegnarne un gruppo insieme, non autorità hardcoded nel codice. https://spatie.be/docs/laravel-permission/v6/introduction
 - **Enum + Strategy per i formati mazzo**: evita `if/else` sparsi, aggiungere un formato futuro richiede solo una nuova classe, non modifiche al codice esistente.
-- **Blade + Alpine.js invece di Livewire**: nella vecchia versione Livewire risultava lento e senza feedback di caricamento adeguato; Blade classico è più prevedibile e più semplice da debuggare per le poche interazioni dinamiche necessarie.
+- **Blade + Alpine.js invece di Livewire**: nella vecchia versione la lentezza percepita era dovuta a un bug architetturale preciso (il componente `DeckManager` teneva l'intero catalogo carte come proprietà pubblica, e Livewire re-invia ogni proprietà pubblica ad ogni interazione), non a un limite del framework in sé — ma Blade+Alpine evita il rischio per design, senza dover stare attenti a questo tipo di errore.
 - **`.env-overrides`**: pattern già in uso in SWUDB per tenere in Git (a differenza di `.env`) l'`APP_VERSION`, utile per riconoscere subito quale versione sia effettivamente in produzione.
+- **Verifica email nativa invece di sistema custom**: la vecchia versione aveva un meccanismo fatto a mano (token 60 caratteri, metodi ad-hoc); Breeze/Laravel offrono lo stesso risultato con `MustVerifyEmail` + middleware `verified`, meno codice da mantenere.
+- **`system_errors` mantenuta, `test_results` no**: la prima logga problemi reali durante uno scan reale (cosa che nessun test scritto in anticipo può coprire del tutto); la seconda verificava la correttezza della logica di import, compito che ora spetta alla suite Pest (test contro dati controllati, non contro la produzione).
 
 ## Riferimenti documentazione Laravel 12
 
@@ -649,3 +387,7 @@ Allo stesso modo, assicurati che un vero cron di sistema (nel container o sull'h
 | HTTP Client | https://laravel.com/docs/12.x/http-client |
 | Testing (Pest) | https://laravel.com/docs/12.x/testing |
 | Spatie Laravel-permission | https://spatie.be/docs/laravel-permission/v6/introduction |
+| Verifica email | https://laravel.com/docs/12.x/verification |
+| Sanctum (API auth) | https://laravel.com/docs/12.x/sanctum |
+| API Resources | https://laravel.com/docs/12.x/eloquent-resources |
+| Rate limiting rotte | https://laravel.com/docs/12.x/routing#rate-limiting |
