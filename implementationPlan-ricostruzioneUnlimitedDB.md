@@ -1,10 +1,10 @@
 # Implementation Plan — Ricostruzione UnlimitedDB (esercizio guidato)
 
-> Questo documento è una guida passo-passo pensata per essere eseguita manualmente da te. Le fasi già completate sono riassunte in breve (per non perdere lo storico delle decisioni prese); le fasi/step ancora da fare restano nel dettaglio completo.
+> Guida passo-passo da eseguire manualmente. Le fasi già completate sono riassunte in breve; le fasi/step da fare restano nel dettaglio completo: modelli, migration (con ogni colonna e il motivo), pagine, job/service.
 >
-> Ambiente di riferimento: progetto in `C:\Users\RickyMandich\PROJECT\unlimiteddb`, Laravel 12.12, PHP 8.2.29 (via cmd.exe, dove sono installati Composer/Laravel), MariaDB, Pest, Laravel Breeze per l'auth, deploy Docker+Traefik su VM Oracle (stesso schema degli altri siti `*.mandich.dev`).
+> Ambiente: `C:\Users\RickyMandich\PROJECT\unlimiteddb`, Laravel 12.12, PHP 8.2.29 (cmd.exe), MariaDB, Pest, Breeze, deploy Docker+Traefik su VM Oracle (`*.mandich.dev`).
 >
-> **Convenzione di codice**: ogni metodo non ovvio va documentato con PHPDoc bilingue (descrizione tecnica in inglese + descrizione discorsiva in italiano), come già fatto in SWUDB. Esempio:
+> **Convenzione di codice**: PHPDoc bilingue (EN tecnico + IT descrittivo) su ogni metodo non ovvio:
 > ```php
 > /**
 >  * English technical description of the method
@@ -14,139 +14,249 @@
 >  * @return ReturnType Description of return value
 >  */
 > ```
+>
+> Questo documento fa riferimento anche a `SWUDB/documentation.md` e `SWUDB/todo.md` (vecchia versione) per recuperare funzionalità e dettagli che altrimenti andrebbero persi nella riscrittura.
 
 ---
 
-## ✅ Fase 0 — Setup progetto (completata)
+## ✅ Fase 1 — Setup progetto (completata)
+Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `QUEUE_CONNECTION=database`); tabelle `jobs`/`failed_jobs` e tabelle Spatie migrate; `.env-overrides` agganciato in `bootstrap/app.php`.
 
-- Breeze e `spatie/laravel-permission` installati
-- `.env` configurato (MariaDB, `QUEUE_CONNECTION=database`)
-- Tabelle `jobs`/`failed_jobs` e tabelle Spatie migrate
-- `.env-overrides` agganciato in `bootstrap/app.php` prima di `Application::configure()` (pattern SWUDB: variabili non sensibili come `APP_VERSION_*` tracciate in Git, a differenza di `.env`)
-
----
-
-## ✅ Fase 0bis — Ambiente Docker locale (completata)
-
-- `.dockerignore` creato, incluso `bootstrap/cache/*.php` (evita di portare nella build cache stale generate in locale con dev-dependency come Breeze — causa un errore `Class ... ServiceProvider not found` durante `composer dump-autoload --no-dev` se non escluso)
-- `.gitignore` aggiornato con `/bootstrap/cache/*.php` / `!bootstrap/cache/.gitkeep`, per lo stesso motivo (evitare che la cache stale finisca committata e riproduca lo stesso errore nel deploy reale via `new-site.sh`)
-- `Dockerfile`, `docker/entrypoint.sh`, `docker/nginx/default.conf`, `docker/mysql/init.sql`, `docker-compose.dev.yml` creati, identici (a parte rete/porta) a quanto genererà `new-site.sh` in produzione — `php:8.2-fpm-alpine`, fix MIME-type via `/opt/build-seed` + volume `build_assets`, utente DB reale ristretto per IP via `docker/mysql/init.sql`
-- Verificato funzionante su `http://localhost:66`
-
-**Promemoria per la Fase 7**: `new-site.sh` rigenera comunque da zero questi file sul server e li committa — quanto fatto qui serve a testare in locale con lo stesso comportamento, non è la versione che finirà in produzione.
+## ✅ Fase 2 — Ambiente Docker locale (completata)
+`.dockerignore`/`.gitignore` con esclusione `bootstrap/cache/*.php`; `Dockerfile`, `entrypoint.sh`, nginx conf, `init.sql`, `docker-compose.dev.yml` allineati a quanto genera `new-site.sh` in produzione; verificato su `http://localhost:66`.
 
 ---
 
-## Fase 1 — Autenticazione e permessi
+## Schema del database (riferimento per tutte le fasi seguenti)
+
+> Questa sezione raccoglie **tutte** le tabelle applicative decise finora, con ogni colonna e il perché. Le fasi sotto rimandano qui invece di ripetere lo schema.
+
+### `expansions`
+| Colonna | Tipo | Note |
+|---|---|---|
+| `expansion` | string, **PK** | Codice naturale (es. `SOR`, `SHD`). Chiave primaria naturale, non un id surrogato: è già la chiave con cui gioco/community/API riconoscono l'espansione — un id numerico sarebbe una duplicazione senza vantaggi. |
+| `legal_date` | date, nullable | Da quando le carte dell'espansione sono legali in torneo (diverso da `cards.release_date`, vedi sotto). |
+| `rotation` | string | Etichetta della finestra di rotazione (Premier ammette solo le ultime due). Stringa perché è un'etichetta, non un booleano. |
+| `confirmed` | boolean, default `false` | Un admin ha verificato/corretto i dati di questa espansione (vedi Fase 6). |
+| `group_main_expansion` | string, nullable, **self-FK** su `expansions.expansion` | `null` = standalone; valore uguale al proprio codice = è lei la principale del gruppo; altro codice = dipende da quella. Propedeutico alla futura apertura digitale dei booster. |
+| `created_at`/`updated_at` | timestamp | |
+
+**Nota token**: nel vecchio sistema i segnalini (token) di un'espansione vivono sotto un codice con prefisso `T` (es. token di `SOR` → espansione `TSOR`), non sotto il codice dell'espansione originale. Vanno trattate come righe `expansions` a sé stanti — tienilo a mente quando scrivi l'import (Fase 4) e i filtri (Step 10.1), altrimenti "espansione" e "token di quell'espansione" si confondono nelle liste.
+
+### `cards`
+| Colonna | Tipo | Note |
+|---|---|---|
+| `expansion` | string, FK → `expansions.expansion`, **PK composita** con `number` | Riflette come le carte sono identificate nel gioco stesso (numero all'interno del set). |
+| `number` | unsigned integer, **PK composita** | |
+| `cid` | string, **unique** | Id naturale della carta secondo l'API ufficiale — usalo come riferimento nelle tabelle pivot (`card_aspect`, `deck_cards`, `collection_cards`) invece della coppia composita, molto più semplice nelle join. |
+| `unique_card` | boolean, default `false` | Rinominata da `unica` (evita ambiguità col termine "unique" usato anche per il vincolo SQL sulla colonna `cid`). Indica la regola "Unica" del gioco (una sola copia in gioco nello stesso momento). |
+| `name` | string | Nome della carta. |
+| `title` | string, nullable | Sottotitolo carta. |
+| `type` | string | Tipo di carta: "unita" o "evento". |
+| `rarity` | string | Rarity della carta: "comune", "non comune", "rara", "leggendaria". |
+| `cost` | unsigned tinyint, nullable | Costo totale della carta in risorse per essere giocata. |
+| `health` | unsigned tinyint, nullable | Punti ferita della carta, presente solo se è un'unità. |
+| `power` | unsigned tinyint, nullable | Forza della carta, presente solo se è un'unità. |
+| `text` | text | Testo delle abilità della carta. |
+| `traits` | string, nullable | Se in futuro ti serve filtrare per singolo tratto, valuta di normalizzarla come per gli aspetti (tabella + pivot) — per ora stringa libera, non è stato chiesto. |
+| `arena` | string, nullable | Se è un'unità, l'arena in cui viene giocata. |
+| `artist` | string, nullable | Artista che ha realizzato l'illustrazione della carta. |
+| `front_art_path`, `back_art_path` | string, nullable | Path **relativo** nel disk `public` di Laravel (fisicamente `storage/app/public/...`), es. `cards/{expansion}/{number}-front.{ext}` — non l'URL diretto dell'API ufficiale: le immagini vengono scaricate in locale durante l'import (Step 4.6), così il sito non dipende dalla disponibilità del CDN ufficiale a runtime. L'estensione `{ext}` si determina al momento del download (content-type), non è detto sia sempre `.png`. |
+| `max_copies` | unsigned tinyint, nullable, default `null` | Quante copie di questa carta il giocatore può avere in un deck (valorizzato solo se non è il valore standard). |
+| `release_date` | date, nullable | Quando **questa carta** è uscita al pubblico — diverso da `expansions.legal_date` (uscita di una carta vs legalità di un'intera espansione), serve per la pagina "Nuove uscite" (Step 10.4). |
+| `created_at`/`updated_at` | timestamp | `updated_at` utile per capire quando una carta è stata corretta dall'ultimo scan. |
+
+### `aspects` + `card_aspect` (pivot)
+`aspects`: `id`, `name`, `color`, `slug`, `order` (per l'ordinamento in UI), timestamps.
+`card_aspect`: `cid` (FK `cards.cid`), `aspect_id` (FK `aspects.id`).
+Tabella dedicata invece di una colonna `json` su `cards`: permette di filtrare per aspetto con una join indicizzata e centralizza colore/slug/ordine per la UI in un unico posto.
+
+### `decks`
+| Colonna | Tipo | Note |
+|---|---|---|
+| `id` | bigint, PK auto-increment | Qui un id surrogato ha senso: un mazzo non ha un codice naturale stabile come le carte/espansioni. |
+| `user_id` | FK `users.id` | |
+| `name` | string | |
+| `format` | string, cast a `DeckFormat` enum | `premier`/`eternal`/`twin_suns`. |
+| `is_public` | boolean, default `false` | |
+| `assembled` | boolean, default `false` | Se il mazzo è "montato" fisicamente ora — serve al calcolo delle carte impegnate altrove (Step 8.3). |
+| `version` | unsigned integer, default `1` | |
+| `previous_version_id` | nullable, self-FK su `decks.id` | Catena reale delle versioni (self-FK), non un'inferenza sul nome come nella vecchia versione. |
+| `created_at`/`updated_at` | timestamp | |
+
+**Niente `leader_cid`/`base_cid` qui**: la cardinalità di leader/base dipende dal formato (Eternal/Premier: 1+1; Twin Suns: 2 leader+1 base, con vincolo di allineamento tra i due leader) — vedi `deck_cards.role` sotto.
+
+### `deck_cards`
+`deck_id` (FK `decks.id`), `cid` (FK `cards.cid`), `quantity` (unsigned tinyint), `role` (string: `leader`/`base`/`card`, default `card`).
+Un mazzo Eternal/Premier ha una riga `role=leader` e una `role=base`; Twin Suns ne ha due `role=leader` e una `role=base`. La cardinalità e il vincolo sull'allineamento li verifica il `DeckFormatValidator` del formato (Step 7.3), non lo schema.
+
+### `collection_cards`
+`user_id` (FK `users.id`), `cid` (FK `cards.cid`), `variant` (enum: `normal`, `foil`, `hyper`, `prestige`, `hyper_foil`, default `normal`), `quantity` (unsigned smallint). Chiave univoca composita `(user_id, cid, variant)`. Le varianti di stampa vivono **solo qui**, non nei mazzi (vedi discussione sulla vecchia `compositions`).
+
+### `system_errors`
+| Colonna | Tipo | Note |
+|---|---|---|
+| `id` | bigint, PK | |
+| `source` | string | Classe/job che ha generato l'errore. |
+| `message` | text | Motivo specifico (es. "carta {cid} già presente", "campo `cost` mancante nella risposta API") — nella vecchia versione questo dettaglio finiva anche nella mail agli admin, mantienilo. |
+| `stack_trace` | text, nullable | Stack trace completo dell'errore. |
+| `context` | json, nullable | Dati aggiuntivi (es. payload della carta che ha causato il problema). |
+| `status` | string: `open`/`resolved`/`ignored`, default `open` | **Tre stati, non un booleano**: la vecchia versione aveva sia "segna come risolto" che "segna come ignorato" (`todo.md`) — un semplice `resolved` booleano perderebbe la distinzione tra "sistemato" e "non è un problema, ignoralo". |
+| `resolved_at` | nullable timestamp | |
+| `created_at`/`updated_at` | timestamp | |
+
+---
+
+## Fase 3 — Autenticazione e permessi
 
 ### ✅ Fatto
-- Breeze (variante Blade) installato
-- Trait `HasRoles` aggiunto a `User`
-- `PermissionSeeder` creato e registrato in `DatabaseSeeder`, con permessi: `cards.import`, `cards.manage`, `decks.manage-any`, `collections.manage-any`, `users.manage`, `bot.notifications.receive`, ruolo `admin` con tutti i permessi
-- Verificato nel codice il 13/09: tutto corretto
+Breeze (Blade) installato; `HasRoles` su `User`; `PermissionSeeder` con `cards.import`, `cards.manage`, `decks.manage-any`, `collections.manage-any`, `users.manage`, `bot.notifications.receive`, ruolo `admin`.
 
 ### 🔧 Da fare
 
-**Step 1.6 — Abilita la verifica email nativa**
-A differenza della vecchia versione (token custom a 60 caratteri, metodi ad-hoc), usa il meccanismo nativo di Laravel/Breeze:
+**Step 3.1 — Verifica email nativa**
 ```php
 // app/Models/User.php
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-
-class User extends Authenticatable implements MustVerifyEmail
-{
-    // ...
-}
+class User extends Authenticatable implements MustVerifyEmail {}
 ```
-Proteggi le rotte che richiedono email verificata con il middleware `verified`:
 ```php
-Route::middleware(['auth', 'verified'])->group(function () {
-    // rotte che richiedono email confermata
-});
+Route::middleware(['auth', 'verified'])->group(function () { /* rotte che richiedono email confermata */ });
 ```
-Breeze genera già le viste/route di verifica (`verify-email`, notifica automatica alla registrazione) — non serve altro codice custom.
-Riferimento: https://laravel.com/docs/12.x/verification
+Breeze genera già viste/rotte di verifica. Riferimento: https://laravel.com/docs/12.x/verification
 
-☐ Fase 1 completata
+**Step 3.2 — Pagina admin gestione utenti**
+Lista utenti con permesso `users.manage`: assegna/revoca permessi e ruoli (usa i metodi di Spatie `assignRole`/`givePermissionTo`/`revokePermissionTo`), coerente con "miglioramento pagina utenti per la gestione di admin" della vecchia versione.
+
+☐ Fase 3 completata
 
 ---
 
-## Fase 2 — Catalogo carte e import via queue
+## Fase 4 — Catalogo carte e import via queue
 
 ### ✅ Fatto
-- Modelli `Expansion`, `Card` creati; migration `expansions`/`cards` create (nomi già corretti: `expansions` invece di `sets`, per evitare la keyword SQL `SET`)
-- `ImportCardsFromSwuApiJob` creato (`ShouldQueue`, `$tries = 3`, `$backoff = 60`)
-- Comando `cards:scan` creato, dispaccia il job
-- Chiamata `Schedule::command('cards:scan')->weeklyOn(1, '00:00')` aggiunta in `routes/console.php`
-- Worker testato in locale con `php artisan queue:work`
+Modelli `Expansion`/`Card`; migration `expansions`/`cards`; `ImportCardsFromSwuApiJob` (scheletro); comando `cards:scan`; `Schedule::command(...)` in `routes/console.php`; worker testato in locale.
 
-### 🔧 Da fare (verificato nel codice il 13/09 — nessuno di questi è ancora stato applicato)
+### 🔧 Da fare
 
-1. **Bug bloccante — `routes/console.php`**: manca `use Illuminate\Support\Facades\Schedule;` in cima al file. Così com'è, `Schedule::command(...)` dà errore "Class Schedule not found" (il file non ha namespace, quindi PHP cerca `\Schedule` nel namespace globale).
-2. **Aggiungi `cards.release_date`** (data, quando *quella carta* è uscita al pubblico) e **rinomina `expansions.releaseDate` in `legal_date`** (da quando le carte dell'espansione sono legali in torneo) — sono due concetti diversi, non un'unica data come nella vecchia versione. Entrambe come vero tipo `date`, non stringa libera.
-3. **Aggiungi gli aspetti come tabella dedicata**, non colonna `json`: `aspects` (id, name, color, slug, `order` per l'ordinamento in UI) + pivot `card_aspect` (cid, aspect_id). Permette di filtrare per aspetto con una join indicizzata invece che con query su JSON.
-4. **Convenzione pivot**: da qui in avanti (`card_aspect`, `deck_cards`, `collection_cards`, Fase 3/4) usa `cards.cid` (già univoco) come riferimento alla carta, non la coppia composita `(expansion, number)`.
-5. **Naming colonne in camelCase** (`frontArt`, `backArt`, `maxCopies`): rinomina in snake_case (`front_art`, `back_art`, `max_copies`), coerente con `email_verified_at`/`created_at` già presenti altrove. (`releaseDate` è gestita al punto 2, `mainExpansion` al punto 6 qui sotto — per quest'ultima la rinomina va di pari passo con un cambio di design, non è solo cosmetica.)
-6. **`mainExpansion` — ridisegna come FK auto-referenziata, non sentinelle stringa**: mi avevi spiegato che serve distinguere tre stati (dato propedeutico per la futura apertura digitale dei booster pack), quindi una FK nullable semplice con `null = standalone` da sola non basta — perderebbe la distinzione tra "sono io l'espansione principale del gruppo" e "dipendo da un'altra". Soluzione che mantiene tutti e tre gli stati con una vera FK (integrità referenziale reale, niente più stringhe magiche `'-1'`/`'0'`):
-   - rinomina in `group_main_expansion` (string, nullable, FK verso `expansions.expansion`, self-referenziabile)
-   - `NULL` = espansione standalone (nessun gruppo)
-   - valore = il proprio stesso codice espansione (self-reference) = questa espansione **è** la principale del gruppo
-   - valore = codice di un'altra espansione = questa espansione dipende da quella (che sarà a sua volta auto-referenziata)
+**Step 4.1 — Bug bloccante**
+Manca `use Illuminate\Support\Facades\Schedule;` in `routes/console.php`.
 
-   Così ogni valore non nullo è verificabile con un vincolo FK reale (compreso il self-reference), e resta possibile risalire al gruppo di un'espansione con una query semplice (`WHERE group_main_expansion = (SELECT COALESCE(group_main_expansion, expansion) FROM expansions WHERE expansion = ?)`), utile proprio per capire quale pool di carte considerare quando implementerai l'apertura dei booster.
-7. **`rotation` resta stringa** (ritiro la mia proposta precedente di convertirla in booleano — non lo è): indica a quale finestra di rotazione appartengono le carte (in Premier sono giocabili solo le ultime due rotazioni). Per i set principali è uniforme su tutta l'espansione; per alcuni set standalone/promo (con art alternative) può variare carta per carta. Per ora l'assegnazione resta manuale ad opera di un admin a livello di espansione (non serve ancora un override per singola carta), verificata tramite `confirmed` (indica se l'admin ha già controllato/corretto i dati). Se in futuro servirà granularità per singola carta nei set promo, si potrà aggiungere una colonna `rotation` opzionale anche su `cards` che sovrascrive quella dell'espansione solo dove necessario — non serve implementarlo ora.
-8. **Aggiungi la FK** tra `cards.expansion` e `expansions.expansion` (`$table->foreign('expansion')->references('expansion')->on('expansions')`).
-9. **Implementa `ImportCardsFromSwuApiJob::handle()`** (attualmente solo commenti-placeholder). Endpoint ufficiali SWU (confermati da `documentation.md` della vecchia versione):
+**Step 4.2 — Applica lo schema `cards`/`expansions`**
+Come definito sopra: rinomina camelCase→snake_case, `release_date`/`legal_date` distinti, `group_main_expansion`, FK `cards.expansion → expansions.expansion`.
+
+**Step 4.3 — Aspetti**
+Crea `Aspect` (`php artisan make:model Aspect -m`) e la pivot `card_aspect` (`php artisan make:migration create_card_aspect_table`).
+
+**Step 4.4 — Relazioni nei modelli**
+`Card::aspects()` (belongsToMany), `Card::expansionModel()` (belongsTo, o rinomina la relazione per non confliggere con la colonna `expansion`), `Expansion::cards()` (hasMany), `Expansion::groupMainExpansion()`/`dependentExpansions()` (self-relations su `group_main_expansion`).
+
+**Step 4.5 — `ImportCardsFromSwuApiJob`**
+Endpoint ufficiali (da `documentation.md`/`todo.md` della vecchia versione):
 ```
 GET https://admin.starwarsunlimited.com/api/card/{cid}?locale=it
-    # dettaglio di una singola carta
 GET https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&pagination[page]={page}&pagination[pageSize]=10
-    # lista carte paginata (il filtro variantOf esclude le varianti, solo carte "base")
 ```
-Struttura:
+Requisiti raccolti da `todo.md` (vecchia versione, da riportare):
+- **un solo messaggio Telegram per scan**, aggiornato nel tempo con `TelegramService::editMessage()` (Fase 9) invece di spammare un messaggio per evento — crea il messaggio a inizio scan (`sendMessage`, salva il `messageId`), aggiornalo con `editMessage` ad ogni fase/pagina processata, chiudilo con il riepilogo finale
+- **verifica che la carta non sia già presente** prima di considerarla "nuova" (per l'email agli utenti, punto sotto)
+- a fine scan: **email a tutti gli utenti** con le carte aggiunte in questo scan (Mailable `NewCardsEmail`, coda `ShouldQueue` per non bloccare il job); **email agli admin** con le carte che hanno lanciato errori o erano già presenti, motivo specifico incluso (usa `system_errors`, Fase 5)
+- ogni riga fallita → `SystemError::create([...])` invece di interrompere l'intero scan (fail-soft)
+
 ```php
-public function handle(): void
+public function handle(TelegramService $telegram): void
 {
-    // 1. Http::get('https://admin.starwarsunlimited.com/api/card-list', [...]), gestendo la paginazione
-    // 2. per ogni carta ricevuta, updateOrCreate su Card usando cid come chiave
-    // 3. eventuali errori (riga malformata, campo mancante) -> registrali in system_errors (Fase 2bis) invece di interrompere l'intero scan
-    // 4. dispaccia NotifyAdminJob con il riepilogo (nuove carte trovate, eventuali errori)
+    $progressMessage = $telegram->sendMessage($adminChatId, 'Scan avviato...');
+    // per ogni pagina dell'API:
+    //   Http::get(...) -> per ogni carta: updateOrCreate su Card per cid, traccia se era nuova
+    //   in caso di errore riga per riga: SystemError::create(...), continua
+    //   $telegram->editMessage($adminChatId, $progressMessage->messageId, "Pagina X/Y...")
+    // a fine job: Mail::to(User::all())->queue(new NewCardsEmail($nuoveCarte));
+    //             Mail::to($admins)->queue(new AdminScanReportEmail($errori));
+    //             $telegram->editMessage($adminChatId, $progressMessage->messageId, "Scan completato: riepilogo...");
 }
 ```
-10. Pulizia minore: `ScanCards::$description` è ancora il testo di default di Artisan ("Command description").
-11. **Copertura Pest per il job di import**: scrivi test che mockano la risposta HTTP dell'API SWU (`Http::fake()`) e verificano che `ImportCardsFromSwuApiJob` crei/aggiorni le carte correttamente, gestisca la paginazione e registri un `SystemError` sui dati malformati — questo è il modo corretto di verificare la logica di import (vedi anche Fase 2bis, dove si spiega perché non serve più una tabella `test_results`/`system_checks` separata).
+Riferimento: https://laravel.com/docs/12.x/queues#creating-jobs, https://laravel.com/docs/12.x/mail
 
-Riferimento: https://laravel.com/docs/12.x/queues#creating-jobs
+**Step 4.6 — Download locale delle immagini carta**
+Invece di salvare l'URL dell'API in `front_art_path`/`back_art_path`, scarica l'immagine e salva il path locale:
+
+1. `php artisan storage:link` (una tantum) — crea il symlink `public/storage` verso `storage/app/public`, necessario per rendere le immagini raggiungibili via browser.
+2. Crea `app/Services/CardImageDownloader.php`:
+```php
+class CardImageDownloader
+{
+    /**
+     * Downloads a card image from the given URL and stores it on the public disk
+     * Scarica l'immagine di una carta dall'URL indicato e la salva sul disk pubblico
+     *
+     * @param string $sourceUrl URL originale dell'immagine (dall'API SWU)
+     * @param string $expansion Codice espansione, per il path di destinazione
+     * @param int $number Numero carta, per il path di destinazione
+     * @param string $side 'front' o 'back', per differenziare il nome file
+     * @return string|null Path relativo salvato (es. "cards/SOR/001-front.webp"), null se il download fallisce
+     */
+    public function download(string $sourceUrl, string $expansion, int $number, string $side): ?string
+    {
+        // 1. Http::get($sourceUrl) -> se fallisce, ritorna null (il chiamante logga il SystemError)
+        // 2. determina l'estensione dal Content-Type della risposta (es. image/webp -> .webp), non dall'URL
+        // 3. $path = "cards/{$expansion}/{$number}-{$side}.{$ext}"
+        // 4. Storage::disk('public')->put($path, $response->body())
+        // 5. return $path
+    }
+}
+```
+3. Nel job di import (Step 4.5), per ogni carta: se non esiste già un file a quel path (evita ri-download inutili ad ogni scan settimanale, le immagini di una carta pubblicata non cambiano), chiama `CardImageDownloader::download()` per front e back; se il download fallisce, registra un `SystemError` (`source: CardImageDownloader`) e lascia il campo `null`/il valore precedente invece di far fallire l'intera riga.
+4. Per mostrare l'immagine in una view: `Storage::disk('public')->url($card->front_art_path)` (o l'helper `asset('storage/'.$card->front_art_path)`).
+5. Aggiungi a `.gitignore`: `/storage/app/public/cards` — sono file scaricabili di nuovo da un nuovo scan, non ha senso versionarli (e sarebbero comunque tanti file binari).
+
+Riferimento: https://laravel.com/docs/12.x/filesystem
+
+**Step 4.7 — Copertura Pest**
+`Http::fake()` per mockare le risposte API; verifica creazione/aggiornamento carte, gestione paginazione, registrazione `SystemError` su dati malformati, invio delle due email. Questa è la verifica di correttezza della logica di import, contro dati controllati — non un controllo post-hoc sulla produzione.
+
+☐ Fase 4 completata
 
 ---
 
-## Fase 2bis — Log errori scan (`system_errors`)
+## Fase 5 — Log errori scan (`system_errors`)
 
-> Nella vecchia versione: `system_errors` registrava gli errori dello scan per poterli risolvere con calma; `test_results` salvava l'esito di controlli di integrità eseguiti ad ogni scan. **`test_results` non viene riportata**: ora che il progetto ha una suite Pest vera, la correttezza della logica di import va verificata lì (Step 2 punto 11), contro un database di test — non con controlli post-hoc sui dati di produzione, che i test Pest non toccano comunque. `system_errors` invece resta: serve per problemi reali durante uno scan reale (API down, dati inattesi), cosa che nessun test scritto in anticipo può coprire del tutto.
+**Step 5.1 — Migration e modello**
+Schema in cima al documento. `php artisan make:model SystemError -m`.
 
-**Step 2bis.1 — Migration `system_errors`**
-```
-php artisan make:model SystemError -m
-```
-Colonne: `source` (string, es. nome della classe/job che ha generato l'errore), `message` (text), `context` (json, per dati aggiuntivi come il cid della carta che ha causato il problema), `resolved` (bool, default false), `resolved_at` (nullable timestamp), timestamps.
+**Step 5.2 — Permesso**
+Estendi `PermissionSeeder`: `system.manage-errors`.
 
-**Step 2bis.2 — Aggiungi il permesso**
-Estendi `PermissionSeeder` (Fase 1) con `system.manage-errors`, così l'accesso alla pagina admin resta granulare come il resto del sistema permessi.
+**Step 5.3 — Pagina admin `/admin/errori`**
+- lista filtrabile per `status` (`open`/`resolved`/`ignored`)
+- pulsanti riga-per-riga "segna come risolto" / "segna come ignorato"
+- **selezione multipla** con azione bulk per assegnare uno stato a più errori insieme (richiesto esplicitamente in `todo.md`)
+- vista di dettaglio per singolo errore (mostra `context` formattato)
+- link diretto a un errore dalla mail di notifica agli admin (Step 4.5) — serve una rotta tipo `/admin/errori/{systemError}` a cui puntare
 
-**Step 2bis.3 — Pagina admin**
-Lista `system_errors` filtrabile per `resolved`, con azione per marcare come risolto. Protetta dal permesso dello step precedente (`Route::middleware(['auth', 'permission:system.manage-errors'])`).
+Protetta da `Route::middleware(['auth', 'permission:system.manage-errors'])`.
 
-**Step 2bis.4 — Integrazione con `ImportCardsFromSwuApiJob`**
-Invece di lasciare che un'eccezione interrompa l'intero scan, cattura gli errori riga per riga e registra un `SystemError`, permettendo allo scan di continuare con le carte successive.
-
-☐ Fase 2bis completata
+☐ Fase 5 completata
 
 ---
 
-## Fase 3 — Gestione mazzi multi-formato
+## Fase 6 — Admin: gestione espansioni e rotazioni
 
-**Step 3.1 — Enum formato mazzo**
-Crea a mano `app/Enums/DeckFormat.php`:
+> Dalla vecchia versione (`todo.md`): "creare pagina admin di gestione espansioni e rotazioni". Necessaria perché `rotation`/`legal_date`/`confirmed`/`group_main_expansion` sono dati a cura manuale dell'admin (schema `expansions`).
+
+**Step 6.1 — Permesso**
+Estendi `PermissionSeeder`: `expansions.manage`.
+
+**Step 6.2 — Pagina admin `/admin/espansioni`**
+Lista tutte le `expansions` (comprese quelle token `T*`, vedi nota nello schema) con form di modifica per `legal_date`, `rotation`, `group_main_expansion`, e checkbox `confirmed` per marcare i dati come verificati. Protetta da `permission:expansions.manage`.
+
+☐ Fase 6 completata
+
+---
+
+## Fase 7 — Gestione mazzi multi-formato
+
+**Step 7.1 — Enum `DeckFormat`**
 ```php
 enum DeckFormat: string
 {
@@ -156,39 +266,19 @@ enum DeckFormat: string
 }
 ```
 
-**Step 3.2 — Migration `decks` e `deck_cards`**
-```
-php artisan make:model Deck -m
-php artisan make:migration create_deck_cards_table
-```
-`decks`: `user_id`, `name`, `format` (string, castato a `DeckFormat`), `is_public` (bool), **`assembled`** (bool, default false — vedi Step 4.3), `version` (int, default 1), `previous_version_id` (nullable, self-FK su `decks.id`).
+**Step 7.2 — Modelli e migration**
+Schema `decks`/`deck_cards` in cima al documento. `php artisan make:model Deck -m` + `php artisan make:migration create_deck_cards_table`. Nel modello `Deck`: `protected $casts = ['format' => DeckFormat::class];` e relazioni `deckCards()`, `leaderCards()`/`baseCard()` (scoped su `role`), `previousVersion()`/`versions()` (self-relation). Riferimento: https://laravel.com/docs/12.x/eloquent-mutators#enum-casting
 
-**Niente `leader_cid`/`base_cid` su `decks`**: cardinalità e vincoli di leader/base dipendono dal formato (Eternal/Premier: 1 leader + 1 base; Twin Suns: 2 leader + 1 base, con vincolo che i due leader non possono essere uno "bianco" e uno "nero" — regola di formato, non di schema), quindi due colonne fisse non reggono Twin Suns. Il ruolo della carta nel mazzo va invece in `deck_cards`:
-
-`deck_cards`: `deck_id`, `cid` (FK verso `cards.cid`), `quantity`, **`role`** (string/enum: `leader`, `base`, `card`, default `card`).
-
-Così un mazzo Eternal/Premier ha esattamente una riga con `role = leader` e una con `role = base`; un mazzo Twin Suns ne ha due con `role = leader` e una con `role = base` — la cardinalità e il vincolo sull'allineamento dei due leader li verifica il validator del formato (Step 3.3), non lo schema.
-
-Sul versionamento: ogni volta che l'utente salva una nuova versione di un mazzo, crea una **nuova riga** in `decks` con `version` incrementato e `previous_version_id` che punta alla riga precedente — la catena delle versioni è così una relazione reale (self-FK), non un'inferenza basata sul nome del mazzo come nella vecchia versione (dove la collezione stessa era modellata come un mazzo speciale, distinto solo controllando se il nome conteneva la stringa "collezione" per decidere se applicare i limiti di formato — pattern fragile da non riportare). Per recuperare velocemente "l'ultima versione" di un mazzo, puoi aggiungere un indice/query che segue la catena `previous_version_id`, oppure un flag `is_current` da aggiornare quando crei una nuova versione (più comodo per le query, leggero da mantenere).
-
-Nel modello `Deck`:
-```php
-protected $casts = [
-    'format' => DeckFormat::class,
-];
-```
-Riferimento: https://laravel.com/docs/12.x/eloquent-mutators#enum-casting
-
-**Step 3.3 — Interfaccia e classi di validazione per formato**
+**Step 7.3 — Validator per formato**
 ```php
 interface DeckFormatValidator
 {
-    public function validate(Deck $deck): array; // ritorna array di errori, vuoto se valido
+    public function validate(Deck $deck): array;
 }
 ```
-Crea `PremierFormatValidator`, `EternalFormatValidator`, `TwinSunsFormatValidator` in `app/Services/DeckValidation/`, ciascuna con le proprie regole. Da controllare tramite `deck_cards` filtrando per `role`: numero di leader ammessi (1 per Eternal/Premier, 2 per Twin Suns), esattamente 1 base, e per Twin Suns il vincolo che i due leader condividano lo stesso allineamento (non uno "bianco" e uno "nero") — oltre alle regole generali di formato (limiti di copie per carta, ecc. — da definire in base al regolamento ufficiale).
+`PremierFormatValidator`, `EternalFormatValidator`, `TwinSunsFormatValidator` in `app/Services/DeckValidation/`: numero di leader ammessi (1 o 2 in base al formato), esattamente 1 base, per Twin Suns il vincolo di allineamento tra i due leader, limiti di copie per carta secondo il regolamento ufficiale.
 
-**Step 3.4 — Factory per scegliere il validator giusto**
+**Step 7.4 — Factory**
 ```php
 class DeckFormatValidatorFactory
 {
@@ -202,74 +292,61 @@ class DeckFormatValidatorFactory
     }
 }
 ```
-Così per aggiungere un quarto formato in futuro aggiungi solo un case all'enum + una classe, senza toccare il resto.
 
-**Step 3.5 — Policy per l'autorizzazione**
+**Step 7.5 — Policy**
 ```
 php artisan make:policy DeckPolicy --model=Deck
 ```
-```php
-public function update(User $user, Deck $deck): bool
-{
-    return $user->id === $deck->user_id || $user->can('decks.manage-any');
-}
-```
-Riferimento: https://laravel.com/docs/12.x/authorization#creating-policies
+`update()`: proprietario o permesso `decks.manage-any`.
 
-**Step 3.6 — Export/Import mazzi**
-Funzionalità della vecchia versione da riportare:
-- **Export**: genera un file `.txt` (formato ufficiale SWU, compatibile con gli altri programmi/siti del gioco) e un `.json` (formato proprio, più semplice da re-importare qui) a partire da `deck_cards`
-- **Import**: da file caricato (`.txt`/`.json`) o da URL esterno (altro sito SWUDB/UnlimitedDB) — valida il formato, verifica che ogni carta citata esista in `cards` (per espansione + numero), e riporta all'utente eventuali carte non trovate invece di fallire silenziosamente
-- Vale la pena incapsulare export e import in classi dedicate (`DeckExporter`, `DeckImporter` in `app/Services/`) invece che nel controller, così restano testabili indipendentemente dalla request HTTP
+**Step 7.6 — Pagine mazzi**
+- `/mazzi` — lista mazzi pubblici + propri (filtro per formato)
+- `/mazzi/crea` — form: nome, formato (select `DeckFormat`), poi redirect all'editor
+- `/mazzi/{deck}` — editor: ricerca carte (riusa `CardSearch`, Step 10.1) + aggiunta con ruolo (`leader`/`base`/`card`), validazione live lato server ad ogni salvataggio tramite il validator di formato (Step 7.3)
+- `/mazzi/{deck}/versioni` — cronologia versioni (segue `previous_version_id`)
+- toggle "montato" (`assembled`) sulla pagina del mazzo
 
-☐ Fase 3 completata
+**Step 7.7 — Export/Import mazzi**
+- **Export**: `.txt` (formato ufficiale SWU) e `.json` (proprio) da `deck_cards`
+- **Import**: da file (`.txt`/`.json`) o URL esterno; valida il formato, segnala carte non trovate invece di fallire silenziosamente (la vecchia versione aveva un bug proprio sull'import da URL, `todo.md` — occhio ai casi limite: URL non raggiungibile, redirect, formato inatteso)
+- Classi dedicate `DeckExporter`/`DeckImporter` in `app/Services/`, testabili senza passare da una request HTTP
+
+☐ Fase 7 completata
 
 ---
 
-## Fase 4 — Gestione collezione
+## Fase 8 — Gestione collezione
 
-**Step 4.1 — Migration `collection_cards`**
-```
-php artisan make:migration create_collection_cards_table
-```
-Colonne: `user_id`, `cid` (FK verso `cards.cid`), `variant` (string/enum: `normal`, `foil`, `hyper`, `prestige`), `quantity`. Il foil e le altre varianti di stampa vivono **solo qui**, non nei mazzi (nella vecchia versione la tabella `compositions` tracciava foil per riga di mazzo, ma era un effetto collaterale del fatto che la collezione fosse modellata come un mazzo speciale — vedi Step 3.2). Chiave univoca composita `(user_id, cid, variant)` così ogni combinazione utente/carta/variante ha una sola riga con la quantità posseduta.
+**Step 8.1 — Modello e migration**
+Schema `collection_cards` in cima al documento. `php artisan make:migration create_collection_cards_table`.
 
-**Step 4.2 — UI di gestione**
-Pagina con ricerca carte (riusa i filtri della Fase 6) + bottone incrementa/decrementa quantità posseduta, salvato via una piccola interazione Alpine.js senza reload pagina.
+**Step 8.2 — Pagina `/collezione`**
+Ricerca carte (riusa `CardSearch`) + per ogni risultato un controllo quantità per variante (`normal`/`foil`/`hyper`/`prestige`/`hyper_foil`), salvato via piccola interazione Alpine.js senza reload pagina.
 
-**Step 4.3 — Funzione "carte mancanti per un mazzo"**
-Quando l'utente vuole montare un mazzo, servono tre informazioni distinte:
-1. **carte possedute** sufficienti (da `collection_cards`)
-2. **carte mancanti** del tutto (non in collezione, o non in quantità sufficiente)
-3. se le possedute non bastano: quante sono **possedute ma già impegnate in altri mazzi attualmente montati** (`decks.assembled = true`)
-
-Logica di query, per un dato mazzo target:
+**Step 8.3 — "Carte mancanti per un mazzo"**
+Tre informazioni: possedute sufficienti, mancanti del tutto, possedute-ma-impegnate-in-altri-mazzi-montati:
 ```php
-$required = $deck->deckCards; // cid => quantity richiesta
-$owned = CollectionCard::where('user_id', $userId)->pluck('quantity', 'cid'); // cid => quantità posseduta totale
+$required = $deck->deckCards; // cid => quantity
+$owned = CollectionCard::where('user_id', $userId)->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
 $reservedByOtherAssembledDecks = DeckCard::whereHas('deck', fn ($q) => $q->where('user_id', $userId)->where('assembled', true)->where('id', '!=', $deck->id))
-    ->selectRaw('cid, SUM(quantity) as qty')
-    ->groupBy('cid')
-    ->pluck('qty', 'cid');
-
-// per ogni cid richiesto:
+    ->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
 // disponibile_libera = owned[cid] - reservedByOtherAssembledDecks[cid]
 // mancante_del_tutto = max(0, required[cid] - owned[cid])
 // posseduta_ma_impegnata = max(0, min(required[cid], owned[cid]) - disponibile_libera) quando disponibile_libera < required[cid]
 ```
-Così l'utente vede subito se gli conviene comprare carte mancanti oppure smontare un altro mazzo per liberarle.
+Pagina `/mazzi/{deck}/delta` mostra le tre liste.
 
-☐ Fase 4 completata
+☐ Fase 8 completata
 
 ---
 
-## Fase 5 — Bot Telegram
+## Fase 9 — Bot Telegram
 
-**Step 5.1 — Libreria per l'API Telegram**
-Usa direttamente la facade `Http` nativa di Laravel (https://laravel.com/docs/12.x/http-client) per chiamare l'API Telegram, senza aggiungere una libreria esterna dedicata. La vecchia versione (SWUDB) usava il pacchetto `telegram-bot/api`, ma l'ecosistema dei wrapper PHP per Telegram di quella fascia è in gran parte poco mantenuto o esplicitamente abbandonato (es. `vjik/telegram-bot-api`, deprecato dallo stesso autore) — per un bot con poche funzioni (scan, ricerca, notifica admin) non c'è un vero vantaggio nell'aggiungere quella dipendenza, mentre con `Http` hai pieno controllo e zero rischio di dover rimpiazzare un pacchetto abbandonato in futuro.
+**Step 9.1 — Libreria**
+Facade `Http` nativa (https://laravel.com/docs/12.x/http-client), niente SDK esterno — la vecchia versione usava `telegram-bot/api`, ma l'ecosistema di wrapper PHP per Telegram di quella fascia è in gran parte poco mantenuto o abbandonato (es. `vjik/telegram-bot-api`).
 
-**Step 5.1bis — Crea `TelegramService`**
-Incapsula tutte le chiamate all'API Telegram in `app/Services/TelegramService.php`, invece di sparpagliare `Http::post(...)` nei vari punti che parlano col bot (webhook, notifiche admin, ricerca) — un unico posto da aggiornare se cambia qualcosa nell'API, e ogni metodo restituisce un risultato tipizzato invece di un array grezzo. Esempio di struttura:
+**Step 9.2 — `TelegramService`**
+`app/Services/TelegramService.php`, un solo posto per parlare con l'API Telegram:
 ```php
 final readonly class TelegramActionResult
 {
@@ -283,142 +360,131 @@ final readonly class TelegramActionResult
 
 class TelegramService
 {
-    public function sendMessage(int|string $chatId, string $text, array $options = []): TelegramActionResult { /* ... */ }
-
-    public function sendPhoto(int|string $chatId, string $photoUrl, string $caption = '', array $options = []): TelegramActionResult { /* ... */ }
-
-    public function editMessage(int|string $chatId, int $messageId, string $text): TelegramActionResult { /* ... */ }
-
-    public function deleteMessage(int|string $chatId, int $messageId): TelegramActionResult { /* ... */ }
+    public function sendMessage(int|string $chatId, string $text, array $options = []): TelegramActionResult {}
+    public function sendPhoto(int|string $chatId, string $photoUrl, string $caption = '', array $options = []): TelegramActionResult {}
+    public function editMessage(int|string $chatId, int $messageId, string $text): TelegramActionResult {}
+    public function deleteMessage(int|string $chatId, int $messageId): TelegramActionResult {}
 }
 ```
-Ogni metodo chiama l'endpoint Telegram corrispondente (`sendMessage`, `sendPhoto`, `editMessageText`, `deleteMessage`) e traduce la risposta JSON di Telegram (`{"ok": true/false, "result": {...}, "description": "..."}`) in un `TelegramActionResult` — così chi chiama il servizio non deve mai leggere l'array grezzo di Telegram per sapere se l'operazione è andata a buon fine. Aggiungi altri metodi (es. `pinMessage`, `answerCallbackQuery`) man mano che ti servono, stessa struttura.
+Ogni metodo traduce la risposta `{"ok": true/false, "result": {...}, "description": "..."}` di Telegram in un `TelegramActionResult`. Aggiungi altri metodi (`pinMessage`, `answerCallbackQuery`, ecc.) man mano che servono, stessa struttura. `editMessage` è quello usato dal progress-message unico dello scan (Step 4.5).
 
-**Step 5.2 — Webhook controller**
+**Step 9.3 — Webhook**
 ```
 php artisan make:controller TelegramController
 ```
-Riceve gli update di Telegram via webhook, instrada in base al comando (`/scan`, `/search <query>`), usando `TelegramService` per rispondere.
+Instrada `/scan`, `/search <query>` usando `TelegramService`.
 
-**Step 5.3 — Comando `/scan` dal bot**
-Nel metodo che gestisce `/scan`, richiama la stessa logica della Fase 2:
+**Step 9.4 — `/scan`**
 ```php
 Artisan::call('cards:scan');
 ```
-oppure dispaccia direttamente `ImportCardsFromSwuApiJob::dispatch()` — nessuna logica duplicata rispetto allo scan schedulato.
+o dispaccia direttamente il job — nessuna logica duplicata.
 
-**Step 5.4 — Comando `/search`**
-Query su `Card` (nome IT/EN, `LIKE` o full-text se il volume di carte lo giustifica). Risposta: prova prima `TelegramService::sendPhoto()` con l'immagine della carta (`image_url`) e didascalia (nome, espansione, testo carta); se l'invio della foto fallisce (es. URL immagine non raggiungibile, `TelegramActionResult::$successful === false`), fai fallback su `TelegramService::sendMessage()` con un messaggio di testo contenente il link alla pagina della carta sul sito.
+**Step 9.5 — `/search`**
+Query su `Card` (nome IT/EN). Risposta: `TelegramService::sendPhoto()` con l'immagine — l'API Telegram richiede un URL pubblico assoluto (la scarica lei stessa), quindi passa `Storage::disk('public')->url($card->front_art_path)` reso assoluto (es. tramite `asset(...)` o prefissando `config('app.url')`), non il path relativo salvato in DB — e didascalia; se fallisce, fallback su `sendMessage()` con link alla pagina carta sul sito.
 
-**Step 5.5 — Job di notifica admin**
-```
-php artisan make:job NotifyAdminJob
-```
+**Step 9.6 — `NotifyAdminJob`**
 ```php
 public function handle(TelegramService $telegram): void
 {
     $telegram->sendMessage(config('services.telegram.admin_chat_id'), $this->message);
 }
 ```
-Richiamato da `ImportCardsFromSwuApiJob` a fine scan e da qualunque altro evento critico vorrai monitorare.
 
-☐ Fase 5 completata
+☐ Fase 9 completata
 
 ---
 
-## Fase 6 — UI/UX e funzioni comuni TCG
+## Fase 10 — UI/UX e funzioni comuni TCG
 
-**Step 6.1 — Ricerca/filtri carte**
-Ricerca **server-side pura**: form con filtri (espansione, aspetto, tipo, costo, testo libero) inviati via `GET`, il controller applica i filtri con `when()` su una query Eloquent e ritorna le carte compatibili — niente ricerca live/Alpine qui, ogni ricerca è un normale caricamento di pagina con i filtri in query string. Incapsula la costruzione della query in una classe dedicata (es. `app/Services/CardSearch.php`, con un metodo tipo `apply(Builder $query, array $filters): Builder`), perché la Fase 6bis userà la stessa identica logica per l'endpoint API di ricerca — un solo posto da mantenere per i filtri disponibili.
+**Step 10.1 — Ricerca/filtri carte**
+Server-side puro, filtri via `GET`: espansione, aspetto (join `card_aspect`), tipo, costo, testo libero, **`unique_card`** (checkbox "solo carte Uniche"). Incapsula la query in `app/Services/CardSearch.php` (`apply(Builder $query, array $filters): Builder`), condivisa con l'endpoint API (Fase 11).
+Pagina `/carte`, il parametro GET `nome` deve popolare il campo di ricerca già valorizzato al reload (bug specifico segnalato in `todo.md` della vecchia versione — attenzione a non fissarlo solo con `value="{{ $_GET['nome'] }}"` se il campo si aggiorna via JS/`oninput`, va sincronizzato anche lato client).
 
-**Step 6.2 — Statistiche mazzo**
-Pagina che mostra, per un mazzo: curva dei costi (grafico semplice), distribuzione per aspetto/tipo.
+**Step 10.2 — Statistiche mazzo**
+Pagina `/mazzi/{deck}/statistiche`: curva costi, distribuzione per tipo, tratti (divisi/non divisi, come da vecchia versione), HP/potenza media — grafici semplici (es. Chart.js).
 
-**Step 6.3 — Separazione viste pubbliche/autenticate**
-Definisci chiaramente nelle rotte quali sono accessibili senza login (catalogo, mazzi pubblici) e quali richiedono `auth` (creare/modificare mazzi, collezione).
+**Step 10.3 — Viste pubbliche/autenticate**
+Pubbliche: catalogo carte, mazzi pubblici, nuove uscite. Autenticate (`auth`): creare/modificare mazzi, collezione, export/import.
 
-**Step 6.4 — Pagina "Nuove uscite"**
-Elenco delle carte uscite più di recente, con filtro data:
-- rotta tipo `GET /nuove-uscite`, parametro query opzionale `since` (`YYYY-MM-DD`) — quando specificato resta un intervallo **arbitrario**, a scelta dell'utente (mostra tutte le carte con `release_date >= since`, qualunque data scelga)
-- se `since` **non** è passato: il default non è un intervallo fisso arbitrario (es. "ultimi 30 giorni"), ma l'ultimo gruppo di carte pubblicate, cioè tutte le carte con `release_date` uguale alla data più recente presente in `cards` (`Card::max('release_date')`)
-- query di esempio (richiede prima il fix del punto 2 della Fase 2 — `cards.release_date` come vera colonna data):
+**Step 10.4 — Pagina "Nuove uscite"**
+`GET /nuove-uscite`, parametro opzionale `since` (`YYYY-MM-DD`) — se specificato resta un intervallo **arbitrario** a scelta dell'utente; se assente, default alla data di rilascio più recente (`Card::max('release_date')`), non a un intervallo fisso:
 ```php
 $since = $request->query('since') ?? Card::max('release_date');
 Card::where('release_date', '>=', $since)->orderByDesc('release_date')->get();
 ```
-Nota: filtra direttamente su `cards.release_date`, non tramite `expansions.legal_date` — sono due date diverse e la pagina "nuove uscite" riguarda l'uscita della singola carta, non la legalità dell'espansione.
-- interfaccia: un semplice `<input type="date">` in un form GET che ricarica la pagina con `?since=...` in query string — nessun bisogno di Alpine.js per questa parte, è un filtro server-side
+Filtra su `cards.release_date`, non su `expansions.legal_date` (concetti diversi). Interfaccia: `<input type="date">` in un form GET.
 
-Riferimento: https://laravel.com/docs/12.x/queries#where-clauses (filtro data) e https://laravel.com/docs/12.x/eloquent-relationships#one-to-many (relazione Card–Expansion, da definire nei modelli — al momento entrambi `Card` e `Expansion` sono ancora modelli vuoti)
-
-☐ Fase 6 completata
+☐ Fase 10 completata
 
 ---
 
-## Fase 6bis — API REST pubblica
+## Fase 11 — API REST pubblica
 
-> Riprende l'API della vecchia versione (endpoint carta singola, carte per espansione, ricerca mazzi) per sviluppatori terzi, con autenticazione Sanctum invece che aperta. **Principio generale**: dove possibile, le rotte API condividono lo stesso backend delle pagine UI (stessi filtri, stessa classe di query, es. `CardSearch` dello Step 6.1) e cambiano solo il formato di output (view Blade vs API Resource JSON) — così eviti di dover mantenere due implementazioni parallele della stessa logica di ricerca/filtro.
-
-**Step 6bis.1 — Installa Sanctum**
+**Step 11.1 — Sanctum**
 ```
 composer require laravel/sanctum
 php artisan install:api
 ```
-Riferimento: https://laravel.com/docs/12.x/sanctum
+https://laravel.com/docs/12.x/sanctum
 
-**Step 6bis.2 — Endpoint pubblici di sola lettura**
-In `routes/api.php`:
+**Step 11.2 — Endpoint pubblici**
 ```php
 Route::get('/cards/{expansion}/{number}', [Api\CardController::class, 'show']);
-Route::get('/cards/search', [Api\CardController::class, 'search']); // stessi filtri della pagina di ricerca (Step 6.1)
+Route::get('/cards/search', [Api\CardController::class, 'search']); // stessi filtri di CardSearch (Step 10.1)
 Route::get('/decks/{user}/{name}', [Api\DeckController::class, 'show']); // solo mazzi pubblici
 ```
-`Api\CardController::search()` riusa la stessa classe `CardSearch` del controller web (Step 6.1): stessi parametri, stesso comportamento, solo la risposta cambia (`CardResource::collection(...)` invece di una view).
-Questi endpoint non richiedono autenticazione (dati pubblici, già leggibili dal sito) — valuta comunque il rate limiting nativo di Laravel (`throttle:60,1` sul gruppo di rotte) per prevenire abusi.
-Riferimento: https://laravel.com/docs/12.x/routing#rate-limiting
+`Api\CardController::search()` riusa `CardSearch` (Step 10.1): stessa logica, output diverso (`CardResource::collection(...)`). Principio generale: le pagine API condividono il backend delle pagine UI dove possibile, un solo posto da mantenere. Rate limiting nativo (`throttle:60,1`). https://laravel.com/docs/12.x/routing#rate-limiting
 
-**Step 6bis.3 — Endpoint autenticati (se in futuro servono azioni, non solo letture)**
-Usa i token Sanctum (`$user->createToken('nome-token')`) per endpoint che modificano dati (es. sincronizzare la propria collezione da un'app esterna) — non necessario al day 1 se l'API resta di sola consultazione.
+**Step 11.3 — Endpoint autenticati**
+Token Sanctum per eventuali azioni future (es. sync collezione da app esterna) — non necessario al day 1.
 
-**Step 6bis.4 — Risorse API (formato risposta)**
+**Step 11.4 — API Resources**
 ```
 php artisan make:resource CardResource
 ```
-Usa gli [API Resources](https://laravel.com/docs/12.x/eloquent-resources) di Laravel per controllare esattamente cosa esporre (es. non esporre colonne interne come `id` se usi `cid` come chiave pubblica), invece di restituire i modelli Eloquent grezzi.
+Controlla cosa esporre (es. non esporre `id` interni se usi `cid` come chiave pubblica). https://laravel.com/docs/12.x/eloquent-resources
 
-☐ Fase 6bis completata
+☐ Fase 11 completata
 
 ---
 
-## Fase 7 — Deploy
+## Fase 12 — Deploy
 
-**Step 7.1 — Lancia `~/scripts/new-site.sh` sul server**
-Non serve scrivere a mano Dockerfile/docker-compose.yml/nginx conf di produzione: lo script li genera lui (vedi Fase 0bis) a partire dal repo che gli indichi, con dominio `unlimiteddb.mandich.dev`. Segui il flusso interattivo dello script (repo, `.env`, sottodominio, subnet assegnata in automatico, secrets GitHub, import DB opzionale).
+**Step 12.1** — Lancia `~/scripts/new-site.sh` sul server (genera lui Dockerfile/compose/nginx/init.sql, dominio `unlimiteddb.mandich.dev`).
+**Step 12.2** — Aggiungi tu il servizio queue worker (non generato dallo script): `php artisan queue:work --tries=3` sempre attivo.
+**Step 12.3** — Aggiungi tu lo scheduler (non generato dallo script): cron reale che lancia `php artisan schedule:run` ogni minuto.
+**Step 12.4** — Verifica: webhook Telegram sul dominio giusto, `failed_jobs` vuota, scan schedulato parte al lunedì.
 
-**Step 7.2 — Servizio queue worker (non generato dallo script)**
-Lo script non crea un servizio queue worker: aggiungilo tu nel `docker-compose.yml` generato (o modifica lo script per includerlo di default nei prossimi siti), con `php artisan queue:work --tries=3` in loop, oppure Supervisor nello stesso container applicativo — deve restare sempre attivo, a differenza del container web che risponde solo alle richieste HTTP.
+☐ Fase 12 completata
 
-**Step 7.3 — Scheduler (non generato dallo script)**
-Allo stesso modo, assicurati che un vero cron di sistema (nel container o sull'host) lanci `php artisan schedule:run` ogni minuto — è il meccanismo con cui Laravel esegue poi `cards:scan` alla frequenza configurata nella Fase 2. Anche questo va aggiunto a mano, lo script attuale non lo prevede.
+---
 
-**Step 7.4 — Verifica post-deploy**
-- il webhook Telegram punta al dominio giusto
-- il queue worker sta effettivamente consumando i job (controlla `failed_jobs` per errori)
-- lo scan schedulato parte al lunedì a mezzanotte come da requisito
+## Backlog — Funzionalità future (da `todo.md`, non pianificate in dettaglio)
 
-☐ Fase 7 completata
+Elencate per non perderle, ma fuori dallo scope attuale — da riprendere quando/se deciderai di implementarle:
+- Condivisione social dei mazzi
+- Tag personalizzati per i mazzi (es. "Aggro", "Control", "Budget", "Meta")
+- Modalità offline/PWA per consultazione carte
+- Wishlist carte desiderate
+- Deck-building guidato per principianti
+- Statistica di probabilità (ipergeometrica) di pescare una carta che soddisfi certi requisiti, nelle statistiche mazzo (Step 10.2)
+- Apertura digitale dei booster pack (per cui è già propedeutico `expansions.group_main_expansion`, vedi schema)
 
 ---
 
 ## Note di analisi (perché queste scelte)
 
-- **Queue reali invece di fireAndForget**: il vecchio sistema simulava thread con richieste HTTP POST ricorsive per aggirare l'assenza di code su Altervista — fragile, senza retry strutturato, errori persi nella risposta scartata. Le queue di Laravel danno retry/backoff/failed-jobs nativi. https://laravel.com/docs/12.x/queues
-- **Permessi granulari (Spatie)**: permessi singoli assegnabili liberamente, i "ruoli" sono solo scorciatoie per assegnarne un gruppo insieme, non autorità hardcoded nel codice. https://spatie.be/docs/laravel-permission/v6/introduction
-- **Enum + Strategy per i formati mazzo**: evita `if/else` sparsi, aggiungere un formato futuro richiede solo una nuova classe, non modifiche al codice esistente.
-- **Blade + Alpine.js invece di Livewire**: nella vecchia versione la lentezza percepita era dovuta a un bug architetturale preciso (il componente `DeckManager` teneva l'intero catalogo carte come proprietà pubblica, e Livewire re-invia ogni proprietà pubblica ad ogni interazione), non a un limite del framework in sé — ma Blade+Alpine evita il rischio per design, senza dover stare attenti a questo tipo di errore.
-- **`.env-overrides`**: pattern già in uso in SWUDB per tenere in Git (a differenza di `.env`) l'`APP_VERSION`, utile per riconoscere subito quale versione sia effettivamente in produzione.
-- **Verifica email nativa invece di sistema custom**: la vecchia versione aveva un meccanismo fatto a mano (token 60 caratteri, metodi ad-hoc); Breeze/Laravel offrono lo stesso risultato con `MustVerifyEmail` + middleware `verified`, meno codice da mantenere.
-- **`system_errors` mantenuta, `test_results` no**: la prima logga problemi reali durante uno scan reale (cosa che nessun test scritto in anticipo può coprire del tutto); la seconda verificava la correttezza della logica di import, compito che ora spetta alla suite Pest (test contro dati controllati, non contro la produzione).
+- **Queue reali invece di fireAndForget**: niente più thread simulati via HTTP ricorsivo per aggirare l'assenza di code su Altervista. https://laravel.com/docs/12.x/queues
+- **Permessi granulari (Spatie)**: permessi singoli, i ruoli sono solo scorciatoie per assegnarne un gruppo insieme. https://spatie.be/docs/laravel-permission/v6/introduction
+- **Enum + Strategy per i formati mazzo**: aggiungere un formato futuro richiede solo una nuova classe.
+- **Blade + Alpine.js invece di Livewire**: la lentezza percepita nella vecchia versione era un bug preciso (catalogo intero come proprietà pubblica Livewire), non un limite del framework — ma Blade+Alpine evita il rischio per design.
+- **`.env-overrides`**: pattern SWUDB per tracciare `APP_VERSION` in Git.
+- **Verifica email nativa**: sostituisce token custom a 60 caratteri con `MustVerifyEmail` + middleware `verified`.
+- **`system_errors` con 3 stati (`open`/`resolved`/`ignored`)**: la correttezza della logica di import la verifica Pest (dati controllati), non un controllo post-hoc sulla produzione — per questo non esiste più una tabella dedicata ai risultati dei test.
+- **`deck_cards.role` invece di `leader_cid`/`base_cid` su `decks`**: la cardinalità di leader/base dipende dal formato (1 vs 2 leader), colonne fisse non reggerebbero Twin Suns.
+- **`decks.assembled`**: necessario per calcolare non solo "cosa manca" ma anche "cosa possiedo ma è impegnato in un altro mazzo montato".
+- **Immagini scaricate in locale**: il sito non dipende a runtime dalla disponibilità del CDN ufficiale, tempi di caricamento sotto controllo.
 
 ## Riferimenti documentazione Laravel 12
 
@@ -433,6 +499,8 @@ Allo stesso modo, assicurati che un vero cron di sistema (nel container o sull'h
 | Eloquent casting (enum) | https://laravel.com/docs/12.x/eloquent-mutators#enum-casting |
 | Validazione | https://laravel.com/docs/12.x/validation |
 | HTTP Client | https://laravel.com/docs/12.x/http-client |
+| Filesystem/Storage | https://laravel.com/docs/12.x/filesystem |
+| Mail | https://laravel.com/docs/12.x/mail |
 | Testing (Pest) | https://laravel.com/docs/12.x/testing |
 | Spatie Laravel-permission | https://spatie.be/docs/laravel-permission/v6/introduction |
 | Verifica email | https://laravel.com/docs/12.x/verification |

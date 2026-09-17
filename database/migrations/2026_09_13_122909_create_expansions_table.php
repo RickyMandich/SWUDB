@@ -11,11 +11,15 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('expansions', function (Blueprint $table) {
-            $table->string('expansion', 10)->primary();
-            $table->date('legalDate')->nullable();
-            $table->string('rotation', 1)->default('0');
-            $table->boolean('confirmed')->default(false);
-            $table->string('mainExpansion', 10)->default('-1')->comment('ID espansione principale del gruppo, 0 se è principale, -1 se è standalone, nome espansione di riferimento se dipende da un\'altra');
+            $table->string('expansion', 10)->primary()->comment('expansion\'s natural code');
+            $table->date('legal_date')->nullable()->comment('date from which tis expansion became legal in premier');
+            $table->string('rotation', 1)->default('0')->comment('the rotation of this set, the last 2 set are legal in premier');
+            $table->boolean('confirmed')->default(false)->comment('if the expansion is confirmed (an admin have checked the data)');
+            $table->string('group_main_expansion', 10)->nullable()->comment('the core set of the game are main expansion and reference themselfs, the subset (like the token from a set) reference the main expansion and the standalone set (like some promo sets) is null');
+            $table->timestamps();
+
+            # costraints
+            $table->foreign('group_main_expansion')->references('expansion')->on('expansions')->onDelete('cascade');
         });
     }
 
