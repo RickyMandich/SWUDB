@@ -15,7 +15,6 @@
 >  */
 > ```
 >
-> Questo documento fa riferimento anche a `SWUDB/documentation.md` e `SWUDB/todo.md` (vecchia versione) per recuperare funzionalità e dettagli che altrimenti andrebbero persi nella riscrittura.
 
 ---
 
@@ -129,6 +128,46 @@ Breeze genera già viste/rotte di verifica. Riferimento: https://laravel.com/doc
 Lista utenti con permesso `users.manage`: assegna/revoca permessi e ruoli (usa i metodi di Spatie `assignRole`/`givePermissionTo`/`revokePermissionTo`), coerente con "miglioramento pagina utenti per la gestione di admin" della vecchia versione.
 
 ☐ Fase 3 completata
+
+---
+
+## Fase 3.5 — Configurazione email transazionale (Resend)
+
+> **Contesto** (da `mandich-dev-infra`): Resend scelto come provider per tutti i siti `*.mandich.dev` al posto di un setup self-hosted, perché il piano gratuito Oracle Cloud blocca la porta 25 in uscita (sblocco riservato ai piani a pagamento). **Obiettivo di questa fase**: un solo dominio verificato su Resend (`mandich.dev`, non un sottodominio per sito) condiviso da tutti i siti, per restare nel piano gratuito Resend senza dover creare un account/dominio separato per ognuno. Questa fase precede l'uso delle mail già previsto in Fase 4 (Step 4.5): senza un mailer configurato, `NewCardsEmail`/`AdminScanReportEmail` finirebbero solo nei log (`MAIL_MAILER=log` attuale).
+
+**Step 3.5.1 — Verifica dominio `mandich.dev` su Resend (una tantum, condivisa tra tutti i siti)**
+- Su [resend.com/domains](https://resend.com/domains) aggiungi il dominio **`mandich.dev`** (l'apice, non `unlimiteddb.mandich.dev`) — se è già stato verificato per un altro sito della VM, salta questo step: la verifica vale per l'intero dominio, ogni sito potrà inviare da qualsiasi indirizzo `@mandich.dev` senza registrarsi di nuovo.
+- Resend genera i record DNS da aggiungere (tipicamente: 1 TXT per SPF, 2-3 CNAME/TXT per DKIM, opzionale TXT per DMARC) — vanno creati su Cloudflare, dove è già gestito il DNS di `mandich.dev` (stesso posto del record wildcard usato da Traefik).
+- Attendi la verifica (di norma minuti, fino a 72h): la dashboard segna il dominio come "Verified" prima di poter inviare.
+
+**Step 3.5.2 — API Key Resend**
+- Se non esiste già una key riutilizzabile per i siti `*.mandich.dev`, creane una in [resend.com/api-keys](https://resend.com/api-keys) con permesso **"Sending access"** (non serve full access), eventualmente ristretta al dominio `mandich.dev`.
+- Salvala solo nel gestore password / negli `.env` dei singoli ambienti — non versionarla mai (né in `.env-overrides`, che è tracciato in Git).
+
+**Step 3.5.3 — Pacchetto Resend per Laravel**
+```
+composer require resend/resend-php
+```
+`config/mail.php` (mailer `resend` con `'transport' => 'resend'`) e `config/services.php` (`'resend' => ['key' => env('RESEND_API_KEY')]`) sono già presenti nello scaffold Laravel 12 di questo progetto — nessuna modifica di codice necessaria oltre all'installazione del pacchetto.
+
+**Step 3.5.4 — Variabili d'ambiente (locale e produzione)**
+In locale (`.env`) e sul server (`.env` del sito su `~/sites/SWUDB/.env`, dato che `new-site.sh` legge/crea il `.env` direttamente sulla VM e non lo committa):
+```env
+MAIL_MAILER=resend
+RESEND_API_KEY=re_xxx
+MAIL_FROM_ADDRESS="unlimiteddb@mandich.dev"
+MAIL_FROM_NAME="UnlimitedDB"
+```
+Scegli un indirizzo `MAIL_FROM_ADDRESS` specifico per il sito, così chi riceve la mail capisce subito il mittente (es. `unlimiteddb@mandich.dev`, non un indirizzo generico condiviso tipo `noreply@mandich.dev`) — con il dominio verificato basta questo, non serve ulteriore configurazione Resend per usare indirizzi diversi da sito a sito. Le variabili `MAIL_HOST`/`MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_SCHEME` restano in `.env.example` come riferimento per lo sviluppo locale (mailpit/log), ma non servono più con `resend`. Dopo aver aggiornato il `.env` sul server, riavvia il container app (`SWUDB_app`) perché rilegga le variabili.
+
+**Step 3.5.5 — Verifica invio**
+```
+php artisan tinker
+>>> Mail::raw('Test invio da UnlimitedDB', fn ($m) => $m->to('tuamail@esempio.com')->subject('Test Resend'));
+```
+Controlla l'esito sia nella dashboard Resend ([resend.com/emails](https://resend.com/emails), log di invio con stato delivered/bounced) sia nella casella di posta di destinazione.
+
+☐ Fase 3.5 completata
 
 ---
 
@@ -501,6 +540,9 @@ Elencate per non perderle, ma fuori dallo scope attuale — da riprendere quando
 | HTTP Client | https://laravel.com/docs/12.x/http-client |
 | Filesystem/Storage | https://laravel.com/docs/12.x/filesystem |
 | Mail | https://laravel.com/docs/12.x/mail |
+| Resend (mailer Laravel) | https://laravel.com/docs/12.x/mail#resend-driver |
+| Resend + Laravel (guida ufficiale) | https://resend.com/docs/send-with-laravel |
+| Resend domini/DNS | https://resend.com/docs/dashboard/domains/introduction |
 | Testing (Pest) | https://laravel.com/docs/12.x/testing |
 | Spatie Laravel-permission | https://spatie.be/docs/laravel-permission/v6/introduction |
 | Verifica email | https://laravel.com/docs/12.x/verification |
