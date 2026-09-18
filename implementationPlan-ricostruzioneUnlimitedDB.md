@@ -51,7 +51,7 @@ Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `Q
 | `unique_card` | boolean, default `false` | Rinominata da `unica` (evita ambiguità col termine "unique" usato anche per il vincolo SQL sulla colonna `cid`). Indica la regola "Unica" del gioco (una sola copia in gioco nello stesso momento). |
 | `name` | string | Nome della carta. |
 | `title` | string, nullable | Sottotitolo carta. |
-| `type` | string | Tipo di carta: "unita" o "evento". |
+| `type` | string | Tipo di carta: "unita", "miglioria" o "evento". |
 | `rarity` | string | Rarity della carta: "comune", "non comune", "rara", "leggendaria". |
 | `cost` | unsigned tinyint, nullable | Costo totale della carta in risorse per essere giocata. |
 | `health` | unsigned tinyint, nullable | Punti ferita della carta, presente solo se è un'unità. |
