@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->boolean('is_public')->default(false);
             $table->boolean('assembled')->default(false);
             $table->integer('version')->default(1);
-            $table->bigInteger('previous_version_id')->nullable()->references('id')->on('decks')->cascadeOnDelete();
+            $table->foreignId('previous_version_id')->nullable()->constrained('decks')->nullOnDelete();
             $table->timestamps();
         });
     }

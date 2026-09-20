@@ -36,7 +36,7 @@ class Card extends Model
         'release_date',
     ];
 
-    public function expansion()
+    public function expansionModel()
     {
         return $this->belongsTo(Expansion::class, 'expansion', 'expansion');
     }
@@ -48,7 +48,7 @@ class Card extends Model
 
     public function traits()
     {
-        return $this->belongsToMany(CardTrait::class, 'card_trait', 'cid', 'name');
+        return $this->belongsToMany(CardTrait::class, 'card_trait', 'cid', 'trait_name');
     }
 
     public function decks()

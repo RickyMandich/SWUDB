@@ -10,12 +10,14 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('card_aspect', function (Blueprint $table) {
-            $table->id();
+        Schema::create('card_trait', function (Blueprint $table) {
             $table->string('cid');
+            $table->string('trait_name');
             $table->foreign('cid')->references('cid')->on('cards')->cascadeOnDelete();
-            $table->foreignId('aspect_id')->constrained('aspects')->cascadeOnDelete();
+            $table->foreign('trait_name')->references('name')->on('traits')->cascadeOnDelete();
             $table->timestamps();
+
+            $table->primary(['cid', 'trait_name']);
         });
     }
 
@@ -24,6 +26,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('card_aspect');
+        Schema::dropIfExists('card_trait');
     }
 };

@@ -16,6 +16,6 @@ class CardTrait extends Model
 
     public function cards()
     {
-        return $this->belongsToMany(Card::class, 'traits', 'name', 'card_id');
+        return $this->belongsToMany(Card::class, 'card_trait', 'trait_name', 'cid');
     }
 }

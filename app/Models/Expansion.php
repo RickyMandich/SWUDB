@@ -26,7 +26,7 @@ class Expansion extends Model
     ];
     public function cards()
     {
-        return $this->hasMany(Card::class);
+        return $this->hasMany(Card::class, 'expansion', 'expansion');
     }
     public function mainExpansion()
     {
