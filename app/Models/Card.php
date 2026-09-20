@@ -50,4 +50,12 @@ class Card extends Model
     {
         return $this->belongsToMany(CardTrait::class, 'card_trait', 'cid', 'name');
     }
+
+    public function decks()
+    {
+        return $this->belongsToMany(Deck::class, 'deck_cards', 'cid', 'deck_id', 'cid', 'id')
+            ->using(DeckCard::class)
+            ->withPivot('quantity')
+            ->withTimestamps();
+    }
 }
