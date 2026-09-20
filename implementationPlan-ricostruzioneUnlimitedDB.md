@@ -89,11 +89,11 @@ Stesso motivo di `aspects`: la colonna `cards.traits` (stringa libera) sparisce,
 | `previous_version_id` | nullable, self-FK su `decks.id` | Catena reale delle versioni (self-FK), non un'inferenza sul nome come nella vecchia versione. |
 | `created_at`/`updated_at` | timestamp | |
 
-**Niente `leader_cid`/`base_cid` qui**: la cardinalità di leader/base dipende dal formato (Eternal/Premier: 1+1; Twin Suns: 2 leader+1 base, con vincolo di allineamento tra i due leader) — vedi `deck_cards.role` sotto.
+**Niente `leader_cid`/`base_cid` qui**: la cardinalità di leader/base dipende dal formato (Eternal/Premier: 1+1; Twin Suns: 2 leader+1 base, con vincolo di allineamento tra i due leader) — vedi `deck_cards` sotto (il ruolo si deduce da `cards.type`, non serve una colonna dedicata).
 
 ### `deck_cards`
-`deck_id` (FK `decks.id`), `cid` (FK `cards.cid`), `quantity` (unsigned tinyint), `role` (string: `leader`/`base`/`card`, default `card`).
-Un mazzo Eternal/Premier ha una riga `role=leader` e una `role=base`; Twin Suns ne ha due `role=leader` e una `role=base`. La cardinalità e il vincolo sull'allineamento li verifica il `DeckFormatValidator` del formato (Step 7.3), non lo schema.
+`deck_id` (FK `decks.id`), `cid` (FK `cards.cid`), `quantity` (unsigned tinyint). PK composita `(deck_id, cid)`, già così in migration.
+Niente colonna `role`: `cards.type` distingue già `Leader`/`Base` dagli altri tipi, quindi il ruolo di una riga in un mazzo si ottiene con un join su `cards.type` invece di duplicare l'informazione. Un mazzo Eternal/Premier ha una riga con `cid` di tipo `Leader` e una di tipo `Base`; Twin Suns ne ha due di tipo `Leader` e una di tipo `Base`. La cardinalità e il vincolo sull'allineamento li verifica il `DeckFormatValidator` del formato (Step 7.3), non lo schema.
 
 ### `collection_cards`
 `user_id` (FK `users.id`), `cid` (FK `cards.cid`), `variant` (enum: `normal`, `foil`, `hyper`, `prestige`, `hyper_foil`, default `normal`), `quantity` (unsigned smallint). Chiave univoca composita `(user_id, cid, variant)`. Le varianti di stampa vivono **solo qui**, non nei mazzi (vedi discussione sulla vecchia `compositions`).
@@ -131,7 +131,162 @@ Route::middleware(['auth', 'verified'])->group(function () { /* rotte che richie
 Breeze genera già viste/rotte di verifica. Riferimento: https://laravel.com/docs/12.x/verification
 
 **Step 3.2 — Pagina admin gestione utenti**
-Lista utenti con permesso `users.manage`: assegna/revoca permessi e ruoli (usa i metodi di Spatie `assignRole`/`givePermissionTo`/`revokePermissionTo`), coerente con "miglioramento pagina utenti per la gestione di admin" della vecchia versione.
+Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può assegnargli/togliergli ruoli e permessi, coerente con "miglioramento pagina utenti per la gestione di admin" della vecchia versione. Permesso già seedato: `users.manage` (Step Fase 3 ✅ Fatto), ruolo `admin` già creato con tutti i permessi.
+
+1. **Controller**
+   ```
+   php artisan make:controller Admin/UserManagementController
+   ```
+   Crea `app/Http/Controllers/Admin/UserManagementController.php` con tre metodi:
+   ```php
+   namespace App\Http\Controllers\Admin;
+
+   use App\Http\Controllers\Controller;
+   use App\Models\User;
+   use Illuminate\Http\RedirectResponse;
+   use Illuminate\Http\Request;
+   use Illuminate\View\View;
+   use Spatie\Permission\Models\Permission;
+   use Spatie\Permission\Models\Role;
+
+   class UserManagementController extends Controller
+   {
+       /**
+        * Lists every user with their assigned roles, for the admin overview table
+        * Elenca tutti gli utenti con i ruoli assegnati, per la tabella di riepilogo admin
+        */
+       public function index(): View
+       {
+           $users = User::with('roles')->orderBy('name')->paginate(20);
+
+           return view('admin.users.index', compact('users'));
+       }
+
+       /**
+        * Shows the edit form for a single user: every role/permission plus which ones are currently assigned
+        * Mostra il form di modifica di un utente: tutti i ruoli/permessi disponibili e quali sono già assegnati
+        */
+       public function edit(User $user): View
+       {
+           $roles = Role::orderBy('name')->get();
+           $permissions = Permission::orderBy('name')->get();
+
+           return view('admin.users.edit', compact('user', 'roles', 'permissions'));
+       }
+
+       /**
+        * Overwrites the user's roles and direct permissions with whatever was checked in the form
+        * Sovrascrive ruoli e permessi diretti dell'utente con quanto selezionato nel form
+        */
+       public function update(Request $request, User $user): RedirectResponse
+       {
+           $validated = $request->validate([
+               'roles' => ['array'],
+               'roles.*' => ['string', 'exists:roles,name'],
+               'permissions' => ['array'],
+               'permissions.*' => ['string', 'exists:permissions,name'],
+           ]);
+
+           $user->syncRoles($validated['roles'] ?? []);
+           $user->syncPermissions($validated['permissions'] ?? []);
+
+           return redirect()->route('admin.users.index')->with('status', 'Utente aggiornato.');
+       }
+   }
+   ```
+   `syncRoles`/`syncPermissions` (metodi di `HasRoles`, già sul model `User`) sostituiscono l'intero set con quello passato — così una checkbox deselezionata nel form revoca automaticamente, senza dover chiamare `revokePermissionTo` a mano riga per riga.
+
+2. **Rotte** — in `routes/web.php`, sotto le rotte già esistenti (`require __DIR__.'/auth.php';` resta l'ultima riga):
+   ```php
+   use App\Http\Controllers\Admin\UserManagementController;
+
+   Route::middleware(['auth', 'verified', 'permission:users.manage'])
+       ->prefix('admin')
+       ->name('admin.')
+       ->group(function () {
+           Route::get('/utenti', [UserManagementController::class, 'index'])->name('users.index');
+           Route::get('/utenti/{user}/modifica', [UserManagementController::class, 'edit'])->name('users.edit');
+           Route::put('/utenti/{user}', [UserManagementController::class, 'update'])->name('users.update');
+       });
+   ```
+   Il middleware `permission:users.manage` è registrato automaticamente da Spatie (nessuna configurazione aggiuntiva in `bootstrap/app.php`): se l'utente autenticato non ha quel permesso, Laravel risponde `403` prima ancora di entrare nel controller.
+
+3. **Vista lista** — `resources/views/admin/users/index.blade.php` (estende il layout Breeze, es. `x-app-layout`):
+   ```blade
+   <x-app-layout>
+       <div class="max-w-4xl mx-auto py-6">
+           <h1 class="text-xl font-semibold mb-4">Gestione utenti</h1>
+           @if (session('status'))
+               <div class="mb-4 text-green-600">{{ session('status') }}</div>
+           @endif
+           <table class="w-full text-left border-collapse">
+               <thead>
+                   <tr>
+                       <th>Nome</th>
+                       <th>Email</th>
+                       <th>Ruoli</th>
+                       <th></th>
+                   </tr>
+               </thead>
+               <tbody>
+                   @foreach ($users as $user)
+                       <tr>
+                           <td>{{ $user->name }}</td>
+                           <td>{{ $user->email }}</td>
+                           <td>{{ $user->roles->pluck('name')->join(', ') }}</td>
+                           <td><a href="{{ route('admin.users.edit', $user) }}">Modifica</a></td>
+                       </tr>
+                   @endforeach
+               </tbody>
+           </table>
+           {{ $users->links() }}
+       </div>
+   </x-app-layout>
+   ```
+
+4. **Vista modifica** — `resources/views/admin/users/edit.blade.php`, checkbox per ogni ruolo e ogni permesso, pre-selezionati se già assegnati:
+   ```blade
+   <x-app-layout>
+       <div class="max-w-2xl mx-auto py-6">
+           <h1 class="text-xl font-semibold mb-4">Modifica {{ $user->name }}</h1>
+           <form method="POST" action="{{ route('admin.users.update', $user) }}">
+               @csrf
+               @method('PUT')
+
+               <h2 class="font-medium mt-4">Ruoli</h2>
+               @foreach ($roles as $role)
+                   <label class="block">
+                       <input type="checkbox" name="roles[]" value="{{ $role->name }}"
+                           @checked($user->hasRole($role->name))>
+                       {{ $role->name }}
+                   </label>
+               @endforeach
+
+               <h2 class="font-medium mt-4">Permessi diretti</h2>
+               @foreach ($permissions as $permission)
+                   <label class="block">
+                       <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"
+                           @checked($user->hasDirectPermission($permission->name))>
+                       {{ $permission->name }}
+                   </label>
+               @endforeach
+
+               <button type="submit" class="mt-4">Salva</button>
+           </form>
+       </div>
+   </x-app-layout>
+   ```
+   `hasDirectPermission` (non `hasPermissionTo`) mostra solo i permessi assegnati **direttamente** all'utente, escludendo quelli ereditati da un ruolo — così la checkbox "Permessi diretti" non si sovrappone visivamente ai permessi già dati dal ruolo `admin`.
+
+5. **Link in navigazione** — nel componente di navigazione di Breeze (`resources/views/layouts/navigation.blade.php`), aggiungi una voce visibile solo a chi ha il permesso:
+   ```blade
+   @can('users.manage')
+       <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+           {{ __('Gestione utenti') }}
+       </x-nav-link>
+   @endcan
+   ```
+   `@can('users.manage')` funziona senza altro setup perché Spatie registra i permessi come Gate di Laravel automaticamente (il trait `HasRoles` sul model `User` collega `can()`/`@can` ai permessi Spatie).
 
 ☐ Fase 3 completata
 
@@ -187,14 +342,18 @@ Modelli `Expansion`/`Card`; migration `expansions`/`cards`; `ImportCardsFromSwuA
 **Step 4.1 — Bug bloccante**
 Manca `use Illuminate\Support\Facades\Schedule;` in `routes/console.php`.
 
-**Step 4.2 — Applica lo schema `cards`/`expansions`**
-Come definito sopra: rinomina camelCase→snake_case, `release_date`/`legal_date` distinti, `group_main_expansion`, FK `cards.expansion → expansions.expansion`.
+**Step 4.2 — Applica lo schema `cards`/`expansions`** ✅ quasi tutto fatto, manca solo un pezzo
+Controllate le migration reali: `expansions` e `cards` sono già in snake_case, `release_date`/`legal_date` sono già due colonne distinte, `group_main_expansion` c'è già (con self-FK). **Manca però la foreign key `cards.expansion → expansions.expansion`**: nella migration `create_cards_table.php` la colonna `expansion` è dichiarata come semplice `$table->string('expansion', 10);`, senza vincolo di integrità referenziale verso `expansions`. Aggiungi, subito prima della `$table->primary(['expansion', 'number']);`:
+```php
+$table->foreign('expansion')->references('expansion')->on('expansions')->cascadeOnDelete();
+```
+Senza questo vincolo, un `Card::create()` con un codice espansione inesistente (typo, espansione non ancora importata) verrebbe accettato silenziosamente dal database invece di fallire subito — esattamente il tipo di errore che poi si scopre tardi, in produzione, invece che al momento dell'import.
 
-**Step 4.3 — Aspetti e tratti**
-Crea `Aspect` (`php artisan make:model Aspect -m`) e la pivot `card_aspect` (`php artisan make:migration create_card_aspect_table`). Stesso pattern per i tratti, ma con PK naturale invece di `id`: modello `CardTrait` (`php artisan make:model CardTrait -m`, tabella `traits` con PK `name` — vedi nota naming/PK nello schema sopra) e la pivot `card_trait` (`php artisan make:migration create_card_trait_table`, colonne `cid`/`trait_name`); rimuovi la colonna `traits` dalla migration `cards` (non ancora eseguita in produzione, quindi nessun dato da migrare).
+**Step 4.3 — Aspetti e tratti** ✅ Fatto
+`Aspect`/`CardTrait` e le pivot `card_aspect`/`card_trait` esistono già con PK/FK corrette (vedi schema sopra); colonna `cards.traits` già rimossa.
 
-**Step 4.4 — Relazioni nei modelli**
-`Card::aspects()` (belongsToMany), `Card::traits()` (belongsToMany verso `CardTrait`, pivot `card_trait` — `belongsToMany(CardTrait::class, 'card_trait', 'cid', 'trait_name', 'cid', 'name')`: va specificata esplicitamente la foreign/owner key sul lato `traits`, perché di default Laravel si aspetta `trait_id`/`id`, non `trait_name`/`name`), `Card::expansionModel()` (belongsTo, o rinomina la relazione per non confliggere con la colonna `expansion`), `Expansion::cards()` (hasMany), `Expansion::groupMainExpansion()`/`dependentExpansions()` (self-relations su `group_main_expansion`).
+**Step 4.4 — Relazioni nei modelli** ✅ Fatto
+`Card::aspects()`, `Card::traits()`, `Card::expansionModel()`, `Expansion::cards()`, `Expansion::mainExpansion()`/`subExpansions()` già scritte e con le chiavi giuste.
 
 **Step 4.5 — `ImportCardsFromSwuApiJob`**
 Endpoint ufficiali (da `documentation.md`/`todo.md` della vecchia versione):
@@ -203,24 +362,146 @@ GET https://admin.starwarsunlimited.com/api/card/{cid}?locale=it
 GET https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&pagination[page]={page}&pagination[pageSize]=10
 ```
 Requisiti raccolti da `todo.md` (vecchia versione, da riportare):
-- **un solo messaggio Telegram per scan**, aggiornato nel tempo con `TelegramService::editMessage()` (Fase 9) invece di spammare un messaggio per evento — crea il messaggio a inizio scan (`sendMessage`, salva il `messageId`), aggiornalo con `editMessage` ad ogni fase/pagina processata, chiudilo con il riepilogo finale
-- **verifica che la carta non sia già presente** prima di considerarla "nuova" (per l'email agli utenti, punto sotto)
-- a fine scan: **email a tutti gli utenti** con le carte aggiunte in questo scan (Mailable `NewCardsEmail`, coda `ShouldQueue` per non bloccare il job); **email agli admin** con le carte che hanno lanciato errori o erano già presenti, motivo specifico incluso (usa `system_errors`, Fase 5)
+- **un solo messaggio Telegram per scan**, aggiornato nel tempo con `TelegramService::editMessage()` (Fase 9) invece di spammare un messaggio per evento
+- **verifica che la carta non sia già presente** prima di considerarla "nuova" (per l'email agli utenti)
+- a fine scan: **email a tutti gli utenti** con le carte aggiunte (`NewCardsEmail`, coda); **email agli admin** con le carte che hanno lanciato errori o erano già presenti (`AdminScanReportEmail`)
 - ogni riga fallita → `SystemError::create([...])` invece di interrompere l'intero scan (fail-soft)
 
+**Prerequisito**: prima di scrivere il job, chiama `GET .../card-list?locale=it&pagination[page]=1&pagination[pageSize]=1` da Postman/curl/tinker e guarda la risposta vera — i nomi esatti dei campi JSON (es. se il costo si chiama `cost` o `energyCost`) vanno confermati sui dati reali, non indovinati. Lo scheletro sotto usa nomi plausibili come placeholder, da correggere al primo giro di test.
+
 ```php
-public function handle(TelegramService $telegram): void
+namespace App\Jobs;
+
+use App\Mail\AdminScanReportEmail;
+use App\Mail\NewCardsEmail;
+use App\Models\Card;
+use App\Models\SystemError;
+use App\Models\User;
+use App\Services\CardImageDownloader;
+use App\Services\TelegramService;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+
+class ImportCardsFromSwuApiJob implements ShouldQueue
 {
-    $progressMessage = $telegram->sendMessage($adminChatId, 'Scan avviato...');
-    // per ogni pagina dell'API:
-    //   Http::get(...) -> per ogni carta: updateOrCreate su Card per cid, traccia se era nuova
-    //   in caso di errore riga per riga: SystemError::create(...), continua
-    //   $telegram->editMessage($adminChatId, $progressMessage->messageId, "Pagina X/Y...")
-    // a fine job: Mail::to(User::all())->queue(new NewCardsEmail($nuoveCarte));
-    //             Mail::to($admins)->queue(new AdminScanReportEmail($errori));
-    //             $telegram->editMessage($adminChatId, $progressMessage->messageId, "Scan completato: riepilogo...");
+    use Queueable, InteractsWithQueue, SerializesModels;
+
+    public $tries = 3;
+    public $backoff = 60;
+
+    public function handle(TelegramService $telegram, CardImageDownloader $imageDownloader): void
+    {
+        $adminChatId = config('services.telegram.admin_chat_id');
+        $progress = $telegram->sendMessage($adminChatId, 'Scan avviato...');
+
+        $newCards = collect();
+        $errors = collect();
+        $page = 1;
+        $lastPage = 1;
+
+        do {
+            $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
+                'locale' => 'it',
+                'filters[variantOf][id][$null]' => 'true',
+                'pagination[page]' => $page,
+                'pagination[pageSize]' => 10,
+            ]);
+
+            if ($response->failed()) {
+                SystemError::create([
+                    'source' => self::class,
+                    'message' => "Pagina {$page}: richiesta API fallita ({$response->status()})",
+                    'context' => ['page' => $page, 'body' => $response->body()],
+                ]);
+                break; // l'intera pagina non e' recuperabile, non ha senso continuare a paginare
+            }
+
+            $payload = $response->json();
+            $lastPage = $payload['meta']['pagination']['pageCount'] ?? $page;
+
+            foreach ($payload['data'] ?? [] as $cardData) {
+                try {
+                    $cid = $cardData['cid']; // TODO: verifica il nome vero del campo
+                    $existed = Card::where('cid', $cid)->exists();
+
+                    $card = Card::updateOrCreate(
+                        ['cid' => $cid],
+                        [
+                            'expansion' => $cardData['expansion'],
+                            'number' => $cardData['number'],
+                            'unique_card' => $cardData['unique'] ?? false,
+                            'name' => $cardData['title'] ?? $cardData['name'],
+                            'title' => $cardData['subtitle'] ?? null,
+                            'type' => $cardData['type'],
+                            'rarity' => $cardData['rarity'],
+                            'cost' => $cardData['cost'] ?? null,
+                            'health' => $cardData['hp'] ?? null,
+                            'power' => $cardData['power'] ?? null,
+                            'text' => $cardData['text'] ?? '',
+                            'arena' => $cardData['arena'] ?? null,
+                            'artist' => $cardData['artist'] ?? null,
+                            'max_copies' => $cardData['maxCopies'] ?? null,
+                            'release_date' => $cardData['releaseDate'] ?? null,
+                        ]
+                    );
+
+                    if (! $existed) {
+                        $newCards->push($card);
+                    } else {
+                        $errors->push("Carta {$cid} gia' presente, dati aggiornati");
+                    }
+
+                    if ($frontUrl = $cardData['frontArt'] ?? null) {
+                        if (! $card->front_art_path) {
+                            $path = $imageDownloader->download($frontUrl, $card->expansion, $card->number, 'front');
+                            $path ? $card->update(['front_art_path' => $path]) : SystemError::create([
+                                'source' => CardImageDownloader::class,
+                                'message' => "Download immagine fronte fallito per {$cid}",
+                            ]);
+                        }
+                    }
+                    // stesso pattern per back_art_path/backArt
+                } catch (\Throwable $e) {
+                    SystemError::create([
+                        'source' => self::class,
+                        'message' => "Errore su carta {$cardData['cid'] ?? '?'}: {$e->getMessage()}",
+                        'stack_trace' => $e->getTraceAsString(),
+                        'context' => ['raw' => $cardData],
+                    ]);
+                    $errors->push($e->getMessage());
+                    continue; // fail-soft: una carta rotta non ferma lo scan
+                }
+            }
+
+            $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
+            $page++;
+        } while ($page <= $lastPage);
+
+        if ($newCards->isNotEmpty()) {
+            Mail::to(User::all())->queue(new NewCardsEmail($newCards));
+        }
+        if ($errors->isNotEmpty()) {
+            $admins = User::role('admin')->get();
+            Mail::to($admins)->queue(new AdminScanReportEmail($errors));
+        }
+
+        $telegram->editMessage(
+            $adminChatId,
+            $progress->messageId,
+            "Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi."
+        );
+    }
 }
 ```
+Note sul codice sopra:
+- `TelegramActionResult::$messageId` (Fase 9, Step 9.2) e' quello che permette di modificare lo stesso messaggio invece di mandarne uno nuovo ad ogni pagina.
+- Il `break` sulla richiesta fallita (non il singolo `continue` per carta) e' intenzionale: se l'intera pagina non risponde, insistere sulle pagine successive non ha senso.
+- `Mail::to($admins)` usa `User::role('admin')` (metodo di Spatie `HasRoles`), non `permission:` diretto, perche' l'email va a chi ha il ruolo `admin`, non a chiunque abbia un permesso specifico.
+- Mailable `NewCardsEmail`/`AdminScanReportEmail` (`php artisan make:mail NewCardsEmail --markdown=emails.new-cards`) vanno creati insieme a questo step, non prima: senza carte da mostrare non hanno contenuto da progettare.
 Riferimento: https://laravel.com/docs/12.x/queues#creating-jobs, https://laravel.com/docs/12.x/mail
 
 **Step 4.6 — Download locale delle immagini carta**
@@ -258,7 +539,61 @@ class CardImageDownloader
 Riferimento: https://laravel.com/docs/12.x/filesystem
 
 **Step 4.7 — Copertura Pest**
-`Http::fake()` per mockare le risposte API; verifica creazione/aggiornamento carte, gestione paginazione, registrazione `SystemError` su dati malformati, invio delle due email. Questa è la verifica di correttezza della logica di import, contro dati controllati — non un controllo post-hoc sulla produzione.
+File `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`:
+```php
+use App\Jobs\ImportCardsFromSwuApiJob;
+use App\Mail\NewCardsEmail;
+use App\Mail\AdminScanReportEmail;
+use App\Models\Card;
+use App\Models\SystemError;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+
+it('crea le carte nuove ricevute dall\'API', function () {
+    Http::fake([
+        'admin.starwarsunlimited.com/api/card-list*' => Http::response([
+            'data' => [/* payload fittizio con 1-2 carte */],
+            'meta' => ['pagination' => ['pageCount' => 1]],
+        ]),
+    ]);
+    Mail::fake();
+
+    (new ImportCardsFromSwuApiJob())->handle(app(\App\Services\TelegramService::class), app(\App\Services\CardImageDownloader::class));
+
+    expect(Card::count())->toBe(2);
+    Mail::assertQueued(NewCardsEmail::class);
+});
+
+it('pagina correttamente su piu\' pagine', function () {
+    Http::fake([
+        'admin.starwarsunlimited.com/api/card-list*' => Http::sequence()
+            ->push(['data' => [/* pagina 1 */], 'meta' => ['pagination' => ['pageCount' => 2]]])
+            ->push(['data' => [/* pagina 2 */], 'meta' => ['pagination' => ['pageCount' => 2]]]),
+    ]);
+    // ... assert su Http::assertSentCount(2) e sul totale carte create
+});
+
+it('registra un SystemError su dati malformati invece di fermare lo scan', function () {
+    Http::fake([
+        'admin.starwarsunlimited.com/api/card-list*' => Http::response([
+            'data' => [['cid' => null /* campo obbligatorio mancante, forza l\'eccezione */]],
+            'meta' => ['pagination' => ['pageCount' => 1]],
+        ]),
+    ]);
+
+    // ... esegui il job
+
+    expect(SystemError::count())->toBeGreaterThan(0);
+});
+
+it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', function () {
+    Mail::fake();
+    // Http::fake con una carta gia' esistente in DB (factory) rispedita dall'API
+    // ... esegui il job
+    Mail::assertQueued(AdminScanReportEmail::class);
+});
+```
+`Http::fake()` intercetta le chiamate a `admin.starwarsunlimited.com` senza uscire in rete davvero; `Mail::fake()` verifica solo che la mail sia stata accodata (`assertQueued`), senza inviarla. Questa e' la verifica di correttezza della logica di import, contro dati controllati — non un controllo post-hoc sulla produzione.
 
 ☐ Fase 4 completata
 
@@ -266,20 +601,104 @@ Riferimento: https://laravel.com/docs/12.x/filesystem
 
 ## Fase 5 — Log errori scan (`system_errors`)
 
-**Step 5.1 — Migration e modello**
-Schema in cima al documento. `php artisan make:model SystemError -m`.
+**Step 5.1 — Migration e modello** ✅ Fatto
+`system_errors` migration e model `SystemError` gia' presenti e corretti (`$fillable`/`$casts` inclusi).
 
 **Step 5.2 — Permesso**
-Estendi `PermissionSeeder`: `system.manage-errors`.
+In `database/seeders/PermissionSeeder.php`, aggiungi `'system.manage-errors'` all'array `$permissions` (viene automaticamente dato al ruolo `admin` dalla riga `$admin->givePermissionTo($permissions);` gia' presente). Poi ri-esegui il seeder: `php artisan db:seed --class=PermissionSeeder`.
 
 **Step 5.3 — Pagina admin `/admin/errori`**
-- lista filtrabile per `status` (`open`/`resolved`/`ignored`)
-- pulsanti riga-per-riga "segna come risolto" / "segna come ignorato"
-- **selezione multipla** con azione bulk per assegnare uno stato a più errori insieme (richiesto esplicitamente in `todo.md`)
-- vista di dettaglio per singolo errore (mostra `context` formattato)
-- link diretto a un errore dalla mail di notifica agli admin (Step 4.5) — serve una rotta tipo `/admin/errori/{systemError}` a cui puntare
+Stesso pattern architetturale di Step 3.2 (controller + route group `permission:` + viste Blade), applicato a `SystemError`.
 
-Protetta da `Route::middleware(['auth', 'permission:system.manage-errors'])`.
+1. **Controller**
+   ```
+   php artisan make:controller Admin/SystemErrorController
+   ```
+   ```php
+   namespace App\Http\Controllers\Admin;
+
+   use App\Http\Controllers\Controller;
+   use App\Models\SystemError;
+   use Illuminate\Http\RedirectResponse;
+   use Illuminate\Http\Request;
+   use Illuminate\View\View;
+
+   class SystemErrorController extends Controller
+   {
+       public function index(Request $request): View
+       {
+           $status = $request->query('status'); // 'open' | 'resolved' | 'ignored' | null (tutti)
+
+           $errors = SystemError::when($status, fn ($q) => $q->where('status', $status))
+               ->latest()
+               ->paginate(30)
+               ->withQueryString(); // mantiene il filtro ?status= nei link di paginazione
+
+           return view('admin.errors.index', compact('errors', 'status'));
+       }
+
+       public function show(SystemError $systemError): View
+       {
+           return view('admin.errors.show', compact('systemError'));
+       }
+
+       /**
+        * Updates the status of a single error (resolved/ignored) from a row-level button
+        * Aggiorna lo stato di un singolo errore (risolto/ignorato) da un pulsante riga-per-riga
+        */
+       public function update(Request $request, SystemError $systemError): RedirectResponse
+       {
+           $validated = $request->validate(['status' => ['required', 'in:open,resolved,ignored']]);
+
+           $systemError->update([
+               'status' => $validated['status'],
+               'resolved_at' => $validated['status'] === 'open' ? null : now(),
+           ]);
+
+           return back()->with('status', 'Errore aggiornato.');
+       }
+
+       /**
+        * Bulk action: applies the same status to every selected error id at once
+        * Azione bulk: applica lo stesso stato a tutti gli id di errore selezionati insieme
+        */
+       public function bulkUpdate(Request $request): RedirectResponse
+       {
+           $validated = $request->validate([
+               'ids' => ['required', 'array'],
+               'ids.*' => ['integer', 'exists:system_errors,id'],
+               'status' => ['required', 'in:open,resolved,ignored'],
+           ]);
+
+           SystemError::whereIn('id', $validated['ids'])->update([
+               'status' => $validated['status'],
+               'resolved_at' => $validated['status'] === 'open' ? null : now(),
+           ]);
+
+           return back()->with('status', count($validated['ids']).' errori aggiornati.');
+       }
+   }
+   ```
+
+2. **Rotte** — stesso blocco `Route::middleware(['auth', 'verified', 'permission:system.manage-errors'])->prefix('admin')->name('admin.')->group(...)` di Step 3.2 (puoi estendere lo stesso gruppo se preferisci, cambiando il permesso richiesto a livello di singola rotta con `->middleware('permission:system.manage-errors')` sulla singola route invece che sul gruppo intero, visto che qui il permesso e' diverso da `users.manage`):
+   ```php
+   use App\Http\Controllers\Admin\SystemErrorController;
+
+   Route::middleware(['auth', 'verified', 'permission:system.manage-errors'])
+       ->prefix('admin')
+       ->name('admin.')
+       ->group(function () {
+           Route::get('/errori', [SystemErrorController::class, 'index'])->name('errors.index');
+           Route::get('/errori/{systemError}', [SystemErrorController::class, 'show'])->name('errors.show');
+           Route::patch('/errori/{systemError}', [SystemErrorController::class, 'update'])->name('errors.update');
+           Route::patch('/errori/bulk', [SystemErrorController::class, 'bulkUpdate'])->name('errors.bulk-update');
+       });
+   ```
+   La rotta `errors.show` e' quella a cui punta il link nella mail `AdminScanReportEmail` (Step 4.5): `route('admin.errors.show', $systemError)`.
+
+3. **Vista lista** — `resources/views/admin/errors/index.blade.php`: filtro per stato via link GET (`?status=open` ecc.), checkbox riga-per-riga dentro un unico `<form>` che invia a `errors.bulk-update`, pulsanti singoli "Risolto"/"Ignora" che inviano un piccolo form PATCH per riga verso `errors.update`. Ogni riga mostra `source`, `message`, `status` (badge colorato), link a `errors.show`.
+
+4. **Vista dettaglio** — `resources/views/admin/errors/show.blade.php`: mostra `message`, `stack_trace` in un `<pre>`, e `context` formattato con `<pre>{{ json_encode($systemError->context, JSON_PRETTY_PRINT) }}</pre>` (il cast `context => array` gia' presente sul model lo restituisce come array PHP, va ri-serializzato per la vista).
 
 ☐ Fase 5 completata
 
@@ -290,10 +709,108 @@ Protetta da `Route::middleware(['auth', 'permission:system.manage-errors'])`.
 > Dalla vecchia versione (`todo.md`): "creare pagina admin di gestione espansioni e rotazioni". Necessaria perché `rotation`/`legal_date`/`confirmed`/`group_main_expansion` sono dati a cura manuale dell'admin (schema `expansions`).
 
 **Step 6.1 — Permesso**
-Estendi `PermissionSeeder`: `expansions.manage`.
+Stessa procedura di Step 5.2: aggiungi `'expansions.manage'` all'array `$permissions` in `PermissionSeeder`, poi `php artisan db:seed --class=PermissionSeeder`.
 
 **Step 6.2 — Pagina admin `/admin/espansioni`**
-Lista tutte le `expansions` (comprese quelle token `T*`, vedi nota nello schema) con form di modifica per `legal_date`, `rotation`, `group_main_expansion`, e checkbox `confirmed` per marcare i dati come verificati. Protetta da `permission:expansions.manage`.
+A differenza di Step 3.2/5.3 (liste con edit su pagina separata), qui ha senso un **form inline per riga** dato che sono poche decine di espansioni e i campi da editare sono solo 3+1 checkbox.
+
+1. **Controller**
+   ```
+   php artisan make:controller Admin/ExpansionController
+   ```
+   ```php
+   namespace App\Http\Controllers\Admin;
+
+   use App\Http\Controllers\Controller;
+   use App\Models\Expansion;
+   use Illuminate\Http\RedirectResponse;
+   use Illuminate\Http\Request;
+   use Illuminate\View\View;
+
+   class ExpansionController extends Controller
+   {
+       public function index(): View
+       {
+           // include anche le espansioni token (T*, vedi nota schema) — nessun filtro, e' voluto
+           $expansions = Expansion::orderBy('expansion')->get();
+
+           return view('admin.expansions.index', compact('expansions'));
+       }
+
+       public function update(Request $request, Expansion $expansion): RedirectResponse
+       {
+           $validated = $request->validate([
+               'legal_date' => ['nullable', 'date'],
+               'rotation' => ['required', 'string', 'max:1'],
+               'group_main_expansion' => ['nullable', 'string', 'exists:expansions,expansion'],
+               'confirmed' => ['boolean'],
+           ]);
+           $validated['confirmed'] = $request->boolean('confirmed'); // checkbox non spuntata non arriva nel payload
+
+           $expansion->update($validated);
+
+           return back()->with('status', "Espansione {$expansion->expansion} aggiornata.");
+       }
+   }
+   ```
+   `exists:expansions,expansion` valida che `group_main_expansion` punti a un'espansione realmente esistente, coerente col vincolo di FK gia' presente in migration — cosi' un errore di digitazione nel form viene bloccato dalla validazione con un messaggio chiaro, invece di far fallire la query con un errore SQL generico.
+
+2. **Rotte**
+   ```php
+   use App\Http\Controllers\Admin\ExpansionController;
+
+   Route::middleware(['auth', 'verified', 'permission:expansions.manage'])
+       ->prefix('admin')
+       ->name('admin.')
+       ->group(function () {
+           Route::get('/espansioni', [ExpansionController::class, 'index'])->name('expansions.index');
+           Route::put('/espansioni/{expansion}', [ExpansionController::class, 'update'])->name('expansions.update');
+       });
+   ```
+   Nota: `{expansion}` nella rotta fa route-model-binding sulla colonna `expansion` (la PK del modello) automaticamente, perche' `Expansion::$primaryKey = 'expansion'` è gia' impostato nel model — non serve `Route::bind()` o `{expansion:expansion}` espliciti.
+
+3. **Vista** — `resources/views/admin/expansions/index.blade.php`: una tabella con una riga `<form>` per espansione (submit automatico on-change via poco Alpine.js, o un pulsante "Salva" per riga se preferisci evitare JS):
+   ```blade
+   <x-app-layout>
+       <div class="max-w-5xl mx-auto py-6">
+           <h1 class="text-xl font-semibold mb-4">Gestione espansioni</h1>
+           @if (session('status'))
+               <div class="mb-4 text-green-600">{{ session('status') }}</div>
+           @endif
+           <table class="w-full text-left border-collapse">
+               <thead>
+                   <tr>
+                       <th>Codice</th><th>Legal date</th><th>Rotation</th><th>Gruppo</th><th>Confermata</th><th></th>
+                   </tr>
+               </thead>
+               <tbody>
+                   @foreach ($expansions as $expansion)
+                       <tr>
+                           <form method="POST" action="{{ route('admin.expansions.update', $expansion) }}">
+                               @csrf
+                               @method('PUT')
+                               <td>{{ $expansion->expansion }}</td>
+                               <td><input type="date" name="legal_date" value="{{ $expansion->legal_date?->format('Y-m-d') }}"></td>
+                               <td><input type="text" name="rotation" value="{{ $expansion->rotation }}" maxlength="1" class="w-10"></td>
+                               <td>
+                                   <select name="group_main_expansion">
+                                       <option value="">—</option>
+                                       @foreach ($expansions as $option)
+                                           <option value="{{ $option->expansion }}" @selected($expansion->group_main_expansion === $option->expansion)>{{ $option->expansion }}</option>
+                                       @endforeach
+                                   </select>
+                               </td>
+                               <td><input type="checkbox" name="confirmed" value="1" @checked($expansion->confirmed)></td>
+                               <td><button type="submit">Salva</button></td>
+                           </form>
+                       </tr>
+                   @endforeach
+               </tbody>
+           </table>
+       </div>
+   </x-app-layout>
+   ```
+   Nota HTML: un `<form>` non puo' avvolgere direttamente celle `<td>` in modo valido secondo lo standard, ma tutti i browser lo renderizzano comunque correttamente; se preferisci markup strettamente valido, sposta il `<form>` fuori dalla `<tr>` e collega gli input con l'attributo `form="id-univoco"` invece di annidarli.
 
 ☐ Fase 6 completata
 
@@ -301,8 +818,44 @@ Lista tutte le `expansions` (comprese quelle token `T*`, vedi nota nello schema)
 
 ## Fase 7 — Gestione mazzi multi-formato
 
-**Step 7.1 — Enum `DeckFormat`**
+**Step 7.2 (van fatti insieme, vedi sotto per i bug da correggere) — Modelli e migration** ⚠️ parzialmente fatto
+Migration `decks`/`deck_cards` gia' presenti e corrette. Modello `DeckCard extends Pivot` gia' corretto. Il modello `Deck` esiste ma va corretto su due punti:
+
+1. **`Deck::cards()` usa la chiave pivot sbagliata** (`card_id` invece di `cid`) e non passa da `DeckCard`. Sostituisci:
+   ```php
+   public function cards()
+   {
+       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'cid', 'id', 'cid')
+           ->using(DeckCard::class)
+           ->withPivot('quantity')
+           ->withTimestamps();
+   }
+   ```
+2. **`Deck::leader()`/`Deck::base()` sono concettualmente sbagliate**: interrogano `Card` con `hasMany`/`hasOne`, ma le carte non hanno una colonna `deck_id` — il collegamento passa dalla pivot `deck_cards`, non da una FK diretta su `cards`. Sostituisci con due relazioni derivate da `cards.type` (coerente con la decisione di non avere `deck_cards.role`, vedi schema sopra):
+   ```php
+   public function leaders()
+   {
+       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'cid', 'id', 'cid')
+           ->using(DeckCard::class)
+           ->withPivot('quantity')
+           ->where('cards.type', 'Leader'); // Twin Suns ne ammette 2, Eternal/Premier 1 — la cardinalita' la controlla il validator (Step 7.3), non questa relazione
+   }
+
+   public function baseCard()
+   {
+       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'cid', 'id', 'cid')
+           ->using(DeckCard::class)
+           ->withPivot('quantity')
+           ->where('cards.type', 'Base');
+   }
+   ```
+   Sono comunque relazioni `belongsToMany` vere (non semplici query), quindi restano eager-loadabili con `Deck::with('leaders', 'baseCard')->get()`. `previousVersion()`/`nextVersion()` gia' presenti e corrette, nessuna modifica.
+
+**Step 7.1 — Enum `DeckFormat` e cast**
 ```php
+// app/Enums/DeckFormat.php
+namespace App\Enums;
+
 enum DeckFormat: string
 {
     case Premier = 'premier';
@@ -310,21 +863,75 @@ enum DeckFormat: string
     case TwinSuns = 'twin_suns';
 }
 ```
-
-**Step 7.2 — Modelli e migration**
-Schema `decks`/`deck_cards` in cima al documento. `php artisan make:model Deck -m` + `php artisan make:migration create_deck_cards_table`. Nel modello `Deck`: `protected $casts = ['format' => DeckFormat::class];` e relazioni `deckCards()`, `leaderCards()`/`baseCard()` (scoped su `role`), `previousVersion()`/`versions()` (self-relation). Riferimento: https://laravel.com/docs/12.x/eloquent-mutators#enum-casting
+Poi, in `Deck.php`, aggiungi il cast (manca ancora):
+```php
+protected $casts = [
+    'format' => \App\Enums\DeckFormat::class,
+];
+```
+Da qui in poi `$deck->format` restituisce un'istanza dell'enum (`DeckFormat::Premier`), non una stringa — utile per lo `match` del validator (Step 7.3) e della factory (Step 7.4). Riferimento: https://laravel.com/docs/12.x/eloquent-mutators#enum-casting
 
 **Step 7.3 — Validator per formato**
 ```php
+// app/Services/DeckValidation/DeckFormatValidator.php
+namespace App\Services\DeckValidation;
+
+use App\Models\Deck;
+
 interface DeckFormatValidator
 {
+    /**
+     * Validates a deck against this format's rules, returning a list of human-readable errors
+     * Valida un mazzo secondo le regole di questo formato, restituendo una lista di errori leggibili
+     *
+     * @return array<int, string> Vuoto se il mazzo e' valido
+     */
     public function validate(Deck $deck): array;
 }
 ```
-`PremierFormatValidator`, `EternalFormatValidator`, `TwinSunsFormatValidator` in `app/Services/DeckValidation/`: numero di leader ammessi (1 o 2 in base al formato), esattamente 1 base, per Twin Suns il vincolo di allineamento tra i due leader, limiti di copie per carta secondo il regolamento ufficiale.
+Esempio completo per Premier (`app/Services/DeckValidation/PremierFormatValidator.php`), gli altri due seguono lo stesso schema cambiando solo i numeri/vincoli:
+```php
+namespace App\Services\DeckValidation;
+
+use App\Models\Deck;
+
+class PremierFormatValidator implements DeckFormatValidator
+{
+    public function validate(Deck $deck): array
+    {
+        $errors = [];
+
+        if ($deck->leaders()->count() !== 1) {
+            $errors[] = 'Il formato Premier richiede esattamente 1 leader.';
+        }
+        if ($deck->baseCard()->count() !== 1) {
+            $errors[] = 'Il formato Premier richiede esattamente 1 base.';
+        }
+
+        foreach ($deck->cards as $card) {
+            $limit = $card->max_copies ?? 3; // 3 e' il limite standard SWU, max_copies sovrascrive per le eccezioni
+            if ($card->unique_card) {
+                $limit = 1;
+            }
+            if ($card->pivot->quantity > $limit) {
+                $errors[] = "Troppe copie di {$card->name} ({$card->pivot->quantity}/{$limit}).";
+            }
+        }
+
+        // TODO: controllo rotazione (solo le ultime 2 expansions.rotation) quando Fase 6 e' popolata di dati reali
+
+        return $errors;
+    }
+}
+```
+`EternalFormatValidator`: stesso controllo leader/base (1+1) ma **senza** il controllo di rotazione (Eternal ammette tutte le espansioni). `TwinSunsFormatValidator`: `leaders()->count() !== 2` invece di `!== 1`, **piu'** un controllo di allineamento tra i due leader (serve sapere quale colonna/relazione rappresenta l'allineamento della carta — non ancora nello schema `cards` attuale, da aggiungere quando importi i dati reali e vedi come l'API la espone).
 
 **Step 7.4 — Factory**
 ```php
+namespace App\Services\DeckValidation;
+
+use App\Enums\DeckFormat;
+
 class DeckFormatValidatorFactory
 {
     public static function make(DeckFormat $format): DeckFormatValidator
@@ -337,24 +944,117 @@ class DeckFormatValidatorFactory
     }
 }
 ```
+Uso tipico nel controller (Step 7.6): `DeckFormatValidatorFactory::make($deck->format)->validate($deck)`.
 
 **Step 7.5 — Policy**
 ```
 php artisan make:policy DeckPolicy --model=Deck
 ```
-`update()`: proprietario o permesso `decks.manage-any`.
+```php
+namespace App\Policies;
+
+use App\Models\Deck;
+use App\Models\User;
+
+class DeckPolicy
+{
+    public function update(User $user, Deck $deck): bool
+    {
+        return $user->id === $deck->user_id || $user->can('decks.manage-any');
+    }
+
+    public function delete(User $user, Deck $deck): bool
+    {
+        return $this->update($user, $deck);
+    }
+
+    public function view(User $user, Deck $deck): bool
+    {
+        return $deck->is_public || $user->id === $deck->user_id || $user->can('decks.manage-any');
+    }
+}
+```
+Laravel registra automaticamente `DeckPolicy` per il model `Deck` (naming convention, nessuna registrazione manuale in Laravel 11+). Nel controller: `$this->authorize('update', $deck);` oppure `@can('update', $deck)` in Blade.
 
 **Step 7.6 — Pagine mazzi**
-- `/mazzi` — lista mazzi pubblici + propri (filtro per formato)
-- `/mazzi/crea` — form: nome, formato (select `DeckFormat`), poi redirect all'editor
-- `/mazzi/{deck}` — editor: ricerca carte (riusa `CardSearch`, Step 10.1) + aggiunta con ruolo (`leader`/`base`/`card`), validazione live lato server ad ogni salvataggio tramite il validator di formato (Step 7.3)
-- `/mazzi/{deck}/versioni` — cronologia versioni (segue `previous_version_id`)
-- toggle "montato" (`assembled`) sulla pagina del mazzo
+```php
+// routes/web.php
+use App\Http\Controllers\DeckController;
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/mazzi/crea', [DeckController::class, 'create'])->name('decks.create');
+    Route::post('/mazzi', [DeckController::class, 'store'])->name('decks.store');
+    Route::get('/mazzi/{deck}', [DeckController::class, 'edit'])->name('decks.edit');
+    Route::post('/mazzi/{deck}/carte', [DeckController::class, 'addCard'])->name('decks.add-card');
+    Route::delete('/mazzi/{deck}/carte/{card}', [DeckController::class, 'removeCard'])->name('decks.remove-card');
+    Route::patch('/mazzi/{deck}/assembla', [DeckController::class, 'toggleAssembled'])->name('decks.toggle-assembled');
+});
+Route::get('/mazzi', [DeckController::class, 'index'])->name('decks.index'); // pubblica: mazzi pubblici + propri se loggato
+Route::get('/mazzi/{deck}/versioni', [DeckController::class, 'versions'])->name('decks.versions');
+```
+Logica chiave dei metodi non banali:
+```php
+public function addCard(Request $request, Deck $deck): RedirectResponse
+{
+    $this->authorize('update', $deck);
+    $validated = $request->validate([
+        'cid' => ['required', 'exists:cards,cid'],
+        'quantity' => ['required', 'integer', 'min:1'],
+    ]);
+
+    $deck->cards()->syncWithoutDetaching([
+        $validated['cid'] => ['quantity' => $validated['quantity']],
+    ]);
+
+    $errors = DeckFormatValidatorFactory::make($deck->format)->validate($deck->fresh());
+
+    return back()->with('deck-errors', $errors); // mostrati come warning non bloccanti nella view, la carta resta comunque aggiunta
+}
+```
+La validazione e' **informativa** (mostra errori) non bloccante sull'inserimento: la vecchia versione permetteva di costruire un mazzo incompleto e vederne gli errori, non impediva il salvataggio riga per riga. `index()` filtra `Deck::where('is_public', true)->orWhere('user_id', auth()->id())` con eager load `with('leaders', 'baseCard')` per mostrare l'anteprima nella lista senza N+1 query.
 
 **Step 7.7 — Export/Import mazzi**
-- **Export**: `.txt` (formato ufficiale SWU) e `.json` (proprio) da `deck_cards`
-- **Import**: da file (`.txt`/`.json`) o URL esterno; valida il formato, segnala carte non trovate invece di fallire silenziosamente (la vecchia versione aveva un bug proprio sull'import da URL, `todo.md` — occhio ai casi limite: URL non raggiungibile, redirect, formato inatteso)
-- Classi dedicate `DeckExporter`/`DeckImporter` in `app/Services/`, testabili senza passare da una request HTTP
+```php
+// app/Services/DeckExporter.php
+class DeckExporter
+{
+    public function toText(Deck $deck): string
+    {
+        // Formato ufficiale SWU: verifica la sintassi esatta su un file esportato da swudb.com o dall'app ufficiale
+        // prima di fissarla qui — indicativamente "Leader: {name}", "Base: {name}", poi "{quantity}x {name}" per il resto
+    }
+
+    public function toJson(Deck $deck): string
+    {
+        return json_encode([
+            'name' => $deck->name,
+            'format' => $deck->format->value,
+            'cards' => $deck->cards->map(fn ($c) => ['cid' => $c->cid, 'quantity' => $c->pivot->quantity])->all(),
+        ]);
+    }
+}
+```
+```php
+// app/Services/DeckImporter.php
+class DeckImporter
+{
+    /**
+     * @return array{deck: ?Deck, notFound: array<int, string>} Il mazzo creato (null se l'input non era valido) e i riferimenti carta non trovati
+     */
+    public function fromJson(string $json, User $owner): array
+    {
+        // decode -> per ogni riga: Card::where('cid', ...)->first(); se null, aggiungi a notFound invece di interrompere
+        // stesso principio fail-soft del job di import (Step 4.5): una carta non trovata non deve far fallire l'intero import
+    }
+
+    public function fromUrl(string $url, User $owner): array
+    {
+        // Http::get($url) con timeout esplicito; gestisci: url non raggiungibile (->failed()), redirect, content-type inatteso (verifica prima di fare json_decode)
+        // questo e' il punto che nella vecchia versione aveva il bug segnalato in todo.md — i tre casi limite sopra vanno testati esplicitamente in Pest
+    }
+}
+```
+Entrambe le classi vivono in `app/Services/` (non in un controller) proprio per essere testabili in Pest senza passare da una request HTTP finta.
 
 ☐ Fase 7 completata
 
@@ -527,7 +1227,7 @@ Elencate per non perderle, ma fuori dallo scope attuale — da riprendere quando
 - **`.env-overrides`**: pattern SWUDB per tracciare `APP_VERSION` in Git.
 - **Verifica email nativa**: sostituisce token custom a 60 caratteri con `MustVerifyEmail` + middleware `verified`.
 - **`system_errors` con 3 stati (`open`/`resolved`/`ignored`)**: la correttezza della logica di import la verifica Pest (dati controllati), non un controllo post-hoc sulla produzione — per questo non esiste più una tabella dedicata ai risultati dei test.
-- **`deck_cards.role` invece di `leader_cid`/`base_cid` su `decks`**: la cardinalità di leader/base dipende dal formato (1 vs 2 leader), colonne fisse non reggerebbero Twin Suns.
+- **Nessuna colonna `deck_cards.role`, dedotta da `cards.type`**: `Leader`/`Base` sono già tipi di carta espliciti, duplicarli in una colonna `role` su `deck_cards` sarebbe ridondante — la cardinalità di leader/base dipende comunque dal formato (1 vs 2 leader), gestita dal `DeckFormatValidator` via join su `cards.type`.
 - **`decks.assembled`**: necessario per calcolare non solo "cosa manca" ma anche "cosa possiedo ma è impegnato in un altro mazzo montato".
 - **Immagini scaricate in locale**: il sito non dipende a runtime dalla disponibilità del CDN ufficiale, tempi di caricamento sotto controllo.
 
