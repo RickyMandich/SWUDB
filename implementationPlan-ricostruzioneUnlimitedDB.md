@@ -51,13 +51,12 @@ Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `Q
 | `unique_card` | boolean, default `false` | Rinominata da `unica` (evita ambiguità col termine "unique" usato anche per il vincolo SQL sulla colonna `cid`). Indica la regola "Unica" del gioco (una sola copia in gioco nello stesso momento). |
 | `name` | string | Nome della carta. |
 | `title` | string, nullable | Sottotitolo carta. |
-| `type` | string | Tipo di carta: "unita", "miglioria" o "evento". |
-| `rarity` | string | Rarity della carta: "comune", "non comune", "rara", "leggendaria". |
+| `type` | enum SQL nativo (`Unit`, `Upgrade`, `Event`, `Leader`, `Base`, `CreditToken`, `ForceToken`, `TokenUnit`, `TokenUpgrade`) | Tipo di carta secondo l'API ufficiale SWU — già applicato in migration. Se ti serve anche type-safety lato PHP (autocompletamento, `match` esaustivo) invece del solo vincolo a DB, valuta un enum backed `App\Enums\CardType` con cast sul modello `Card`, stesso pattern di `DeckFormat` (Step 7.1) — opzionale, dimmelo se lo vuoi e lo aggiungo come step. |
+| `rarity` | string | Rarity della carta: "comune", "non comune", "rara", "leggendaria", "speciale" (in migration è già un enum SQL nativo `Common`/`Uncommon`/`Rare`/`Legendary`/`Special`, aggiornato qui di conseguenza). |
 | `cost` | unsigned tinyint, nullable | Costo totale della carta in risorse per essere giocata. |
 | `health` | unsigned tinyint, nullable | Punti ferita della carta, presente solo se è un'unità. |
 | `power` | unsigned tinyint, nullable | Forza della carta, presente solo se è un'unità. |
 | `text` | text | Testo delle abilità della carta. |
-| `traits` | string, nullable | Se in futuro ti serve filtrare per singolo tratto, valuta di normalizzarla come per gli aspetti (tabella + pivot) — per ora stringa libera, non è stato chiesto. |
 | `arena` | string, nullable | Se è un'unità, l'arena in cui viene giocata. |
 | `artist` | string, nullable | Artista che ha realizzato l'illustrazione della carta. |
 | `front_art_path`, `back_art_path` | string, nullable | Path **relativo** nel disk `public` di Laravel (fisicamente `storage/app/public/...`), es. `cards/{expansion}/{number}-front.{ext}` — non l'URL diretto dell'API ufficiale: le immagini vengono scaricate in locale durante l'import (Step 4.6), così il sito non dipende dalla disponibilità del CDN ufficiale a runtime. L'estensione `{ext}` si determina al momento del download (content-type), non è detto sia sempre `.png`. |
@@ -69,6 +68,13 @@ Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `Q
 `aspects`: `id`, `name`, `color`, `slug`, `order` (per l'ordinamento in UI), timestamps.
 `card_aspect`: `cid` (FK `cards.cid`), `aspect_id` (FK `aspects.id`).
 Tabella dedicata invece di una colonna `json` su `cards`: permette di filtrare per aspetto con una join indicizzata e centralizza colore/slug/ordine per la UI in un unico posto.
+
+### `traits` + `card_trait` (pivot)
+`traits`: `name` (string, **PK**), timestamps. Niente id surrogato né slug/color/order: il nome del tratto è già univoco e leggibile, stessa logica della PK naturale di `expansions`.
+`card_trait`: `cid` (FK `cards.cid`), `trait_name` (FK `traits.name`).
+Stesso motivo di `aspects`: la colonna `cards.traits` (stringa libera) sparisce, sostituita da questa tabella + pivot — permette filtri/elaborazioni per singolo tratto con una join indicizzata invece di fare parsing di una stringa (richiesto esplicitamente: elaborazioni sulla base dei tratti).
+
+**Nota naming**: `Trait` è una parola riservata del linguaggio PHP (il costrutto `trait` per il riuso di codice tra classi) — non può essere usata da sola come nome di classe Eloquent. La tabella SQL può restare `traits` senza problemi (non è un identificatore PHP), il modello si chiama `App\Models\CardTrait` (nessun conflitto reale: il conflitto è solo sul nome nudo `Trait`) — con `$incrementing = false`, `$keyType = 'string'`, `$primaryKey = 'name'` dato che la PK non è un `id` auto-increment.
 
 ### `decks`
 | Colonna | Tipo | Note |
@@ -184,11 +190,11 @@ Manca `use Illuminate\Support\Facades\Schedule;` in `routes/console.php`.
 **Step 4.2 — Applica lo schema `cards`/`expansions`**
 Come definito sopra: rinomina camelCase→snake_case, `release_date`/`legal_date` distinti, `group_main_expansion`, FK `cards.expansion → expansions.expansion`.
 
-**Step 4.3 — Aspetti**
-Crea `Aspect` (`php artisan make:model Aspect -m`) e la pivot `card_aspect` (`php artisan make:migration create_card_aspect_table`).
+**Step 4.3 — Aspetti e tratti**
+Crea `Aspect` (`php artisan make:model Aspect -m`) e la pivot `card_aspect` (`php artisan make:migration create_card_aspect_table`). Stesso pattern per i tratti, ma con PK naturale invece di `id`: modello `CardTrait` (`php artisan make:model CardTrait -m`, tabella `traits` con PK `name` — vedi nota naming/PK nello schema sopra) e la pivot `card_trait` (`php artisan make:migration create_card_trait_table`, colonne `cid`/`trait_name`); rimuovi la colonna `traits` dalla migration `cards` (non ancora eseguita in produzione, quindi nessun dato da migrare).
 
 **Step 4.4 — Relazioni nei modelli**
-`Card::aspects()` (belongsToMany), `Card::expansionModel()` (belongsTo, o rinomina la relazione per non confliggere con la colonna `expansion`), `Expansion::cards()` (hasMany), `Expansion::groupMainExpansion()`/`dependentExpansions()` (self-relations su `group_main_expansion`).
+`Card::aspects()` (belongsToMany), `Card::traits()` (belongsToMany verso `CardTrait`, pivot `card_trait` — `belongsToMany(CardTrait::class, 'card_trait', 'cid', 'trait_name', 'cid', 'name')`: va specificata esplicitamente la foreign/owner key sul lato `traits`, perché di default Laravel si aspetta `trait_id`/`id`, non `trait_name`/`name`), `Card::expansionModel()` (belongsTo, o rinomina la relazione per non confliggere con la colonna `expansion`), `Expansion::cards()` (hasMany), `Expansion::groupMainExpansion()`/`dependentExpansions()` (self-relations su `group_main_expansion`).
 
 **Step 4.5 — `ImportCardsFromSwuApiJob`**
 Endpoint ufficiali (da `documentation.md`/`todo.md` della vecchia versione):
@@ -437,7 +443,7 @@ public function handle(TelegramService $telegram): void
 ## Fase 10 — UI/UX e funzioni comuni TCG
 
 **Step 10.1 — Ricerca/filtri carte**
-Server-side puro, filtri via `GET`: espansione, aspetto (join `card_aspect`), tipo, costo, testo libero, **`unique_card`** (checkbox "solo carte Uniche"). Incapsula la query in `app/Services/CardSearch.php` (`apply(Builder $query, array $filters): Builder`), condivisa con l'endpoint API (Fase 11).
+Server-side puro, filtri via `GET`: espansione, aspetto (join `card_aspect`), tratto (join `card_trait` — motivo per cui l'hai normalizzata in tabella, Step 4.3), tipo, costo, testo libero, **`unique_card`** (checkbox "solo carte Uniche"). Incapsula la query in `app/Services/CardSearch.php` (`apply(Builder $query, array $filters): Builder`), condivisa con l'endpoint API (Fase 11).
 Pagina `/carte`, il parametro GET `nome` deve popolare il campo di ricerca già valorizzato al reload (bug specifico segnalato in `todo.md` della vecchia versione — attenzione a non fissarlo solo con `value="{{ $_GET['nome'] }}"` se il campo si aggiorna via JS/`oninput`, va sincronizzato anche lato client).
 
 **Step 10.2 — Statistiche mazzo**

@@ -8,6 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Expansion extends Model
 {
     use HasFactory;
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'expansions';
+    protected $primaryKey = 'expansion';
+    protected $keyType = 'string';
+    public $incrementing = false;
     protected $fillable = [
         'expansion',
         'legal_date',

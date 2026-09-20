@@ -39,7 +39,6 @@ return new class extends Migration {
             $table->unsignedTinyInteger('health')->nullable();
             $table->unsignedTinyInteger('power')->nullable();
             $table->text('text')->nullable();
-            $table->string('traits')->nullable();
             $table->string('arena')->nullable();
             $table->string('artist')->nullable();
             $table->string('front_art_path')->nullable()->comment("Path **relativo** nel disk `public` di Laravel (fisicamente `storage/app/public/...`), es. `cards/{expansion}/{number}-front.{ext}` — non l'URL diretto dell'API ufficiale: le immagini vengono scaricate in locale durante l'import (Step 4.6), così il sito non dipende dalla disponibilità del CDN ufficiale a runtime. L'estensione `{ext}` si determina al momento del download (content-type), non è detto sia sempre `.png`.");
