@@ -1063,23 +1063,146 @@ Entrambe le classi vivono in `app/Services/` (non in un controller) proprio per 
 ## Fase 8 — Gestione collezione
 
 **Step 8.1 — Modello e migration**
-Schema `collection_cards` in cima al documento. `php artisan make:migration create_collection_cards_table`.
+```
+php artisan make:model CollectionCard -m
+```
+```php
+Schema::create('collection_cards', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+    $table->string('cid');
+    $table->foreign('cid')->references('cid')->on('cards')->cascadeOnDelete();
+    $table->enum('variant', ['normal', 'foil', 'hyper', 'prestige', 'hyper_foil'])->default('normal');
+    $table->unsignedSmallInteger('quantity');
+    $table->timestamps();
+
+    $table->unique(['user_id', 'cid', 'variant']);
+});
+```
+```php
+class CollectionCard extends Model
+{
+    protected $fillable = ['user_id', 'cid', 'variant', 'quantity'];
+
+    public function card()
+    {
+        return $this->belongsTo(Card::class, 'cid', 'cid');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+```
 
 **Step 8.2 — Pagina `/collezione`**
-Ricerca carte (riusa `CardSearch`) + per ogni risultato un controllo quantità per variante (`normal`/`foil`/`hyper`/`prestige`/`hyper_foil`), salvato via piccola interazione Alpine.js senza reload pagina.
+Riusa `CardSearch` (Step 10.1) per la ricerca, poi un controllo quantita' per variante salvato via fetch senza reload:
+```php
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/collezione', [CollectionController::class, 'index'])->name('collection.index');
+    Route::patch('/collezione', [CollectionController::class, 'update'])->name('collection.update');
+});
+```
+```php
+class CollectionController extends Controller
+{
+    public function index(Request $request, CardSearch $search): View
+    {
+        $cards = $search->apply(Card::query(), $request->only(['nome', 'espansione', 'tipo']))
+            ->with(['collectionCards' => fn ($q) => $q->where('user_id', $request->user()->id)])
+            ->paginate(24)->withQueryString();
+
+        return view('collection.index', compact('cards'));
+    }
+
+    public function update(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'cid' => ['required', 'exists:cards,cid'],
+            'variant' => ['required', 'in:normal,foil,hyper,prestige,hyper_foil'],
+            'quantity' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $key = ['user_id' => $request->user()->id, 'cid' => $validated['cid'], 'variant' => $validated['variant']];
+
+        if ($validated['quantity'] === 0) {
+            CollectionCard::where($key)->delete(); // niente righe a zero: la somma per cid resta corretta senza filtrarle ovunque
+        } else {
+            CollectionCard::updateOrCreate($key, ['quantity' => $validated['quantity']]);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+}
+```
+Serve anche `Card::collectionCards()` (`hasMany(CollectionCard::class, 'cid', 'cid')`) per l'eager load sopra.
 
 **Step 8.3 — "Carte mancanti per un mazzo"**
-Tre informazioni: possedute sufficienti, mancanti del tutto, possedute-ma-impegnate-in-altri-mazzi-montati:
+Tre informazioni per carta: mancante del tutto, posseduta-ma-impegnata-altrove, disponibile (non mostrata, e' il caso ok):
 ```php
-$required = $deck->deckCards; // cid => quantity
-$owned = CollectionCard::where('user_id', $userId)->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
-$reservedByOtherAssembledDecks = DeckCard::whereHas('deck', fn ($q) => $q->where('user_id', $userId)->where('assembled', true)->where('id', '!=', $deck->id))
-    ->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
-// disponibile_libera = owned[cid] - reservedByOtherAssembledDecks[cid]
-// mancante_del_tutto = max(0, required[cid] - owned[cid])
-// posseduta_ma_impegnata = max(0, min(required[cid], owned[cid]) - disponibile_libera) quando disponibile_libera < required[cid]
+// app/Services/DeckGapCalculator.php
+class DeckGapCalculator
+{
+    /**
+     * @return array{missing: array<string,int>, reservedElsewhere: array<string,int>}
+     */
+    public function forDeck(Deck $deck): array
+    {
+        $required = $deck->cards->mapWithKeys(fn ($c) => [$c->cid => $c->pivot->quantity]);
+
+        $owned = CollectionCard::where('user_id', $deck->user_id)
+            ->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
+
+        $reserved = DeckCard::whereHas('deck', fn ($q) => $q->where('user_id', $deck->user_id)
+                ->where('assembled', true)->where('id', '!=', $deck->id))
+            ->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
+
+        $missing = [];
+        $reservedElsewhere = [];
+
+        foreach ($required as $cid => $needed) {
+            $ownedQty = (int) ($owned[$cid] ?? 0);
+            $reservedQty = (int) ($reserved[$cid] ?? 0);
+            $freelyAvailable = max(0, $ownedQty - $reservedQty);
+
+            if ($freelyAvailable >= $needed) {
+                continue;
+            }
+
+            $shortfall = $needed - $freelyAvailable;
+            $reservedContribution = min($shortfall, $reservedQty);
+
+            if ($reservedContribution > 0) {
+                $reservedElsewhere[$cid] = $reservedContribution;
+            }
+            if (($trulyMissing = $shortfall - $reservedContribution) > 0) {
+                $missing[$cid] = $trulyMissing;
+            }
+        }
+
+        return compact('missing', 'reservedElsewhere');
+    }
+}
 ```
-Pagina `/mazzi/{deck}/delta` mostra le tre liste.
+```php
+Route::get('/mazzi/{deck}/delta', [DeckController::class, 'gap'])->name('decks.gap');
+```
+```php
+public function gap(Deck $deck, DeckGapCalculator $calculator): View
+{
+    $this->authorize('view', $deck);
+    ['missing' => $missing, 'reservedElsewhere' => $reserved] = $calculator->forDeck($deck);
+
+    return view('decks.gap', [
+        'deck' => $deck,
+        'missingCards' => Card::whereIn('cid', array_keys($missing))->get()->keyBy('cid'),
+        'missingQuantities' => $missing,
+        'reservedCards' => Card::whereIn('cid', array_keys($reserved))->get()->keyBy('cid'),
+        'reservedQuantities' => $reserved,
+    ]);
+}
+```
 
 ☐ Fase 8 completata
 
@@ -1117,22 +1240,96 @@ Ogni metodo traduce la risposta `{"ok": true/false, "result": {...}, "descriptio
 ```
 php artisan make:controller TelegramController
 ```
-Instrada `/scan`, `/search <query>` usando `TelegramService`.
-
-**Step 9.4 — `/scan`**
 ```php
-Artisan::call('cards:scan');
+// routes/web.php — fuori da qualunque gruppo 'auth', Telegram non ha una sessione Laravel
+Route::post('/telegram/webhook', [TelegramController::class, 'handle'])->name('telegram.webhook');
 ```
-o dispaccia direttamente il job — nessuna logica duplicata.
+**Importante — esenzione CSRF**: Telegram invia una POST senza il token CSRF di Laravel, quindi la rotta va esclusa dalla verifica in `bootstrap/app.php`:
+```php
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->validateCsrfTokens(except: ['telegram/webhook']);
+})
+```
+Senza questa esenzione ogni update di Telegram riceverebbe un `419`, e il bot sembrerebbe non rispondere mai con un errore poco intuitivo da diagnosticare.
+```php
+class TelegramController extends Controller
+{
+    public function handle(Request $request, TelegramService $telegram): Response
+    {
+        if ($request->header('X-Telegram-Bot-Api-Secret-Token') !== config('services.telegram.webhook_secret')) {
+            abort(403);
+        }
 
-**Step 9.5 — `/search`**
-Query su `Card` (nome IT/EN). Risposta: `TelegramService::sendPhoto()` con l'immagine — l'API Telegram richiede un URL pubblico assoluto (la scarica lei stessa), quindi passa `Storage::disk('public')->url($card->front_art_path)` reso assoluto (es. tramite `asset(...)` o prefissando `config('app.url')`), non il path relativo salvato in DB — e didascalia; se fallisce, fallback su `sendMessage()` con link alla pagina carta sul sito.
+        $text = trim($request->input('message.text', ''));
+        $chatId = $request->input('message.chat.id');
+        [$command, $argument] = array_pad(explode(' ', $text, 2), 2, null);
+
+        match ($command) {
+            '/scan' => $this->handleScan($chatId, $telegram),
+            '/search' => $this->handleSearch($chatId, $argument, $telegram),
+            default => $telegram->sendMessage($chatId, 'Comandi disponibili: /scan, /search <nome carta>'),
+        };
+
+        return response()->noContent(); // Telegram si aspetta solo un 200, non legge il body
+    }
+
+    private function isAdminChat(int|string $chatId): bool
+    {
+        return (string) $chatId === (string) config('services.telegram.admin_chat_id');
+    }
+
+    private function handleScan(int|string $chatId, TelegramService $telegram): void
+    {
+        if (! $this->isAdminChat($chatId)) {
+            $telegram->sendMessage($chatId, 'Comando riservato agli admin.');
+            return;
+        }
+        \App\Jobs\ImportCardsFromSwuApiJob::dispatch();
+        $telegram->sendMessage($chatId, 'Scan avviato, ti aggiorno qui.');
+    }
+
+    private function handleSearch(int|string $chatId, ?string $query, TelegramService $telegram): void
+    {
+        if (! $query) {
+            $telegram->sendMessage($chatId, 'Uso: /search <nome carta>');
+            return;
+        }
+
+        $card = \App\Models\Card::where('name', 'like', "%{$query}%")->first();
+
+        if (! $card) {
+            $telegram->sendMessage($chatId, "Nessuna carta trovata per {$query}.");
+            return;
+        }
+
+        $imageUrl = $card->front_art_path ? asset('storage/'.$card->front_art_path) : null; // URL assoluto e pubblico richiesto da Telegram, non il path relativo salvato in DB
+        $result = $imageUrl
+            ? $telegram->sendPhoto($chatId, $imageUrl, $card->name)
+            : $telegram->sendMessage($chatId, $card->name);
+
+        if (! $result->successful) {
+            $telegram->sendMessage($chatId, $card->name.' — '.route('cards.show', $card));
+        }
+    }
+}
+```
+Registrazione webhook (una tantum, da terminale):
+```
+curl -F "url=https://unlimiteddb.mandich.dev/telegram/webhook" -F "secret_token=IL_TUO_SECRET" https://api.telegram.org/bot<TOKEN>/setWebhook
+```
 
 **Step 9.6 — `NotifyAdminJob`**
 ```php
-public function handle(TelegramService $telegram): void
+class NotifyAdminJob implements ShouldQueue
 {
-    $telegram->sendMessage(config('services.telegram.admin_chat_id'), $this->message);
+    use Queueable;
+
+    public function __construct(private readonly string $message) {}
+
+    public function handle(TelegramService $telegram): void
+    {
+        $telegram->sendMessage(config('services.telegram.admin_chat_id'), $this->message);
+    }
 }
 ```
 
@@ -1143,11 +1340,58 @@ public function handle(TelegramService $telegram): void
 ## Fase 10 — UI/UX e funzioni comuni TCG
 
 **Step 10.1 — Ricerca/filtri carte**
-Server-side puro, filtri via `GET`: espansione, aspetto (join `card_aspect`), tratto (join `card_trait` — motivo per cui l'hai normalizzata in tabella, Step 4.3), tipo, costo, testo libero, **`unique_card`** (checkbox "solo carte Uniche"). Incapsula la query in `app/Services/CardSearch.php` (`apply(Builder $query, array $filters): Builder`), condivisa con l'endpoint API (Fase 11).
-Pagina `/carte`, il parametro GET `nome` deve popolare il campo di ricerca già valorizzato al reload (bug specifico segnalato in `todo.md` della vecchia versione — attenzione a non fissarlo solo con `value="{{ $_GET['nome'] }}"` se il campo si aggiorna via JS/`oninput`, va sincronizzato anche lato client).
+```php
+// app/Services/CardSearch.php
+namespace App\Services;
+
+use Illuminate\Database\Eloquent\Builder;
+
+class CardSearch
+{
+    /**
+     * Applies GET filters onto a Card query, shared between the /carte page and the public API (Fase 11)
+     * Applica i filtri GET su una query di Card, condivisa tra la pagina /carte e l'API pubblica (Fase 11)
+     */
+    public function apply(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['nome'] ?? null, fn ($q, $nome) => $q->where('name', 'like', "%{$nome}%"))
+            ->when($filters['espansione'] ?? null, fn ($q, $exp) => $q->where('expansion', $exp))
+            ->when($filters['tipo'] ?? null, fn ($q, $tipo) => $q->where('type', $tipo))
+            ->when($filters['costo'] ?? null, fn ($q, $costo) => $q->where('cost', $costo))
+            ->when($filters['aspetto'] ?? null, fn ($q, $id) => $q->whereHas('aspects', fn ($q2) => $q2->where('aspects.id', $id)))
+            ->when($filters['tratto'] ?? null, fn ($q, $nome) => $q->whereHas('traits', fn ($q2) => $q2->where('traits.name', $nome)))
+            ->when($filters['unique_card'] ?? null, fn ($q) => $q->where('unique_card', true));
+    }
+}
+```
+```php
+// app/Http/Controllers/CardController.php
+public function index(Request $request, CardSearch $search): View
+{
+    $cards = $search->apply(Card::query(), $request->only(['nome', 'espansione', 'tipo', 'costo', 'aspetto', 'tratto', 'unique_card']))
+        ->paginate(24)->withQueryString();
+
+    return view('cards.index', ['cards' => $cards, 'filters' => $request->all()]);
+}
+```
+Bug specifico segnalato in `todo.md` della vecchia versione da non ripetere: il campo di ricerca deve restare valorizzato dopo un reload con `?nome=...` nell'URL. Con un form server-rendered puro basta `<input name="nome" value="{{ $filters['nome'] ?? '' }}">` (Blade lo rivalorizza automaticamente ad ogni render). Se in futuro aggiungi un filtro live via Alpine/JS (`x-model`), inizializza lo stato JS leggendo lo stesso valore server-side al mount, non da stringa vuota — altrimenti un link condiviso con `?nome=...` mostra i risultati già filtrati ma la casella di ricerca appare vuota: esattamente il bug della vecchia versione.
 
 **Step 10.2 — Statistiche mazzo**
-Pagina `/mazzi/{deck}/statistiche`: curva costi, distribuzione per tipo, tratti (divisi/non divisi, come da vecchia versione), HP/potenza media — grafici semplici (es. Chart.js).
+```php
+// app/Http/Controllers/DeckController.php
+public function statistics(Deck $deck): View
+{
+    $costCurve = $deck->cards->groupBy('cost')->map(fn ($cards) => $cards->sum(fn ($c) => $c->pivot->quantity));
+    $byType = $deck->cards->groupBy('type')->map(fn ($cards) => $cards->sum(fn ($c) => $c->pivot->quantity));
+    $traits = $deck->cards->flatMap(fn ($c) => $c->traits->pluck('name'))->countBy();
+    $avgPower = $deck->cards->where('type', 'Unit')->avg('power');
+    $avgHealth = $deck->cards->where('type', 'Unit')->avg('health');
+
+    return view('decks.statistics', compact('deck', 'costCurve', 'byType', 'traits', 'avgPower', 'avgHealth'));
+}
+```
+Rotta: `Route::get('/mazzi/{deck}/statistiche', [DeckController::class, 'statistics'])->name('decks.statistics');`. Nella vista, Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`) e un `<canvas>` per grafico, alimentato passando i dati con `@json($costCurve)` dentro il tag `<script>` della pagina.
 
 **Step 10.3 — Viste pubbliche/autenticate**
 Pubbliche: catalogo carte, mazzi pubblici, nuove uscite. Autenticate (`auth`): creare/modificare mazzi, collezione, export/import.
@@ -1175,11 +1419,51 @@ https://laravel.com/docs/12.x/sanctum
 
 **Step 11.2 — Endpoint pubblici**
 ```php
-Route::get('/cards/{expansion}/{number}', [Api\CardController::class, 'show']);
-Route::get('/cards/search', [Api\CardController::class, 'search']); // stessi filtri di CardSearch (Step 10.1)
-Route::get('/decks/{user}/{name}', [Api\DeckController::class, 'show']); // solo mazzi pubblici
+// routes/api.php
+Route::prefix('cards')->group(function () {
+    Route::get('/search', [Api\CardController::class, 'search'])->middleware('throttle:60,1');
+    Route::get('/{expansion}/{number}', [Api\CardController::class, 'show']);
+});
+Route::get('/decks/{userName}/{deckName}', [Api\DeckController::class, 'show']);
 ```
-`Api\CardController::search()` riusa `CardSearch` (Step 10.1): stessa logica, output diverso (`CardResource::collection(...)`). Principio generale: le pagine API condividono il backend delle pagine UI dove possibile, un solo posto da mantenere. Rate limiting nativo (`throttle:60,1`). https://laravel.com/docs/12.x/routing#rate-limiting
+```php
+// app/Http/Controllers/Api/CardController.php
+class CardController extends Controller
+{
+    public function show(string $expansion, int $number): CardResource
+    {
+        $card = Card::where('expansion', $expansion)->where('number', $number)->firstOrFail();
+
+        return new CardResource($card);
+    }
+
+    public function search(Request $request, CardSearch $search): AnonymousResourceCollection
+    {
+        $cards = $search->apply(Card::query(), $request->only(['nome', 'espansione', 'tipo', 'costo', 'aspetto', 'tratto', 'unique_card']))
+            ->paginate(24);
+
+        return CardResource::collection($cards);
+    }
+}
+```
+```php
+// app/Http/Controllers/Api/DeckController.php
+class DeckController extends Controller
+{
+    public function show(string $userName, string $deckName): DeckResource
+    {
+        $deck = Deck::whereHas('user', fn ($q) => $q->where('name', $userName))
+            ->where('name', $deckName)
+            ->where('is_public', true)
+            ->firstOrFail();
+
+        return new DeckResource($deck);
+    }
+}
+```
+**Attenzione**: `firstOrFail()` sopra assume che la coppia (utente, nome mazzo) sia univoca. Se due mazzi pubblici dello stesso utente possono avere lo stesso nome (lo schema attuale non lo vieta), questa query ne prende uno arbitrario. Se vuoi che l'URL sia davvero stabile, aggiungi un vincolo `unique(['user_id', 'name'])` sulla migration `decks`, oppure usa l'`id` del mazzo invece del nome nell'URL pubblico.
+
+`Api\CardController::search()` riusa `CardSearch` (Step 10.1): stessa logica della pagina `/carte`, output diverso (JSON via Resource). Principio generale: le pagine API condividono il backend delle pagine UI dove possibile, un solo posto da mantenere. https://laravel.com/docs/12.x/routing#rate-limiting
 
 **Step 11.3 — Endpoint autenticati**
 Token Sanctum per eventuali azioni future (es. sync collezione da app esterna) — non necessario al day 1.
@@ -1188,7 +1472,33 @@ Token Sanctum per eventuali azioni future (es. sync collezione da app esterna) �
 ```
 php artisan make:resource CardResource
 ```
-Controlla cosa esporre (es. non esporre `id` interni se usi `cid` come chiave pubblica). https://laravel.com/docs/12.x/eloquent-resources
+```php
+class CardResource extends JsonResource
+{
+    public function toArray($request): array
+    {
+        return [
+            // 'id' interno volutamente escluso: 'cid' e' la chiave pubblica stabile, non ha senso esporre l'id di riga
+            'cid' => $this->cid,
+            'name' => $this->name,
+            'title' => $this->title,
+            'type' => $this->type,
+            'rarity' => $this->rarity,
+            'cost' => $this->cost,
+            'power' => $this->power,
+            'health' => $this->health,
+            'text' => $this->text,
+            'expansion' => $this->expansion,
+            'number' => $this->number,
+            'aspects' => $this->aspects->pluck('name'),
+            'traits' => $this->traits->pluck('name'),
+            'front_image' => $this->front_art_path ? asset('storage/'.$this->front_art_path) : null,
+            'back_image' => $this->back_art_path ? asset('storage/'.$this->back_art_path) : null,
+        ];
+    }
+}
+```
+Stesso principio per `DeckResource` (da creare con `php artisan make:resource DeckResource`): esponi `name`, `format`, `is_public`, e `cards` come `CardResource::collection($this->cards)` con la quantita' aggiunta manualmente (`$this->cards->map(fn ($c) => [...(new CardResource($c))->resolve(), 'quantity' => $c->pivot->quantity])`), non l'`id` interno del mazzo. https://laravel.com/docs/12.x/eloquent-resources
 
 ☐ Fase 11 completata
 
@@ -1196,10 +1506,13 @@ Controlla cosa esporre (es. non esporre `id` interni se usi `cid` come chiave pu
 
 ## Fase 12 — Deploy
 
-**Step 12.1** — Lancia `~/scripts/new-site.sh` sul server (genera lui Dockerfile/compose/nginx/init.sql, dominio `unlimiteddb.mandich.dev`).
-**Step 12.2** — Aggiungi tu il servizio queue worker (non generato dallo script): `php artisan queue:work --tries=3` sempre attivo.
-**Step 12.3** — Aggiungi tu lo scheduler (non generato dallo script): cron reale che lancia `php artisan schedule:run` ogni minuto.
-**Step 12.4** — Verifica: webhook Telegram sul dominio giusto, `failed_jobs` vuota, scan schedulato parte al lunedì.
+Automatizzato: basta un merge sul branch `laravel`, la pipeline si occupa del resto (build immagine, deploy sulla VM via `new-site.sh`/Traefik). Nessuno step manuale da eseguire qui.
+
+**Step 12.1 — Verifica post-deploy**
+Dopo il merge, controlla che tutto sia partito correttamente:
+- webhook Telegram registrato sul dominio giusto (`https://unlimiteddb.mandich.dev/telegram/webhook`, Step 9.3)
+- `failed_jobs` vuota (`php artisan queue:failed` sul container, o query diretta)
+- lo scan settimanale risulta schedulato (`php artisan schedule:list` mostra `cards:scan` al lunedi')
 
 ☐ Fase 12 completata
 
