@@ -16,6 +16,11 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                 </div>
+                @can('users.manage')
+                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('Gestione utenti') }}
+                    </x-nav-link>
+                @endcan
             </div>
 
             <!-- Settings Dropdown -->
@@ -51,11 +56,6 @@
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
                         </form>
-                        @can('users.manage')
-                            <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                                {{ __('Gestione utenti') }}
-                            </x-nav-link>
-                        @endcan
                     </x-slot>
 
                 </x-dropdown>
