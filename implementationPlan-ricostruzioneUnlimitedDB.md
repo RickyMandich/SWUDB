@@ -209,9 +209,24 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
            Route::put('/utenti/{user}', [UserManagementController::class, 'update'])->name('users.update');
        });
    ```
-   Il middleware `permission:users.manage` è registrato automaticamente da Spatie (nessuna configurazione aggiuntiva in `bootstrap/app.php`): se l'utente autenticato non ha quel permesso, Laravel risponde `403` prima ancora di entrare nel controller.
+   Il middleware `permission:users.manage` **non funziona senza un passaggio in più**: da Laravel 11 in poi Spatie non registra più da solo l'alias `permission` nel router (lo faceva nelle versioni per Laravel ≤10, quando esisteva ancora `Kernel.php`). Va registrato a mano, una volta sola per tutto il progetto, in `bootstrap/app.php`:
+   ```php
+   use Illuminate\Foundation\Configuration\Middleware;
+   use Spatie\Permission\Middleware\PermissionMiddleware;
+   use Spatie\Permission\Middleware\RoleMiddleware;
+   use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
-3. **Vista lista** — `resources/views/admin/users/index.blade.php` (estende il layout Breeze, es. `x-app-layout`):
+   ->withMiddleware(function (Middleware $middleware): void {
+       $middleware->alias([
+           'role' => RoleMiddleware::class,
+           'permission' => PermissionMiddleware::class,
+           'role_or_permission' => RoleOrPermissionMiddleware::class,
+       ]);
+   })
+   ```
+   Senza questo, qualunque rotta con `permission:...`/`role:...` lancia `BindingResolutionException` ("Target class [permission] does not exist") invece di dare un 403 pulito — sintomo tipico: l'errore arriva dal Container, non da un `403 Forbidden` gestito.
+
+3. **Vista lista** — `resources/views/admin/users/index.blade.php` (estende il layout Breeze con `x-app-layout`, gia' cablato correttamente da Breeze tramite `app/View/Components/AppLayout.php` → `layouts.app`, nessuna preparazione necessaria):
    ```blade
    <x-app-layout>
        <div class="max-w-4xl mx-auto py-6">
