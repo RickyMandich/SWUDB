@@ -2,10 +2,19 @@
 
 namespace App\Jobs;
 
+use App\Mail\AdminScanReportEmail;
+use App\Mail\NewCardsEmail;
+use App\Models\Card;
+use App\Models\SystemError;
+use App\Models\User;
+use App\Services\CardImageDownloader;
+use App\Services\TelegramService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 
 class ImportCardsFromSwuApiJob implements ShouldQueue
 {
@@ -14,21 +23,123 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
     public $tries = 3;
     public $backoff = 60;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
+    public function handle(TelegramService $telegram, CardImageDownloader $imageDownloader): void
     {
-        //
-    }
+        $adminChatId = config('services.telegram.admin_chat_id');
+        $progress = $telegram->sendMessage($adminChatId, 'Scan avviato...');
 
-    /**
-     * Execute the job.
-     */
-    public function handle(): void
-    {
-        // 1. chiama l'API ufficiale SWU (Http::get(...))
-        // 2. per ogni carta ricevuta, updateOrCreate su Card usando external_id come chiave
-        // 3. dispaccia NotifyAdminJob con il riepilogo (nuove carte trovate, eventuali errori)
+        $newCards = collect();
+        $errors = collect();
+        $page = 1;
+        $lastPage = 1;
+
+        do {
+            $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
+                'locale' => 'it',
+                'filters[variantOf][id][$null]' => 'true',
+                'fields' => ['cardUid', 'cardNumber', 'title', 'subtitle', 'unique', 'cost', 'hp', 'power', 'text', 'artist'],
+                'pagination[page]' => $page,
+                'pagination[pageSize]' => 10,
+            ]);
+
+            if ($response->failed()) {
+                SystemError::create([
+                    'source' => self::class,
+                    'message' => "Pagina {$page}: richiesta API fallita ({$response->status()})",
+                    'context' => ['page' => $page, 'body' => $response->body()],
+                ]);
+                break; // l'intera pagina non e' recuperabile, non ha senso continuare a paginare
+            }
+
+            $payload = $response->json();
+            $lastPage = $payload['meta']['pagination']['pageCount'] ?? $page;
+
+            foreach ($payload['data'] ?? [] as $cardEntry) {
+                $cardData = $cardEntry['attributes'] ?? [];
+                $cid = $cardData['cardUid'] ?? null;
+
+                try {
+                    if (! $cid) {
+                        throw new \RuntimeException('cardUid mancante nel payload');
+                    }
+
+                    $existed = Card::where('cid', $cid)->exists();
+
+                    $card = Card::updateOrCreate(
+                        ['cid' => $cid],
+                        [
+                            'expansion' => $cardData['expansion']['data']['attributes']['code'] ?? null,
+                            'number' => $cardData['cardNumber'],
+                            'unique_card' => $cardData['unique'] ?? false,
+                            'name' => $cardData['title'],
+                            'title' => $cardData['subtitle'] ?? null,
+                            'type' => $cardData['type']['data']['attributes']['value'] ?? null,
+                            'rarity' => $cardData['rarity']['data']['attributes']['englishName'] ?? null,
+                            'cost' => $cardData['cost'] ?? null,
+                            'health' => $cardData['hp'] ?? null,
+                            'power' => $cardData['power'] ?? null,
+                            'text' => $cardData['text'] ?? '',
+                            'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
+                            'artist' => $cardData['artist'] ?? null,
+                            // max_copies e release_date non presenti in questa risposta: restano null,
+                            // valorizzabili solo a mano finche' non si verifica l'endpoint /api/card/{cid}.
+                        ]
+                    );
+
+                    if (! $existed) {
+                        $newCards->push($card);
+                    } else {
+                        $errors->push("Carta {$cid} gia' presente, dati aggiornati");
+                    }
+
+                    // Aspetti e tratti: upsert + sync sulla pivot, non solo creazione
+                    $aspectNames = collect($cardData['aspects']['data'] ?? [])->pluck('attributes.name');
+                    $aspectIds = $aspectNames->map(fn ($name) => \App\Models\Aspect::firstOrCreate(['name' => $name])->id);
+                    $card->aspects()->sync($aspectIds);
+
+                    $traitNames = collect($cardData['traits']['data'] ?? [])->pluck('attributes.name');
+                    $traitNames->each(fn ($name) => \App\Models\CardTrait::firstOrCreate(['name' => $name]));
+                    $card->traits()->sync($traitNames);
+
+                    $frontUrl = $cardData['artFront']['data']['attributes']['formats']['card']['url']
+                        ?? $cardData['artFront']['data']['attributes']['url']
+                        ?? null;
+                    if ($frontUrl && ! $card->front_art_path) {
+                        $path = $imageDownloader->download($frontUrl, $card->expansion, $card->number, 'front');
+                        $path ? $card->update(['front_art_path' => $path]) : SystemError::create([
+                            'source' => CardImageDownloader::class,
+                            'message' => "Download immagine fronte fallito per {$cid}",
+                        ]);
+                    }
+                    // stesso pattern per back_art_path, leggendo artBack.data.attributes.formats.card.url
+                } catch (\Throwable $e) {
+                    SystemError::create([
+                        'source' => self::class,
+                        'message' => "Errore su carta {$cid} " . ($cid ? '' : '(cid mancante)') . ": {$e->getMessage()}",
+                        'stack_trace' => $e->getTraceAsString(),
+                        'context' => ['raw' => $cardData],
+                    ]);
+                    $errors->push($e->getMessage());
+                    continue; // fail-soft: una carta rotta non ferma lo scan
+                }
+            }
+
+            $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
+            $page++;
+        } while ($page <= $lastPage);
+
+        if ($newCards->isNotEmpty()) {
+            Mail::to(User::all())->queue(new NewCardsEmail($newCards));
+        }
+        if ($errors->isNotEmpty()) {
+            $admins = User::role('admin')->get();
+            Mail::to($admins)->queue(new AdminScanReportEmail($errors));
+        }
+
+        $telegram->editMessage(
+            $adminChatId,
+            $progress->messageId,
+            "Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi."
+        );
     }
 }

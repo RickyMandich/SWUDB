@@ -47,7 +47,7 @@ Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `Q
 |---|---|---|
 | `expansion` | string, FK → `expansions.expansion`, **PK composita** con `number` | Riflette come le carte sono identificate nel gioco stesso (numero all'interno del set). |
 | `number` | unsigned integer, **PK composita** | |
-| `cid` | string, **unique** | Id naturale della carta secondo l'API ufficiale — usalo come riferimento nelle tabelle pivot (`card_aspect`, `deck_cards`, `collection_cards`) invece della coppia composita, molto più semplice nelle join. |
+| `cid` | string, **unique** | Id naturale della carta secondo l'API ufficiale — usalo come riferimento nelle tabelle pivot (`card_aspect`, `deck_cards`, `collection_cards`) invece della coppia composita, molto più semplice nelle join. Nel payload reale dell'API il campo si chiama `cardUid` (non `cid`), vedi mapping in Fase 4/Step 4.5. |
 | `unique_card` | boolean, default `false` | Rinominata da `unica` (evita ambiguità col termine "unique" usato anche per il vincolo SQL sulla colonna `cid`). Indica la regola "Unica" del gioco (una sola copia in gioco nello stesso momento). |
 | `name` | string | Nome della carta. |
 | `title` | string, nullable | Sottotitolo carta. |
@@ -374,15 +374,46 @@ Senza questo vincolo, un `Card::create()` con un codice espansione inesistente (
 Endpoint ufficiali (da `documentation.md`/`todo.md` della vecchia versione):
 ```
 GET https://admin.starwarsunlimited.com/api/card/{cid}?locale=it
-GET https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&pagination[page]={page}&pagination[pageSize]=10
+GET https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[variantOf][id][$null]=true&fields[0]=cardUid&fields[1]=cardNumber&fields[2]=title&fields[3]=subtitle&fields[4]=unique&fields[5]=cost&fields[6]=hp&fields[7]=power&fields[8]=text&fields[9]=artist&pagination[page]={page}&pagination[pageSize]=10
 ```
+Rispetto alla prima bozza, la query usa `fields[]` per elencare esplicitamente solo gli scalari che servono (`cardUid`, `cardNumber`, `title`, `subtitle`, `unique`, `cost`, `hp`, `power`, `text`, `artist`) invece di farseli restituire tutti — più efficiente, meno banda per pagina. **Nota importante**: `fields[]` filtra solo i campi scalari "piatti"; le relazioni (`type`, `rarity`, `expansion`, `arenas`, `traits`, `aspects`, `artFront`/`artBack`/`artThumbnail`, `localizations`, `variantTypes`, `variantOf`, `reprintOf`) vengono comunque restituite per intero — non esiste un `populate` da limitare separatamente, quindi il payload reale è comunque corposo (vedi mapping sotto).
+
 Requisiti raccolti da `todo.md` (vecchia versione, da riportare):
 - **un solo messaggio Telegram per scan**, aggiornato nel tempo con `TelegramService::editMessage()` (Fase 9) invece di spammare un messaggio per evento
 - **verifica che la carta non sia già presente** prima di considerarla "nuova" (per l'email agli utenti)
 - a fine scan: **email a tutti gli utenti** con le carte aggiunte (`NewCardsEmail`, coda); **email agli admin** con le carte che hanno lanciato errori o erano già presenti (`AdminScanReportEmail`)
 - ogni riga fallita → `SystemError::create([...])` invece di interrompere l'intero scan (fail-soft)
 
-**Prerequisito**: prima di scrivere il job, chiama `GET .../card-list?locale=it&pagination[page]=1&pagination[pageSize]=1` da Postman/curl/tinker e guarda la risposta vera — i nomi esatti dei campi JSON (es. se il costo si chiama `cost` o `energyCost`) vanno confermati sui dati reali, non indovinati. Lo scheletro sotto usa nomi plausibili come placeholder, da correggere al primo giro di test.
+**Prerequisito** ✅ fatto — risposta reale verificata (`pagination[page]=0&pagination[pageSize]=1`, una carta di test: Luke Skywalker leader, SOR #005). Nota: con `page=0` nella richiesta, `meta.pagination.page` torna comunque `1` — l'API tratta `0` come "prima pagina", quindi lo `$page` del job può continuare a partire da `1` come nello scheletro sotto, nessuna modifica necessaria lì.
+
+**Mapping campo API → colonna `cards` (confermato sui dati reali, non più placeholder)**:
+
+| Campo risposta API | Percorso | Colonna `cards` | Note |
+|---|---|---|---|
+| `cardUid` | scalare, root | `cid` | Id naturale univoco — **non** `cid`, il nome vero è `cardUid` (`validationId` in fondo al payload ha lo stesso valore, ridondante, ignoralo). |
+| `cardNumber` | scalare, root | `number` | |
+| `title` | scalare, root | `name` | Controintuitivo: il "titolo" dell'API è il **nome** della carta (es. "Luke Skywalker"). |
+| `subtitle` | scalare, root | `title` | E il "sottotitolo" dell'API è la colonna `title` del DB (es. "Amico Fidato"). |
+| `unique` | scalare, root | `unique_card` | |
+| `cost` | scalare, root | `cost` | |
+| `hp` | scalare, root | `health` | |
+| `power` | scalare, root | `power` | |
+| `text` | scalare, root | `text` | Testo semplice; esiste anche `textStyled` dentro `localizations[]` (HTML con `<img>` per le icone) ma non serve per la colonna testo semplice. |
+| `artist` | scalare, root | `artist` | |
+| `type.data.attributes.value` | relazione | `type` | Usa `value` (es. `"Leader"`), non `name`: `value` è già nel formato inglese che combacia con l'enum SQL nativo; `name`/`name` localizzato (`"Leader"` in IT coincide qui ma non è garantito per altri tipi). |
+| `rarity.data.attributes.englishName` | relazione | `rarity` | Usa `englishName` (es. `"Special"`), non `name` (che è localizzato in italiano, es. `"Speciale"`) — combacia direttamente con l'enum `Common`/`Uncommon`/`Rare`/`Legendary`/`Special`, niente da tradurre a mano. |
+| `expansion.data.attributes.code` | relazione | `expansion` (FK) | Es. `"SOR"` — è il codice naturale, non il `name` esteso (`"Scintilla di Ribellione"`). |
+| `arenas.data[0].attributes.name` | relazione (array) | `arena` | Prendi il primo elemento se presente (nei dati osservati è sempre 0 o 1 elemento); nome localizzato IT (es. `"Terrestre"`) va bene così, la colonna è solo per display. |
+| `traits.data[].attributes.name` | relazione (array) | pivot `card_trait` | Itera e fai upsert su `traits` + pivot, come già previsto. |
+| `aspects.data[].attributes.name`/`color` | relazione (array) | pivot `card_aspect` | Itera e fai upsert su `aspects` (con `color`) + pivot. |
+| `artFront.data.attributes.formats.card.url` (fallback `.url` root se `formats.card` assente) | relazione | `front_art_path` (via download, Step 4.6) | Preferisci il formato `card` (~400×287px) invece dell'immagine originale in `url` root (pesa di più, risoluzione non necessaria per il sito). |
+| `artBack.data.attributes.formats.card.url` (fallback `.url` root) | relazione | `back_art_path` | Stesso criterio di `artFront`. |
+
+**Campi che lo schema `cards` prevede ma che questa risposta non contiene affatto**:
+- `max_copies`: nessun campo `maxCopies`/simile nel payload — resta `null` di default per import automatico (valorizzabile solo a mano, come già previsto dalla colonna nullable, per le carte con limite non standard).
+- `release_date`: nessun campo nel payload (solo `createdAt`/`updatedAt`/`publishedAt` che sono metadati del CMS, non la data di uscita reale della carta). Da verificare se compare sull'endpoint singolo `GET /api/card/{cid}` (non testato in questo giro) prima di dare per persa la colonna — nel frattempo lascia `null` e non bloccare l'import su questo.
+
+Lo scheletro sotto è già aggiornato con questi nomi di campo reali.
 
 ```php
 namespace App\Jobs;
@@ -422,6 +453,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
                 'locale' => 'it',
                 'filters[variantOf][id][$null]' => 'true',
+                'fields' => ['cardUid', 'cardNumber', 'title', 'subtitle', 'unique', 'cost', 'hp', 'power', 'text', 'artist'],
                 'pagination[page]' => $page,
                 'pagination[pageSize]' => 10,
             ]);
@@ -438,29 +470,35 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             $payload = $response->json();
             $lastPage = $payload['meta']['pagination']['pageCount'] ?? $page;
 
-            foreach ($payload['data'] ?? [] as $cardData) {
+            foreach ($payload['data'] ?? [] as $cardEntry) {
+                $cardData = $cardEntry['attributes'] ?? [];
+                $cid = $cardData['cardUid'] ?? null;
+
                 try {
-                    $cid = $cardData['cid']; // TODO: verifica il nome vero del campo
+                    if (! $cid) {
+                        throw new \RuntimeException('cardUid mancante nel payload');
+                    }
+
                     $existed = Card::where('cid', $cid)->exists();
 
                     $card = Card::updateOrCreate(
                         ['cid' => $cid],
                         [
-                            'expansion' => $cardData['expansion'],
-                            'number' => $cardData['number'],
+                            'expansion' => $cardData['expansion']['data']['attributes']['code'] ?? null,
+                            'number' => $cardData['cardNumber'],
                             'unique_card' => $cardData['unique'] ?? false,
-                            'name' => $cardData['title'] ?? $cardData['name'],
+                            'name' => $cardData['title'],
                             'title' => $cardData['subtitle'] ?? null,
-                            'type' => $cardData['type'],
-                            'rarity' => $cardData['rarity'],
+                            'type' => $cardData['type']['data']['attributes']['value'] ?? null,
+                            'rarity' => $cardData['rarity']['data']['attributes']['englishName'] ?? null,
                             'cost' => $cardData['cost'] ?? null,
                             'health' => $cardData['hp'] ?? null,
                             'power' => $cardData['power'] ?? null,
                             'text' => $cardData['text'] ?? '',
-                            'arena' => $cardData['arena'] ?? null,
+                            'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                             'artist' => $cardData['artist'] ?? null,
-                            'max_copies' => $cardData['maxCopies'] ?? null,
-                            'release_date' => $cardData['releaseDate'] ?? null,
+                            // max_copies e release_date non presenti in questa risposta: restano null,
+                            // valorizzabili solo a mano finche' non si verifica l'endpoint /api/card/{cid}.
                         ]
                     );
 
@@ -470,20 +508,30 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                         $errors->push("Carta {$cid} gia' presente, dati aggiornati");
                     }
 
-                    if ($frontUrl = $cardData['frontArt'] ?? null) {
-                        if (! $card->front_art_path) {
-                            $path = $imageDownloader->download($frontUrl, $card->expansion, $card->number, 'front');
-                            $path ? $card->update(['front_art_path' => $path]) : SystemError::create([
-                                'source' => CardImageDownloader::class,
-                                'message' => "Download immagine fronte fallito per {$cid}",
-                            ]);
-                        }
+                    // Aspetti e tratti: upsert + sync sulla pivot, non solo creazione
+                    $aspectNames = collect($cardData['aspects']['data'] ?? [])->pluck('attributes.name');
+                    $aspectIds = $aspectNames->map(fn ($name) => \App\Models\Aspect::firstOrCreate(['name' => $name])->id);
+                    $card->aspects()->sync($aspectIds);
+
+                    $traitNames = collect($cardData['traits']['data'] ?? [])->pluck('attributes.name');
+                    $traitNames->each(fn ($name) => \App\Models\CardTrait::firstOrCreate(['name' => $name]));
+                    $card->traits()->sync($traitNames);
+
+                    $frontUrl = $cardData['artFront']['data']['attributes']['formats']['card']['url']
+                        ?? $cardData['artFront']['data']['attributes']['url']
+                        ?? null;
+                    if ($frontUrl && ! $card->front_art_path) {
+                        $path = $imageDownloader->download($frontUrl, $card->expansion, $card->number, 'front');
+                        $path ? $card->update(['front_art_path' => $path]) : SystemError::create([
+                            'source' => CardImageDownloader::class,
+                            'message' => "Download immagine fronte fallito per {$cid}",
+                        ]);
                     }
-                    // stesso pattern per back_art_path/backArt
+                    // stesso pattern per back_art_path, leggendo artBack.data.attributes.formats.card.url
                 } catch (\Throwable $e) {
                     SystemError::create([
                         'source' => self::class,
-                        'message' => "Errore su carta {$cardData['cid'] ?? '?'}: {$e->getMessage()}",
+                        'message' => "Errore su carta {$cid} " . ($cid ? '' : '(cid mancante)') . ": {$e->getMessage()}",
                         'stack_trace' => $e->getTraceAsString(),
                         'context' => ['raw' => $cardData],
                     ]);
@@ -517,6 +565,8 @@ Note sul codice sopra:
 - Il `break` sulla richiesta fallita (non il singolo `continue` per carta) e' intenzionale: se l'intera pagina non risponde, insistere sulle pagine successive non ha senso.
 - `Mail::to($admins)` usa `User::role('admin')` (metodo di Spatie `HasRoles`), non `permission:` diretto, perche' l'email va a chi ha il ruolo `admin`, non a chiunque abbia un permesso specifico.
 - Mailable `NewCardsEmail`/`AdminScanReportEmail` (`php artisan make:mail NewCardsEmail --markdown=emails.new-cards`) vanno creati insieme a questo step, non prima: senza carte da mostrare non hanno contenuto da progettare.
+- Ogni riga di `data[]` è avvolta in `{id, attributes: {...}}` (formato Strapi classico) — per questo il ciclo `foreach` estrae prima `$cardEntry['attributes']`, non lavora direttamente su `$cardEntry`. Le relazioni dentro `attributes` seguono lo stesso pattern annidato un livello più giù (`attributes.expansion.data.attributes.code`), da qui i percorsi lunghi nel mapping sopra.
+- `$card->aspects()->sync($aspectIds)`/`$card->traits()->sync($traitNames)` sostituiscono un eventuale riferimento a colonne dirette: aggiornano la pivot ad ogni scan, così se una carta cambia aspetto/tratto tra un errata e l'altro il dato resta coerente (non solo alla prima creazione).
 Riferimento: https://laravel.com/docs/12.x/queues#creating-jobs, https://laravel.com/docs/12.x/mail
 
 **Step 4.6 — Download locale delle immagini carta**
@@ -564,10 +614,43 @@ use App\Models\SystemError;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
+// Fixture minima ma fedele alla struttura reale confermata su test.json (Strapi: data[].attributes,
+// relazioni annidate come attributes.expansion.data.attributes.code). Un helper tipo cardFixture(['cardUid' => ...])
+// che parta da questo scheletro e sovrascriva solo i campi che cambiano evita di ripeterlo in ogni test.
+function fakeCardEntry(array $overrides = []): array
+{
+    return array_replace_recursive([
+        'id' => 7,
+        'attributes' => [
+            'cardUid' => '2579145458',
+            'cardNumber' => 5,
+            'title' => 'Luke Skywalker',
+            'subtitle' => 'Amico Fidato',
+            'unique' => true,
+            'cost' => 6,
+            'hp' => 7,
+            'power' => 4,
+            'text' => 'Testo di prova',
+            'artist' => 'Borja Pindado',
+            'type' => ['data' => ['attributes' => ['name' => 'Leader', 'value' => 'Leader']]],
+            'rarity' => ['data' => ['attributes' => ['name' => 'Speciale', 'englishName' => 'Special']]],
+            'expansion' => ['data' => ['attributes' => ['code' => 'SOR', 'name' => 'Scintilla di Ribellione']]],
+            'arenas' => ['data' => [['attributes' => ['name' => 'Terrestre']]]],
+            'traits' => ['data' => [['attributes' => ['name' => 'Forza']], ['attributes' => ['name' => 'Ribelle']]]],
+            'aspects' => ['data' => [['attributes' => ['name' => 'Vigilanza', 'color' => '#4073d4']]]],
+            'artFront' => ['data' => ['attributes' => ['url' => 'https://cdn.example/front.png', 'formats' => ['card' => ['url' => 'https://cdn.example/front-card.png']]]]],
+            'artBack' => ['data' => ['attributes' => ['url' => 'https://cdn.example/back.png', 'formats' => ['card' => ['url' => 'https://cdn.example/back-card.png']]]]],
+        ],
+    ], $overrides);
+}
+
 it('crea le carte nuove ricevute dall\'API', function () {
     Http::fake([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [/* payload fittizio con 1-2 carte */],
+            'data' => [
+                fakeCardEntry(),
+                fakeCardEntry(['attributes' => ['cardUid' => '9999999999', 'cardNumber' => 6, 'title' => 'Leia Organa']]),
+            ],
             'meta' => ['pagination' => ['pageCount' => 1]],
         ]),
     ]);
@@ -582,29 +665,43 @@ it('crea le carte nuove ricevute dall\'API', function () {
 it('pagina correttamente su piu\' pagine', function () {
     Http::fake([
         'admin.starwarsunlimited.com/api/card-list*' => Http::sequence()
-            ->push(['data' => [/* pagina 1 */], 'meta' => ['pagination' => ['pageCount' => 2]]])
-            ->push(['data' => [/* pagina 2 */], 'meta' => ['pagination' => ['pageCount' => 2]]]),
+            ->push(['data' => [fakeCardEntry()], 'meta' => ['pagination' => ['pageCount' => 2]]])
+            ->push(['data' => [fakeCardEntry(['attributes' => ['cardUid' => '1111111111', 'cardNumber' => 12]])], 'meta' => ['pagination' => ['pageCount' => 2]]]),
     ]);
-    // ... assert su Http::assertSentCount(2) e sul totale carte create
+    Mail::fake();
+
+    (new ImportCardsFromSwuApiJob())->handle(app(\App\Services\TelegramService::class), app(\App\Services\CardImageDownloader::class));
+
+    Http::assertSentCount(2);
+    expect(Card::count())->toBe(2);
 });
 
 it('registra un SystemError su dati malformati invece di fermare lo scan', function () {
     Http::fake([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [['cid' => null /* campo obbligatorio mancante, forza l\'eccezione */]],
+            'data' => [['id' => 1, 'attributes' => ['cardUid' => null /* campo obbligatorio mancante, forza l\'eccezione */]]],
             'meta' => ['pagination' => ['pageCount' => 1]],
         ]),
     ]);
+    Mail::fake();
 
-    // ... esegui il job
+    (new ImportCardsFromSwuApiJob())->handle(app(\App\Services\TelegramService::class), app(\App\Services\CardImageDownloader::class));
 
     expect(SystemError::count())->toBeGreaterThan(0);
 });
 
 it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', function () {
+    Card::factory()->create(['cid' => '2579145458']); // gia' presente, l'API la rispedisce
+    Http::fake([
+        'admin.starwarsunlimited.com/api/card-list*' => Http::response([
+            'data' => [fakeCardEntry()],
+            'meta' => ['pagination' => ['pageCount' => 1]],
+        ]),
+    ]);
     Mail::fake();
-    // Http::fake con una carta gia' esistente in DB (factory) rispedita dall'API
-    // ... esegui il job
+
+    (new ImportCardsFromSwuApiJob())->handle(app(\App\Services\TelegramService::class), app(\App\Services\CardImageDownloader::class));
+
     Mail::assertQueued(AdminScanReportEmail::class);
 });
 ```
