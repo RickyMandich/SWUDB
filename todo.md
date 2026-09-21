@@ -4,7 +4,7 @@
 
 ## Fase 3 — Autenticazione e permessi
 - [x] 3.1 Verifica email nativa (Breeze, già pronto)
-- [ ] 3.2 Pagina admin gestione utenti `/admin/utenti`
+- [X] 3.2 Pagina admin gestione utenti `/admin/utenti`
 
 ## Fase 3.5 — Configurazione email (Resend)
 - [ ] 3.5.1 Verifica dominio `mandich.dev` su Resend (DNS su Cloudflare)
