@@ -7,15 +7,15 @@
 - [X] 3.2 Pagina admin gestione utenti `/admin/utenti`
 
 ## Fase 3.5 — Configurazione email (Resend)
-- [ ] 3.5.1 Verifica dominio `mandich.dev` su Resend (DNS su Cloudflare)
-- [ ] 3.5.2 API Key Resend
-- [ ] 3.5.3 `composer require resend/resend-php`
-- [ ] 3.5.4 Variabili `.env` (locale + server)
-- [ ] 3.5.5 Verifica invio di test
+- [X] 3.5.1 Verifica dominio `mandich.dev` su Resend (DNS su Cloudflare)
+- [X] 3.5.2 API Key Resend
+- [X] 3.5.3 `composer require resend/resend-php`
+- [X] 3.5.4 Variabili `.env` (locale + server)
+- [X] 3.5.5 Verifica invio di test
 
 ## Fase 4 — Catalogo carte e import
-- [ ] 4.1 Bug: manca `use Schedule` in `routes/console.php`
-- [ ] 4.2 Aggiungere FK `cards.expansion → expansions.expansion` (manca in migration)
+- [X] 4.1 Bug: manca `use Schedule` in `routes/console.php`
+- [X] 4.2 Aggiungere FK `cards.expansion → expansions.expansion` (manca in migration)
 - [x] 4.3 Aspetti e tratti (modelli + pivot già fatti)
 - [x] 4.4 Relazioni nei modelli (già fatte)
 - [ ] 4.5 Implementare `ImportCardsFromSwuApiJob` (verificare prima i nomi campo reali dell'API)

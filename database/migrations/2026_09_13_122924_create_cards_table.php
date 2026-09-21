@@ -49,6 +49,7 @@ return new class extends Migration {
 
             # costraints
             $table->primary(['expansion', 'number']);
+            $table->foreign('expansion')->references('expansion')->on('expansions')->cascadeOnDelete();
 
         });
     }
