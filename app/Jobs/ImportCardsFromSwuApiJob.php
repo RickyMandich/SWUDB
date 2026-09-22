@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\AdminScanReportEmail;
 use App\Mail\NewCardsEmail;
 use App\Models\Card;
+use App\Models\Expansion;
 use App\Models\SystemError;
 use App\Models\User;
 use App\Services\CardImageDownloader;
@@ -30,8 +31,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         $newCards = collect();
         $errors = collect();
-        $page = 1;
-        $lastPage = 1;
+        $page = 0;
 
         do {
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
@@ -39,7 +39,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                 'filters[variantOf][id][$null]' => 'true',
                 'fields' => ['cardUid', 'cardNumber', 'title', 'subtitle', 'unique', 'cost', 'hp', 'power', 'text', 'artist'],
                 'pagination[page]' => $page,
-                'pagination[pageSize]' => 10,
+                'pagination[pageSize]' => 40,
             ]);
 
             if ($response->failed()) {
@@ -65,6 +65,20 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
                     $existed = Card::where('cid', $cid)->exists();
 
+                    // Espansione: crea se non esiste (stessa FK-first strategy di aspetti e tratti)
+                    $expansionData = $cardData['expansion']['data']['attributes'] ?? null;
+                    $expansionCode = $expansionData['code'] ?? null;
+                    if ($expansionCode) {
+                        $lastestRotation = Expansion::max('rotation');
+                        Expansion::firstOrCreate(['expansion' => $expansionCode],
+                            [
+                                'legal_date' => $expansionData['publishedAt'] ?? null,
+                                'rotation' => $lastestRotation,
+                            ]
+                        );
+                    }
+
+
                     $card = Card::updateOrCreate(
                         ['cid' => $cid],
                         [
@@ -81,8 +95,12 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                             'text' => $cardData['text'] ?? '',
                             'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                             'artist' => $cardData['artist'] ?? null,
-                            // max_copies e release_date non presenti in questa risposta: restano null,
-                            // valorizzabili solo a mano finche' non si verifica l'endpoint /api/card/{cid}.
+                            'release_date' => $cardData['publishedAt'] ?? null,
+                            'max_copies' => // the only card that breaks the max copies rule (actually i have to do this because the api do not support this)
+                                    $cardData['cardNumber'] == 256
+                                        &&
+                                    $cardData['expansion']['data']['attributes']['code'] == 'JTL'
+                                ? 15 : null,
                         ]
                     );
 
@@ -93,25 +111,48 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     }
 
                     // Aspetti e tratti: upsert + sync sulla pivot, non solo creazione
-                    $aspectNames = collect($cardData['aspects']['data'] ?? [])->pluck('attributes.name');
-                    $aspectIds = $aspectNames->map(fn ($name) => \App\Models\Aspect::firstOrCreate(['name' => $name])->id);
+                    $aspectIds = collect($cardData['aspects']['data'] ?? [])->map(function ($aspectEntry) {
+                        $attr = $aspectEntry['attributes'];
+                        return \App\Models\Aspect::updateOrCreate(
+                            ['name' => $attr['name']],
+                            [
+                                'color' => $attr['color'] ?? null,
+                                'order' => $attr['sortValue'] ?? null,
+                                'slug'  => \Illuminate\Support\Str::slug($attr['englishName'] ?? $attr['name']),
+                            ]
+                        )->id;
+                    });
                     $card->aspects()->sync($aspectIds);
+
 
                     $traitNames = collect($cardData['traits']['data'] ?? [])->pluck('attributes.name');
                     $traitNames->each(fn ($name) => \App\Models\CardTrait::firstOrCreate(['name' => $name]));
                     $card->traits()->sync($traitNames);
 
-                    $frontUrl = $cardData['artFront']['data']['attributes']['formats']['card']['url']
-                        ?? $cardData['artFront']['data']['attributes']['url']
+                    $frontUrl = $cardData['artFront']['data']['attributes']['url']
+                        ?? $cardData['artFront']['data']['attributes']['formats']['card']['url']
                         ?? null;
                     if ($frontUrl && ! $card->front_art_path) {
                         $path = $imageDownloader->download($frontUrl, $card->expansion, $card->number, 'front');
                         $path ? $card->update(['front_art_path' => $path]) : SystemError::create([
                             'source' => CardImageDownloader::class,
-                            'message' => "Download immagine fronte fallito per {$cid}",
+                            'message' => "Download immagine davanti fallito per {{$cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
                         ]);
                     }
-                    // stesso pattern per back_art_path, leggendo artBack.data.attributes.formats.card.url
+
+
+                    $backAttrs = $cardData['artBack']['data']['attributes'] ?? null;
+                    $backUrl = $backAttrs['url'] ??
+                        $backAttrs['formats']['card']['url'] ??
+                        null;
+
+                    if ($backUrl && ! $card->back_art_path) {
+                        $path = $imageDownloader->download($backUrl, $card->expansion, $card->number, 'back');
+                        $path ? $card->update(['back_art_path' => $path]) : SystemError::create([
+                            'source' => CardImageDownloader::class,
+                            'message' => "Download immagine retro fallito per {{$cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
+                        ]);
+                    }
                 } catch (\Throwable $e) {
                     SystemError::create([
                         'source' => self::class,
