@@ -5,13 +5,13 @@
         <div class="container">
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2>{{ $carta->nome }} 
+                    <h2>{{ $carta->nome }}
                         @if(strlen($carta->titolo) > 0)
-                        <small class="text-muted text-uppercase">{{ $carta->titolo }}</small>
+                            <small class="text-muted text-uppercase">{{ $carta->titolo }}</small>
                         @endif
                     </h2>
                 </div>
-                
+
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-8">
@@ -29,7 +29,8 @@
                                         <th scope="row">aspetti</th>
                                         <td>
                                             @foreach($carta->aspects as $aspetto)
-                                                <span class="badge" style="background-color: {{ $aspetto->colore }}; color: {{ $aspetto->nome == 'Eroismo' ? '#000' : '#fff' }};">
+                                                <span class="badge"
+                                                    style="background-color: {{ $aspetto->colore }}; color: {{ $aspetto->nome == 'Eroismo' ? '#000' : '#fff' }};">
                                                     {{ $aspetto->nome }}
                                                 </span>
                                             @endforeach
@@ -96,7 +97,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card-footer">
                     <div class="d-flex justify-content-between">
                         @if($back)
@@ -107,6 +108,15 @@
                         <a href="/carte" class="btn btn-primary align-middle">
                             Torna alla lista
                         </a>
+                        @if(Auth::admin())
+                            <form action="/carta/{{ $carta->espansione }}/{{ $carta->numero }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger align-top">
+                                    <i class="fas fa-trash me-2"></i>elimina
+                                </button>
+                            </form>
+                        @endif
                         @if($next)
                             <a href="/carta/{{ $next->espansione }}/{{ $next->numero }}" class="btn btn-secondary align-bottom">
                                 {{ __("custom.next") }} ({{ $next->snippet }})&rarr;
@@ -126,8 +136,8 @@
                 img.src = toggleLink(img.src);
             }
 
-            function toggleLink(link){
-                if(back == link){
+            function toggleLink(link) {
+                if (back == link) {
                     link = front;
                     console.log("ho impostato il fronte della carta");
                     console.log(link);
@@ -143,16 +153,16 @@
         carta non trovata
     @endif
     <style>
-        .immagine img{
+        .immagine img {
             max-width: 100%;
             max-height: 100%;
         }
-        
-        .immagine img{
+
+        .immagine img {
             width: 100%;
         }
 
-        h5{
+        h5 {
             display: inline-block;
         }
     </style>
