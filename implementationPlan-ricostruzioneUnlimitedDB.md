@@ -47,7 +47,7 @@ Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `Q
 |---|---|---|
 | `expansion` | string, FK → `expansions.expansion`, **PK composita** con `number` | Riflette come le carte sono identificate nel gioco stesso (numero all'interno del set). |
 | `number` | unsigned integer, **PK composita** | |
-| `cid` | string, **unique** | Id naturale della carta secondo l'API ufficiale — usalo come riferimento nelle tabelle pivot (`card_aspect`, `deck_cards`, `collection_cards`) invece della coppia composita, molto più semplice nelle join. Nel payload reale dell'API il campo si chiama `cardUid` (non `cid`), vedi mapping in Fase 4/Step 4.5. |
+| `cid` | string, **unique** | Id naturale della carta secondo l'API ufficiale — usalo come riferimento nelle tabelle pivot (`card_aspect`, `deck_cards`, `collection_cards`) invece della coppia composita, molto più semplice nelle join. Nel payload reale dell'API il campo si chiama `cardUid` (non `cid`), vedi mapping in Fase 4/Step 4.5. **Decisione presa**: Eloquent non supporta nativamente PK composite, quindi sul modello `Card` `cid` è dichiarato come `$primaryKey` (`$incrementing = false`, `$keyType = 'string'`) al posto della coppia `(expansion, number)` — che resta comunque la PK reale a livello di schema SQL/migration, `cid` è solo la PK "pratica" lato Eloquent. |
 | `unique_card` | boolean, default `false` | Rinominata da `unica` (evita ambiguità col termine "unique" usato anche per il vincolo SQL sulla colonna `cid`). Indica la regola "Unica" del gioco (una sola copia in gioco nello stesso momento). |
 | `name` | string | Nome della carta. |
 | `title` | string, nullable | Sottotitolo carta. |
@@ -406,12 +406,12 @@ Requisiti raccolti da `todo.md` (vecchia versione, da riportare):
 | `arenas.data[0].attributes.name` | relazione (array) | `arena` | Prendi il primo elemento se presente (nei dati osservati è sempre 0 o 1 elemento); nome localizzato IT (es. `"Terrestre"`) va bene così, la colonna è solo per display. |
 | `traits.data[].attributes.name` | relazione (array) | pivot `card_trait` | Itera e fai upsert su `traits` + pivot, come già previsto. |
 | `aspects.data[].attributes.name`/`color` | relazione (array) | pivot `card_aspect` | Itera e fai upsert su `aspects` (con `color`) + pivot. |
-| `artFront.data.attributes.formats.card.url` (fallback `.url` root se `formats.card` assente) | relazione | `front_art_path` (via download, Step 4.6) | Preferisci il formato `card` (~400×287px) invece dell'immagine originale in `url` root (pesa di più, risoluzione non necessaria per il sito). |
-| `artBack.data.attributes.formats.card.url` (fallback `.url` root) | relazione | `back_art_path` | Stesso criterio di `artFront`. |
+| `artFront.data.attributes.url` (fallback `.formats.card.url` se `url` root assente) | relazione | `front_art_path` (via download, Step 4.6) | **Decisione aggiornata** (la bozza iniziale diceva il contrario): la differenza di peso tra l'originale in `url` root e il formato `card` è risultata trascurabile nei test, quindi si preferisce la qualità maggiore dell'originale, con `formats.card` tenuto solo come fallback se `url` manca. |
+| `artBack.data.attributes.url` (fallback `.formats.card.url`) | relazione | `back_art_path` | Stesso criterio di `artFront`. |
 
 **Campi che lo schema `cards` prevede ma che questa risposta non contiene affatto**:
-- `max_copies`: nessun campo `maxCopies`/simile nel payload — resta `null` di default per import automatico (valorizzabile solo a mano, come già previsto dalla colonna nullable, per le carte con limite non standard).
-- `release_date`: nessun campo nel payload (solo `createdAt`/`updatedAt`/`publishedAt` che sono metadati del CMS, non la data di uscita reale della carta). Da verificare se compare sull'endpoint singolo `GET /api/card/{cid}` (non testato in questo giro) prima di dare per persa la colonna — nel frattempo lascia `null` e non bloccare l'import su questo.
+- `max_copies`: nessun campo `maxCopies`/simile nel payload — resta `null` di default per import automatico (valorizzabile solo a mano, come già previsto dalla colonna nullable, per le carte con limite non standard). **Eccezione nota e voluta**: la carta JTL #256 ha un limite fisso di 15 copie che non tornerà mai al valore standard, per questo è scritta come caso hardcoded direttamente nel job invece che gestita a mano via UI admin — è l'unica eccezione di questo tipo prevista al momento; se in futuro ne emergono altre valuta una tabella/config dedicata invece di continuare ad aggiungere `if` nel job.
+- `release_date`: nessun campo `releaseDate`/simile nel payload, solo `createdAt`/`updatedAt`/`publishedAt` (metadati del CMS). **Decisione presa**: per le *carte* va bene usare `publishedAt` come `release_date` — a differenza di `expansions.legal_date` (vedi nota sotto sulla creazione automatica delle espansioni), qui rappresenta ragionevolmente quando la carta è stata resa pubblica, che è esattamente ciò che serve alla pagina "Nuove uscite" (Step 10.4).
 
 Lo scheletro sotto è già aggiornato con questi nomi di campo reali.
 
@@ -564,10 +564,40 @@ Note sul codice sopra:
 - `TelegramActionResult::$messageId` (Fase 9, Step 9.2) e' quello che permette di modificare lo stesso messaggio invece di mandarne uno nuovo ad ogni pagina.
 - Il `break` sulla richiesta fallita (non il singolo `continue` per carta) e' intenzionale: se l'intera pagina non risponde, insistere sulle pagine successive non ha senso.
 - `Mail::to($admins)` usa `User::role('admin')` (metodo di Spatie `HasRoles`), non `permission:` diretto, perche' l'email va a chi ha il ruolo `admin`, non a chiunque abbia un permesso specifico.
-- Mailable `NewCardsEmail`/`AdminScanReportEmail` (`php artisan make:mail NewCardsEmail --markdown=emails.new-cards`) vanno creati insieme a questo step, non prima: senza carte da mostrare non hanno contenuto da progettare.
+- Mailable `NewCardsEmail`/`AdminScanReportEmail` vanno create insieme a questo step (istruzioni dettagliate nello Step 4.5bis subito sotto), non prima: senza carte da mostrare non hanno contenuto da progettare.
 - Ogni riga di `data[]` è avvolta in `{id, attributes: {...}}` (formato Strapi classico) — per questo il ciclo `foreach` estrae prima `$cardEntry['attributes']`, non lavora direttamente su `$cardEntry`. Le relazioni dentro `attributes` seguono lo stesso pattern annidato un livello più giù (`attributes.expansion.data.attributes.code`), da qui i percorsi lunghi nel mapping sopra.
 - `$card->aspects()->sync($aspectIds)`/`$card->traits()->sync($traitNames)` sostituiscono un eventuale riferimento a colonne dirette: aggiornano la pivot ad ogni scan, così se una carta cambia aspetto/tratto tra un errata e l'altro il dato resta coerente (non solo alla prima creazione).
+- **Creazione automatica dell'`Expansion` se non esiste ancora** (necessaria perché altrimenti la FK `cards.expansion → expansions.expansion` farebbe fallire l'insert): `Expansion::firstOrCreate(['expansion' => $code], ['legal_date' => $expansionData['publishedAt'] ?? null, 'rotation' => Expansion::max('rotation')])`. `legal_date` da `publishedAt` e `rotation` copiato dal massimo esistente sono **placeholder deliberatamente approssimativi**, non i dati reali (`publishedAt` è quando l'espansione è stata pubblicata, non quando diventa legale in torneo) — restano corretti a mano in Fase 6, per questo `expansions.confirmed` resta `false` di default finché un admin non li verifica.
 Riferimento: https://laravel.com/docs/12.x/queues#creating-jobs, https://laravel.com/docs/12.x/mail
+
+**Step 4.5bis — Creazione delle Mailable `NewCardsEmail` e `AdminScanReportEmail`**
+Vanno create prima di poter eseguire il job di Step 4.5 così com'è: sono già referenziate (`use App\Mail\...`) ma la cartella `app/Mail/` non esiste ancora nel progetto.
+
+Come funzionano le Mailable in Laravel 12 (sintassi "nuova", quella corretta da usare qui):
+- Una Mailable è una classe che rappresenta una mail: che dati contiene e come viene renderizzata. Non la invii costruendola e basta: la passi a `Mail::to($destinatari)->queue(new TuaMailable($dati))` (già scritto così nel job di Step 4.5).
+- Tre metodi da implementare (scheletro già generato dal comando artisan sotto, li trovi vuoti/con placeholder da riempire):
+  - `envelope(): Envelope` — oggetto della mail (`return new Envelope(subject: '...')`). Il mittente non va specificato qui: usa già `MAIL_FROM_ADDRESS`/`MAIL_FROM_NAME` da `.env` (Fase 3.5).
+  - `content(): Content` — quale vista Markdown renderizzare e con quali variabili (`return new Content(markdown: 'emails.new-cards', with: ['cards' => $this->cards])`).
+  - `attachments(): array` — lasciala vuota (`return [];`), non servono allegati.
+- Per essere accodabile (`->queue()`, non `->send()`), la classe deve `implement ShouldQueue` e usare i trait `Queueable` + `SerializesModels` (quest'ultimo serve perché passi una `Collection` di modelli Eloquent nel costruttore, non solo scalari).
+- I dati passati al costruttore vanno dichiarati proprietà pubbliche (es. `public function __construct(public readonly Collection $cards) {}`) — sono quelle che poi passi a `content(with: [...])` per renderle disponibili nella vista Blade come `$cards`.
+
+Comandi da eseguire (uno per ciascuna mail, generano sia la classe sia il template Markdown insieme):
+```
+php artisan make:mail NewCardsEmail --markdown=emails.new-cards
+php artisan make:mail AdminScanReportEmail --markdown=emails.admin-scan-report
+```
+Questo crea:
+- `app/Mail/NewCardsEmail.php` / `app/Mail/AdminScanReportEmail.php` — le classi, già con lo scheletro `envelope()`/`content()`/`attachments()` da riempire secondo i punti sopra.
+- `resources/views/emails/new-cards.blade.php` / `resources/views/emails/admin-scan-report.blade.php` — i template, già con i tag base `<x-mail::message>` (le Markdown Mailable di Laravel usano componenti Blade dedicati: `<x-mail::button>`, `<x-mail::table>`, ecc. — elenco completo: https://laravel.com/docs/12.x/mail#writing-markdown-messages).
+
+Contenuto atteso di ciascun template (in base ai requisiti già raccolti per lo scan, vedi sopra in Step 4.5):
+- **`new-cards.blade.php`**: riceve `$cards` (la Collection di `Card` appena create, passata dal job). Per ognuna mostra almeno nome, espansione+numero, e se disponibile l'immagine fronte (`asset('storage/'.$card->front_art_path)`) — un elenco puntato o una `<x-mail::table>` vanno benissimo, non serve altro.
+- **`admin-scan-report.blade.php`**: riceve `$errors` (la Collection di stringhe passata dal job, un mix di veri errori e "carta già presente"). Un elenco puntato delle stringhe basta così com'è; se in futuro vuoi linkare ai `SystemError` corrispondenti (la rotta `errors.show` di Step 5.3 esiste già per questo), il job dovrebbe passare una Collection di modelli `SystemError` invece di semplici stringhe — non necessario ora, valutalo solo se ti serve davvero.
+
+Per personalizzare i colori del layout email di default, `php artisan vendor:publish --tag=laravel-mail` pubblica il CSS in `resources/views/vendor/mail/` — opzionale, salta questo passaggio se lo stile di default va bene.
+
+Per vedere il rendering senza inviare davvero: in locale lascia `MAIL_MAILER=log` (prima di passare a `resend` in produzione come da Fase 3.5) e leggi l'HTML già renderizzato dentro `storage/logs/laravel.log` dopo aver fatto partire lo scan; nei test Pest (Step 4.7) `Mail::fake()` invece verifica solo che la mail sia stata accodata (`assertQueued`), senza renderizzarla.
 
 **Step 4.6 — Download locale delle immagini carta**
 Invece di salvare l'URL dell'API in `front_art_path`/`back_art_path`, scarica l'immagine e salva il path locale:
