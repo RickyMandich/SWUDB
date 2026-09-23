@@ -5,7 +5,7 @@
 Sono uscite nuove carte su {{ config('app.name') }}.
 Visualizzale cliccando il pulsante qui sotto:
 
-<x-mail::button :url="{{ route('cards.new-release', ['release_date' => $cards->first()->release_date]) }}">
+<x-mail::button :url="{{ route('cards.new-release', ['since' => $cards->first()->release_date]) }}">
     Scopri le nuove carte
 </x-mail::button>
 
