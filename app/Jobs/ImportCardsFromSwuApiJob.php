@@ -183,7 +183,9 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         }
         if ($errors->isNotEmpty()) {
             $admins = User::role('admin')->get();
-            Mail::to($admins)->queue(new AdminScanReportEmail($errors));
+            foreach($admins as $admin) {
+                Mail::to($admin)->queue(new AdminScanReportEmail($errors));
+            }
         }
 
         $telegram->editMessage(

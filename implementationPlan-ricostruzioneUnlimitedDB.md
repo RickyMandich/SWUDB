@@ -770,7 +770,17 @@ Stessa immagine di `app` (stesso `Dockerfile`, nessuna build separata), comando 
       db:
         condition: service_healthy
 ```
-Aggiungilo sotto il servizio `db` in `docker-compose.dev.yml`, stesso file gia' esistente. `--max-time=3600`: il worker si ferma da solo dopo un'ora di attivita' (non subito, solo dopo aver finito il job in corso), poi `restart: unless-stopped` lo fa ripartire pulito — mitiga la crescita di memoria tipica di un processo PHP di lunga durata, senza bisogno di Supervisor dentro il container. Non serve ne' esporre porte ne' montare `build_assets` (il worker non serve pagine web, solo consuma la coda).
+Aggiungilo sotto il servizio `db` in `docker-compose.dev.yml`, stesso file gia' esistente (credenziali `DB_USERNAME`/`DB_PASSWORD` **identiche** a quelle del servizio `app`, non ricopiarle da un altro progetto). `--max-time=3600`: il worker si ferma da solo dopo un'ora di attivita' (non subito, solo dopo aver finito il job in corso), poi `restart: unless-stopped` lo fa ripartire pulito — mitiga la crescita di memoria tipica di un processo PHP di lunga durata, senza bisogno di Supervisor dentro il container. Non serve ne' esporre porte ne' montare `build_assets` (il worker non serve pagine web, solo consuma la coda).
+
+**Gotcha da non perdere**: `docker/mysql/init.sql` crea l'utente MySQL ristretto a un solo host, quello di `app` (`CREATE USER 'unlimiteddb'@'172.30.0.10' ...`) — MariaDB tratta `utente@host` come un'identita' unica, quindi anche con credenziali corrette una connessione da un IP diverso (il worker, `172.30.0.11`) viene rifiutata ("Access denied"). Cambia l'host del GRANT in un wildcard sul subnet, cosi' qualunque servizio futuro nella stessa rete interna funziona senza dover ritoccare `init.sql` di nuovo:
+```sql
+CREATE USER IF NOT EXISTS 'unlimiteddb'@'172.30.0.%' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON unlimiteddb.* TO 'unlimiteddb'@'172.30.0.%';
+FLUSH PRIVILEGES;
+```
+`init.sql` gira solo alla prima creazione del volume `db_data_dev` (script `docker-entrypoint-initdb.d`): su un container gia' esistente, applica lo stesso GRANT a mano (`docker exec -it unlimiteddb_db_dev mysql -u root -e "..."`, nessuna password richiesta con `MYSQL_ALLOW_EMPTY_PASSWORD=yes`) invece di ricreare il volume. **Vale anche per la produzione** (Step 4bis.2): stesso pattern IP-ristretto usato da `new-site.sh` per gli altri siti (vedi `mandich-dev-infra`), stesso fix a wildcard da applicare li'.
+
+**Altro gotcha collegato**: il `.env` del progetto ha ancora `DB_HOST=127.0.0.1`/`DB_USERNAME=laravel`/`DB_PASSWORD=` vuota (residuo dello scaffold Laravel di default) mentre dentro Docker i container usano `db`/`unlimiteddb`/`${DB_PASSWORD}` — e funziona comunque, perche' phpdotenv (usato da Laravel) non sovrascrive mai una variabile d'ambiente gia' impostata a livello di sistema operativo: i valori del blocco `environment:` di ciascun servizio nel compose vincono sempre su quelli scritti in `.env`, silenziosamente. Utile da ricordare in debug futuri di credenziali (esattamente il tipo di bug appena trovato sul servizio `worker`): se cambi `.env` aspettandoti un effetto dentro Docker e non succede nulla, e' questo il motivo.
 
 **Step 4bis.2 — Stesso servizio in produzione**
 Il `docker-compose.yml` di produzione per questo sito **non esiste ancora** in questa repo: viene generato e committato da `~/scripts/new-site.sh` sulla VM al primo deploy (vedi `mandich-dev-infra`), sul modello degli altri siti (es. phandalverse) — che oggi **non hanno** un servizio worker, quindi il template di `new-site.sh` genererebbe un compose senza. Due cose da fare, non alternative:

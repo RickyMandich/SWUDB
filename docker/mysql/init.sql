@@ -1,3 +1,3 @@
-CREATE USER IF NOT EXISTS 'unlimiteddb'@'172.30.0.10' IDENTIFIED BY '';
-GRANT ALL PRIVILEGES ON unlimiteddb.* TO 'unlimiteddb'@'172.30.0.10';
+CREATE USER IF NOT EXISTS 'unlimiteddb'@'172.30.0.%' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON unlimiteddb.* TO 'unlimiteddb'@'172.30.0.%';
 FLUSH PRIVILEGES;

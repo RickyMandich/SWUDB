@@ -65,7 +65,7 @@ services:
       - DB_HOST=db
       - DB_DATABASE=unlimiteddb
       - DB_USERNAME=unlimiteddb
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PASSWORD=
     networks:
       internal:
         ipv4_address: 172.30.0.11

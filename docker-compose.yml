@@ -58,7 +58,7 @@ services:
 
   worker:
     build: .
-    container_name: unlimiteddb_worker_dev
+    container_name: unlimiteddb_worker
     restart: unless-stopped
     command: php artisan queue:work --max-time=3600
     volumes:
