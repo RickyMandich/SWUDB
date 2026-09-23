@@ -47,11 +47,31 @@ services:
     networks:
       - internal
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  worker:
+    build: .
+    container_name: unlimiteddb_worker_dev
+    restart: unless-stopped
+    command: php artisan queue:work --max-time=3600
+    volumes:
+      - ./storage:/var/www/html/storage
+      - ./.env:/var/www/html/.env:ro
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=unlimiteddb
+      - DB_USERNAME=unlimiteddb
+      - DB_PASSWORD=${DB_PASSWORD}
+    networks:
+      internal:
+        ipv4_address: 172.30.0.11
+    depends_on:
+      db:
+        condition: service_healthy
 
 networks:
   internal:
