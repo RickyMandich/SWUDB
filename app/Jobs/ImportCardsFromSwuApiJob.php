@@ -14,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
@@ -31,7 +32,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         $newCards = collect();
         $errors = collect();
-        $page = 0;
+        $page = 1;
 
         do {
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
@@ -53,6 +54,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
             $payload = $response->json();
             $lastPage = $payload['meta']['pagination']['pageCount'] ?? $page;
+            $lastestRotation = Expansion::max('rotation') ?? '0';
 
             foreach ($payload['data'] ?? [] as $cardEntry) {
                 $cardData = $cardEntry['attributes'] ?? [];
@@ -69,10 +71,9 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     $expansionData = $cardData['expansion']['data']['attributes'] ?? null;
                     $expansionCode = $expansionData['code'] ?? null;
                     if ($expansionCode) {
-                        $lastestRotation = Expansion::max('rotation');
                         Expansion::firstOrCreate(['expansion' => $expansionCode],
                             [
-                                'legal_date' => $expansionData['publishedAt'] ?? null,
+                                'legal_date' => Carbon::parse($expansionData['publishedAt'])->toDateString(),
                                 'rotation' => $lastestRotation,
                             ]
                         );
@@ -95,7 +96,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                             'text' => $cardData['text'] ?? '',
                             'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                             'artist' => $cardData['artist'] ?? null,
-                            'release_date' => $cardData['publishedAt'] ?? null,
+                            'release_date' => Carbon::parse($cardData['publishedAt'])->toDateString() ?? null,
                             'max_copies' => // the only card that breaks the max copies rule (actually i have to do this because the api do not support this)
                                     $cardData['cardNumber'] == 256
                                         &&
@@ -107,7 +108,13 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     if (! $existed) {
                         $newCards->push($card);
                     } else {
-                        $errors->push("Carta {$cid} gia' presente, dati aggiornati");
+                        $err = SystemError::Create([
+                            'source' => self::class,
+                            'message' => "Carta {$cid} gia' presente, dati aggiornati",
+                            'status' => SystemError::STATUS_IGNORED,
+                            'context' => ['card' => $card],
+                        ]);
+                        $errors->push($err);
                     }
 
                     // Aspetti e tratti: upsert + sync sulla pivot, non solo creazione
@@ -154,13 +161,13 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                         ]);
                     }
                 } catch (\Throwable $e) {
-                    SystemError::create([
+                    $err = SystemError::create([
                         'source' => self::class,
-                        'message' => "Errore su carta {$cid} " . ($cid ? '' : '(cid mancante)') . ": {$e->getMessage()}",
+                        'message' => "Errore su carta {$cid} " . ($cid ? '' : '(cid mancante)'),
                         'stack_trace' => $e->getTraceAsString(),
-                        'context' => ['raw' => $cardData],
+                        'context' => ['raw' => $cardData, 'error' => $e],
                     ]);
-                    $errors->push($e->getMessage());
+                    $errors->push($err);
                     continue; // fail-soft: una carta rotta non ferma lo scan
                 }
             }
@@ -170,7 +177,9 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         } while ($page <= $lastPage);
 
         if ($newCards->isNotEmpty()) {
-            Mail::to(User::all())->queue(new NewCardsEmail($newCards));
+            foreach(User::all() as $user) {
+                Mail::to($user)->queue(new NewCardsEmail($newCards));
+            }
         }
         if ($errors->isNotEmpty()) {
             $admins = User::role('admin')->get();

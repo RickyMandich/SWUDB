@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class SystemError extends Model
 {
+    const STATUS_OPEN = 'open';
+    const STATUS_IGNORED = 'ignored';
+    const STATUS_RESOLVED = 'resolved';
     protected $table = 'system_errors';
     protected $fillable = [
         'source',
