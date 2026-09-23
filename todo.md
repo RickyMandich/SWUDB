@@ -22,6 +22,11 @@
 - [ ] 4.6 Download locale immagini carta (`CardImageDownloader`)
 - [ ] 4.7 Test Pest per il job di import
 
+## Fase 4bis — Worker delle code (locale e produzione)
+- [ ] 4bis.1 Servizio `worker` in `docker-compose.dev.yml` (`queue:work`, `restart: unless-stopped`)
+- [ ] 4bis.2 Stesso servizio nel `docker-compose.yml` di produzione (una volta generato da `new-site.sh`)
+- [ ] 4bis.3 Verifica: worker attivo in locale e in produzione (`docker ps`)
+
 ## Fase 5 — Log errori scan
 - [x] 5.1 Migration/model `SystemError` (già fatti)
 - [ ] 5.2 Permesso `system.manage-errors`

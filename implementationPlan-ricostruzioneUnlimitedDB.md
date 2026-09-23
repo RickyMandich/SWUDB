@@ -741,6 +741,47 @@ it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', func
 
 ---
 
+## Fase 4bis — Worker delle code (locale e produzione)
+
+> Gap trovato nel setup attuale: `docker-compose.dev.yml`/`Dockerfile`/`entrypoint.sh` avviano solo `php-fpm`, nessun processo consuma la tabella `jobs`. **`schedule:run` non processa la coda**: si limita a lanciare i comandi schedulati (qui `cards:scan`, settimanale) quando sono dovuti — ma quel comando, come ogni dispatch verso `ImportCardsFromSwuApiJob` (anche quello on-demand da `/scan` su Telegram, Step 9.3), si limita a *mettere* il job nella tabella `jobs`. Senza un `queue:work` che gira, i job dispatchati restano li' per sempre, non eseguiti — sia lo scan settimanale sia quello manuale via bot risulterebbero silenziosamente rotti in produzione.
+
+**Decisione presa**: worker dedicato sempre attivo (nuovo servizio Docker), non un secondo cron come per `schedule:run` — latenza zero (il job parte appena dispatchato, non al prossimo tick del minuto) e pattern standard Laravel; Docker si occupa gia' della supervisione del processo tramite `restart: unless-stopped` (niente Supervisor aggiuntivo necessario, sarebbe ridondante dentro un container).
+
+**Step 4bis.1 — Servizio `worker` in `docker-compose.dev.yml`**
+Stessa immagine di `app` (stesso `Dockerfile`, nessuna build separata), comando diverso: invece di `php-fpm` (il `CMD` di default del Dockerfile), esegue `php artisan queue:work`. L'`entrypoint.sh` esistente funziona gia' cosi' com'e' per questo scopo: fa `chown` poi `exec "$@"`, quindi rispetta qualunque `command:` gli passi Compose.
+```yaml
+  worker:
+    build: .
+    container_name: unlimiteddb_worker_dev
+    restart: unless-stopped
+    command: php artisan queue:work --max-time=3600
+    volumes:
+      - ./storage:/var/www/html/storage
+      - ./.env:/var/www/html/.env:ro
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=unlimiteddb
+      - DB_USERNAME=unlimiteddb
+      - DB_PASSWORD=${DB_PASSWORD}
+    networks:
+      internal:
+        ipv4_address: 172.30.0.11
+    depends_on:
+      db:
+        condition: service_healthy
+```
+Aggiungilo sotto il servizio `db` in `docker-compose.dev.yml`, stesso file gia' esistente. `--max-time=3600`: il worker si ferma da solo dopo un'ora di attivita' (non subito, solo dopo aver finito il job in corso), poi `restart: unless-stopped` lo fa ripartire pulito — mitiga la crescita di memoria tipica di un processo PHP di lunga durata, senza bisogno di Supervisor dentro il container. Non serve ne' esporre porte ne' montare `build_assets` (il worker non serve pagine web, solo consuma la coda).
+
+**Step 4bis.2 — Stesso servizio in produzione**
+Il `docker-compose.yml` di produzione per questo sito **non esiste ancora** in questa repo: viene generato e committato da `~/scripts/new-site.sh` sulla VM al primo deploy (vedi `mandich-dev-infra`), sul modello degli altri siti (es. phandalverse) — che oggi **non hanno** un servizio worker, quindi il template di `new-site.sh` genererebbe un compose senza. Due cose da fare, non alternative:
+1. **Una tantum per questo sito**: dopo che `new-site.sh` ha generato/committato il `docker-compose.yml` di produzione, aggiungi manualmente lo stesso blocco `worker` di cui sopra (stessi principi: stessa immagine `app`, `command: php artisan queue:work --max-time=3600`, `restart: unless-stopped`), adattando IP/subnet a quella assegnata da `new-site.sh` per questo sito.
+2. **Per tutti i siti futuri**: aggiornare `~/scripts/new-site.sh` (sulla VM, fuori da questa repo) perche' generi di default anche il servizio `worker` per ogni nuovo sito Laravel — altrimenti questo stesso gap si ripresenta identico al prossimo sito creato. Annotalo in `mandich-dev-infra` come cosa da fare, non e' modificabile da qui (script sulla VM, non in questa repo).
+
+**Step 4bis.3 — Verifica**
+In locale: `docker compose -f docker-compose.dev.yml up -d` poi `docker logs unlimiteddb_worker_dev -f` deve mostrare il worker in ascolto ("Processing jobs from the [default] queue"); dispatcha un job di test (`php artisan tinker` -> `\App\Jobs\ImportCardsFromSwuApiJob::dispatch();`) e verifica che parta subito, non al minuto successivo. In produzione, aggiungi il controllo alla checklist di Step 12.1 (post-deploy): il container `unlimiteddb_worker` deve risultare `Up` (`docker ps`), non solo `unlimiteddb_app`.
+
+---
+
 ## Fase 5 — Log errori scan (`system_errors`)
 
 **Step 5.1 — Migration e modello** ✅ Fatto
@@ -1450,7 +1491,7 @@ class TelegramController extends Controller
             : $telegram->sendMessage($chatId, $card->name);
 
         if (! $result->successful) {
-            $telegram->sendMessage($chatId, $card->name.' — '.route('cards.show', $card));
+            $telegram->sendMessage($chatId, $card->name.' — '.route('cards.show', ['expansion' => $card->expansion, 'number' => $card->number]));
         }
     }
 }
@@ -1516,7 +1557,30 @@ public function index(Request $request, CardSearch $search): View
 
     return view('cards.index', ['cards' => $cards, 'filters' => $request->all()]);
 }
+
+/**
+ * Shows the public detail page for a single card, identified by expansion+number (not cid)
+ * Mostra la pagina di dettaglio pubblica di una singola carta, identificata da espansione+numero (non cid)
+ */
+public function show(string $expansion, int $number): View
+{
+    $card = Card::with(['aspects', 'traits', 'expansionModel'])
+        ->where('expansion', $expansion)
+        ->where('number', $number)
+        ->firstOrFail();
+
+    return view('cards.show', compact('card'));
+}
 ```
+**Pagina mancante nella bozza iniziale**: nonostante sia gia' referenziata da `route('cards.show', ...)` sia nel bot Telegram (Step 9.3) sia nella mail `NewCardsEmail` (Step 4.5bis), qui non era mai stata definita ne' la route ne' il metodo `show()`. **Decisione presa**: la route usa `{expansion}/{number}` (non binding implicito su `{card}` via `cid`) — piu' gestibile e leggibile in ogni contesto (URL, log, mail) rispetto a un cid opaco. Route da aggiungere in `routes/web.php`, fuori da gruppi `auth` (pagina pubblica):
+```php
+use App\Http\Controllers\CardController;
+
+Route::get('/carte', [CardController::class, 'index'])->name('cards.index');
+Route::get('/carte/{expansion}/{number}', [CardController::class, 'show'])->name('cards.show');
+```
+La vista `cards.show.blade.php` mostra almeno: nome/titolo, immagine fronte (e retro se `type` prevede un retro, es. Leader), costo/potenza/salute se presenti, testo abilita', aspetti (badge colorati da `aspects.color`), tratti, rarita', espansione+numero. Nessuna logica particolare, e' la pagina di lettura piu' semplice del progetto.
+
 Bug specifico segnalato in `todo.md` della vecchia versione da non ripetere: il campo di ricerca deve restare valorizzato dopo un reload con `?nome=...` nell'URL. Con un form server-rendered puro basta `<input name="nome" value="{{ $filters['nome'] ?? '' }}">` (Blade lo rivalorizza automaticamente ad ogni render). Se in futuro aggiungi un filtro live via Alpine/JS (`x-model`), inizializza lo stato JS leggendo lo stesso valore server-side al mount, non da stringa vuota — altrimenti un link condiviso con `?nome=...` mostra i risultati già filtrati ma la casella di ricerca appare vuota: esattamente il bug della vecchia versione.
 
 **Step 10.2 — Statistiche mazzo**
@@ -1541,10 +1605,19 @@ Pubbliche: catalogo carte, mazzi pubblici, nuove uscite. Autenticate (`auth`): c
 **Step 10.4 — Pagina "Nuove uscite"**
 `GET /nuove-uscite`, parametro opzionale `since` (`YYYY-MM-DD`) — se specificato resta un intervallo **arbitrario** a scelta dell'utente; se assente, default alla data di rilascio più recente (`Card::max('release_date')`), non a un intervallo fisso:
 ```php
-$since = $request->query('since') ?? Card::max('release_date');
-Card::where('release_date', '>=', $since)->orderByDesc('release_date')->get();
+// app/Http/Controllers/CardController.php (stesso controller di Step 10.1)
+public function newReleases(Request $request): View
+{
+    $since = $request->query('since') ?? Card::max('release_date');
+    $cards = Card::where('release_date', '>=', $since)->orderByDesc('release_date')->paginate(24)->withQueryString();
+
+    return view('cards.new-releases', compact('cards', 'since'));
+}
 ```
-Filtra su `cards.release_date`, non su `expansions.legal_date` (concetti diversi). Interfaccia: `<input type="date">` in un form GET.
+```php
+Route::get('/nuove-uscite', [CardController::class, 'newReleases'])->name('cards.new-releases');
+```
+Filtra su `cards.release_date`, non su `expansions.legal_date` (concetti diversi). Interfaccia: `<input type="date">` in un form GET. **Nota di coerenza**: questo e' il nome di route gia' usato dalla mail `NewCardsEmail` (Step 4.5bis) per il link "vedi tutte le nuove uscite" — usa il query param `since`, non `release_date`.
 
 ☐ Fase 10 completata
 
