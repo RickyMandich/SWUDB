@@ -602,7 +602,21 @@ Per vedere il rendering senza inviare davvero: in locale lascia `MAIL_MAILER=log
 **Step 4.6 — Download locale delle immagini carta**
 Invece di salvare l'URL dell'API in `front_art_path`/`back_art_path`, scarica l'immagine e salva il path locale:
 
-1. `php artisan storage:link` (una tantum) — crea il symlink `public/storage` verso `storage/app/public`, necessario per rendere le immagini raggiungibili via browser.
+1. **Rendi raggiungibili le immagini via nginx (niente `storage:link` in Docker)** — `php artisan storage:link` qui non serve e non funzionerebbe: nginx è un container separato che monta solo `./public` (non `./storage`), quindi un symlink `public/storage` (per di più creato da Windows con target assoluto `C:\...`) non risolverebbe da nessuna parte; e `/public/storage` è già in `.gitignore`, quindi in produzione non arriverebbe comunque col codice. Al suo posto servi direttamente `storage/app/public` con un alias nginx e montala nel container nginx, in **entrambi** i compose:
+   - `docker/nginx/default.conf` (condivisa tra dev e produzione), dentro il blocco `server`, prima di `location ~ \.php$`:
+     ```nginx
+     location /storage/ {
+         alias /var/www/html/storage/app/public/;
+         access_log off;
+     }
+     ```
+   - `docker-compose.dev.yml` (dev), servizio `nginx`, aggiungi ai `volumes`:
+     ```yaml
+           - ./storage/app/public:/var/www/html/storage/app/public:ro
+     ```
+   - `docker-compose.yml` (produzione), servizio `nginx`, stessa riga nei `volumes`.
+
+   Il target del mount è una **directory**, non un file singolo. Gli URL `asset('storage/'.$path)` / `Storage::disk('public')->url()` restano invariati (stesso prefisso `/storage/`). Dopo la modifica ricrea nginx: `docker compose -f docker-compose.dev.yml up -d`. `php artisan storage:link` serve solo se sviluppi fuori da Docker con `php artisan serve`.
 2. Crea `app/Services/CardImageDownloader.php`:
 ```php
 class CardImageDownloader
@@ -783,8 +797,17 @@ FLUSH PRIVILEGES;
 **Altro gotcha collegato**: il `.env` del progetto ha ancora `DB_HOST=127.0.0.1`/`DB_USERNAME=laravel`/`DB_PASSWORD=` vuota (residuo dello scaffold Laravel di default) mentre dentro Docker i container usano `db`/`unlimiteddb`/`${DB_PASSWORD}` — e funziona comunque, perche' phpdotenv (usato da Laravel) non sovrascrive mai una variabile d'ambiente gia' impostata a livello di sistema operativo: i valori del blocco `environment:` di ciascun servizio nel compose vincono sempre su quelli scritti in `.env`, silenziosamente. Utile da ricordare in debug futuri di credenziali (esattamente il tipo di bug appena trovato sul servizio `worker`): se cambi `.env` aspettandoti un effetto dentro Docker e non succede nulla, e' questo il motivo.
 
 **Step 4bis.2 — Stesso servizio in produzione**
-Il `docker-compose.yml` di produzione per questo sito **non esiste ancora** in questa repo: viene generato e committato da `~/scripts/new-site.sh` sulla VM al primo deploy (vedi `mandich-dev-infra`), sul modello degli altri siti (es. phandalverse) — che oggi **non hanno** un servizio worker, quindi il template di `new-site.sh` genererebbe un compose senza. Due cose da fare, non alternative:
-1. **Una tantum per questo sito**: dopo che `new-site.sh` ha generato/committato il `docker-compose.yml` di produzione, aggiungi manualmente lo stesso blocco `worker` di cui sopra (stessi principi: stessa immagine `app`, `command: php artisan queue:work --max-time=3600`, `restart: unless-stopped`), adattando IP/subnet a quella assegnata da `new-site.sh` per questo sito.
+Il `docker-compose.yml` di produzione (generato da `~/scripts/new-site.sh` al primo deploy e poi committato in repo, vedi `mandich-dev-infra`) **esiste già** e contiene un servizio `worker`, ma è stato copiato da quello dev senza adattarlo: ha valori che non combaciano col resto del compose di produzione (subnet `172.23.0.0/24`, database `my_swudb`, utente `swudb`). Gli altri siti generati da `new-site.sh` (es. phandalverse) invece non hanno alcun worker. Due cose da fare, non alternative:
+1. **Correggi il `worker` già presente in `docker-compose.yml`**, allineandolo al servizio `app` di produzione (non a quello dev). Oggi ha tre problemi:
+   - `ipv4_address: 172.30.0.11` è fuori dalla subnet `172.23.0.0/24` della rete `internal`: Compose rifiuta di creare la rete. Usa un IP libero di quella subnet, es. `172.23.0.11` (l'`app` è `172.23.0.10`).
+   - `DB_DATABASE=unlimiteddb`, `DB_USERNAME=unlimiteddb`, `DB_PASSWORD=${DB_PASSWORD}` devono essere **identici a quelli dell'`app`** (`my_swudb`, `swudb`, stessa password). Nel compose in repo `app` ha `DB_PASSWORD=` vuota: verifica il valore realmente in uso (`docker exec SWUDB_app env | grep DB_`) e usa lo stesso nel worker.
+   - L'utente DB è ristretto all'IP dell'`app`: stesso gotcha di Step 4bis.1, il worker a `172.23.0.11` verrebbe rifiutato ("Access denied"). Sul volume `db_data` già esistente `init.sql` non rigira, quindi applica il GRANT a mano sul server, con wildcard sulla subnet di produzione (sostituisci `<PASSWORD>` con quella dell'`app`, stringa vuota se è vuota):
+     ```
+     docker exec -it SWUDB_db mysql -u root -e "CREATE USER IF NOT EXISTS 'swudb'@'172.23.0.%' IDENTIFIED BY '<PASSWORD>'; GRANT ALL PRIVILEGES ON my_swudb.* TO 'swudb'@'172.23.0.%'; FLUSH PRIVILEGES;"
+     ```
+   - **Attenzione, decisione aperta**: `docker/mysql/init.sql` è montato da entrambi i compose ma in repo contiene i valori dev (`unlimiteddb`, `172.30.0.%`). Sul volume di produzione già inizializzato non ha effetto, ma se `db_data` di produzione venisse ricreato non creerebbe l'utente `swudb`. Se vuoi che la produzione sia riproducibile serve un `init.sql` separato montato solo da `docker-compose.yml`: non è deciso qui.
+
+   Poi deploy con il merge sul branch `laravel` e verifica come da Step 4bis.3.
 2. **Per tutti i siti futuri**: aggiornare `~/scripts/new-site.sh` (sulla VM, fuori da questa repo) perche' generi di default anche il servizio `worker` per ogni nuovo sito Laravel — altrimenti questo stesso gap si ripresenta identico al prossimo sito creato. Annotalo in `mandich-dev-infra` come cosa da fare, non e' modificabile da qui (script sulla VM, non in questa repo).
 
 **Step 4bis.3 — Verifica**
@@ -1738,6 +1761,7 @@ Dopo il merge, controlla che tutto sia partito correttamente:
 - webhook Telegram registrato sul dominio giusto (`https://unlimiteddb.mandich.dev/telegram/webhook`, Step 9.3)
 - `failed_jobs` vuota (`php artisan queue:failed` sul container, o query diretta)
 - lo scan settimanale risulta schedulato (`php artisan schedule:list` mostra `cards:scan` al lunedi')
+- le immagini carta scaricate sono raggiungibili: dopo il primo scan apri `https://unlimiteddb.mandich.dev/storage/cards/{EXP}/{numero}-front.{ext}` e deve rispondere 200; un 404 indica che manca il mount `./storage/app/public` sul servizio `nginx` di `docker-compose.yml` o l'alias `/storage/` in `docker/nginx/default.conf` (Step 4.6)
 
 ☐ Fase 12 completata
 

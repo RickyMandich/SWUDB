@@ -19,12 +19,12 @@
 - [x] 4.3 Aspetti e tratti (modelli + pivot già fatti)
 - [x] 4.4 Relazioni nei modelli (già fatte)
 - [x] 4.5 Implementare `ImportCardsFromSwuApiJob` (verificare prima i nomi campo reali dell'API)
-- [ ] 4.6 Download locale immagini carta (`CardImageDownloader`)
+- [ ] 4.6 Download locale immagini carta (`CardImageDownloader`) + servire `storage/app/public` via nginx: alias `/storage/` in `docker/nginx/default.conf` e mount `./storage/app/public` sul servizio `nginx` di `docker-compose.dev.yml` e `docker-compose.yml` (niente `storage:link` in Docker)
 - [ ] 4.7 Test Pest per il job di import
 
 ## Fase 4bis — Worker delle code (locale e produzione)
 - [ ] 4bis.1 Servizio `worker` in `docker-compose.dev.yml` (`queue:work`, `restart: unless-stopped`)
-- [ ] 4bis.2 Stesso servizio nel `docker-compose.yml` di produzione (una volta generato da `new-site.sh`)
+- [ ] 4bis.2 Correggere il `worker` già presente in `docker-compose.yml` di produzione (IP nella subnet `172.23.0.0/24`, DB `my_swudb`/`swudb` come l'`app`, GRANT a mano sul DB di produzione) + aggiornare `new-site.sh` per i siti futuri; decisione aperta: `init.sql` separato per produzione
 - [ ] 4bis.3 Verifica: worker attivo in locale e in produzione (`docker ps`)
 
 ## Fase 5 — Log errori scan
@@ -69,7 +69,7 @@
 
 ## Fase 12 — Deploy
 - [x] Automatizzato: merge su branch `laravel` → pipeline fa il resto
-- [ ] Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato
+- [ ] Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato, immagini carta raggiungibili su `/storage/...`
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
