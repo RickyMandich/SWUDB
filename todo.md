@@ -18,7 +18,7 @@
 - [X] 4.2 Aggiungere FK `cards.expansion → expansions.expansion` (manca in migration)
 - [x] 4.3 Aspetti e tratti (modelli + pivot già fatti)
 - [x] 4.4 Relazioni nei modelli (già fatte)
-- [ ] 4.5 Implementare `ImportCardsFromSwuApiJob` (verificare prima i nomi campo reali dell'API)
+- [x] 4.5 Implementare `ImportCardsFromSwuApiJob` (verificare prima i nomi campo reali dell'API)
 - [ ] 4.6 Download locale immagini carta (`CardImageDownloader`)
 - [ ] 4.7 Test Pest per il job di import
 

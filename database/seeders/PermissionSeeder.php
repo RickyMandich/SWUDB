@@ -21,6 +21,7 @@ class PermissionSeeder extends Seeder
             'collections.manage-any',
             'users.manage',
             'bot.notifications.receive',
+            'mails.test',
         ];
 
         foreach ($permissions as $permission) {
