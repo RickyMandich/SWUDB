@@ -357,7 +357,7 @@ public function methodName($parameter, $options = [])
 #### Livewire Components (`app/Livewire/`)
 - **SearchFilter.php**: Sistema filtri avanzato con cache
 - **DeckManager.php**: Gestione mazzi con statistiche real-time
-- **DeckBuildManager.php**: Confronto mazzo/collezione per la pagina "Build"
+- **DeckBuildManager.php**: Confronto mazzo/collezione per la pagina "Build", con lista TXT generata selezionabile tra carte mancanti e carte possedute
 - **CollezioneManager.php**: Supporto alla gestione della collezione personale
 
 #### Jobs, Events, Listeners (`app/Jobs/`, `app/Events/`, `app/Listeners/`)
@@ -413,6 +413,19 @@ public function methodName($parameter, $options = [])
 ```
 
 ## Componenti Livewire
+
+### DeckBuildManager
+**Percorso**: `app/Livewire/DeckBuildManager.php` (vista: `resources/views/livewire/deck-build-manager.blade.php`, pagina `/mazzo/{user}/{mazzo}/build`)
+
+Confronta un mazzo con la collezione dell'utente loggato e offre:
+- KPI (totale carte, in collezione, mancanti, % completamento) e tabella mazzo vs collezione con +/- sulla collezione, filtrabile con `$filtro` (`tutte`, `mancanti`, `possedute`) e ricerca testuale
+- una **lista testuale generata** (textarea, copia negli appunti, export TXT) che l'utente sceglie con il toggle `$tipoLista`:
+  - `mancanti` (default): copie del mazzo non coperte dalla collezione
+  - `possedute`: copie del mazzo coperte dalla collezione, cioè `min(copie mazzo, copie collezione)` (solo carte con quantità > 0)
+
+Formato riga, uguale per entrambe le liste: `{qty}x {espansione} {numero} {nome} ({rarità})`, ordinata con `CardsController::mergeSort`.
+
+Il toggle `$tipoLista` è indipendente dal filtro `$filtro` della tabella. L'export TXT è servito da `DecksController::exportBuildTxt()` (route `mazzo.build.export`), che riceve il tipo di lista con il parametro query `?tipo=mancanti|possedute` (default `mancanti`, qualunque altro valore è trattato come `mancanti`); il file scaricato si chiama `{mazzo}_carte_mancanti.txt` oppure `{mazzo}_carte_possedute.txt`.
 
 ### SearchFilter
 **Percorso**: `app/Livewire/SearchFilter.php`

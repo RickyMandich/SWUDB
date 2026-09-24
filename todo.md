@@ -61,6 +61,7 @@
 - [X] sistemare tabella carte (colonne ora di troppo per gli aspetti e sistemare il filtro per la nuova versione degli aspetti)
 - [X] sistemare gli ordinamenti
 - [X] aggiungere il pulsante admin per fare le query nel menu a tendina
+- [X] aggiungere toggle mancanti/possedute alla lista generata nella pagina build mazzo
 
 ## Funzionalità Future
 - Funzionalità di condivisione social

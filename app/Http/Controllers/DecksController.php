@@ -790,16 +790,26 @@ class DecksController extends Controller
     }
 
     /**
-     * Esporta in formato TXT la lista delle carte mancanti (post-mergesort)
+     * Export as TXT the missing or owned cards list of a deck compared to the user's collection (post-mergesort)
+     * Esporta in formato TXT la lista delle carte mancanti o possedute (post-mergesort)
      *
-     * Formato: {qty mancante}x {carta.espansione} {carta.numero} {carta.nome} ({carta.rarita})
+     * The list type is chosen with the optional query string parameter `tipo`:
+     * - `mancanti` (default): copies of the deck missing from the collection
+     * - `possedute`: copies of the deck covered by the collection, i.e. min(deck copies, collection copies)
+     * Any other value is treated as `mancanti`.
+     * Il tipo di lista si sceglie con il parametro query `tipo` (default `mancanti`).
      *
+     * Formato: {qty}x {carta.espansione} {carta.numero} {carta.nome} ({carta.rarita})
+     *
+     * @param Request $request HTTP request, optional query parameter 'tipo' ('mancanti'|'possedute')
      * @param string $user Nome utente del proprietario del mazzo
      * @param string $deck Nome del mazzo (URL encoded)
      * @return \Illuminate\Http\Response
      */
-    public function exportBuildTxt($user, $deck)
+    public function exportBuildTxt(Request $request, $user, $deck)
     {
+        $tipo = $request->query('tipo') === 'possedute' ? 'possedute' : 'mancanti';
+
         $userModel = User::where("name", $user)->first();
         if (!$userModel) {
             return response('Utente non trovato', 404);
@@ -832,7 +842,7 @@ class DecksController extends Controller
         }
 
         $compositions = $deckModel->compositions()->with('card.aspects')->get();
-        $missingCards = collect();
+        $listCards = collect();
 
         foreach ($compositions as $comp) {
             if ($comp->card) {
@@ -840,30 +850,33 @@ class DecksController extends Controller
                 $key = $card->espansione . '-' . $card->numero;
                 $copieMazzo = $comp->copie;
                 $copieCollezione = $collezioneMap[$key] ?? 0;
-                $copieMancanti = max(0, $copieMazzo - $copieCollezione);
 
-                if ($copieMancanti > 0) {
-                    $card->copie_mancanti = $copieMancanti;
-                    $missingCards->push($card);
+                $copieLista = $tipo === 'possedute'
+                    ? min($copieMazzo, $copieCollezione)
+                    : max(0, $copieMazzo - $copieCollezione);
+
+                if ($copieLista > 0) {
+                    $card->copie_lista = $copieLista;
+                    $listCards->push($card);
                 }
             }
         }
 
-        if (!$missingCards->isEmpty()) {
-            if (!$missingCards instanceof \Illuminate\Database\Eloquent\Collection) {
-                $missingCards = new \Illuminate\Database\Eloquent\Collection($missingCards->values());
+        if (!$listCards->isEmpty()) {
+            if (!$listCards instanceof \Illuminate\Database\Eloquent\Collection) {
+                $listCards = new \Illuminate\Database\Eloquent\Collection($listCards->values());
             }
-            $missingCards->load('aspects');
-            $missingCards = CardsController::mergeSort($missingCards);
+            $listCards->load('aspects');
+            $listCards = CardsController::mergeSort($listCards);
         }
 
         $lines = [];
-        foreach ($missingCards as $card) {
-            $lines[] = "{$card->copie_mancanti}x {$card->espansione} {$card->numero} {$card->nome} ({$card->rarita})";
+        foreach ($listCards as $card) {
+            $lines[] = "{$card->copie_lista}x {$card->espansione} {$card->numero} {$card->nome} ({$card->rarita})";
         }
 
         $content = implode("\n", $lines);
-        $filename = $this->sanitizeFilename($deckModel->nome . '_carte_mancanti') . '.txt';
+        $filename = $this->sanitizeFilename($deckModel->nome . '_carte_' . $tipo) . '.txt';
 
         return response($content)
             ->header('Content-Type', 'text/plain')

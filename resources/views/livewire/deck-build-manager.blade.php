@@ -12,9 +12,9 @@
             </p>
         </div>
         <div>
-            <a href="{{ route('mazzo.build.export', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
+            <a href="{{ route('mazzo.build.export', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome), 'tipo' => $tipoLista]) }}"
                 class="btn btn-success">
-                <i class="fas fa-download me-1"></i>Scarica Lista Mancanti TXT
+                <i class="fas fa-download me-1"></i>Scarica Lista {{ $tipoLista === 'possedute' ? 'Possedute' : 'Mancanti' }} TXT
             </a>
         </div>
     </div>
@@ -68,30 +68,55 @@
         </div>
     </div>
 
-    <!-- Sezione Esportazione Carte Mancanti -->
+    <!-- Sezione Lista Generata (Carte Mancanti / Possedute) -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center py-3">
+        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
             <h5 class="card-title mb-0">
-                <i class="fas fa-file-alt text-danger me-2"></i>Lista Carte Mancanti (Post-MergeSort)
+                @if($tipoLista === 'possedute')
+                    <i class="fas fa-file-alt text-success me-2"></i>Lista Carte Possedute (Post-MergeSort)
+                @else
+                    <i class="fas fa-file-alt text-danger me-2"></i>Lista Carte Mancanti (Post-MergeSort)
+                @endif
             </h5>
-            <div>
-                <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="copyMissingTxtToClipboard()">
-                    <i class="fas fa-copy me-1"></i>Copia negli Appunti
-                </button>
-                <a href="{{ route('mazzo.build.export', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome)]) }}"
-                    class="btn btn-outline-success btn-sm">
-                    <i class="fas fa-file-download me-1"></i>Esporta TXT
-                </a>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Tipo di lista da generare">
+                    <button type="button"
+                        class="btn {{ $tipoLista === 'mancanti' ? 'btn-danger' : 'btn-outline-danger' }}"
+                        wire:click="$set('tipoLista', 'mancanti')">
+                        Mancanti
+                    </button>
+                    <button type="button"
+                        class="btn {{ $tipoLista === 'possedute' ? 'btn-success' : 'btn-outline-success' }}"
+                        wire:click="$set('tipoLista', 'possedute')">
+                        Possedute
+                    </button>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="copyListaTxtToClipboard()">
+                        <i class="fas fa-copy me-1"></i>Copia negli Appunti
+                    </button>
+                    <a href="{{ route('mazzo.build.export', ['user' => $user, 'mazzo' => str_replace(' ', '+', $nome), 'tipo' => $tipoLista]) }}"
+                        class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-file-download me-1"></i>Esporta TXT
+                    </a>
+                </div>
             </div>
         </div>
         <div class="card-body">
-            @if(!empty($missingTxt))
-                <textarea id="missingTxtContent" class="form-control font-monospace bg-dark" rows="4"
-                    readonly>{{ $missingTxt }}</textarea>
+            @if(!empty($listaTxt))
+                <textarea id="listaTxtContent" class="form-control font-monospace bg-dark" rows="4"
+                    readonly>{{ $listaTxt }}</textarea>
                 <small class="text-muted mt-1 d-block">
                     <i class="fas fa-info-circle me-1"></i>Formato:
-                    <code>{qty mancante}x {espansione} {numero} {nome} ({rarità})</code>
+                    <code>{qty {{ $tipoLista === 'possedute' ? 'posseduta' : 'mancante' }}}x {espansione} {numero} {nome} ({rarità})</code>
                 </small>
+            @elseif($tipoLista === 'possedute')
+                <div class="alert alert-info mb-0 d-flex align-items-center" role="alert">
+                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                    <div>
+                        Non possiedi ancora nessuna delle carte necessarie per questo mazzo.
+                    </div>
+                </div>
             @else
                 <div class="alert alert-success mb-0 d-flex align-items-center" role="alert">
                     <i class="fas fa-check-circle fa-2x me-3"></i>
@@ -237,10 +262,10 @@
 </div>
 
 <script>
-    function copyMissingTxtToClipboard() {
-        const textarea = document.getElementById('missingTxtContent');
+    function copyListaTxtToClipboard() {
+        const textarea = document.getElementById('listaTxtContent');
         if (!textarea || !textarea.value) {
-            alert('Nessuna carta mancante da copiare!');
+            alert('Nessuna carta da copiare!');
             return;
         }
         navigator.clipboard.writeText(textarea.value).then(() => { })

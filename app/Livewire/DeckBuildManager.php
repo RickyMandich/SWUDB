@@ -18,7 +18,8 @@ class DeckBuildManager extends Component
     public $proprietario;
     public $collezioneId;
 
-    public $filtro = 'tutte'; // 'tutte', 'mancanti', 'possedute'
+    public $filtro = 'tutte'; // 'tutte', 'mancanti', 'possedute' (filtro della tabella)
+    public $tipoLista = 'mancanti'; // 'mancanti', 'possedute' (lista TXT generata/esportata)
     public $searchQuery = '';
 
     public function mount($nome, $user, $deck, $deckObject, $proprietario)
@@ -88,8 +89,32 @@ class DeckBuildManager extends Component
         }
     }
 
+    /**
+     * Sort a card collection with the official mergeSort (aspects preloaded)
+     * Ordina una collezione di carte con il mergeSort ufficiale (aspetti precaricati)
+     *
+     * @param \Illuminate\Support\Collection $carte Cards to sort / carte da ordinare
+     * @return \Illuminate\Support\Collection Sorted cards (empty collection if input is empty)
+     */
+    private function ordinaCarte($carte)
+    {
+        if ($carte->isEmpty()) {
+            return $carte;
+        }
+
+        if (!$carte instanceof \Illuminate\Database\Eloquent\Collection) {
+            $carte = new \Illuminate\Database\Eloquent\Collection($carte->values());
+        }
+        $carte->load('aspects');
+
+        return CardsController::mergeSort($carte);
+    }
+
     public function render()
     {
+        // Qualunque valore diverso da 'possedute' viene trattato come 'mancanti'
+        $tipoLista = $this->tipoLista === 'possedute' ? 'possedute' : 'mancanti';
+
         // Recupera le composizioni del mazzo
         $deckModel = Deck::find($this->deckObject->id);
         $compositions = $deckModel->compositions()->with('card.aspects')->get();
@@ -104,6 +129,7 @@ class DeckBuildManager extends Component
 
         $cards = collect();
         $missingCards = collect();
+        $ownedCards = collect();
 
         foreach ($compositions as $comp) {
             if ($comp->card) {
@@ -125,6 +151,14 @@ class DeckBuildManager extends Component
                     $missingCard->copie_mancanti = $copieMancanti;
                     $missingCards->push($missingCard);
                 }
+
+                // Copie del mazzo effettivamente coperte dalla collezione
+                $copiePossedute = min($copieMazzo, $copieCollezione);
+                if ($copiePossedute > 0) {
+                    $ownedCard = clone $card;
+                    $ownedCard->copie_possedute = $copiePossedute;
+                    $ownedCards->push($ownedCard);
+                }
             }
         }
 
@@ -137,20 +171,21 @@ class DeckBuildManager extends Component
             $cards = CardsController::mergeSort($cards);
         }
 
-        if (!$missingCards->isEmpty()) {
-            if (!$missingCards instanceof \Illuminate\Database\Eloquent\Collection) {
-                $missingCards = new \Illuminate\Database\Eloquent\Collection($missingCards->values());
-            }
-            $missingCards->load('aspects');
-            $missingCards = CardsController::mergeSort($missingCards);
-        }
+        $missingCards = $this->ordinaCarte($missingCards);
+        $ownedCards = $this->ordinaCarte($ownedCards);
 
-        // Formattazione stringa TXT post-mergesort
-        $missingTxtLines = [];
-        foreach ($missingCards as $mCard) {
-            $missingTxtLines[] = "{$mCard->copie_mancanti}x {$mCard->espansione} {$mCard->numero} {$mCard->nome} ({$mCard->rarita})";
+        // Formattazione stringa TXT post-mergesort della lista scelta dall'utente
+        $listaTxtLines = [];
+        if ($tipoLista === 'possedute') {
+            foreach ($ownedCards as $oCard) {
+                $listaTxtLines[] = "{$oCard->copie_possedute}x {$oCard->espansione} {$oCard->numero} {$oCard->nome} ({$oCard->rarita})";
+            }
+        } else {
+            foreach ($missingCards as $mCard) {
+                $listaTxtLines[] = "{$mCard->copie_mancanti}x {$mCard->espansione} {$mCard->numero} {$mCard->nome} ({$mCard->rarita})";
+            }
         }
-        $missingTxt = implode("\n", $missingTxtLines);
+        $listaTxt = implode("\n", $listaTxtLines);
 
         // Calcolo statistiche KPI
         $totaleCarteMazzo = $cards->sum('copie_mazzo');
@@ -179,7 +214,8 @@ class DeckBuildManager extends Component
 
         return view('livewire.deck-build-manager', [
             'cards' => $filteredCards,
-            'missingTxt' => $missingTxt,
+            'listaTxt' => $listaTxt,
+            'tipoLista' => $tipoLista,
             'totaleCarteMazzo' => $totaleCarteMazzo,
             'totaleCopiePossedute' => $totaleCopiePossedute,
             'totaleCarteMancanti' => $totaleCarteMancanti,
