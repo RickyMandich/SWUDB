@@ -15,30 +15,16 @@ use Illuminate\Support\Facades\Mail;
 // che parta da questo scheletro e sovrascriva solo i campi che cambiano evita di ripeterlo in ogni test.
 function fakeCardEntry(array $overrides = []): array
 {
+    static $base = null;
 
-    return array_replace_recursive([
-        'id' => 7,
-        'attributes' => [
-            'cardUid' => '2579145458',
-            'cardNumber' => 5,
-            'title' => 'Luke Skywalker',
-            'subtitle' => 'Amico Fidato',
-            'unique' => true,
-            'cost' => 6,
-            'hp' => 7,
-            'power' => 4,
-            'text' => 'Testo di prova',
-            'artist' => 'Borja Pindado',
-            'type' => ['data' => ['attributes' => ['name' => 'Leader', 'value' => 'Leader']]],
-            'rarity' => ['data' => ['attributes' => ['name' => 'Speciale', 'englishName' => 'Special']]],
-            'expansion' => ['data' => ['attributes' => ['code' => 'SOR', 'name' => 'Scintilla di Ribellione']]],
-            'arenas' => ['data' => [['attributes' => ['name' => 'Terrestre']]]],
-            'traits' => ['data' => [['attributes' => ['name' => 'Forza']], ['attributes' => ['name' => 'Ribelle']]]],
-            'aspects' => ['data' => [['attributes' => ['name' => 'Vigilanza', 'color' => '#4073d4']]]],
-            'artFront' => ['data' => ['attributes' => ['url' => 'https://cdn.example/front.png', 'formats' => ['card' => ['url' => 'https://cdn.example/front-card.png']]]]],
-            'artBack' => ['data' => ['attributes' => ['url' => 'https://cdn.example/back.png', 'formats' => ['card' => ['url' => 'https://cdn.example/back-card.png']]]]],
-        ],
-    ], $overrides);
+    if ($base === null) {
+        $json    = \Illuminate\Support\Facades\Storage::disk('local')->get('api-example-result.json');
+        $all     = json_decode($json, true);
+        $first   = reset($all);           // primo URL come chiave
+        $base    = $first['data'][0];     // prima card: Luke Skywalker (id 7)
+    }
+
+    return array_replace_recursive($base, $overrides);
 }
 
 it('crea le carte nuove ricevute dall\'API', function () {

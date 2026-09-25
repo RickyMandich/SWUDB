@@ -20,12 +20,12 @@
 - [x] 4.4 Relazioni nei modelli (già fatte)
 - [x] 4.5 Implementare `ImportCardsFromSwuApiJob` (verificare prima i nomi campo reali dell'API)
 - [x] 4.6 Download locale immagini carta (`CardImageDownloader`) + servire `storage/app/public` via nginx: alias `/storage/` in `docker/nginx/default.conf` e mount `./storage/app/public` sul servizio `nginx` di `docker-compose.dev.yml` e `docker-compose.yml` (niente `storage:link` in Docker)
-- [ignored] 4.7 Test Pest per il job di import
+- [X] 4.7 Test Pest per il job di import
 
 ## Fase 4bis — Worker delle code (locale e produzione)
-- [ ] 4bis.1 Servizio `worker` in `docker-compose.dev.yml` (`queue:work`, `restart: unless-stopped`)
-- [ ] 4bis.2 Correggere il `worker` già presente in `docker-compose.yml` di produzione (IP nella subnet `172.23.0.0/24`, DB `my_swudb`/`swudb` come l'`app`, GRANT a mano sul DB di produzione) + aggiornare `new-site.sh` per i siti futuri; decisione aperta: `init.sql` separato per produzione
-- [ ] 4bis.3 Verifica: worker attivo in locale e in produzione (`docker ps`)
+- [X] 4bis.1 Servizio `worker` in `docker-compose.dev.yml` (`queue:work`, `restart: unless-stopped`)
+- [X] 4bis.2 Correggere il `worker` già presente in `docker-compose.yml` di produzione (IP nella subnet `172.23.0.0/24`, DB `my_swudb`/`swudb` come l'`app`, GRANT a mano sul DB di produzione) + aggiornare `new-site.sh` per i siti futuri; decisione aperta: `init.sql` separato per produzione
+- [X] 4bis.3 Verifica: worker attivo in locale e in produzione (`docker ps`)
 
 ## Fase 5 — Log errori scan
 - [x] 5.1 Migration/model `SystemError` (già fatti)
