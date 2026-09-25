@@ -20,7 +20,7 @@
 - [x] 4.4 Relazioni nei modelli (già fatte)
 - [x] 4.5 Implementare `ImportCardsFromSwuApiJob` (verificare prima i nomi campo reali dell'API)
 - [x] 4.6 Download locale immagini carta (`CardImageDownloader`) + servire `storage/app/public` via nginx: alias `/storage/` in `docker/nginx/default.conf` e mount `./storage/app/public` sul servizio `nginx` di `docker-compose.dev.yml` e `docker-compose.yml` (niente `storage:link` in Docker)
-- [X] 4.7 Test Pest per il job di import
+- [x] 4.7 Test Pest per il job di import
 
 ## Fase 4bis — Worker delle code (locale e produzione)
 - [X] 4bis.1 Servizio `worker` in `docker-compose.dev.yml` (`queue:work`, `restart: unless-stopped`)

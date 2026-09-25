@@ -4,6 +4,7 @@ use App\Jobs\ImportCardsFromSwuApiJob;
 use App\Mail\NewCardsEmail;
 use App\Mail\AdminScanReportEmail;
 use App\Models\Card;
+use App\Models\Expansion;
 use App\Models\SystemError;
 use App\Services\CardImageDownloader;
 use App\Services\TelegramService;
@@ -74,7 +75,19 @@ it('registra un SystemError su dati malformati invece di fermare lo scan', funct
 });
 
 it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', function () {
-    Card::factory()->create(['cid' => '2579145458']); // gia' presente, l'API la rispedisce
+    Expansion::create([
+        'code'     => 'SOR',
+        'rotation' => '0',
+    ]);
+    // gia' presente, l'API la rispedisce
+    Card::create([
+        'cid'      => '2579145458',
+        'expansion' => 'SOR',
+        'number'   => 5,
+        'name' => 'Luke Skywalker',
+        'type' => 'Leader',
+        'rarity' => 'Special',
+    ]);
     Http::fake([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
             'data' => [fakeCardEntry()],

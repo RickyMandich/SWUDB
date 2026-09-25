@@ -166,7 +166,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                 ['name' => $attr['name']],
                 [
                     'color' => $attr['color'] ?? null,
-                    'order' => $attr['sortValue'] ?? null,
+                    'order' => $attr['sortValue'] ?? Aspect::max('order') + 1,
                     'slug'  => Str::slug($attr['englishName'] ?? $attr['name']),
                 ]
             )->id;
