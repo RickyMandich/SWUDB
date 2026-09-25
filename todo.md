@@ -69,7 +69,9 @@
 
 ## Fase 12 — Deploy
 - [x] Automatizzato: merge su branch `laravel` → pipeline fa il resto
-- [ ] Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato, immagini carta raggiungibili su `/storage/...`
+- [ ] Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato, immagini carta raggiungibili su `/storage/...`, container `_worker` `Up`
+- [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker` per i siti futuri
+- [ ] 12.2 Redeploy pulito a fine sviluppo (non ora): stop container → branch nuovo come default → commenta Action del vecchio sito → verifica `.env` del branch nuovo → cancella `~/sites/SWUDB` → rilancia `new-site.sh`
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi

@@ -1765,6 +1765,23 @@ Dopo il merge, controlla che tutto sia partito correttamente:
 
 ☐ Fase 12 completata
 
+**Step 12.2 — Redeploy pulito (da eseguire solo a fine sviluppo, non ora)**
+
+> Non lanciare questi passi finche' il progetto non e' pronto per andare in produzione. Servono a far generare a `~/scripts/new-site.sh` un `docker-compose.yml` pulito (con il servizio `worker` incluso, vedi nota sotto) invece di continuare a correggere a mano quello attuale, che ha accumulato incoerenze (subnet, nomi DB) discusse in Fase 4bis.
+
+**Prerequisito gia' fatto**: `~/scripts/new-site.sh` sul server e' stato aggiornato per generare anche il servizio `worker` (grant SQL a wildcard di subnet + blocco `worker` nel template `docker-compose.yml`), cosi' il redeploy sotto lo include automaticamente senza doverlo riaggiungere a mano.
+
+Ordine dei passi (rispettarlo: uno sblocca il successivo):
+
+1. **Ferma i container attuali** (non distruggerli ancora): `cd ~/sites/SWUDB && docker compose down`. Se vuoi conservare i dati reali del DB di produzione, fanne prima un dump: `docker compose exec db mariadb-dump -u root <db> > backup.sql` (esegui questo comando *prima* del `down`, con `db` ancora attivo). Deciderai a parte se `down -v` (cancella anche il volume `db_data`) o mantenerlo.
+2. **Imposta il branch con la nuova versione come default della repo** (GitHub → Settings → Branches). `new-site.sh` rileva il branch da clonare con `git remote show origin | grep "HEAD branch"` e lo scrive nel nuovo `deploy.yml`: va cambiato *prima* di riclonare, altrimenti il workflow generato punterebbe ancora al branch vecchio.
+3. **Commenta la GitHub Action del vecchio sito**: nel branch vecchio, apri `.github/workflows/deploy.yml`, commenta il trigger `on: push`, committa e pusha su quel branch. I secrets SSH sono a livello di repo, non di branch: un push accidentale sul vecchio branch rilancerebbe comunque `deploy.sh SWUDB` contro una cartella che nel frattempo e' stata ricreata.
+4. **Verifica che nel branch nuovo non resti nulla di infrastrutturale committato a mano**: `new-site.sh` rigenera sempre da zero `Dockerfile`, `docker/entrypoint.sh`, `docker/nginx/default.conf`, `docker/mysql/init.sql` e `docker-compose.yml` (li sovrascrive comunque), quindi non serve ripulirli. L'unico file che lo script riusa cosi' com'e' se lo trova gia' nella repo clonata e' `.env` (vedi lo Step 3 dello script): controlla che quel `.env`, sul branch nuovo, abbia `DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD` corretti — altrimenti si ripresenta la stessa incoerenza `my_swudb`/`unlimiteddb` vista in Fase 4bis.
+5. **Cancella la cartella del sito vecchio dal server**: `rm -rf ~/sites/SWUDB` — solo dopo il passo 1 (altrimenti restano container/rete Docker orfani con nomi che confliggono con quelli che il nuovo `up` dovra' ricreare).
+6. **Rilancia `~/scripts/new-site.sh`** con lo stesso URL della repo. Clona il branch ora impostato come default, rigenera tutta l'infrastruttura (worker incluso, vedi prerequisito sopra), legge il `.env` gia' presente nel branch, fa build/up/migrate e riusa la chiave SSH gia' esistente in `~/.ssh/deploy_SWUDB` (i secrets su GitHub restano validi, non serve ricrearli).
+
+Dopo il redeploy, ripeti comunque la checklist di Step 12.1 (webhook, `failed_jobs`, scan schedulato, immagini raggiungibili) **piu'** la verifica che il container `_worker` risulti `Up` (`docker ps`, vedi Step 4bis.3).
+
 ---
 
 ## Backlog — Funzionalità future (da `todo.md`, non pianificate in dettaglio)
