@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\SystemErrorController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Mail\AdminScanReportEmail;
@@ -31,6 +32,17 @@ Route::middleware(['auth', 'verified', 'permission:users.manage'])
         Route::get('/utenti', 'index')->name('users.index');
         Route::get('/utenti/{user}/modifica', 'edit')->name('users.edit');
         Route::put('/utenti/{user}', 'update')->name('users.update');
+    });
+
+
+Route::middleware(['auth', 'verified', 'permission:system.manage-errors'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/errori', [SystemErrorController::class, 'index'])->name('errors.index');
+        Route::get('/errori/{systemError}', [SystemErrorController::class, 'show'])->name('errors.show');
+        Route::patch('/errori/{systemError}', [SystemErrorController::class, 'update'])->name('errors.update');
+        Route::patch('/errori/bulk', [SystemErrorController::class, 'bulkUpdate'])->name('errors.bulk-update');
     });
 
 Route::middleware(['auth', 'verified', 'permission:mails.test'])->get('/render-mail/{type}', function (string $type){

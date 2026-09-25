@@ -29,8 +29,13 @@
 
 ## Fase 5 — Log errori scan
 - [x] 5.1 Migration/model `SystemError` (già fatti)
-- [ ] 5.2 Permesso `system.manage-errors`
-- [ ] 5.3 Pagina admin `/admin/errori`
+- [x] 5.2 Permesso `system.manage-errors`
+- 5.3 Pagina admin `/admin/errori`
+    - [x] Controller (resolved at valorized only when resolved, if ignored remains NULL, it don't have sense to set it because it will not be shown as resolved)
+    - [x] Rotte
+    - [ ] Vista Lista
+    - [ ] Vista Dettaglio
+    
 
 ## Fase 6 — Admin espansioni
 - [ ] 6.1 Permesso `expansions.manage`

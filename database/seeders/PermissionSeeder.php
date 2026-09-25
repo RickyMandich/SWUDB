@@ -22,6 +22,7 @@ class PermissionSeeder extends Seeder
             'users.manage',
             'bot.notifications.receive',
             'mails.test',
+            'system.manage-errors',
         ];
 
         foreach ($permissions as $permission) {
