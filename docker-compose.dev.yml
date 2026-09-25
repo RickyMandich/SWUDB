@@ -44,7 +44,7 @@ services:
       - MYSQL_DATABASE=unlimiteddb
     volumes:
       - db_data_dev:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./docker/mysql/init.dev.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - internal
     healthcheck:
