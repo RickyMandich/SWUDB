@@ -112,6 +112,42 @@ Niente colonna `role`: `cards.type` distingue già `Leader`/`Base` dagli altri t
 
 ---
 
+## Convenzioni per le view (riferimento per tutte le fasi seguenti)
+
+> Analisi della struttura attuale di `resources/views/` (Breeze standard, nessuna modifica finora): questa sezione fissa le convenzioni valide per **ogni** vista creata nelle fasi seguenti, che rimandano qui invece di ripetere le stesse indicazioni. Stack: Blade puro (niente Livewire/Inertia/Vue — vedi "Note di analisi" in fondo al documento: la lentezza della vecchia versione era un bug preciso di Livewire, non un limite del framework), Tailwind con classi utility inline, Alpine.js solo per interattività leggera (già usato nel menu di navigazione).
+
+**Corrispondenza cartella ↔ vista ↔ nome rotta.** Segui sempre la stessa tripla corrispondenza già rispettata da Step 3.2/5.3/6.2: `view('admin.users.index')` ⇄ `resources/views/admin/users/index.blade.php` ⇄ nome rotta `admin.users.index`. Per ogni nuova risorsa la cartella prende il nome del primo segmento di rotta: `decks.*` → `resources/views/decks/`, `collection.*` → `resources/views/collection/`, `cards.*` → `resources/views/cards/`. Il namespace `Admin\` nei controller si riflette solo nelle rotte/viste sotto `admin.`/`admin/`, non altrove.
+
+**Due soli layout radice, entrambi già forniti da Breeze — non crearne altri:**
+- `<x-app-layout>` (→ vista `layouts.app` via `App\View\Components\AppLayout`): per **ogni** pagina con navigazione, pubblica o autenticata che sia (dashboard, catalogo carte, mazzi, tutto l'admin). Usa lo slot `header` per il titolo pagina nella barra bianca sotto la nav, come già fa `dashboard.blade.php` — le viste `admin/*` scritte finora nel piano mettono l'`<h1>` nel corpo invece che nello slot: quando le scrivi per davvero, sposta il titolo nello slot (`<x-slot name="header"><h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestione utenti</h2></x-slot>`) per coerenza con `dashboard.blade.php`.
+- `<x-guest-layout>`: solo per le pagine di autenticazione già generate da Breeze — nessuna vista di questo piano ne ha bisogno.
+
+**Pubblico vs autenticato non è una cartella diversa** (vedi anche Step 10.3): è solo il gruppo di middleware della rotta. `resources/views/cards/` e `resources/views/decks/` contengono sia pagine pubbliche (`cards.index`, `cards.show`, mazzi pubblici) sia pagine che richiedono login (creazione/modifica mazzo) — non introdurre `public/`/`private/` sotto `resources/views/`.
+
+**Componenti condivisi già presenti in `resources/views/components/` (scaffold Breeze) — riusali sempre, non scrivere `<input>`/`<button>` nudi:**
+- `<x-primary-button>` / `<x-secondary-button>` / `<x-danger-button>` per i submit. Gli esempi di `<button>` nudo negli Step 3.2/5.3/6.2 sono solo illustrativi: quando scrivi la vista per davvero, sostituiscili.
+- `<x-text-input>` / `<x-input-label>` / `<x-input-error>` per i campi form — stesso discorso per gli `<input>` nudi negli esempi.
+- `<x-modal>` / `<x-dropdown>` / `<x-dropdown-link>` per menu o conferme in-page (es. conferma eliminazione, non ancora prevista esplicitamente ma probabile per mazzi/collezione).
+- `<x-nav-link>` / `<x-responsive-nav-link>`: ogni nuova sezione con una propria pagina indice va aggiunta a **entrambi** i blocchi di `layouts/navigation.blade.php` (quello desktop e quello sotto `<!-- Responsive Navigation Menu -->`) — lo Step 3.2 punto 5 aggiunge "Gestione utenti" solo al blocco desktop nel piano attuale, va replicato anche in quello responsive quando scrivi il codice reale.
+
+**Componenti nuovi da estrarre** (il piano li ripete già in forma di markup inline in più punti — introducili al primo punto in cui servono davvero, non copiare il markup ogni volta):
+- **Flash message** (`x-flash-message`): il blocco `@if (session('status'))<div class="mb-4 text-green-600">{{ session('status') }}</div>@endif` compare identico in Step 3.2/5.3/6.2 e servirà anche a `decks`/`collection` — estrailo in `resources/views/components/flash-message.blade.php` alla prima vista che scrivi per davvero, poi richiamalo con `<x-flash-message />`.
+- **Badge colorato** (`x-badge`): serve sia per lo stato di `SystemError` (Step 5.3, badge `open`/`resolved`/`ignored`) sia per gli aspetti carta (Step 10.1, badge colorati da `aspects.color`) — un solo componente parametrico (`<x-badge :color="...">{{ $label }}</x-badge>`) evita due implementazioni diverse dello stesso pattern visivo.
+
+**Stile Tailwind già stabilito, da riusare senza inventare varianti:**
+- Contenitore pagina: `<div class="max-w-{2xl|4xl|5xl} mx-auto py-6">` — solo la larghezza cambia in base al contenuto (`2xl` per un form singolo, `4xl`/`5xl` per una tabella).
+- Titolo pagina: `text-xl font-semibold mb-4` (da spostare nello slot `header`, vedi sopra).
+- Tabelle: `w-full text-left border-collapse`, nessuna classe aggiuntiva su `<th>`/`<td>` per ora — se aggiungi bordi/padding fallo su tutte le tabelle admin insieme, non solo su quella nuova, altrimenti le pagine risultano incoerenti tra loro.
+- Form: `@csrf` subito dopo l'apertura `<form>`, `@method(...)` subito dopo `@csrf`.
+
+**Errori di validazione**: gli esempi di form nel piano (Step 3.2, 6.2) non mostrano ancora `<x-input-error>` (i controller validano con `$request->validate()` inline, che già reindirizza con gli errori in sessione). Quando scrivi la vista per davvero, aggiungi `<x-input-error :messages="$errors->get('campo')" class="mt-2" />` sotto ogni campo — stesso pattern delle viste di auth di Breeze (`resources/views/auth/register.blade.php` è un riferimento diretto già nel progetto).
+
+**Viste mail** (Step 4.5bis, `resources/views/emails/`): pipeline di rendering separata, **non** estendono `<x-app-layout>` — usano i componenti Markdown di Laravel (`<x-mail::message>`, `<x-mail::button>`, `<x-mail::table>`, https://laravel.com/docs/12.x/mail#writing-markdown-messages). Non introdurre nav/layout dentro una mail.
+
+**Grafici** (Step 10.2): unica eccezione al "solo Blade+Alpine", Chart.js via CDN — resta un caso isolato (`<canvas>` + uno `<script>` inline con i dati passati via `@json(...)`), non introdurre bundling o componenti Vue/React solo per questo.
+
+---
+
 ## Fase 3 — Autenticazione e permessi
 
 ### ✅ Fatto
@@ -258,6 +294,7 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
        </div>
    </x-app-layout>
    ```
+   Vedi "Convenzioni per le view" a inizio documento: sposta il titolo nello slot `header`, ed estrai qui il componente `<x-flash-message />` per il blocco `@if (session('status'))` (prima vista di questo tipo nel progetto).
 
 4. **Vista modifica** — `resources/views/admin/users/edit.blade.php`, checkbox per ogni ruolo e ogni permesso, pre-selezionati se già assegnati:
    ```blade
@@ -293,6 +330,8 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
    ```
    `hasDirectPermission` (non `hasPermissionTo`) mostra solo i permessi assegnati **direttamente** all'utente, escludendo quelli ereditati da un ruolo — così la checkbox "Permessi diretti" non si sovrappone visivamente ai permessi già dati dal ruolo `admin`.
 
+Vedi "Convenzioni per le view": usa `<x-primary-button>` per il submit e valuta `<x-input-label>` sopra i due gruppi di checkbox, per coerenza con le viste di auth di Breeze.
+
 5. **Link in navigazione** — nel componente di navigazione di Breeze (`resources/views/layouts/navigation.blade.php`), aggiungi una voce visibile solo a chi ha il permesso:
    ```blade
    @can('users.manage')
@@ -301,7 +340,7 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
        </x-nav-link>
    @endcan
    ```
-   `@can('users.manage')` funziona senza altro setup perché Spatie registra i permessi come Gate di Laravel automaticamente (il trait `HasRoles` sul model `User` collega `can()`/`@can` ai permessi Spatie).
+   `@can('users.manage')` funziona senza altro setup perché Spatie registra i permessi come Gate di Laravel automaticamente (il trait `HasRoles` sul model `User` collega `can()`/`@can` ai permessi Spatie). Aggiungi la stessa voce anche nel blocco `<!-- Responsive Navigation Menu -->` più in basso nello stesso file (con `<x-responsive-nav-link>` invece di `<x-nav-link>`), non solo nel menu desktop — vedi "Convenzioni per le view".
 
 ☐ Fase 3 completata
 
@@ -594,6 +633,8 @@ Questo crea:
 Contenuto atteso di ciascun template (in base ai requisiti già raccolti per lo scan, vedi sopra in Step 4.5):
 - **`new-cards.blade.php`**: riceve `$cards` (la Collection di `Card` appena create, passata dal job). Per ognuna mostra almeno nome, espansione+numero, e se disponibile l'immagine fronte (`asset('storage/'.$card->front_art_path)`) — un elenco puntato o una `<x-mail::table>` vanno benissimo, non serve altro.
 - **`admin-scan-report.blade.php`**: riceve `$errors` (la Collection di stringhe passata dal job, un mix di veri errori e "carta già presente"). Un elenco puntato delle stringhe basta così com'è; se in futuro vuoi linkare ai `SystemError` corrispondenti (la rotta `errors.show` di Step 5.3 esiste già per questo), il job dovrebbe passare una Collection di modelli `SystemError` invece di semplici stringhe — non necessario ora, valutalo solo se ti serve davvero.
+
+Entrambi i template vanno scritti solo con i componenti Markdown di Laravel (`<x-mail::message>`, `<x-mail::table>`, `<x-mail::button>`), non con `<x-app-layout>` — vedi "Convenzioni per le view": è una pipeline di rendering separata dalle pagine web, niente nav/layout dentro una mail.
 
 Per personalizzare i colori del layout email di default, `php artisan vendor:publish --tag=laravel-mail` pubblica il CSS in `resources/views/vendor/mail/` — opzionale, salta questo passaggio se lo stile di default va bene.
 
@@ -914,7 +955,63 @@ Stesso pattern architetturale di Step 3.2 (controller + route group `permission:
 
 3. **Vista lista** — `resources/views/admin/errors/index.blade.php`: filtro per stato via link GET (`?status=open` ecc.), checkbox riga-per-riga dentro un unico `<form>` che invia a `errors.bulk-update`, pulsanti singoli "Risolto"/"Ignora" che inviano un piccolo form PATCH per riga verso `errors.update`. Ogni riga mostra `source`, `message`, `status` (badge colorato), link a `errors.show`.
 
-4. **Vista dettaglio** — `resources/views/admin/errors/show.blade.php`: mostra `message`, `stack_trace` in un `<pre>`, e `context` formattato con `<pre>{{ json_encode($systemError->context, JSON_PRETTY_PRINT) }}</pre>` (il cast `context => array` gia' presente sul model lo restituisce come array PHP, va ri-serializzato per la vista).
+Vedi "Convenzioni per le view": estrai qui il componente `<x-badge>` per colorare lo stato (`open`/`resolved`/`ignored`) di ogni riga, e riusa `<x-flash-message />` se già estratto in Step 3.2.
+
+4. **Vista dettaglio** — `resources/views/admin/errors/show.blade.php`: mostra `message`, `stack_trace` in un `<pre>`, e `context` formattato con `<pre>{{ json_encode($systemError->context, JSON_PRETTY_PRINT) }}</pre>` (il cast `context => array` gia' presente sul model lo restituisce come array PHP, va ri-serializzato per la vista). Per lo stile del `<pre>` usa le classi Tailwind di default (`bg-gray-100 p-4 rounded text-sm overflow-x-auto`), non esiste ancora una convenzione diversa nel progetto per il codice preformattato.
+
+**Step 5.4 — Correzioni alle view già scritte (Step 3.2 e 5.3)**
+Revisione di `admin/users/index.blade.php`, `admin/users/edit.blade.php`, `admin/errors/index.blade.php` e `layouts/navigation.blade.php` rispetto a "Convenzioni per le view": problemi trovati e come sistemarli.
+
+1. **Estrai il componente `<x-flash-message>`** (prima occasione buona per farlo davvero, poi va riusato ovunque):
+```blade
+{{-- resources/views/components/flash-message.blade.php --}}
+@if (session('status'))
+    <div class="mb-4 text-green-600">{{ session('status') }}</div>
+@endif
+```
+Sostituisci il blocco `@if (session('status')) ... @endif` inline con `<x-flash-message />` in `admin/users/index.blade.php`, e aggiungilo in `admin/errors/index.blade.php` dove manca del tutto: dopo un `update`/`bulk-update` il controller fa `back()->with('status', ...)` ma la vista non lo mostra da nessuna parte.
+
+2. **Titolo nello slot `header`, non nel corpo**: `admin/users/index.blade.php` e `admin/users/edit.blade.php` hanno l'`<h1>` dentro il `<div>`; spostalo nello slot, es.
+```blade
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestione utenti</h2>
+    </x-slot>
+    <div class="max-w-4xl mx-auto py-6">
+        ...
+```
+`admin/errors/index.blade.php` non ha proprio nessun titolo: aggiungine uno con lo stesso pattern (es. "Log errori scan").
+
+3. **Bug**: in `admin/errors/index.blade.php`, `{{ $error->stack }}` va corretto in `{{ $error->stack_trace }}` — la colonna sul modello `SystemError` si chiama `stack_trace`, `stack` non esiste e quel blocco resta sempre vuoto.
+
+4. **Link mancante a `errors.show`**: lo Step 5.3 lo richiedeva esplicitamente ("link a `errors.show`") per collegare la lista al dettaglio. Aggiungi in ogni riga, es. accanto al messaggio:
+```blade
+<a href="{{ route('admin.errors.show', $error) }}" class="text-sm underline">Dettagli</a>
+```
+
+5. **Estrai `<x-badge>` per lo stato**, invece di colorare l'intera card con `$bgClass` (funziona, ma non è il pattern "badge" previsto dallo Step 5.3, e servirà identico per gli aspetti carta in Step 10.1 — un'implementazione sola invece di due):
+```blade
+{{-- resources/views/components/badge.blade.php --}}
+@props(['color' => '#9ca3af'])
+<span {{ $attributes->merge(['class' => 'inline-block px-2 py-0.5 rounded text-xs text-white']) }}
+    style="background-color: {{ $color }}">
+    {{ $slot }}
+</span>
+```
+In `admin/errors/index.blade.php`, sostituisci `$bgClass`/la classe di sfondo sulla card con una badge accanto al messaggio, mappando lo stato a un colore fisso (es. `open` → `#ef4444`, `resolved` → `#22c55e`, `ignored` → `#6b7280`) invece di colorare l'intera card.
+
+6. **Pulsanti**: in `admin/users/edit.blade.php` sostituisci `<button type="submit" class="mt-4">Salva</button>` con `<x-primary-button class="mt-4">Salva</x-primary-button>`. In `admin/errors/index.blade.php` i pulsanti colorati a mano (`bg-green-500`/`bg-gray-500`/`bg-red-500`) possono restare così se vuoi mantenere la distinzione visiva risolto/ignora/riapri — non è un errore, solo una scelta diversa da `<x-primary-button>`/`<x-danger-button>`; valuta tu se uniformare.
+
+7. **Voce di navigazione responsive mancante**: in `layouts/navigation.blade.php` "Gestione utenti" è stata aggiunta solo al blocco desktop (dentro `<!-- Navigation Links -->`). Aggiungi la stessa voce anche nel blocco `<!-- Responsive Navigation Menu -->` più sotto, dentro `<div class="pt-2 pb-3 space-y-1">` insieme al link "Dashboard" già presente lì:
+```blade
+@can('users.manage')
+    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+        {{ __('Gestione utenti') }}
+    </x-responsive-nav-link>
+@endcan
+```
+
+Non bloccante per il resto della Fase 5/6: applica questi punti quando torni sulle view, non serve fermarsi ora se stai chiudendo la Fase 5 su altro fronte (es. la Vista dettaglio di Step 5.3).
 
 ☐ Fase 5 completata
 
@@ -1026,7 +1123,7 @@ A differenza di Step 3.2/5.3 (liste con edit su pagina separata), qui ha senso u
        </div>
    </x-app-layout>
    ```
-   Nota HTML: un `<form>` non puo' avvolgere direttamente celle `<td>` in modo valido secondo lo standard, ma tutti i browser lo renderizzano comunque correttamente; se preferisci markup strettamente valido, sposta il `<form>` fuori dalla `<tr>` e collega gli input con l'attributo `form="id-univoco"` invece di annidarli.
+   Nota HTML: un `<form>` non puo' avvolgere direttamente celle `<td>` in modo valido secondo lo standard, ma tutti i browser lo renderizzano comunque correttamente; se preferisci markup strettamente valido, sposta il `<form>` fuori dalla `<tr>` e collega gli input con l'attributo `form="id-univoco"` invece di annidarli. Vedi "Convenzioni per le view": qui non c'è un'azione distruttiva, quindi il pulsante "Salva" può restare `<button type="submit">` semplice invece di `<x-primary-button>`, a differenza delle altre pagine admin.
 
 ☐ Fase 6 completata
 
@@ -1229,6 +1326,8 @@ public function addCard(Request $request, Deck $deck): RedirectResponse
 ```
 La validazione e' **informativa** (mostra errori) non bloccante sull'inserimento: la vecchia versione permetteva di costruire un mazzo incompleto e vederne gli errori, non impediva il salvataggio riga per riga. `index()` filtra `Deck::where('is_public', true)->orWhere('user_id', auth()->id())` con eager load `with('leaders', 'baseCard')` per mostrare l'anteprima nella lista senza N+1 query.
 
+**Viste di questa fase** (vedi "Convenzioni per le view"): `resources/views/decks/index.blade.php` (lista pubblica, stesso pattern tabella+paginazione delle pagine admin), `decks/create.blade.php` (form nuovo mazzo: `name`, `format` come `<select>` sui valori dell'enum `DeckFormat`), `decks/edit.blade.php` (pagina di deck-building: carte nel mazzo con quantità, ricerca per aggiungerne — riusa `CardSearch`, Step 10.1 — pulsanti per `toggle-assembled`/rimozione riga). Tutte estendono `<x-app-layout>`; `decks/edit.blade.php` è la vista più complessa del progetto finora — valuta di estrarre una riga-carta ripetuta (es. `<x-deck-card-row>`) invece di un `@foreach` inline, visto che lo stesso markup ricorrerà identico in `decks/gap.blade.php` (Step 8.3).
+
 **Step 7.7 — Export/Import mazzi**
 ```php
 // app/Services/DeckExporter.php
@@ -1354,6 +1453,8 @@ class CollectionController extends Controller
 ```
 Serve anche `Card::collectionCards()` (`hasMany(CollectionCard::class, 'cid', 'cid')`) per l'eager load sopra.
 
+**Vista** — `resources/views/collection/index.blade.php`: stesso pattern a griglia di `cards/index.blade.php` (Step 10.1, riusa `CardSearch`), con un controllo quantità per variante su ogni carta. L'aggiornamento via `fetch()` senza reload (il controller risponde `JsonResponse`) è l'unico punto del progetto con JS oltre ad Alpine/Chart.js: uno `<script>` inline che intercetta il cambio di un `<input type="number">` e chiama `fetch("{{ route('collection.update') }}", {method: 'PATCH', ...})` basta, non serve un bundler.
+
 **Step 8.3 — "Carte mancanti per un mazzo"**
 Tre informazioni per carta: mancante del tutto, posseduta-ma-impegnata-altrove, disponibile (non mostrata, e' il caso ok):
 ```php
@@ -1419,6 +1520,8 @@ public function gap(Deck $deck, DeckGapCalculator $calculator): View
     ]);
 }
 ```
+
+**Vista** — `resources/views/decks/gap.blade.php`: due sezioni (o due tabelle), una per `missingCards`/`missingQuantities` e una per `reservedCards`/`reservedQuantities` — qui va anche il toggle "mancanti vs presenti" richiesto separatamente (vedi decisione più sopra nel documento). Riusa `<x-badge>` (Convenzioni per le view) per colorare le due categorie in modo distinto, e la stessa riga-carta di `decks/edit.blade.php` se l'hai estratta in un componente (Step 7.6).
 
 ☐ Fase 8 completata
 
@@ -1612,7 +1715,9 @@ use App\Http\Controllers\CardController;
 Route::get('/carte', [CardController::class, 'index'])->name('cards.index');
 Route::get('/carte/{expansion}/{number}', [CardController::class, 'show'])->name('cards.show');
 ```
-La vista `cards.show.blade.php` mostra almeno: nome/titolo, immagine fronte (e retro se `type` prevede un retro, es. Leader), costo/potenza/salute se presenti, testo abilita', aspetti (badge colorati da `aspects.color`), tratti, rarita', espansione+numero. Nessuna logica particolare, e' la pagina di lettura piu' semplice del progetto.
+**Vista lista** — `resources/views/cards/index.blade.php`: form di ricerca GET con un campo/`<select>` per ciascun filtro di `CardSearch` (nome, espansione, tipo, costo, aspetto, tratto, unique), sopra una griglia di card (non una tabella: qui l'immagine fronte conta più che in una lista admin), poi `{{ $cards->links() }}`. Vedi il bug di persistenza del filtro descritto sotto, da evitare fin da questa prima stesura.
+
+La vista `cards.show.blade.php` mostra almeno: nome/titolo, immagine fronte (e retro se `type` prevede un retro, es. Leader), costo/potenza/salute se presenti, testo abilita', aspetti (badge colorati da `aspects.color`), tratti, rarita', espansione+numero. Nessuna logica particolare, e' la pagina di lettura piu' semplice del progetto. Usa `<x-badge :color="$aspect->color">{{ $aspect->name }}</x-badge>` per gli aspetti (componente da introdurre qui, vedi "Convenzioni per le view") invece di uno `<span>` colorato scritto a mano.
 
 Bug specifico segnalato in `todo.md` della vecchia versione da non ripetere: il campo di ricerca deve restare valorizzato dopo un reload con `?nome=...` nell'URL. Con un form server-rendered puro basta `<input name="nome" value="{{ $filters['nome'] ?? '' }}">` (Blade lo rivalorizza automaticamente ad ogni render). Se in futuro aggiungi un filtro live via Alpine/JS (`x-model`), inizializza lo stato JS leggendo lo stesso valore server-side al mount, non da stringa vuota — altrimenti un link condiviso con `?nome=...` mostra i risultati già filtrati ma la casella di ricerca appare vuota: esattamente il bug della vecchia versione.
 
@@ -1632,8 +1737,10 @@ public function statistics(Deck $deck): View
 ```
 Rotta: `Route::get('/mazzi/{deck}/statistiche', [DeckController::class, 'statistics'])->name('decks.statistics');`. Nella vista, Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`) e un `<canvas>` per grafico, alimentato passando i dati con `@json($costCurve)` dentro il tag `<script>` della pagina.
 
+**Vista** — `resources/views/decks/statistics.blade.php`: estende `<x-app-layout>` come ogni altra pagina, il `<canvas>`/`<script>` di Chart.js va nel corpo della vista (non nel layout), visto che è l'unica pagina del progetto che ne ha bisogno.
+
 **Step 10.3 — Viste pubbliche/autenticate**
-Pubbliche: catalogo carte, mazzi pubblici, nuove uscite. Autenticate (`auth`): creare/modificare mazzi, collezione, export/import.
+Pubbliche: catalogo carte, mazzi pubblici, nuove uscite. Autenticate (`auth`): creare/modificare mazzi, collezione, export/import. Vedi "Convenzioni per le view": la distinzione non richiede due cartelle diverse sotto `resources/views/`, solo il gruppo di middleware sulla rotta.
 
 **Step 10.4 — Pagina "Nuove uscite"**
 `GET /nuove-uscite`, parametro opzionale `since` (`YYYY-MM-DD`) — se specificato resta un intervallo **arbitrario** a scelta dell'utente; se assente, default alla data di rilascio più recente (`Card::max('release_date')`), non a un intervallo fisso:
@@ -1650,7 +1757,7 @@ public function newReleases(Request $request): View
 ```php
 Route::get('/nuove-uscite', [CardController::class, 'newReleases'])->name('cards.new-releases');
 ```
-Filtra su `cards.release_date`, non su `expansions.legal_date` (concetti diversi). Interfaccia: `<input type="date">` in un form GET. **Nota di coerenza**: questo e' il nome di route gia' usato dalla mail `NewCardsEmail` (Step 4.5bis) per il link "vedi tutte le nuove uscite" — usa il query param `since`, non `release_date`.
+Filtra su `cards.release_date`, non su `expansions.legal_date` (concetti diversi). Interfaccia: `<input type="date">` in un form GET. **Vista** — `resources/views/cards/new-releases.blade.php`: stesso layout a griglia di `cards/index.blade.php` (Step 10.1); se lì estrai un partial/componente per la singola card, riusalo identico qui. **Nota di coerenza**: questo e' il nome di route gia' usato dalla mail `NewCardsEmail` (Step 4.5bis) per il link "vedi tutte le nuove uscite" — usa il query param `since`, non `release_date`.
 
 ☐ Fase 10 completata
 
