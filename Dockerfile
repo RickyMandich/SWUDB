@@ -31,6 +31,10 @@ RUN apk add --no-cache \
 WORKDIR /var/www/html
 
 COPY --from=composer-builder /app /var/www/html
+# Copia "sorgente" immutabile, usata dall'entrypoint per rinfrescare
+# public/build ad ogni avvio (necessario perché in dev quel path è
+# coperto da un bind mount che nasconde il contenuto dell'immagine)
+COPY --from=node-builder /app/public/build /opt/build-assets
 COPY --from=node-builder /app/public/build /var/www/html/public/build
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
