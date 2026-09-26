@@ -1,6 +1,4 @@
-# TODO — UnlimitedDB
-
-> Riferimento completo (comandi, codice, motivazioni): `implementationPlan-ricostruzioneUnlimitedDB.md`. Qui solo l'elenco sintetico per tenere traccia di cosa manca.
+# rebuild unlimitedDB (implementationPlan: implementationPlan-ricostruzioneUnlimitedDB.md - no need to follow this file)
 
 ## Fase 3 — Autenticazione e permessi
 - [x] 3.1 Verifica email nativa (Breeze, già pronto)
