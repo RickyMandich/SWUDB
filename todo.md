@@ -62,6 +62,7 @@
 - [X] sistemare gli ordinamenti
 - [X] aggiungere il pulsante admin per fare le query nel menu a tendina
 - [X] aggiungere toggle mancanti/possedute alla lista generata nella pagina build mazzo
+- [X] mostrare l'anteprima ingrandita della carta al passaggio del mouse sulle righe della pagina di build mazzo (dove sono presenti i pulsanti +/- della collezione)
 
 ## Funzionalità Future
 - Funzionalità di condivisione social

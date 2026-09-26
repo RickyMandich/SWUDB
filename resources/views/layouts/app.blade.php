@@ -59,6 +59,17 @@
     .bg-custom-light{
         background-color: #555555;
     }
+
+    .card-hover-preview{
+        position: absolute;
+        display: none;
+        z-index: 2000;
+        width: 300px;
+        max-width: 40vw;
+        pointer-events: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
     nav{
         z-index: 1021;
     }

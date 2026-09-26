@@ -181,7 +181,7 @@
                 </thead>
                 <tbody>
                     @forelse($cards as $carta)
-                        <tr class="{{ $carta->is_complete ? 'table-success-subtle' : 'table-danger-subtle' }}">
+                        <tr class="{{ $carta->is_complete ? 'table-success-subtle' : 'table-danger-subtle' }} card-hover-row" data-frontart="{{ $carta->frontArt }}">
                             <!-- Indicatore / Colouring parlante -->
                             <td>
                                 @if($carta->is_complete)
@@ -272,5 +272,54 @@
             .catch(err => {
                 console.error('Errore nella copia: ', err);
             });
+    }
+
+    // Anteprima ingrandita della carta al passaggio del mouse sulle righe della tabella
+    // (guardia necessaria perché Livewire ri-esegue questo script ad ogni re-render del componente)
+    if (!window.cardHoverPreviewInitialized) {
+        window.cardHoverPreviewInitialized = true;
+
+        var cardHoverPreviewEl = document.createElement('img');
+        cardHoverPreviewEl.id = 'card-hover-preview';
+        cardHoverPreviewEl.className = 'card-hover-preview';
+        document.body.appendChild(cardHoverPreviewEl);
+
+        document.addEventListener('mouseover', function(e) {
+            const row = e.target.closest('.card-hover-row');
+            if (row && row.dataset.frontart) {
+                cardHoverPreviewEl.src = row.dataset.frontart;
+                cardHoverPreviewEl.style.display = 'block';
+            }
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (cardHoverPreviewEl.style.display !== 'block') return;
+
+            const offset = 20;
+            const previewWidth = cardHoverPreviewEl.offsetWidth || 300;
+            const previewHeight = cardHoverPreviewEl.offsetHeight || 420;
+
+            let left = e.pageX + offset;
+            let top = e.pageY + offset;
+
+            // Evita che l'anteprima esca dal bordo destro della finestra
+            if (left + previewWidth > window.scrollX + window.innerWidth) {
+                left = e.pageX - previewWidth - offset;
+            }
+            // Evita che l'anteprima esca dal bordo inferiore della finestra
+            if (top + previewHeight > window.scrollY + window.innerHeight) {
+                top = e.pageY - previewHeight - offset;
+            }
+
+            cardHoverPreviewEl.style.left = left + 'px';
+            cardHoverPreviewEl.style.top = top + 'px';
+        });
+
+        document.addEventListener('mouseout', function(e) {
+            const row = e.target.closest('.card-hover-row');
+            if (row && (!e.relatedTarget || !row.contains(e.relatedTarget))) {
+                cardHoverPreviewEl.style.display = 'none';
+            }
+        });
     }
 </script>
