@@ -41,8 +41,8 @@ Route::middleware(['auth', 'verified', 'permission:system.manage-errors'])
     ->group(function () {
         Route::get('/errori', [SystemErrorController::class, 'index'])->name('errors.index');
         Route::get('/errori/{systemError}', [SystemErrorController::class, 'show'])->name('errors.show');
-        Route::patch('/errori/{systemError}', [SystemErrorController::class, 'update'])->name('errors.update');
         Route::patch('/errori/bulk', [SystemErrorController::class, 'bulkUpdate'])->name('errors.bulk-update');
+        Route::patch('/errori/{systemError}', [SystemErrorController::class, 'update'])->name('errors.update');
     });
 
 Route::middleware(['auth', 'verified', 'permission:mails.test'])->get('/render-mail/{type}', function (string $type){

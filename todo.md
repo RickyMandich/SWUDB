@@ -33,7 +33,7 @@
 - 5.3 Pagina admin `/admin/errori`
     - [x] Controller (resolved at valorized only when resolved, if ignored remains NULL, it don't have sense to set it because it will not be shown as resolved)
     - [x] Rotte
-    - [ ] Vista Lista
+    - [x] Vista Lista
     - [ ] Vista Dettaglio
     
 
