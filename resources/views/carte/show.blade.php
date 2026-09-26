@@ -14,6 +14,22 @@
 
                 <div class="card-body">
                     <div class="row">
+                        <div class="col-md-4">
+                            <div class="card immagine">
+                                <div class="card-header d-flex justify-content-between">
+                                    @if ($carta->tipo == "Leader")
+                                        <a onclick="toggleFrontCard(this)" class="d-flex mx-auto btn btn-secondary">
+                                            gira la carta
+                                        </a>
+                                    @endif
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <img src="{{ $carta->frontArt }}" alt="errere nel caricamento dell'immagine">
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                         <div class="col-md-8">
                             <table class="table table-striped">
                                 <tbody>
@@ -70,22 +86,6 @@
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card immagine">
-                                <div class="card-header d-flex justify-content-between">
-                                    @if ($carta->tipo == "Leader")
-                                        <a onclick="toggleFrontCard(this)" class="d-flex mx-auto btn btn-secondary">
-                                            gira la carta
-                                        </a>
-                                    @endif
-                                </div>
-                                <div class="card-body">
-                                    <p class="card-text">
-                                        <img src="{{ $carta->frontArt }}" alt="errere nel caricamento dell'immagine">
-                                    </p>
-                                </div>
-                            </div>
                         </div>
                         <div class="card">
                             <div class="card-header">
