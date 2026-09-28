@@ -12,50 +12,57 @@
         <div class="p-6 text-gray-500">Nessun errore.</div>
     @else
         <form method="POST" action="{{ route('admin.errors.bulk-update') }}">
-            @csrf
-            @method('PATCH')
+            <div class="text-white">
+                @csrf
+                @method('PATCH')
 
-            @foreach ($errors as $error)
-                @php
-                    $bgClass = match (true) {
-                        $error->status === 'open' => 'bg-red-400',
-                        $error->status === 'resolved' => 'bg-green-400',
-                        default => 'bg-gray-400',
-                    };
-                @endphp
-                <div class="border border-gray-200 p-4 mb-3 rounded {{ $bgClass }}">
-                    <input type="checkbox" name="ids[]" value="{{ $error->id }}">
-                    <p>{{ $error->message }}</p>
-                    <p class="font-semibold">{{ $error->source }}</p>
-                    @if ($error->status === 'open')
-                        <pre class="mt-2 text-xs text-gray-500">{{ $error->stack }}</pre>
-                    @endif
+                @foreach ($errors as $error)
+                    @php
+                        $bgClass = match (true) {
+                            $error->status === 'open' => 'bg-red-400',
+                            $error->status === 'resolved' => 'bg-green-400',
+                            default => 'bg-gray-400',
+                        };
+                    @endphp
+                    <div class="border border-gray-200 p-4 mb-3 rounded {{ $bgClass }}">
+                        <input type="checkbox" name="ids[]" value="{{ $error->id }}">
+                        <p>{{ $error->message }}</p>
+                        <p class="font-semibold">{{ $error->source }}</p>
+                        @if ($error->status === 'open')
+                            <pre class="mt-2 text-xs text-gray-500">{{ $error->stack }}</pre>
+                        @endif
 
-                    <div class="flex gap-2 mt-3">
-                        <button type="submit" form="resolve-{{ $error->id }}"
-                            class="px-3 py-1 bg-green-500 rounded">
-                            Segna come risolto
-                        </button>
-                        <button type="submit" form="ignore-{{ $error->id }}" class="px-3 py-1 bg-gray-500 rounded">
-                            Ignora
-                        </button>
-                        <button type="submit" form="reopen-{{ $error->id }}" class="px-3 py-1 bg-red-500 rounded">
-                            Riapri
-                        </button>
+                        <div class="flex gap-2 mt-3">
+                            <button type="submit" form="resolve-{{ $error->id }}"
+                                class="px-3 py-1 bg-green-500 rounded">
+                                Segna come risolto
+                            </button>
+                            <button type="submit" form="ignore-{{ $error->id }}"
+                                class="px-3 py-1 bg-gray-500 rounded">
+                                Ignora
+                            </button>
+                            <button type="submit" form="reopen-{{ $error->id }}"
+                                class="px-3 py-1 bg-red-500 rounded">
+                                Riapri
+                            </button>
+                            <a href="{{ route('admin.errors.show', $error) }}" class="px-3 py-1 bg-blue-500 rounded">
+                                Mostra
+                            </a>
+                        </div>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
 
-            <div class="flex gap-2 mt-4">
-                <button type="submit" name="status" value="resolved" class="px-3 py-1 bg-green-500 rounded">
-                    Risolvi selezionati
-                </button>
-                <button type="submit" name="status" value="ignored" class="px-3 py-1 bg-gray-500 rounded">
-                    Ignora selezionati
-                </button>
-                <button type="submit" name="status" value="open" class="px-3 py-1 bg-red-500 rounded">
-                    Riapri selezionati
-                </button>
+                <div class="flex gap-2 mt-4">
+                    <button type="submit" name="status" value="resolved" class="px-3 py-1 bg-green-500 rounded">
+                        Risolvi selezionati
+                    </button>
+                    <button type="submit" name="status" value="ignored" class="px-3 py-1 bg-gray-500 rounded">
+                        Ignora selezionati
+                    </button>
+                    <button type="submit" name="status" value="open" class="px-3 py-1 bg-red-500 rounded">
+                        Riapri selezionati
+                    </button>
+                </div>
             </div>
         </form>
 
