@@ -16,6 +16,6 @@ class Aspect extends Model
 
     public function cards()
     {
-        return $this->belongsToMany(Card::class, 'card_aspect', 'aspect_id', 'cid');
+        return $this->belongsToMany(Card::class, 'card_aspect', 'aspect_id', 'id');
     }
 }

@@ -11,13 +11,13 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('card_trait', function (Blueprint $table) {
-            $table->string('cid');
+            $table->string('id');
             $table->string('trait_name');
-            $table->foreign('cid')->references('cid')->on('cards')->cascadeOnDelete();
+            $table->foreign('id')->references('id')->on('cards')->cascadeOnDelete();
             $table->foreign('trait_name')->references('name')->on('traits')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->primary(['cid', 'trait_name']);
+            $table->primary(['id', 'trait_name']);
         });
     }
 

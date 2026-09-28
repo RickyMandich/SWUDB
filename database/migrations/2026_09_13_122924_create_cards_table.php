@@ -11,6 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('cards', function (Blueprint $table) {
+            $table->string('id', 20)->primary();
             $table->string('expansion', 10);
             $table->unsignedInteger('number');
             $table->string('cid')->unique();
@@ -48,7 +49,7 @@ return new class extends Migration {
             $table->timestamps();
 
             # costraints
-            $table->primary(['expansion', 'number']);
+            $table->unique(['expansion', 'number']);
             $table->foreign('expansion')->references('expansion')->on('expansions')->cascadeOnDelete();
 
         });

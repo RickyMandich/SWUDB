@@ -45,9 +45,10 @@ Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `Q
 ### `cards`
 | Colonna | Tipo | Note |
 |---|---|---|
-| `expansion` | string, FK → `expansions.expansion`, **PK composita** con `number` | Riflette come le carte sono identificate nel gioco stesso (numero all'interno del set). |
-| `number` | unsigned integer, **PK composita** | |
-| `cid` | string, **unique** | Id naturale della carta secondo l'API ufficiale — usalo come riferimento nelle tabelle pivot (`card_aspect`, `deck_cards`, `collection_cards`) invece della coppia composita, molto più semplice nelle join. Nel payload reale dell'API il campo si chiama `cardUid` (non `cid`), vedi mapping in Fase 4/Step 4.5. **Decisione presa**: Eloquent non supporta nativamente PK composite, quindi sul modello `Card` `cid` è dichiarato come `$primaryKey` (`$incrementing = false`, `$keyType = 'string'`) al posto della coppia `(expansion, number)` — che resta comunque la PK reale a livello di schema SQL/migration, `cid` è solo la PK "pratica" lato Eloquent. |
+| `id` | string(20), **PK** | Generato come `"{expansion}{number}"` (es. `JTL256`) dal modello `Card` (hook `creating`), non da una colonna generata del DB: Eloquent non rilegge i valori generati dal DB dopo l'`insert`, quindi `getKey()` resterebbe `null` e `sync()`/`update()` sul modello appena creato non funzionerebbero. È la PK sia nello schema SQL sia su Eloquent (`$primaryKey = 'id'`, `$incrementing = false`, `$keyType = 'string'`) ed è il riferimento usato dalle tabelle pivot (`card_aspect`, `card_trait`, `deck_cards`, `collection_cards`) tramite la colonna `card_id`. |
+| `expansion` | string, FK → `expansions.expansion` | Riflette come le carte sono identificate nel gioco stesso (numero all'interno del set). Insieme a `number` ha un vincolo `UNIQUE` (`$table->unique(['expansion', 'number'])`), coerente con `id`. |
+| `number` | unsigned integer | Vedi `expansion`: `UNIQUE` insieme a `expansion`. |
+| `cid` | string, **unique** | Id naturale della carta secondo l'API ufficiale: chiave di lookup per l'upsert dell'import (`updateOrCreate(['cid' => ...])`) e identificativo pubblico stabile (export mazzi, API). **Non** è la PK e **non** è usato come FK dalle tabelle pivot (quelle puntano a `cards.id`). Nel payload reale dell'API il campo si chiama `cardUid` (non `cid`), vedi mapping in Fase 4/Step 4.5. **Decisione presa**: Eloquent non supporta PK composite, quindi la coppia `(expansion, number)` non è la PK: la PK è la colonna `id` (vedi sopra), identica in schema SQL e nel modello, e la coppia resta protetta da un `UNIQUE`. |
 | `unique_card` | boolean, default `false` | Rinominata da `unica` (evita ambiguità col termine "unique" usato anche per il vincolo SQL sulla colonna `cid`). Indica la regola "Unica" del gioco (una sola copia in gioco nello stesso momento). |
 | `name` | string | Nome della carta. |
 | `title` | string, nullable | Sottotitolo carta. |
@@ -66,12 +67,12 @@ Breeze e `spatie/laravel-permission` installati; `.env` configurato (MariaDB, `Q
 
 ### `aspects` + `card_aspect` (pivot)
 `aspects`: `id`, `name`, `color`, `slug`, `order` (per l'ordinamento in UI), timestamps.
-`card_aspect`: `cid` (FK `cards.cid`), `aspect_id` (FK `aspects.id`).
+`card_aspect`: `card_id` (FK `cards.id`), `aspect_id` (FK `aspects.id`).
 Tabella dedicata invece di una colonna `json` su `cards`: permette di filtrare per aspetto con una join indicizzata e centralizza colore/slug/ordine per la UI in un unico posto.
 
 ### `traits` + `card_trait` (pivot)
 `traits`: `name` (string, **PK**), timestamps. Niente id surrogato né slug/color/order: il nome del tratto è già univoco e leggibile, stessa logica della PK naturale di `expansions`.
-`card_trait`: `cid` (FK `cards.cid`), `trait_name` (FK `traits.name`).
+`card_trait`: `card_id` (FK `cards.id`), `trait_name` (FK `traits.name`).
 Stesso motivo di `aspects`: la colonna `cards.traits` (stringa libera) sparisce, sostituita da questa tabella + pivot — permette filtri/elaborazioni per singolo tratto con una join indicizzata invece di fare parsing di una stringa (richiesto esplicitamente: elaborazioni sulla base dei tratti).
 
 **Nota naming**: `Trait` è una parola riservata del linguaggio PHP (il costrutto `trait` per il riuso di codice tra classi) — non può essere usata da sola come nome di classe Eloquent. La tabella SQL può restare `traits` senza problemi (non è un identificatore PHP), il modello si chiama `App\Models\CardTrait` (nessun conflitto reale: il conflitto è solo sul nome nudo `Trait`) — con `$incrementing = false`, `$keyType = 'string'`, `$primaryKey = 'name'` dato che la PK non è un `id` auto-increment.
@@ -89,14 +90,14 @@ Stesso motivo di `aspects`: la colonna `cards.traits` (stringa libera) sparisce,
 | `previous_version_id` | nullable, self-FK su `decks.id` | Catena reale delle versioni (self-FK), non un'inferenza sul nome come nella vecchia versione. |
 | `created_at`/`updated_at` | timestamp | |
 
-**Niente `leader_cid`/`base_cid` qui**: la cardinalità di leader/base dipende dal formato (Eternal/Premier: 1+1; Twin Suns: 2 leader+1 base, con vincolo di allineamento tra i due leader) — vedi `deck_cards` sotto (il ruolo si deduce da `cards.type`, non serve una colonna dedicata).
+**Niente `leader_card_id`/`base_card_id` qui**: la cardinalità di leader/base dipende dal formato (Eternal/Premier: 1+1; Twin Suns: 2 leader+1 base, con vincolo di allineamento tra i due leader) — vedi `deck_cards` sotto (il ruolo si deduce da `cards.type`, non serve una colonna dedicata).
 
 ### `deck_cards`
-`deck_id` (FK `decks.id`), `cid` (FK `cards.cid`), `quantity` (unsigned tinyint). PK composita `(deck_id, cid)`, già così in migration.
-Niente colonna `role`: `cards.type` distingue già `Leader`/`Base` dagli altri tipi, quindi il ruolo di una riga in un mazzo si ottiene con un join su `cards.type` invece di duplicare l'informazione. Un mazzo Eternal/Premier ha una riga con `cid` di tipo `Leader` e una di tipo `Base`; Twin Suns ne ha due di tipo `Leader` e una di tipo `Base`. La cardinalità e il vincolo sull'allineamento li verifica il `DeckFormatValidator` del formato (Step 7.3), non lo schema.
+`deck_id` (FK `decks.id`), `card_id` (FK `cards.id`), `quantity` (unsigned tinyint). PK composita `(deck_id, card_id)`, già così in migration.
+Niente colonna `role`: `cards.type` distingue già `Leader`/`Base` dagli altri tipi, quindi il ruolo di una riga in un mazzo si ottiene con un join su `cards.type` invece di duplicare l'informazione. Un mazzo Eternal/Premier ha una riga con `card_id` di una carta di tipo `Leader` e una di tipo `Base`; Twin Suns ne ha due di tipo `Leader` e una di tipo `Base`. La cardinalità e il vincolo sull'allineamento li verifica il `DeckFormatValidator` del formato (Step 7.3), non lo schema.
 
 ### `collection_cards`
-`user_id` (FK `users.id`), `cid` (FK `cards.cid`), `variant` (enum: `normal`, `foil`, `hyper`, `prestige`, `hyper_foil`, default `normal`), `quantity` (unsigned smallint). Chiave univoca composita `(user_id, cid, variant)`. Le varianti di stampa vivono **solo qui**, non nei mazzi (vedi discussione sulla vecchia `compositions`).
+`user_id` (FK `users.id`), `card_id` (FK `cards.id`), `variant` (enum: `normal`, `foil`, `hyper`, `prestige`, `hyper_foil`, default `normal`), `quantity` (unsigned smallint). Chiave univoca composita `(user_id, card_id, variant)`. Le varianti di stampa vivono **solo qui**, non nei mazzi (vedi discussione sulla vecchia `compositions`).
 
 ### `system_errors`
 | Colonna | Tipo | Note |
@@ -397,7 +398,7 @@ Modelli `Expansion`/`Card`; migration `expansions`/`cards`; `ImportCardsFromSwuA
 Manca `use Illuminate\Support\Facades\Schedule;` in `routes/console.php`.
 
 **Step 4.2 — Applica lo schema `cards`/`expansions`** ✅ quasi tutto fatto, manca solo un pezzo
-Controllate le migration reali: `expansions` e `cards` sono già in snake_case, `release_date`/`legal_date` sono già due colonne distinte, `group_main_expansion` c'è già (con self-FK). **Manca però la foreign key `cards.expansion → expansions.expansion`**: nella migration `create_cards_table.php` la colonna `expansion` è dichiarata come semplice `$table->string('expansion', 10);`, senza vincolo di integrità referenziale verso `expansions`. Aggiungi, subito prima della `$table->primary(['expansion', 'number']);`:
+Controllate le migration reali: `expansions` e `cards` sono già in snake_case, `release_date`/`legal_date` sono già due colonne distinte, `group_main_expansion` c'è già (con self-FK). **Manca però la foreign key `cards.expansion → expansions.expansion`**: nella migration `create_cards_table.php` la colonna `expansion` è dichiarata come semplice `$table->string('expansion', 10);`, senza vincolo di integrità referenziale verso `expansions`. Aggiungi, nella sezione `# costraints` (la PK della tabella è la colonna `id`, e la coppia `(expansion, number)` ha `$table->unique(['expansion', 'number']);` al posto della vecchia PK composita):
 ```php
 $table->foreign('expansion')->references('expansion')->on('expansions')->cascadeOnDelete();
 ```
@@ -520,6 +521,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
                     $existed = Card::where('cid', $cid)->exists();
 
+                    // 'id' non va passato: lo valorizza il modello Card in `creating` ("{expansion}{number}")
                     $card = Card::updateOrCreate(
                         ['cid' => $cid],
                         [
@@ -1132,13 +1134,13 @@ A differenza di Step 3.2/5.3 (liste con edit su pagina separata), qui ha senso u
 ## Fase 7 — Gestione mazzi multi-formato
 
 **Step 7.2 (van fatti insieme, vedi sotto per i bug da correggere) — Modelli e migration** ⚠️ parzialmente fatto
-Migration `decks`/`deck_cards` gia' presenti e corrette. Modello `DeckCard extends Pivot` gia' corretto. Il modello `Deck` esiste ma va corretto su due punti:
+Migration `decks`/`deck_cards` gia' presenti e corrette. Modello `DeckCard extends Pivot` gia' corretto. Il modello `Deck` ha `cards()` già corretta (punto 1); resta da correggere `leader()`/`base()` (punto 2):
 
-1. **`Deck::cards()` usa la chiave pivot sbagliata** (`card_id` invece di `cid`) e non passa da `DeckCard`. Sostituisci:
+1. **`Deck::cards()`** ✅ già corretta: usa le chiavi pivot `deck_id`/`card_id` (la PK di `Card` è `id`) e passa da `DeckCard`:
    ```php
    public function cards()
    {
-       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'cid', 'id', 'cid')
+       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'card_id')
            ->using(DeckCard::class)
            ->withPivot('quantity')
            ->withTimestamps();
@@ -1148,7 +1150,7 @@ Migration `decks`/`deck_cards` gia' presenti e corrette. Modello `DeckCard exten
    ```php
    public function leaders()
    {
-       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'cid', 'id', 'cid')
+       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'card_id')
            ->using(DeckCard::class)
            ->withPivot('quantity')
            ->where('cards.type', 'Leader'); // Twin Suns ne ammette 2, Eternal/Premier 1 — la cardinalita' la controlla il validator (Step 7.3), non questa relazione
@@ -1156,7 +1158,7 @@ Migration `decks`/`deck_cards` gia' presenti e corrette. Modello `DeckCard exten
 
    public function baseCard()
    {
-       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'cid', 'id', 'cid')
+       return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'card_id')
            ->using(DeckCard::class)
            ->withPivot('quantity')
            ->where('cards.type', 'Base');
@@ -1311,12 +1313,12 @@ public function addCard(Request $request, Deck $deck): RedirectResponse
 {
     $this->authorize('update', $deck);
     $validated = $request->validate([
-        'cid' => ['required', 'exists:cards,cid'],
+        'card_id' => ['required', 'exists:cards,id'],
         'quantity' => ['required', 'integer', 'min:1'],
     ]);
 
     $deck->cards()->syncWithoutDetaching([
-        $validated['cid'] => ['quantity' => $validated['quantity']],
+        $validated['card_id'] => ['quantity' => $validated['quantity']],
     ]);
 
     $errors = DeckFormatValidatorFactory::make($deck->format)->validate($deck->fresh());
@@ -1385,23 +1387,23 @@ php artisan make:model CollectionCard -m
 Schema::create('collection_cards', function (Blueprint $table) {
     $table->id();
     $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-    $table->string('cid');
-    $table->foreign('cid')->references('cid')->on('cards')->cascadeOnDelete();
+    $table->string('card_id', 20);
+    $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete();
     $table->enum('variant', ['normal', 'foil', 'hyper', 'prestige', 'hyper_foil'])->default('normal');
     $table->unsignedSmallInteger('quantity');
     $table->timestamps();
 
-    $table->unique(['user_id', 'cid', 'variant']);
+    $table->unique(['user_id', 'card_id', 'variant']);
 });
 ```
 ```php
 class CollectionCard extends Model
 {
-    protected $fillable = ['user_id', 'cid', 'variant', 'quantity'];
+    protected $fillable = ['user_id', 'card_id', 'variant', 'quantity'];
 
     public function card()
     {
-        return $this->belongsTo(Card::class, 'cid', 'cid');
+        return $this->belongsTo(Card::class, 'card_id');
     }
 
     public function user()
@@ -1434,15 +1436,15 @@ class CollectionController extends Controller
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'cid' => ['required', 'exists:cards,cid'],
+            'card_id' => ['required', 'exists:cards,id'],
             'variant' => ['required', 'in:normal,foil,hyper,prestige,hyper_foil'],
             'quantity' => ['required', 'integer', 'min:0'],
         ]);
 
-        $key = ['user_id' => $request->user()->id, 'cid' => $validated['cid'], 'variant' => $validated['variant']];
+        $key = ['user_id' => $request->user()->id, 'card_id' => $validated['card_id'], 'variant' => $validated['variant']];
 
         if ($validated['quantity'] === 0) {
-            CollectionCard::where($key)->delete(); // niente righe a zero: la somma per cid resta corretta senza filtrarle ovunque
+            CollectionCard::where($key)->delete(); // niente righe a zero: la somma per card_id resta corretta senza filtrarle ovunque
         } else {
             CollectionCard::updateOrCreate($key, ['quantity' => $validated['quantity']]);
         }
@@ -1451,7 +1453,7 @@ class CollectionController extends Controller
     }
 }
 ```
-Serve anche `Card::collectionCards()` (`hasMany(CollectionCard::class, 'cid', 'cid')`) per l'eager load sopra.
+Serve anche `Card::collectionCards()` (`hasMany(CollectionCard::class, 'card_id')`) per l'eager load sopra.
 
 **Vista** — `resources/views/collection/index.blade.php`: stesso pattern a griglia di `cards/index.blade.php` (Step 10.1, riusa `CardSearch`), con un controllo quantità per variante su ogni carta. L'aggiornamento via `fetch()` senza reload (il controller risponde `JsonResponse`) è l'unico punto del progetto con JS oltre ad Alpine/Chart.js: uno `<script>` inline che intercetta il cambio di un `<input type="number">` e chiama `fetch("{{ route('collection.update') }}", {method: 'PATCH', ...})` basta, non serve un bundler.
 
@@ -1466,21 +1468,21 @@ class DeckGapCalculator
      */
     public function forDeck(Deck $deck): array
     {
-        $required = $deck->cards->mapWithKeys(fn ($c) => [$c->cid => $c->pivot->quantity]);
+        $required = $deck->cards->mapWithKeys(fn ($c) => [$c->id => $c->pivot->quantity]);
 
         $owned = CollectionCard::where('user_id', $deck->user_id)
-            ->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
+            ->selectRaw('card_id, SUM(quantity) as qty')->groupBy('card_id')->pluck('qty', 'card_id');
 
         $reserved = DeckCard::whereHas('deck', fn ($q) => $q->where('user_id', $deck->user_id)
                 ->where('assembled', true)->where('id', '!=', $deck->id))
-            ->selectRaw('cid, SUM(quantity) as qty')->groupBy('cid')->pluck('qty', 'cid');
+            ->selectRaw('card_id, SUM(quantity) as qty')->groupBy('card_id')->pluck('qty', 'card_id');
 
         $missing = [];
         $reservedElsewhere = [];
 
-        foreach ($required as $cid => $needed) {
-            $ownedQty = (int) ($owned[$cid] ?? 0);
-            $reservedQty = (int) ($reserved[$cid] ?? 0);
+        foreach ($required as $cardId => $needed) {
+            $ownedQty = (int) ($owned[$cardId] ?? 0);
+            $reservedQty = (int) ($reserved[$cardId] ?? 0);
             $freelyAvailable = max(0, $ownedQty - $reservedQty);
 
             if ($freelyAvailable >= $needed) {
@@ -1491,10 +1493,10 @@ class DeckGapCalculator
             $reservedContribution = min($shortfall, $reservedQty);
 
             if ($reservedContribution > 0) {
-                $reservedElsewhere[$cid] = $reservedContribution;
+                $reservedElsewhere[$cardId] = $reservedContribution;
             }
             if (($trulyMissing = $shortfall - $reservedContribution) > 0) {
-                $missing[$cid] = $trulyMissing;
+                $missing[$cardId] = $trulyMissing;
             }
         }
 
@@ -1513,9 +1515,9 @@ public function gap(Deck $deck, DeckGapCalculator $calculator): View
 
     return view('decks.gap', [
         'deck' => $deck,
-        'missingCards' => Card::whereIn('cid', array_keys($missing))->get()->keyBy('cid'),
+        'missingCards' => Card::whereIn('id', array_keys($missing))->get()->keyBy('id'),
         'missingQuantities' => $missing,
-        'reservedCards' => Card::whereIn('cid', array_keys($reserved))->get()->keyBy('cid'),
+        'reservedCards' => Card::whereIn('id', array_keys($reserved))->get()->keyBy('id'),
         'reservedQuantities' => $reserved,
     ]);
 }
@@ -1708,7 +1710,7 @@ public function show(string $expansion, int $number): View
     return view('cards.show', compact('card'));
 }
 ```
-**Pagina mancante nella bozza iniziale**: nonostante sia gia' referenziata da `route('cards.show', ...)` sia nel bot Telegram (Step 9.3) sia nella mail `NewCardsEmail` (Step 4.5bis), qui non era mai stata definita ne' la route ne' il metodo `show()`. **Decisione presa**: la route usa `{expansion}/{number}` (non binding implicito su `{card}` via `cid`) — piu' gestibile e leggibile in ogni contesto (URL, log, mail) rispetto a un cid opaco. Route da aggiungere in `routes/web.php`, fuori da gruppi `auth` (pagina pubblica):
+**Pagina mancante nella bozza iniziale**: nonostante sia gia' referenziata da `route('cards.show', ...)` sia nel bot Telegram (Step 9.3) sia nella mail `NewCardsEmail` (Step 4.5bis), qui non era mai stata definita ne' la route ne' il metodo `show()`. **Decisione presa**: la route usa `{expansion}/{number}` (non binding implicito su `{card}` via `id`) — piu' gestibile e leggibile in ogni contesto (URL, log, mail) rispetto a un cid opaco. Route da aggiungere in `routes/web.php`, fuori da gruppi `auth` (pagina pubblica):
 ```php
 use App\Http\Controllers\CardController;
 
@@ -1833,7 +1835,7 @@ class CardResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            // 'id' interno volutamente escluso: 'cid' e' la chiave pubblica stabile, non ha senso esporre l'id di riga
+            // 'id' (espansione+numero) volutamente escluso: 'cid' e' la chiave pubblica stabile dell'API ufficiale
             'cid' => $this->cid,
             'name' => $this->name,
             'title' => $this->title,

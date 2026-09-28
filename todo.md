@@ -1,5 +1,9 @@
 # rebuild unlimitedDB (implementationPlan: implementationPlan-ricostruzioneUnlimitedDB.md - no need to follow this file)
 
+## Documentazione
+- [X] README.md sostituito con la documentazione reale del progetto
+- [ ] Da ora in poi: il README descrive solo il codice effettivamente implementato (il pianificato va segnalato come "non ancora implementato") e si aggiorna a ogni modifica che cambia setup/struttura/rotte/env/permessi
+
 ## Fase 3 — Autenticazione e permessi
 - [x] 3.1 Verifica email nativa (Breeze, già pronto)
 - [X] 3.2 Pagina admin gestione utenti `/admin/utenti`
@@ -40,7 +44,7 @@
 - [ ] 6.2 Pagina admin `/admin/espansioni`
 
 ## Fase 7 — Gestione mazzi
-- [ ] Correggere `Deck::cards()` (chiave pivot sbagliata, `card_id` invece di `cid`)
+- [ ] Correggere `Deck::cards()` (chiave pivot sbagliata, `id` invece di `cid`)
 - [ ] Correggere `Deck::leader()`/`Deck::base()` (interrogano `Card` direttamente, sbagliato — via `deck_cards`/`cards.type`)
 - [ ] 7.1 Enum `DeckFormat` + cast su `Deck`
 - [ ] 7.3 Validator per formato (Premier/Eternal/TwinSuns)

@@ -12,8 +12,8 @@ return new class extends Migration {
     {
         Schema::create('card_aspect', function (Blueprint $table) {
             $table->id();
-            $table->string('cid');
-            $table->foreign('cid')->references('cid')->on('cards')->cascadeOnDelete();
+            $table->string('id');
+            $table->foreign('id')->references('id')->on('cards')->cascadeOnDelete();
             $table->foreignId('aspect_id')->constrained('aspects')->cascadeOnDelete();
             $table->timestamps();
         });
