@@ -1,4 +1,5 @@
 <x-app-layout>
+    <x-flash-massage />
     <form method="GET" action="{{ route('admin.errors.index') }}" class="mb-4 flex gap-4">
         <select name="status" onchange="this.form.submit()">
             <option value="">Tutti</option>
@@ -24,7 +25,7 @@
                             default => 'bg-gray-400',
                         };
                     @endphp
-                    <div class="border border-gray-200 p-4 mb-3 rounded {{ $bgClass }}">
+                    <div class="border border-gray-200 p-4 mb-3 rounded ms-4 me-4 {{ $bgClass }}">
                         <input type="checkbox" name="ids[]" value="{{ $error->id }}">
                         <p>{{ $error->message }}</p>
                         <p class="font-semibold">{{ $error->source }}</p>

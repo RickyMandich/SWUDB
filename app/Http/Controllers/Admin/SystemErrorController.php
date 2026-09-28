@@ -49,7 +49,6 @@ class SystemErrorController extends Controller
      */
     public function bulkUpdate(Request $request): RedirectResponse
     {
-        \Log::info("sono entrato nel bulk update");
         $validated = $request->validate([
             'ids' => ['required', 'array'],
             'ids.*' => ['integer', 'exists:system_errors,id'],
@@ -61,6 +60,7 @@ class SystemErrorController extends Controller
             'resolved_at' => $validated['status'] === SystemError::STATUS_RESOLVED ? now() : null,
         ]);
 
-        return back()->with('status', count($validated['ids']).' errori aggiornati.');
+        return back()->with('status', count($validated['ids']).' errori aggiornati.')
+            ->with('status_level', 'success');
     }
 }

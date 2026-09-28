@@ -156,7 +156,7 @@ Breeze (Blade) installato; `HasRoles` su `User`; `PermissionSeeder` con `cards.i
 
 ### 🔧 Da fare
 
-**Step 3.1 — Verifica email nativa**
+#### Step 3.1 — Verifica email nativa
 ```php
 // app/Models/User.php
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -167,10 +167,10 @@ Route::middleware(['auth', 'verified'])->group(function () { /* rotte che richie
 ```
 Breeze genera già viste/rotte di verifica. Riferimento: https://laravel.com/docs/12.x/verification
 
-**Step 3.2 — Pagina admin gestione utenti**
+#### Step 3.2 — Pagina admin gestione utenti
 Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può assegnargli/togliergli ruoli e permessi, coerente con "miglioramento pagina utenti per la gestione di admin" della vecchia versione. Permesso già seedato: `users.manage` (Step Fase 3 ✅ Fatto), ruolo `admin` già creato con tutti i permessi.
 
-1. **Controller**
+##### 1. Controller
    ```
    php artisan make:controller Admin/UserManagementController
    ```
@@ -233,7 +233,8 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
    ```
    `syncRoles`/`syncPermissions` (metodi di `HasRoles`, già sul model `User`) sostituiscono l'intero set con quello passato — così una checkbox deselezionata nel form revoca automaticamente, senza dover chiamare `revokePermissionTo` a mano riga per riga.
 
-2. **Rotte** — in `routes/web.php`, sotto le rotte già esistenti (`require __DIR__.'/auth.php';` resta l'ultima riga):
+##### 2. Rotte
+In `routes/web.php`, sotto le rotte già esistenti (`require __DIR__.'/auth.php';` resta l'ultima riga):
    ```php
    use App\Http\Controllers\Admin\UserManagementController;
 
@@ -263,7 +264,8 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
    ```
    Senza questo, qualunque rotta con `permission:...`/`role:...` lancia `BindingResolutionException` ("Target class [permission] does not exist") invece di dare un 403 pulito — sintomo tipico: l'errore arriva dal Container, non da un `403 Forbidden` gestito.
 
-3. **Vista lista** — `resources/views/admin/users/index.blade.php` (estende il layout Breeze con `x-app-layout`, gia' cablato correttamente da Breeze tramite `app/View/Components/AppLayout.php` → `layouts.app`, nessuna preparazione necessaria):
+##### 3. Vista lista
+`resources/views/admin/users/index.blade.php` (estende il layout Breeze con `x-app-layout`, gia' cablato correttamente da Breeze tramite `app/View/Components/AppLayout.php` → `layouts.app`, nessuna preparazione necessaria):
    ```blade
    <x-app-layout>
        <div class="max-w-4xl mx-auto py-6">
@@ -297,7 +299,8 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
    ```
    Vedi "Convenzioni per le view" a inizio documento: sposta il titolo nello slot `header`, ed estrai qui il componente `<x-flash-message />` per il blocco `@if (session('status'))` (prima vista di questo tipo nel progetto).
 
-4. **Vista modifica** — `resources/views/admin/users/edit.blade.php`, checkbox per ogni ruolo e ogni permesso, pre-selezionati se già assegnati:
+##### 4. Vista modifica
+`resources/views/admin/users/edit.blade.php`, checkbox per ogni ruolo e ogni permesso, pre-selezionati se già assegnati:
    ```blade
    <x-app-layout>
        <div class="max-w-2xl mx-auto py-6">
@@ -333,7 +336,8 @@ Obiettivo: una pagina `/admin/utenti` dove un admin vede tutti gli utenti e può
 
 Vedi "Convenzioni per le view": usa `<x-primary-button>` per il submit e valuta `<x-input-label>` sopra i due gruppi di checkbox, per coerenza con le viste di auth di Breeze.
 
-5. **Link in navigazione** — nel componente di navigazione di Breeze (`resources/views/layouts/navigation.blade.php`), aggiungi una voce visibile solo a chi ha il permesso:
+##### 5. Link in navigazione
+Nel componente di navigazione di Breeze (`resources/views/layouts/navigation.blade.php`), aggiungi una voce visibile solo a chi ha il permesso:
    ```blade
    @can('users.manage')
        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
@@ -351,22 +355,22 @@ Vedi "Convenzioni per le view": usa `<x-primary-button>` per il submit e valuta 
 
 > **Contesto** (da `mandich-dev-infra`): Resend scelto come provider per tutti i siti `*.mandich.dev` al posto di un setup self-hosted, perché il piano gratuito Oracle Cloud blocca la porta 25 in uscita (sblocco riservato ai piani a pagamento). **Obiettivo di questa fase**: un solo dominio verificato su Resend (`mandich.dev`, non un sottodominio per sito) condiviso da tutti i siti, per restare nel piano gratuito Resend senza dover creare un account/dominio separato per ognuno. Questa fase precede l'uso delle mail già previsto in Fase 4 (Step 4.5): senza un mailer configurato, `NewCardsEmail`/`AdminScanReportEmail` finirebbero solo nei log (`MAIL_MAILER=log` attuale).
 
-**Step 3.5.1 — Verifica dominio `mandich.dev` su Resend (una tantum, condivisa tra tutti i siti)**
+### Step 3.5.1 — Verifica dominio `mandich.dev` su Resend (una tantum, condivisa tra tutti i siti)
 - Su [resend.com/domains](https://resend.com/domains) aggiungi il dominio **`mandich.dev`** (l'apice, non `unlimiteddb.mandich.dev`) — se è già stato verificato per un altro sito della VM, salta questo step: la verifica vale per l'intero dominio, ogni sito potrà inviare da qualsiasi indirizzo `@mandich.dev` senza registrarsi di nuovo.
 - Resend genera i record DNS da aggiungere (tipicamente: 1 TXT per SPF, 2-3 CNAME/TXT per DKIM, opzionale TXT per DMARC) — vanno creati su Cloudflare, dove è già gestito il DNS di `mandich.dev` (stesso posto del record wildcard usato da Traefik).
 - Attendi la verifica (di norma minuti, fino a 72h): la dashboard segna il dominio come "Verified" prima di poter inviare.
 
-**Step 3.5.2 — API Key Resend**
+### Step 3.5.2 — API Key Resend
 - Se non esiste già una key riutilizzabile per i siti `*.mandich.dev`, creane una in [resend.com/api-keys](https://resend.com/api-keys) con permesso **"Sending access"** (non serve full access), eventualmente ristretta al dominio `mandich.dev`.
 - Salvala solo nel gestore password / negli `.env` dei singoli ambienti — non versionarla mai (né in `.env-overrides`, che è tracciato in Git).
 
-**Step 3.5.3 — Pacchetto Resend per Laravel**
+### Step 3.5.3 — Pacchetto Resend per Laravel
 ```
 composer require resend/resend-php
 ```
 `config/mail.php` (mailer `resend` con `'transport' => 'resend'`) e `config/services.php` (`'resend' => ['key' => env('RESEND_API_KEY')]`) sono già presenti nello scaffold Laravel 12 di questo progetto — nessuna modifica di codice necessaria oltre all'installazione del pacchetto.
 
-**Step 3.5.4 — Variabili d'ambiente (locale e produzione)**
+### Step 3.5.4 — Variabili d'ambiente (locale e produzione)
 In locale (`.env`) e sul server (`.env` del sito su `~/sites/SWUDB/.env`, dato che `new-site.sh` legge/crea il `.env` direttamente sulla VM e non lo committa):
 ```env
 MAIL_MAILER=resend
@@ -376,7 +380,7 @@ MAIL_FROM_NAME="UnlimitedDB"
 ```
 Scegli un indirizzo `MAIL_FROM_ADDRESS` specifico per il sito, così chi riceve la mail capisce subito il mittente (es. `unlimiteddb@mandich.dev`, non un indirizzo generico condiviso tipo `noreply@mandich.dev`) — con il dominio verificato basta questo, non serve ulteriore configurazione Resend per usare indirizzi diversi da sito a sito. Le variabili `MAIL_HOST`/`MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_SCHEME` restano in `.env.example` come riferimento per lo sviluppo locale (mailpit/log), ma non servono più con `resend`. Dopo aver aggiornato il `.env` sul server, riavvia il container app (`SWUDB_app`) perché rilegga le variabili.
 
-**Step 3.5.5 — Verifica invio**
+### Step 3.5.5 — Verifica invio
 ```
 php artisan tinker
 >>> Mail::raw('Test invio da UnlimitedDB', fn ($m) => $m->to('tuamail@esempio.com')->subject('Test Resend'));
@@ -394,23 +398,23 @@ Modelli `Expansion`/`Card`; migration `expansions`/`cards`; `ImportCardsFromSwuA
 
 ### 🔧 Da fare
 
-**Step 4.1 — Bug bloccante**
+#### Step 4.1 — Bug bloccante
 Manca `use Illuminate\Support\Facades\Schedule;` in `routes/console.php`.
 
-**Step 4.2 — Applica lo schema `cards`/`expansions`** ✅ quasi tutto fatto, manca solo un pezzo
+#### Step 4.2 — Applica lo schema `cards`/`expansions` ✅ quasi tutto fatto, manca solo un pezzo
 Controllate le migration reali: `expansions` e `cards` sono già in snake_case, `release_date`/`legal_date` sono già due colonne distinte, `group_main_expansion` c'è già (con self-FK). **Manca però la foreign key `cards.expansion → expansions.expansion`**: nella migration `create_cards_table.php` la colonna `expansion` è dichiarata come semplice `$table->string('expansion', 10);`, senza vincolo di integrità referenziale verso `expansions`. Aggiungi, nella sezione `# costraints` (la PK della tabella è la colonna `id`, e la coppia `(expansion, number)` ha `$table->unique(['expansion', 'number']);` al posto della vecchia PK composita):
 ```php
 $table->foreign('expansion')->references('expansion')->on('expansions')->cascadeOnDelete();
 ```
 Senza questo vincolo, un `Card::create()` con un codice espansione inesistente (typo, espansione non ancora importata) verrebbe accettato silenziosamente dal database invece di fallire subito — esattamente il tipo di errore che poi si scopre tardi, in produzione, invece che al momento dell'import.
 
-**Step 4.3 — Aspetti e tratti** ✅ Fatto
+#### Step 4.3 — Aspetti e tratti ✅ Fatto
 `Aspect`/`CardTrait` e le pivot `card_aspect`/`card_trait` esistono già con PK/FK corrette (vedi schema sopra); colonna `cards.traits` già rimossa.
 
-**Step 4.4 — Relazioni nei modelli** ✅ Fatto
+#### Step 4.4 — Relazioni nei modelli ✅ Fatto
 `Card::aspects()`, `Card::traits()`, `Card::expansionModel()`, `Expansion::cards()`, `Expansion::mainExpansion()`/`subExpansions()` già scritte e con le chiavi giuste.
 
-**Step 4.5 — `ImportCardsFromSwuApiJob`**
+#### Step 4.5 — `ImportCardsFromSwuApiJob`
 Endpoint ufficiali (da `documentation.md`/`todo.md` della vecchia versione):
 ```
 GET https://admin.starwarsunlimited.com/api/card/{cid}?locale=it
@@ -611,7 +615,7 @@ Note sul codice sopra:
 - **Creazione automatica dell'`Expansion` se non esiste ancora** (necessaria perché altrimenti la FK `cards.expansion → expansions.expansion` farebbe fallire l'insert): `Expansion::firstOrCreate(['expansion' => $code], ['legal_date' => $expansionData['publishedAt'] ?? null, 'rotation' => Expansion::max('rotation')])`. `legal_date` da `publishedAt` e `rotation` copiato dal massimo esistente sono **placeholder deliberatamente approssimativi**, non i dati reali (`publishedAt` è quando l'espansione è stata pubblicata, non quando diventa legale in torneo) — restano corretti a mano in Fase 6, per questo `expansions.confirmed` resta `false` di default finché un admin non li verifica.
 Riferimento: https://laravel.com/docs/12.x/queues#creating-jobs, https://laravel.com/docs/12.x/mail
 
-**Step 4.5bis — Creazione delle Mailable `NewCardsEmail` e `AdminScanReportEmail`**
+#### Step 4.5bis — Creazione delle Mailable `NewCardsEmail` e `AdminScanReportEmail`
 Vanno create prima di poter eseguire il job di Step 4.5 così com'è: sono già referenziate (`use App\Mail\...`) ma la cartella `app/Mail/` non esiste ancora nel progetto.
 
 Come funzionano le Mailable in Laravel 12 (sintassi "nuova", quella corretta da usare qui):
@@ -642,10 +646,11 @@ Per personalizzare i colori del layout email di default, `php artisan vendor:pub
 
 Per vedere il rendering senza inviare davvero: in locale lascia `MAIL_MAILER=log` (prima di passare a `resend` in produzione come da Fase 3.5) e leggi l'HTML già renderizzato dentro `storage/logs/laravel.log` dopo aver fatto partire lo scan; nei test Pest (Step 4.7) `Mail::fake()` invece verifica solo che la mail sia stata accodata (`assertQueued`), senza renderizzarla.
 
-**Step 4.6 — Download locale delle immagini carta**
+#### Step 4.6 — Download locale delle immagini carta
 Invece di salvare l'URL dell'API in `front_art_path`/`back_art_path`, scarica l'immagine e salva il path locale:
 
-1. **Rendi raggiungibili le immagini via nginx (niente `storage:link` in Docker)** — `php artisan storage:link` qui non serve e non funzionerebbe: nginx è un container separato che monta solo `./public` (non `./storage`), quindi un symlink `public/storage` (per di più creato da Windows con target assoluto `C:\...`) non risolverebbe da nessuna parte; e `/public/storage` è già in `.gitignore`, quindi in produzione non arriverebbe comunque col codice. Al suo posto servi direttamente `storage/app/public` con un alias nginx e montala nel container nginx, in **entrambi** i compose:
+##### 1. Rendi raggiungibili le immagini via nginx (niente `storage:link` in Docker)
+`php artisan storage:link` qui non serve e non funzionerebbe: nginx è un container separato che monta solo `./public` (non `./storage`), quindi un symlink `public/storage` (per di più creato da Windows con target assoluto `C:\...`) non risolverebbe da nessuna parte; e `/public/storage` è già in `.gitignore`, quindi in produzione non arriverebbe comunque col codice. Al suo posto servi direttamente `storage/app/public` con un alias nginx e montala nel container nginx, in **entrambi** i compose:
    - `docker/nginx/default.conf` (condivisa tra dev e produzione), dentro il blocco `server`, prima di `location ~ \.php$`:
      ```nginx
      location /storage/ {
@@ -660,7 +665,7 @@ Invece di salvare l'URL dell'API in `front_art_path`/`back_art_path`, scarica l'
    - `docker-compose.yml` (produzione), servizio `nginx`, stessa riga nei `volumes`.
 
    Il target del mount è una **directory**, non un file singolo. Gli URL `asset('storage/'.$path)` / `Storage::disk('public')->url()` restano invariati (stesso prefisso `/storage/`). Dopo la modifica ricrea nginx: `docker compose -f docker-compose.dev.yml up -d`. `php artisan storage:link` serve solo se sviluppi fuori da Docker con `php artisan serve`.
-2. Crea `app/Services/CardImageDownloader.php`:
+##### 2. Crea `app/Services/CardImageDownloader.php`
 ```php
 class CardImageDownloader
 {
@@ -684,13 +689,16 @@ class CardImageDownloader
     }
 }
 ```
-3. Nel job di import (Step 4.5), per ogni carta: se non esiste già un file a quel path (evita ri-download inutili ad ogni scan settimanale, le immagini di una carta pubblicata non cambiano), chiama `CardImageDownloader::download()` per front e back; se il download fallisce, registra un `SystemError` (`source: CardImageDownloader`) e lascia il campo `null`/il valore precedente invece di far fallire l'intera riga.
-4. Per mostrare l'immagine in una view: `Storage::disk('public')->url($card->front_art_path)` (o l'helper `asset('storage/'.$card->front_art_path)`).
-5. Aggiungi a `.gitignore`: `/storage/app/public/cards` — sono file scaricabili di nuovo da un nuovo scan, non ha senso versionarli (e sarebbero comunque tanti file binari).
+##### 3. Nel job di import (Step 4.5), per ogni carta
+se non esiste già un file a quel path (evita ri-download inutili ad ogni scan settimanale, le immagini di una carta pubblicata non cambiano), chiama `CardImageDownloader::download()` per front e back; se il download fallisce, registra un `SystemError` (`source: CardImageDownloader`) e lascia il campo `null`/il valore precedente invece di far fallire l'intera riga.
+##### 4. Per mostrare l'immagine in una view
+`Storage::disk('public')->url($card->front_art_path)` (o l'helper `asset('storage/'.$card->front_art_path)`).
+##### 5. Aggiungi a `.gitignore`
+`/storage/app/public/cards` — sono file scaricabili di nuovo da un nuovo scan, non ha senso versionarli (e sarebbero comunque tanti file binari).
 
 Riferimento: https://laravel.com/docs/12.x/filesystem
 
-**Step 4.7 — Copertura Pest**
+#### Step 4.7 — Copertura Pest
 File `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`:
 ```php
 use App\Jobs\ImportCardsFromSwuApiJob;
@@ -961,10 +969,11 @@ Vedi "Convenzioni per le view": estrai qui il componente `<x-badge>` per colorar
 
 4. **Vista dettaglio** — `resources/views/admin/errors/show.blade.php`: mostra `message`, `stack_trace` in un `<pre>`, e `context` formattato con `<pre>{{ json_encode($systemError->context, JSON_PRETTY_PRINT) }}</pre>` (il cast `context => array` gia' presente sul model lo restituisce come array PHP, va ri-serializzato per la vista). Per lo stile del `<pre>` usa le classi Tailwind di default (`bg-gray-100 p-4 rounded text-sm overflow-x-auto`), non esiste ancora una convenzione diversa nel progetto per il codice preformattato.
 
-**Step 5.4 — Correzioni alle view già scritte (Step 3.2 e 5.3)**
-Revisione di `admin/users/index.blade.php`, `admin/users/edit.blade.php`, `admin/errors/index.blade.php` e `layouts/navigation.blade.php` rispetto a "Convenzioni per le view": problemi trovati e come sistemarli.
+### Step 5.4 — Correzioni alle view già scritte (Step 3.2 e 5.3)
+Revisione di `admin/users/index.blade.php`, `admin/users/edit.blade.php`, `admin/errors/index.blade.php`, `admin/errors/show.blade.php` e `layouts/navigation.blade.php` rispetto a "Convenzioni per le view": problemi trovati e come sistemarli. Ordine consigliato: prima i bug (punti 3, 8, 9, 10), poi i componenti (1, 5), poi lo stile (2, 6, 11, 12).
 
-1. **Estrai il componente `<x-flash-message>`** (prima occasione buona per farlo davvero, poi va riusato ovunque):
+#### 1. Estrai il componente `<x-flash-message>`
+Prima occasione buona per farlo davvero, poi va riusato ovunque:
 ```blade
 {{-- resources/views/components/flash-message.blade.php --}}
 @if (session('status'))
@@ -973,7 +982,8 @@ Revisione di `admin/users/index.blade.php`, `admin/users/edit.blade.php`, `admin
 ```
 Sostituisci il blocco `@if (session('status')) ... @endif` inline con `<x-flash-message />` in `admin/users/index.blade.php`, e aggiungilo in `admin/errors/index.blade.php` dove manca del tutto: dopo un `update`/`bulk-update` il controller fa `back()->with('status', ...)` ma la vista non lo mostra da nessuna parte.
 
-2. **Titolo nello slot `header`, non nel corpo**: `admin/users/index.blade.php` e `admin/users/edit.blade.php` hanno l'`<h1>` dentro il `<div>`; spostalo nello slot, es.
+#### 2. Titolo nello slot `header`, non nel corpo
+`admin/users/index.blade.php`, `admin/users/edit.blade.php` e `admin/errors/show.blade.php` hanno l'`<h1>` dentro il corpo; spostalo nello slot, es.
 ```blade
 <x-app-layout>
     <x-slot name="header">
@@ -982,16 +992,16 @@ Sostituisci il blocco `@if (session('status')) ... @endif` inline con `<x-flash-
     <div class="max-w-4xl mx-auto py-6">
         ...
 ```
-`admin/errors/index.blade.php` non ha proprio nessun titolo: aggiungine uno con lo stesso pattern (es. "Log errori scan").
+`admin/errors/index.blade.php` non ha proprio nessun titolo: aggiungine uno con lo stesso pattern (es. "Log errori scan"). Usa `h2` (non `h1`) come nella dashboard di Breeze, per coerenza.
 
-3. **Bug**: in `admin/errors/index.blade.php`, `{{ $error->stack }}` va corretto in `{{ $error->stack_trace }}` — la colonna sul modello `SystemError` si chiama `stack_trace`, `stack` non esiste e quel blocco resta sempre vuoto.
+#### 3. Bug: `$error->stack` non esiste
+In `admin/errors/index.blade.php`, `{{ $error->stack }}` va corretto in `{{ $error->stack_trace }}` — la colonna sul modello `SystemError` si chiama `stack_trace`, `stack` non esiste e quel blocco resta sempre vuoto. Attenzione: una volta corretto, l'intero stack trace comparirebbe inline in ogni riga aperta, rendendo la lista illeggibile; meglio toglierlo dalla lista (c'è già la vista dettaglio) o al massimo mostrare `{{ \Illuminate\Support\Str::limit($error->stack_trace, 150) }}`.
 
-4. **Link mancante a `errors.show`**: lo Step 5.3 lo richiedeva esplicitamente ("link a `errors.show`") per collegare la lista al dettaglio. Aggiungi in ogni riga, es. accanto al messaggio:
-```blade
-<a href="{{ route('admin.errors.show', $error) }}" class="text-sm underline">Dettagli</a>
-```
+#### 4. Link a `errors.show` ✅ Fatto
+Il pulsante "Mostra" in ogni riga di `admin/errors/index.blade.php` punta già a `route('admin.errors.show', $error)`. Resta solo da uniformarlo nello stile (punto 6).
 
-5. **Estrai `<x-badge>` per lo stato**, invece di colorare l'intera card con `$bgClass` (funziona, ma non è il pattern "badge" previsto dallo Step 5.3, e servirà identico per gli aspetti carta in Step 10.1 — un'implementazione sola invece di due):
+#### 5. Estrai `<x-badge>` per lo stato
+Invece di colorare l'intera card con `$bgClass` (funziona, ma non è il pattern "badge" previsto dallo Step 5.3, e servirà identico per gli aspetti carta in Step 10.1 — un'implementazione sola invece di due):
 ```blade
 {{-- resources/views/components/badge.blade.php --}}
 @props(['color' => '#9ca3af'])
@@ -1002,18 +1012,53 @@ Sostituisci il blocco `@if (session('status')) ... @endif` inline con `<x-flash-
 ```
 In `admin/errors/index.blade.php`, sostituisci `$bgClass`/la classe di sfondo sulla card con una badge accanto al messaggio, mappando lo stato a un colore fisso (es. `open` → `#ef4444`, `resolved` → `#22c55e`, `ignored` → `#6b7280`) invece di colorare l'intera card.
 
-6. **Pulsanti**: in `admin/users/edit.blade.php` sostituisci `<button type="submit" class="mt-4">Salva</button>` con `<x-primary-button class="mt-4">Salva</x-primary-button>`. In `admin/errors/index.blade.php` i pulsanti colorati a mano (`bg-green-500`/`bg-gray-500`/`bg-red-500`) possono restare così se vuoi mantenere la distinzione visiva risolto/ignora/riapri — non è un errore, solo una scelta diversa da `<x-primary-button>`/`<x-danger-button>`; valuta tu se uniformare.
+#### 6. Pulsanti
+In `admin/users/edit.blade.php` sostituisci `<button type="submit" class="mt-4">Salva</button>` con `<x-primary-button class="mt-4">Salva</x-primary-button>`. In `admin/errors/index.blade.php` i pulsanti colorati a mano (`bg-green-500`/`bg-gray-500`/`bg-red-500`) possono restare così se vuoi mantenere la distinzione visiva risolto/ignora/riapri — non è un errore, solo una scelta diversa da `<x-primary-button>`/`<x-danger-button>`; valuta tu se uniformare.
 
-7. **Voce di navigazione responsive mancante**: in `layouts/navigation.blade.php` "Gestione utenti" è stata aggiunta solo al blocco desktop (dentro `<!-- Navigation Links -->`). Aggiungi la stessa voce anche nel blocco `<!-- Responsive Navigation Menu -->` più sotto, dentro `<div class="pt-2 pb-3 space-y-1">` insieme al link "Dashboard" già presente lì:
+#### 7. Voce di navigazione responsive ✅ Fatto
+In `layouts/navigation.blade.php` "Gestione utenti" e "Gestione errori" sono presenti sia nel blocco desktop sia nel blocco `<!-- Responsive Navigation Menu -->`. Niente da fare.
+
+#### 8. Bug: la variabile `$errors` della lista sovrascrive quella di Laravel
+`SystemErrorController::index()` passa alla vista `compact('errors', 'status')`. In ogni vista Blade Laravel condivide già una variabile `$errors` (il `ViewErrorBag` della validazione): passarne una con lo stesso nome la sostituisce con il paginator. Conseguenza concreta: se nella lista premi "Risolvi selezionati" senza spuntare nessuna riga, `bulkUpdate` fallisce la validazione (`ids` required), fa redirect indietro con gli errori, ma la vista non li mostra e non c'è nessun feedback. Correzione:
+- Nel controller: `$systemErrors = SystemError::when(...)...->paginate(30)->withQueryString();` e `return view('admin.errors.index', compact('systemErrors', 'status'));`
+- Nella vista: `@if ($systemErrors->isEmpty())`, `@foreach ($systemErrors as $error)` (due volte: card e form nascosti) e sotto il bulk form `<x-input-error :messages="$errors->get('ids')" class="mt-2" />`.
+
+#### 9. Bug: manca la paginazione nella lista errori
+Il controller usa `paginate(30)` ma la vista non stampa mai i link: oltre i primi 30 errori non si arriva. Aggiungi in fondo alla lista (dopo il bulk form, fuori dal `<form>`):
 ```blade
-@can('users.manage')
-    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-        {{ __('Gestione utenti') }}
-    </x-responsive-nav-link>
-@endcan
+{{ $systemErrors->links() }}
 ```
 
-Non bloccante per il resto della Fase 5/6: applica questi punti quando torni sulle view, non serve fermarsi ora se stai chiudendo la Fase 5 su altro fronte (es. la Vista dettaglio di Step 5.3).
+#### 10. Pulizia della vista dettaglio (`admin/errors/show.blade.php`)
+La vista funziona, ma vanno sistemati alcuni dettagli rimasti dalla prima stesura:
+- Togli il commento Blade `{{-- Vista dettaglio — ... --}}` in testa: è il testo copiato dal piano.
+- Togli le classi `dark:*`: il resto dell'app non ha il dark mode, in questa pagina soltanto sarebbe incoerente.
+- Etichette in italiano come il resto dell'interfaccia ("Messaggio", "Stack trace") e mostra anche `source`, `status` (con `<x-badge>`), `created_at` e `resolved_at`, oggi assenti.
+- Aggiungi un link "← Torna alla lista" (`route('admin.errors.index')`) e, se vuoi, i pulsanti Risolvi/Ignora/Riapri che puntano già a `errors.update` (il controller fa `back()`, quindi si resta sulla pagina).
+- Il contenitore usa `container mx-auto p-4`; le altre pagine admin usano `max-w-4xl mx-auto py-6`: uniforma.
+- Semplifica i `<pre>`: gli `@if/@else` dentro il `<pre>` aggiungono a capo e indentazioni indesiderate. Meglio:
+```blade
+<pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto">{{ $systemError->stack_trace ?? 'Nessuno stack trace per questo errore.' }}</pre>
+```
+- Per il contesto usa `json_encode($systemError->context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)`: senza i due flag accenti e `/` compaiono come `\u00e0` e `\/`.
+
+#### 11. Pulsanti di stato contestuali nella lista
+Oggi ogni riga mostra sempre "Segna come risolto", "Ignora" e "Riapri", anche quando lo stato è già quello ("Riapri" su un errore aperto non ha senso). Mostra solo le transizioni utili: `open` → Risolvi / Ignora; `resolved` e `ignored` → Riapri. Stessa logica per i tre pulsanti bulk, se vuoi. Nota anche che `text-gray-500` sul `<pre>` dentro una card colorata e `text-white` su `bg-red-400`/`bg-green-400` hanno poco contrasto: con il badge del punto 5 il problema sparisce.
+
+#### 12. Tabelle e stile in `admin/users/*`
+- `admin/users/index.blade.php`: `<th>`/`<td>` senza classi (niente padding né bordi) e tabella non scrollabile su mobile. Avvolgi la tabella in `<div class="overflow-x-auto">` come da convenzioni, e dai a celle e intestazioni un padding (`px-3 py-2`) e un bordo inferiore (`border-b`).
+- `admin/users/edit.blade.php`: i checkbox sono `<input type="checkbox">` nudi; aggiungi le classi Breeze `rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500` e un link "Annulla" verso `admin.users.index`. Aggiungi anche `<x-input-error>` per `roles`/`permissions` (il controller valida, ma la vista non mostra gli errori).
+
+#### 13. Suggerimento (non bloccante): evita l'auto-lockout in `UserManagementController::update`
+Se un admin toglie a se stesso il ruolo `admin` (o all'ultimo admin rimasto), nessuno può più aprire `/admin/utenti`. Un controllo di due righe prima dei `sync` basta:
+```php
+if ($user->is($request->user()) && ! in_array('admin', $validated['roles'] ?? [], true)) {
+    return back()->withErrors(['roles' => 'Non puoi togliere a te stesso il ruolo admin.']);
+}
+```
+(l'errore compare solo se la vista mostra `<x-input-error>`, punto 12).
+
+Non bloccante per il resto della Fase 5/6: applica questi punti quando torni sulle view.
 
 ☐ Fase 5 completata
 

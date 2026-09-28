@@ -1,9 +1,7 @@
 <x-app-layout>
     <div class="max-w-4xl mx-auto py-6">
         <h1 class="text-xl font-semibold mb-4">Gestione utenti</h1>
-        @if (session('status'))
-            <div class="mb-4 text-green-600">{{ session('status') }}</div>
-        @endif
+        <x-flash-massage />
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr>

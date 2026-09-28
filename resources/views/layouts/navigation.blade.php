@@ -15,17 +15,17 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @can('users.manage')
+                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                            {{ __('Gestione utenti') }}
+                        </x-nav-link>
+                    @endcan
+                    @can('system.manage-errors')
+                        <x-nav-link :href="route('admin.errors.index')" :active="request()->routeIs('admin.errors.*')">
+                            {{ __('Gestione errori') }}
+                        </x-nav-link>
+                    @endcan
                 </div>
-                @can('users.manage')
-                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                        {{ __('Gestione utenti') }}
-                    </x-nav-link>
-                @endcan
-                @can('errors.manage')
-                    <x-nav-link :href="route('admin.errors.index')" :active="request()->routeIs('admin.errors.*')">
-                        {{ __('Gestione errori') }}
-                    </x-nav-link>
-                @endcan
             </div>
 
             <!-- Settings Dropdown -->
@@ -89,6 +89,16 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @can('users.manage')
+                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                    {{ __('Gestione utenti') }}
+                </x-responsive-nav-link>
+            @endcan
+            @can('system.manage-errors')
+                <x-responsive-nav-link :href="route('admin.errors.index')" :active="request()->routeIs('admin.errors.*')">
+                    {{ __('Gestione errori') }}
+                </x-responsive-nav-link>
+            @endcan
         </div>
 
         <!-- Responsive Settings Options -->
