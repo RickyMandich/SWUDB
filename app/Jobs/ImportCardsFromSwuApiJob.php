@@ -21,12 +21,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class ImportCardsFromSwuApiJob implements ShouldQueue
 {
     use Queueable, InteractsWithQueue, SerializesModels;
 
-    public $tries = 3;
+    public $tries = 1;
     public $backoff = 180;
 
     public function handle(TelegramService $telegram, CardImageDownloader $imageDownloader): void
@@ -41,6 +42,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         
         do {
             $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
+            Log::info("Scan in corso: pagina {$page}/{$lastPage}...");
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
                 'locale'                        => 'it',
                 'filters[variantOf][id][$null]' => 'true',
@@ -55,8 +57,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'message' => "Pagina {$page}: richiesta API fallita ({$response->status()})",
                     'context' => ['page' => $page, 'body' => $response->body()],
                 ]);
+                Log::warning("Pagina {$page}: richiesta API fallita ({$response})");
                 break;
             }
+
 
             $payload         = $response->json();
             $lastPage        = $payload['meta']['pagination']['pageCount'] ?? $page;
@@ -66,6 +70,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                 $this->processCard($cardEntry['attributes'] ?? [], $lastestRotation, $imageDownloader, $newCards, $errors);
             }
             $telegram->editMessage($adminChatId, $progress->messageId, "Scan completato: pagina {$page}/{$lastPage}...");
+            Log::info("Scan completato: pagina {$page}/{$lastPage}...");
             $page++;
         } while ($page <= $lastPage);
 
@@ -76,6 +81,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             $progress->messageId,
             "Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi."
         );
+        Log::info("Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi.");
     }
 
     private function processCard(
@@ -88,7 +94,8 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         $cid = $cardData['cardUid'] ?? null;
 
         try {
-            if (! $cid) {
+            if (!$cid) {
+                Log::warning("cardUid mancante nel payload", ['raw' => $cardData]);
                 throw new \RuntimeException('cardUid mancante nel payload');
             }
 
@@ -116,17 +123,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'max_copies'   => $cardData['cardNumber'] == 256 && $cardData['expansion']['data']['attributes']['code'] == 'JTL' ? 15 : null,
                 ]
             );
+            Log::info("Dati della carta {$cid} ('{$card->expansion}-{$card->number}') recuperati dall'api e record inserito/aggiornato, sincronizzazione altri dati in corso", ['card' => $card, 'cid' => $cid]);
 
             if (! $existed) {
                 $newCards->push($card);
-            } else {
-                $err = SystemError::create([
-                    'source'  => self::class,
-                    'message' => "Carta {$cid} gia' presente, dati aggiornati",
-                    'status'  => SystemError::STATUS_IGNORED,
-                    'context' => ['card' => $card],
-                ]);
-                $errors->push($err);
             }
 
             $this->syncAspectsAndTraits($card, $cardData);
@@ -141,6 +141,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             ]);
             $errors->push($err);
         }
+        Log::info("Fine elaborazione carta {$cid}", ['card' => $card, 'cid' => $cid]);
     }
 
     private function upsertExpansion(array $cardData, string $lastestRotation): void
