@@ -15,6 +15,9 @@
 ### Step 10.1 — Ricerca e filtri carte
 
 #### 10.1.1 — `app/Services/CardSearch.php`
+```bash
+php artisan make:class Services/CardSearch
+```
 ```php
 namespace App\Services;
 

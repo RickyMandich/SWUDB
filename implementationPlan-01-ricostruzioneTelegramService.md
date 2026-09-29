@@ -26,6 +26,9 @@ TELEGRAM_WEBHOOK_SECRET=
 `TELEGRAM_WEBHOOK_SECRET` accetta solo lettere, cifre, `_` e `-` (vincolo di Telegram).
 
 #### 9.2.2 — `app/Services/TelegramActionResult.php`
+```bash
+php artisan make:class Services/TelegramActionResult
+```
 ```php
 namespace App\Services;
 
@@ -41,6 +44,9 @@ final readonly class TelegramActionResult
 ```
 
 #### 9.2.3 — `app/Services/TelegramService.php`
+```bash
+php artisan make:class Services/TelegramService
+```
 Un solo punto di contatto con l'API di Telegram. Due vincoli che vengono dal job di import e dai test:
 - **`$chatId` e `$messageId` possono essere `null`**: il job passa `config('services.telegram.admin_chat_id')` (nullo se non configurato) e `$progress->messageId` (nullo se il primo invio è fallito). Con tipi non nullable
   la prima chiamata andrebbe in `TypeError`. In questi casi il service non fa nulla e ritorna un risultato "non riuscito".

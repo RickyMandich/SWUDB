@@ -309,6 +309,9 @@ Tutte estendono `<x-app-layout>`, con titolo nello slot `header`.
 ### Step 7.7 — Export/Import mazzi
 
 #### 7.7.1 — `app/Services/DeckExporter.php`
+```bash
+php artisan make:class Services/DeckExporter
+```
 Le classi stanno in `app/Services/` (non in un controller) per poterle testare in Pest senza una request HTTP finta.
 ```php
 class DeckExporter
@@ -331,6 +334,9 @@ class DeckExporter
 ```
 
 #### 7.7.2 — `app/Services/DeckImporter.php`
+```bash
+php artisan make:class Services/DeckImporter
+```
 ```php
 class DeckImporter
 {

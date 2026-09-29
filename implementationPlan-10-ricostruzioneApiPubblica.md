@@ -32,6 +32,9 @@ Route::get('/decks/{userName}/{deckName}', [Api\DeckController::class, 'show']);
 ```
 
 #### 11.2.2 — `app/Http/Controllers/Api/CardController.php`
+```bash
+php artisan make:controller Api/CardController
+```
 Il `with()` evita una query per carta quando `CardResource` legge aspetti e tratti.
 ```php
 class CardController extends Controller
@@ -57,6 +60,9 @@ class CardController extends Controller
 Rate limiting: https://laravel.com/docs/12.x/routing#rate-limiting
 
 #### 11.2.3 — `app/Http/Controllers/Api/DeckController.php`
+```bash
+php artisan make:controller Api/DeckController
+```
 ```php
 class DeckController extends Controller
 {

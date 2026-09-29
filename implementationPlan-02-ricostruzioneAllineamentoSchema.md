@@ -57,6 +57,9 @@ Schema::create('deck_cards', function (Blueprint $table) {
 ### Step 4ter.2 — Aggiornare le chiavi delle relazioni nei modelli
 
 #### 4ter.2.1 — `app/Models/Card.php`
+```bash
+php artisan make:model Card
+```
 Sostituire `aspects()`, `traits()` e `decks()`:
 ```php
 public function aspects()
@@ -80,6 +83,9 @@ public function decks()
 `traits()` non ha bisogno della chiave del modello correlato: `CardTrait` ha già `$primaryKey = 'name'`.
 
 #### 4ter.2.2 — `app/Models/Aspect.php` e `app/Models/CardTrait.php`
+```bash
+php artisan make:model CardTrait
+```
 ```php
 // Aspect::cards()
 return $this->belongsToMany(Card::class, 'card_aspect', 'aspect_id', 'card_id');
@@ -89,6 +95,9 @@ return $this->belongsToMany(Card::class, 'card_trait', 'trait_name', 'card_id');
 ```
 
 #### 4ter.2.3 — `app/Models/DeckCard.php`
+```bash
+php artisan make:model DeckCard
+```
 `$fillable` passa da `['deck_id', 'id', 'quantity']` a `['deck_id', 'card_id', 'quantity']`, e la relazione diventa:
 ```php
 public function card()
@@ -98,6 +107,9 @@ public function card()
 ```
 
 #### 4ter.2.4 — `app/Models/Deck.php`, solo `cards()`
+```bash
+php artisan make:model Deck
+```
 `leader()`/`base()` non si toccano qui: sono da sostituire nello Step 7.2 di [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md).
 ```php
 public function cards()

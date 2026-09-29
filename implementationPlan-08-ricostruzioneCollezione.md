@@ -34,6 +34,9 @@ Schema::create('collection_cards', function (Blueprint $table) {
 Le varianti di stampa vivono **solo qui**, non nei mazzi.
 
 #### 8.1.3 — Modello `app/Models/CollectionCard.php`
+```bash
+php artisan make:model CollectionCard
+```
 ```php
 class CollectionCard extends Model
 {
@@ -116,6 +119,9 @@ L'aggiornamento senza reload è l'unico punto del progetto con JS oltre ad Alpin
 Tre informazioni per ogni carta del mazzo: mancante del tutto, posseduta ma impegnata in un altro mazzo assemblato, disponibile.
 
 #### 8.3.1 — `app/Services/DeckGapCalculator.php`
+```bash
+php artisan make:class Services/DeckGapCalculator
+```
 Rispetto alla prima bozza: il calcolo è **per l'utente che guarda** (non per il proprietario del mazzo, altrimenti guardando un mazzo pubblico altrui si vedrebbe la collezione del proprietario)
 e restituisce anche le carte disponibili (`present`), necessarie al toggle dello Step 8.3.4.
 ```php

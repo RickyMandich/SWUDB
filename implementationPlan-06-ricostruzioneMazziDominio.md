@@ -13,6 +13,9 @@
 ### Step 7.1 — Enum `DeckFormat` e cast
 
 #### 7.1.1 — Creare `app/Enums/DeckFormat.php`
+```bash
+php artisan make:enum Enums/DeckFormat
+```
 La cartella `app/Enums/` non esiste ancora.
 ```php
 namespace App\Enums;
@@ -45,6 +48,9 @@ Il ruolo di una carta nel mazzo non è una colonna di `deck_cards`: si deduce da
 confrontano `$this->format === 'twin_suns'` con una stringa (ora sarà un enum); filtrano `where('type', 'leader')` in minuscolo mentre i valori dell'enum SQL sono `Leader` e `Base`.
 
 #### 7.2.2 — Sostituzione in `app/Models/Deck.php`
+```bash
+php artisan make:model Deck
+```
 Rimuovere `leader()` e `base()` e aggiungere:
 ```php
 /**
@@ -76,6 +82,9 @@ Restano `belongsToMany` veri, quindi eager-loadabili: `Deck::with('leaders', 'ba
 ### Step 7.3 — Validator per formato
 
 #### 7.3.1 — Interfaccia `app/Services/DeckValidation/DeckFormatValidator.php`
+```bash
+php artisan make:interface Services/DeckValidation/DeckFormatValidator
+```
 ```php
 namespace App\Services\DeckValidation;
 
