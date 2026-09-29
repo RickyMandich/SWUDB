@@ -21,7 +21,21 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 COPY . .
 RUN composer dump-autoload --optimize --no-dev
 
-# --- Stage 3: immagine finale PHP-FPM ---
+# --- Stage 3: icone del sito (favicon, apple-touch, manifest) ---
+# Genera tutte le varianti a partire da public/icon-mine.svg (script in
+# docker/icons/generate-icons.sh). Copia solo SVG e script, quindi lo stage
+# viene ricostruito (cache invalidata) solo quando uno dei due cambia.
+FROM debian:bookworm-slim AS icon-builder
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends librsvg2-bin imagemagick \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /work
+COPY docker/icons/generate-icons.sh /usr/local/bin/generate-icons.sh
+COPY public/icon-mine.svg /work/icon-mine.svg
+RUN sed -i 's/\r$//' /usr/local/bin/generate-icons.sh \
+    && sh /usr/local/bin/generate-icons.sh /work/icon-mine.svg /out/icons
+
+# --- Stage 4: immagine finale PHP-FPM ---
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache \
@@ -36,6 +50,10 @@ COPY --from=composer-builder /app /var/www/html
 # coperto da un bind mount che nasconde il contenuto dell'immagine)
 COPY --from=node-builder /app/public/build /opt/build-assets
 COPY --from=node-builder /app/public/build /var/www/html/public/build
+# Icone generate dallo stage icon-builder: stesso percorso di consegna degli asset
+# Vite (public/build/icons), quindi l'entrypoint le rinfresca insieme a loro
+COPY --from=icon-builder /out/icons /opt/build-assets/icons
+COPY --from=icon-builder /out/icons /var/www/html/public/build/icons
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 

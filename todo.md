@@ -1,84 +1,129 @@
-# rebuild unlimitedDB (implementationPlan: implementationPlan-ricostruzioneUnlimitedDB.md - no need to follow this file)
+# rebuild unlimitedDB
 
-## Documentazione
-- [X] README.md sostituito con la documentazione reale del progetto
+> Progresso puntuale, a specchio degli implementation plan numerati: indice e ordine in [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
+> Una sezione per piano, stesso numero e stessi numeri di step. Quando un piano è finito: spuntare qui e rinominare il file in `implementationPlan-V-NN-...md`.
+
+## Documentazione e infrastruttura trasversale
+- [x] README.md sostituito con la documentazione reale del progetto
+- [x] README riallineato al codice e ai piani numerati (stato reale, icone, mail, vista dettaglio errore)
+- [x] Icone del sito generate dal `Dockerfile` (stage `icon-builder`) a partire da `public/icon-mine.svg` (`docker/icons/generate-icons.sh`, `layouts/favicons.blade.php`, `/favicon.ico` in nginx)
+- [ ] Verificare la build dell'immagine con lo stage `icon-builder` (`docker compose -f docker-compose.dev.yml up -d --build`) e che `public/build/icons/` contenga i file
 - [ ] Da ora in poi: il README descrive solo il codice effettivamente implementato (il pianificato va segnalato come "non ancora implementato") e si aggiorna a ogni modifica che cambia setup/struttura/rotte/env/permessi
+- [x] `welcome.blade.php` include `layouts/favicons.blade.php` come gli altri layout
 
-## Fase 3 — Autenticazione e permessi
-- [x] 3.1 Verifica email nativa (Breeze, già pronto)
-- [X] 3.2 Pagina admin gestione utenti `/admin/utenti`
+## 00 — Fondamenta (Fasi 1–4bis) ✅ `implementationPlan-V-00-ricostruzioneFondamenta.md`
+- [x] Fase 1 — setup progetto (Breeze, Spatie, `.env-overrides`)
+- [x] Fase 2 — ambiente Docker locale (compose dev, rebuild automatico asset, icone da SVG)
+- [x] 3.1 Verifica email nativa
+- [x] 3.2 Pagina admin gestione utenti `/admin/utenti`
+- [x] 3.5.1–3.5.5 Resend (dominio, API key, pacchetto, variabili, invio di test)
+- [x] 4.1 `use Schedule` in `routes/console.php`
+- [x] 4.2 FK `cards.expansion → expansions.expansion`
+- [x] 4.3 Aspetti e tratti / 4.4 Relazioni nei modelli
+- [x] 4.5 `ImportCardsFromSwuApiJob` (+ 4.5bis Mailable)
+- [x] 4.6 Download locale immagini (`CardImageDownloader`) e alias nginx `/storage/`
+- [x] 4.7 Test Pest del job (da riparare, vedi piano 02, Step 4ter.5)
+- [x] 4bis.1 Servizio `worker` in `docker-compose.dev.yml`
+- [x] 4bis.2 `worker` di produzione corretto + `new-site.sh` aggiornato
+- [x] 4bis.3 Worker attivo in locale e in produzione
 
-## Fase 3.5 — Configurazione email (Resend)
-- [X] 3.5.1 Verifica dominio `mandich.dev` su Resend (DNS su Cloudflare)
-- [X] 3.5.2 API Key Resend
-- [X] 3.5.3 `composer require resend/resend-php`
-- [X] 3.5.4 Variabili `.env` (locale + server)
-- [X] 3.5.5 Verifica invio di test
+## 01 — TelegramService (Fase 9a) — bloccante per lo scan `implementationPlan-01-ricostruzioneTelegramService.md`
+- [ ] 9.1 Libreria: facade `Http`, nessun SDK
+- [ ] 9.2.1 Variabili `TELEGRAM_*` in `.env.example`, `.env` locale e di produzione
+- [ ] 9.2.2 `TelegramActionResult`
+- [ ] 9.2.3 `TelegramService` (chatId/messageId nullable, nessuna richiesta HTTP senza token)
+- [ ] 9.2.4 Test `TelegramServiceTest`
+- [ ] 9.2.5 Verifica: `cards:scan` esegue il job senza errori nel worker
 
-## Fase 4 — Catalogo carte e import
-- [X] 4.1 Bug: manca `use Schedule` in `routes/console.php`
-- [X] 4.2 Aggiungere FK `cards.expansion → expansions.expansion` (manca in migration)
-- [x] 4.3 Aspetti e tratti (modelli + pivot già fatti)
-- [x] 4.4 Relazioni nei modelli (già fatte)
-- [x] 4.5 Implementare `ImportCardsFromSwuApiJob` (verificare prima i nomi campo reali dell'API)
-- [x] 4.6 Download locale immagini carta (`CardImageDownloader`) + servire `storage/app/public` via nginx: alias `/storage/` in `docker/nginx/default.conf` e mount `./storage/app/public` sul servizio `nginx` di `docker-compose.dev.yml` e `docker-compose.yml` (niente `storage:link` in Docker)
-- [x] 4.7 Test Pest per il job di import
+## 02 — Allineamento schema, modelli e test (Fase 4ter) `implementationPlan-02-ricostruzioneAllineamentoSchema.md`
+- [ ] 4ter.1 Riscrivere le migration delle pivot con `card_id` (`card_aspect`, `card_trait`, `deck_cards`; oggi la colonna si chiama `id`, e `card_aspect` ha anche un `id()` duplicato)
+- [ ] 4ter.2 Aggiornare relazioni in `Card`, `Aspect`, `CardTrait`, `DeckCard`, `Deck::cards()`
+- [ ] 4ter.3 `migrate:fresh --seed`, verifica colonne, rifare la promozione ad admin
+- [ ] 4ter.4 Verificare `publishedAt` nel payload dell'import (altrimenti `release_date` = data dello scan)
+- [ ] 4ter.5 Riparare `ImportCardsFromSwuApiJobTest` (`Expansion::create` con `expansion`, helper `fakeSwuHttp`, conteggio richieste `card-list`)
 
-## Fase 4bis — Worker delle code (locale e produzione)
-- [X] 4bis.1 Servizio `worker` in `docker-compose.dev.yml` (`queue:work`, `restart: unless-stopped`)
-- [X] 4bis.2 Correggere il `worker` già presente in `docker-compose.yml` di produzione (IP nella subnet `172.23.0.0/24`, DB `my_swudb`/`swudb` come l'`app`, GRANT a mano sul DB di produzione) + aggiornare `new-site.sh` per i siti futuri; decisione aperta: `init.sql` separato per produzione
-- [X] 4bis.3 Verifica: worker attivo in locale e in produzione (`docker ps`)
-
-## Fase 5 — Log errori scan
-- [x] 5.1 Migration/model `SystemError` (già fatti)
+## 03 — Admin errori (Fase 5) `implementationPlan-03-ricostruzioneAdminErrori.md`
+- [x] 5.1 Migration e modello `SystemError`
 - [x] 5.2 Permesso `system.manage-errors`
-- 5.3 Pagina admin `/admin/errori`
-    - [x] Controller (resolved at valorized only when resolved, if ignored remains NULL, it don't have sense to set it because it will not be shown as resolved)
-    - [x] Rotte
-    - [x] Vista Lista
-    - [ ] Vista Dettaglio
-    
+- [x] 5.3.1 Controller (`resolved_at` valorizzato solo se risolto, ignorato resta NULL)
+- [x] 5.3.2 Rotte (`bulk` registrata prima di `{systemError}`)
+- [x] 5.3.3 Vista lista (funzionante ma grezza)
+- [x] 5.3.4 Vista dettaglio (esiste in versione grezza: da rifare con 5.4.10)
+- [x] 5.4.4 Link a `errors.show`
+- [x] 5.4.7 Voci di navigazione responsive
+- [ ] 5.4.1 Rinominare `flash-massage` → `flash-message`, sistemarne lo stile, aggiungere `status_level` dove manca
+- [ ] 5.4.2 Titoli nello slot `header`
+- [ ] 5.4.3 Bug `$error->stack` (colonna inesistente)
+- [ ] 5.4.5 Componente `<x-badge>` + `SystemError::statusColor()`
+- [ ] 5.4.6 Pulsanti (`<x-primary-button>` in `admin/users/edit`)
+- [ ] 5.4.8 Bug variabile `$errors` sovrascritta + rifacimento vista lista (incorpora 5.4.9 e 5.4.11)
+- [ ] 5.4.9 Paginazione nella lista errori
+- [ ] 5.4.10 Rifare la vista dettaglio
+- [ ] 5.4.11 Pulsanti di stato contestuali
+- [ ] 5.4.12 Tabelle e stile di `admin/users/*` (+ `<x-input-error>`)
+- [ ] 5.4.13 Evitare l'auto-lockout in `UserManagementController::update`
+- [ ] 5.5.1 Bug `context['error']` mancante nell'email admin
+- [ ] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione
+- [ ] 5.5.3 Decisione: volume degli errori "già presente" a ogni scan settimanale
+- [ ] 5.5.4 Test del rendering di `AdminScanReportEmail`
 
-## Fase 6 — Admin espansioni
-- [ ] 6.1 Permesso `expansions.manage`
-- [ ] 6.2 Pagina admin `/admin/espansioni`
+## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
+- [ ] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)
+- [ ] 6.2.1 Cast `legal_date`/`confirmed` su `Expansion`
+- [ ] 6.2.2 `ExpansionController`
+- [ ] 6.2.3 Rotte `/admin/espansioni`
+- [ ] 6.2.4 Vista `admin/expansions/index`
+- [ ] 6.3 Voce di navigazione (desktop e responsive)
+- [ ] 6.4 Verifica
 
-## Fase 7 — Gestione mazzi
-- [ ] Correggere `Deck::cards()` (chiave pivot sbagliata, `id` invece di `cid`)
-- [ ] Correggere `Deck::leader()`/`Deck::base()` (interrogano `Card` direttamente, sbagliato — via `deck_cards`/`cards.type`)
+## 05 — Catalogo pubblico e UI (Fase 10) `implementationPlan-05-ricostruzioneCatalogoPubblico.md`
+- [ ] 10.3 Rendere `layouts/navigation.blade.php` utilizzabile dagli ospiti (oggi legge `Auth::user()`), prerequisito delle pagine pubbliche
+- [ ] 10.1.1 `CardSearch`
+- [ ] 10.1.2 `CardController` (`index`, `show`)
+- [ ] 10.1.3 Rotte `cards.index`, `cards.show` (`/carte/{expansion}/{number}`)
+- [ ] 10.1.4 Cast su `Card` (`release_date`, `unique_card`)
+- [ ] 10.1.5 Vista lista carte (occhio al bug del campo nome non ripopolato)
+- [ ] 10.1.6 Vista dettaglio carta
+- [ ] 10.1.7 Voce di navigazione "Carte"
+- [ ] 10.4 Pagina "Nuove uscite" (`cards.new-releases`) + voce di navigazione
+- [ ] 10.5 Allineare `emails/new-cards.blade.php` ai nomi di rotta (`cards.new-releases`, `cards.show`)
+- [ ] 10.2 Statistiche mazzo (curva costi, tipi, tratti, medie) — **dopo il piano 07**
+
+## 06 — Mazzi, dominio (Fase 7a) `implementationPlan-06-ricostruzioneMazziDominio.md`
 - [ ] 7.1 Enum `DeckFormat` + cast su `Deck`
-- [ ] 7.3 Validator per formato (Premier/Eternal/TwinSuns)
-- [ ] 7.4 Factory validator
-- [ ] 7.5 `DeckPolicy`
-- [ ] 7.6 Pagine mazzi (crea/edit/index/versioni)
-- [ ] 7.7 Export/Import mazzi (verificare sintassi export ufficiale SWU)
+- [ ] 7.2 Sostituire `Deck::leader()`/`base()` con `leaders()`/`baseCard()` (oggi interrogano `Card` direttamente e con `'leader'` minuscolo)
+- [ ] 7.3 Validator per formato (Premier / Eternal / TwinSuns; allineamento dei leader di Twin Suns in sospeso)
+- [ ] 7.4 `DeckFormatValidatorFactory`
+- [ ] 7.5 `DeckPolicy` (`view` accetta anche gli ospiti)
 
-## Fase 8 — Collezione
-- [ ] 8.1 Modello/migration `collection_cards`
+## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md`
+- [ ] 7.6.1 Rotte mazzi
+- [ ] 7.6.2 `DeckController`
+- [ ] 7.6.3 Viste mazzi (index, create, edit, versions)
+- [ ] 7.6.4 Decisioni aperte: pagina pubblica di sola lettura dei mazzi, creazione di una nuova versione
+- [ ] 7.7 Export/Import mazzi (verificare la sintassi dell'export ufficiale SWU)
+
+## 08 — Collezione (Fase 8) `implementationPlan-08-ricostruzioneCollezione.md`
+- [ ] 8.1 Migration, modello `CollectionCard`, `Card::collectionCards()`
 - [ ] 8.2 Pagina `/collezione`
-- [ ] 8.3 "Carte mancanti per un mazzo" (`DeckGapCalculator`)
+- [ ] 8.3.1–8.3.3 `DeckGapCalculator` (per l'utente che guarda) e metodo `gap`
+- [ ] 8.3.4 Vista `decks/gap` con toggle carte mancanti / carte presenti
 
-## Fase 9 — Bot Telegram
-- [ ] 9.2 `TelegramService`
-- [ ] 9.3 Webhook (+ esenzione CSRF su `bootstrap/app.php`, + registrazione webhook via curl)
+## 09 — Bot Telegram, webhook (Fase 9b) `implementationPlan-09-ricostruzioneBotTelegramWebhook.md`
+- [ ] 9.3 Controller, rotta, esenzione CSRF in `bootstrap/app.php`, registrazione webhook via curl
 - [ ] 9.6 `NotifyAdminJob`
 
-## Fase 10 — UI/UX
-- [ ] 10.1 `CardSearch` + pagina `/carte` (occhio al bug del campo nome non ripopolato)
-- [ ] 10.2 Statistiche mazzo (curva costi, tipi, tratti, medie)
-- [ ] 10.3 Viste pubbliche/autenticate
-- [ ] 10.4 Pagina "Nuove uscite"
-
-## Fase 11 — API pubblica
-- [ ] 11.1 Sanctum
-- [ ] 11.2 Endpoint pubblici `/api/cards`, `/api/decks` (attenzione: nome mazzo non univoco per utente, valutare vincolo unique)
+## 10 — API pubblica (Fase 11) `implementationPlan-10-ricostruzioneApiPubblica.md`
+- [ ] 11.1 Sanctum (`install:api`)
+- [ ] 11.2 Endpoint pubblici `/api/cards`, `/api/decks` (nome mazzo non univoco: decidere l'URL stabile)
 - [ ] 11.4 API Resources (`CardResource`, `DeckResource`)
 
-## Fase 12 — Deploy
-- [x] Automatizzato: merge su branch `laravel` → pipeline fa il resto
-- [ ] Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato, immagini carta raggiungibili su `/storage/...`, container `_worker` `Up`
-- [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker` per i siti futuri
-- [ ] 12.2 Redeploy pulito a fine sviluppo (non ora): stop container → branch nuovo come default → commenta Action del vecchio sito → verifica `.env` del branch nuovo → cancella `~/sites/SWUDB` → rilancia `new-site.sh`
+## 11 — Deploy (Fase 12) `implementationPlan-11-ricostruzioneDeploy.md`
+- [x] Deploy automatizzato: merge su branch `laravel` → la pipeline fa il resto
+- [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker`
+- [ ] 12.1 Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato (serve anche `schedule:run`), immagini carta su `/storage/...`, icone su `/favicon.ico`, container `_worker` `Up`
+- [ ] 12.2.0 Verificare che il redeploy non sovrascriva le personalizzazioni di `Dockerfile`, `entrypoint.sh`, `nginx/default.conf`, `docker-compose.yml`
+- [ ] 12.2 Redeploy pulito a fine sviluppo (non ora): stop container → branch nuovo come default → commenta Action del vecchio sito → verifica `.env` → cancella `~/sites/SWUDB` → rilancia `new-site.sh`
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi

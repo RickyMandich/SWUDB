@@ -13,7 +13,7 @@ Sito: <https://unlimiteddb.mandich.dev>
 
 > **Questo README descrive il progetto così com'è oggi**, non come sarà a fine implementation plan.
 > Ciò che non funziona ancora è indicato esplicitamente ("Non ancora implementato"). La roadmap sta in
-> [`todo.md`](todo.md) e nel piano [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
+> [`todo.md`](todo.md) e negli implementation plan numerati, il cui indice e ordine di esecuzione sono in [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
 
 ## Stato attuale
 
@@ -24,19 +24,23 @@ Sito: <https://unlimiteddb.mandich.dev>
 - Pagina admin errori di sistema (`/admin/errori`): lista con filtro per stato, cambio stato singolo e bulk.
 - Comando `cards:scan` + `ImportCardsFromSwuApiJob` (import carte, espansioni, aspetti, tratti e download immagini),
   schedulato ogni lunedì 00:00 (vedi "Scansione carte").
-- Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}`.
+- Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}` (l'anteprima `new-cards` per ora dà errore: il template usa le rotte `cards.new-release` e `card.show`, che non esistono ancora; piano 05, Step 10.5).
+- Icone del sito (favicon, apple-touch-icon, manifest) generate dal `Dockerfile` da `public/icon-mine.svg` (vedi "Icone del sito").
 - Worker delle code (servizio `worker` nel compose di sviluppo).
 
 **Non ancora implementato / non funzionante**
 - `App\Services\TelegramService` **non esiste**, ma `ImportCardsFromSwuApiJob` lo usa (Fase 9.2 del `todo.md`):
   finché non viene creato il job fallisce appena parte, quindi anche `cards:scan`. Il bot Telegram (webhook,
   comandi, ricerca carte, `NotifyAdminJob`) non esiste.
-- Vista di dettaglio errore: rotta e controller ci sono, ma `resources/views/admin/errors/show.blade.php` è ancora vuota.
+- Vista di dettaglio errore: `resources/views/admin/errors/show.blade.php` esiste in una prima versione grezza (da rifinire, piano 03, Step 5.4.10).
+- Viste admin da sistemare (titolo nello slot `header`, lista errori con bug sulla variabile `$errors` e senza paginazione, componente flash con nome `flash-massage`): piano 03.
+- Email agli admin: `admin-scan-report` legge `context['error']`, assente negli errori "carta già presente", quindi la mail si rompe proprio nel caso più comune (piano 03, Step 5.5).
+- Schema: le tabelle pivot `card_aspect`, `card_trait` e `deck_cards` chiamano `id` la colonna che punta alla carta (i piani prevedono `card_id`): piano 02.
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
   validatore**. `Deck::cards()`, `Deck::leader()` e `Deck::base()` sono da correggere (vedi `todo.md`, Fase 7).
 - Collezione, admin espansioni (i dati di `expansions` si correggono solo a mano sul DB), ricerca carte,
   statistiche, API pubblica: non iniziati.
-- Nessuna pagina pubblica oltre alla `welcome` di default e alle pagine di autenticazione.
+- Nessuna pagina pubblica oltre alla `welcome` di default e alle pagine di autenticazione. `layouts/navigation.blade.php` legge `Auth::user()` senza controlli, quindi `<x-app-layout>` non è ancora utilizzabile dagli ospiti (piano 05, Step 10.3).
 - Nessun servizio scheduler nel compose di sviluppo: `cards:scan` parte da solo solo se qualcosa esegue
   `schedule:run`/`schedule:work` (in produzione da verificare, vedi Fase 12 del `todo.md`).
 
@@ -67,14 +71,14 @@ app/
   Services/CardImageDownloader.php    scarica le immagini carta in storage
 bash/                                 script di commit/versionamento/FTP (vedi "Versionamento")
 database/migrations, seeders          schema e PermissionSeeder
-docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql
+docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, icons/generate-icons.sh
 resources/views/                      viste Blade (admin/users, admin/errors, auth, profile, ...)
 routes/web.php, routes/console.php    rotte web e schedulazione
 tests/                                test Pest (Feature/Auth, Feature/Jobs, ProfileTest, ...)
 .agent/rules/*.md                     regole specifiche del progetto (da rispettare sempre)
 .env-overrides                        variabili NON sensibili tracciate in Git (versione app)
 todo.md                               roadmap/avanzamento
-implementationPlan-*.md               piani di implementazione (vedi "Convenzioni")
+implementationPlan-NN-*.md            piani di implementazione numerati, in ordine di esecuzione (indice: implementationPlan-ricostruzioneUnlimitedDB.md)
 ```
 
 ## Setup locale
@@ -105,6 +109,13 @@ generato sul server da `new-site.sh` (infrastruttura `mandich.dev`) e non sta in
 Gli asset Vite sono compilati nello stage `node-builder` del `Dockerfile` e l'`entrypoint.sh` li copia in
 `public/build` a ogni avvio del container `app`: basta `up -d --build` per averli aggiornati.
 In alternativa, fuori da Docker: `npm install && npm run dev`.
+
+### Icone del sito
+Le icone si generano da un unico file, `public/icon-mine.svg`. Lo stage `icon-builder` del `Dockerfile` esegue `docker/icons/generate-icons.sh` (librsvg + ImageMagick) e produce in `public/build/icons/`:
+`favicon-16x16.png`, `favicon-32x32.png`, `favicon.ico`, `apple-touch-icon.png` (180px, sfondo bianco), `android-chrome-192x192.png`, `android-chrome-512x512.png`, `site.webmanifest`.
+Viaggiano insieme agli asset Vite (stesso meccanismo di `/opt/build-assets`), quindi per cambiare l'icona basta modificare l'SVG e rifare `docker compose -f docker-compose.dev.yml up -d --build`.
+I `<link>` stanno in `resources/views/layouts/favicons.blade.php`, incluso da `layouts/app`, `layouts/guest` e `welcome`; nginx serve `/favicon.ico` da `build/icons`.
+Nome nel manifest, colore e sfondo Apple si cambiano con le variabili d'ambiente descritte in testa allo script.
 
 ### Primo utente admin
 Per promuovere un utente registrato al ruolo `admin`:
@@ -139,12 +150,12 @@ Migrazioni in `database/migrations`. Tabelle:
   admin); `group_main_expansion` (auto-riferimento all'espansione principale del gruppo; nullo per i set standalone).
   Il job crea le espansioni nuove con `rotation` = massima rotazione esistente e `legal_date` = data di pubblicazione
   dell'API (valori approssimativi da correggere a mano).
-- `cards`: PK composta (`expansion`, `number`) e `cid` univoco (`cardUid` dell'API); FK `expansion` →
-  `expansions.expansion`. Il modello `Card` usa `cid` come `$primaryKey` Eloquent (non supporta PK composite).
+- `cards`: PK `id` (stringa `"{expansion}{number}"`, es. `JTL256`, generata dal modello `Card`), `UNIQUE(expansion, number)` e `cid`
+  univoco (`cardUid` dell'API, chiave di lookup dell'import); FK `expansion` → `expansions.expansion`.
   `front_art_path`/`back_art_path` sono path relativi nel disk `public`.
-- `aspects` + `card_aspect`; `traits` (PK `name`) + `card_trait`: aspetti e tratti normalizzati.
+- `aspects` + `card_aspect`; `traits` (PK `name`) + `card_trait`: aspetti e tratti normalizzati. In queste pivot (e in `deck_cards`) la colonna che punta alla carta si chiama oggi `id`, non `card_id` (allineamento: piano 02).
 - `decks` (`user_id`, `name`, `format` premier/eternal/twin_suns, `is_public`, `assembled`, `version`,
-  `previous_version_id`) e `deck_cards` (PK `deck_id`+`cid`, `quantity`). Il ruolo Leader/Base non è una colonna:
+  `previous_version_id`) e `deck_cards` (PK `deck_id`+`id`, `quantity`). Il ruolo Leader/Base non è una colonna:
   si deduce da `cards.type`. Vedi "Non ancora implementato" per lo stato della funzionalità.
 - `system_errors`: `source`, `message`, `stack_trace`, `context` (json), `status` (`open`/`ignored`/`resolved`),
   `resolved_at` (valorizzato solo quando lo stato è `resolved`).
@@ -203,7 +214,7 @@ docker compose -f docker-compose.dev.yml exec app php artisan test
 ```
 
 Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`
-per il job di import.
+per il job di import; quest'ultimo oggi non gira (dipende da `TelegramService`, inesistente) e ha altri problemi da sistemare (piano 01 e piano 02, Step 4ter.5).
 
 ## Deploy
 
@@ -235,10 +246,11 @@ La versione sta in `.env-overrides` (`APP_VERSION_PRIMARY/SECONDARY/TERTIARY`). 
 - Flusso di lavoro per ogni modifica non banale:
   1. analisi e pianificazione;
   2. piano nella radice come `implementationPlan-{changeToBeDone}.md`, con ogni step spiegato in dettaglio
-     operativo (comandi esatti, codice, file da creare);
+     operativo (comandi esatti, codice, file da creare); i piani della ricostruzione sono numerati
+     (`implementationPlan-NN-...md`) nell'ordine in cui vanno eseguiti;
   3. esecuzione del piano;
   4. rinomina in `implementationPlan-V-{changeToBeDone}.md` per segnarlo come completato
-     (i file `implementationPlan-V-*.md` e `*.pdf` sono in `.gitignore`).
+     (per i piani numerati `implementationPlan-V-NN-...md`; i file `implementationPlan-V-*.md` e `*.pdf` sono in `.gitignore`).
   Per modifiche molto piccole il piano non serve.
 - Tenere aggiornato `todo.md` a specchio di ogni modifica.
 - **Il README va di pari passo con il codice effettivamente implementato**, non con quello solo pianificato: si
