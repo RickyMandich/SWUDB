@@ -73,9 +73,12 @@ class DeckController extends Controller
 }
 ```
 
-#### 11.2.4 — Decisione aperta: URL stabile dei mazzi
-`firstOrFail()` assume che la coppia (nome utente, nome mazzo) sia univoca, ma né `users.name` né `decks.name` hanno un vincolo `unique`: con due mazzi pubblici dello stesso utente con lo stesso nome la query ne prende uno arbitrario
-(e due utenti possono avere lo stesso nome). Per un URL davvero stabile: usare l'`id` del mazzo nell'URL pubblico, oppure aggiungere `unique(['user_id', 'name'])` alla migration `decks` e un identificatore univoco per l'utente.
+#### 11.2.4 — Risoluzione: URL stabile dei mazzi
+Confermata l'architettura adottata nel piano 07:
+- L'URL usa `{userName}/{deckName}`.
+- La combinazione è resa univoca per singolo utente tramite regola di unicità `unique(['user_id', 'name'])` (e query sull'ultima versione `latest('version')`).
+- Utenti diversi possono avere mazzi con lo stesso nome senza alcuna collisione.
+
 
 ### Step 11.3 — Endpoint autenticati
 Token Sanctum per azioni future (es. sync della collezione da un'app esterna). Non necessario al day 1.

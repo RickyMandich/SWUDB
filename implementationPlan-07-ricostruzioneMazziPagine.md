@@ -11,24 +11,38 @@
 ### Step 7.6 — Pagine mazzi
 
 #### 7.6.1 — Rotte
-In `routes/web.php`. L'ordine conta: `/mazzi/crea` deve stare **prima** di `/mazzi/{deck}`.
+In `routes/web.php`.
+Le rotte usano slug/identificativi leggibili `{username}/{deckname}` anziché ID numerici.
+Due utenti diversi possono avere mazzi con lo stesso nome (es. `/mazzo/alice/sabine-aggro` e `/mazzo/bob/sabine-aggro`).
+
 ```php
 use App\Http\Controllers\DeckController;
 
+// Creazione e lista mazzi
+Route::get('/mazzi', [DeckController::class, 'index'])->name('decks.index'); // pubblica: mazzi pubblici + propri se loggato
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/mazzi/crea', [DeckController::class, 'create'])->name('decks.create');
     Route::post('/mazzi', [DeckController::class, 'store'])->name('decks.store');
-    Route::get('/mazzi/{deck}', [DeckController::class, 'edit'])->name('decks.edit');
-    Route::post('/mazzi/{deck}/carte', [DeckController::class, 'addCard'])->name('decks.add-card');
-    Route::delete('/mazzi/{deck}/carte/{card}', [DeckController::class, 'removeCard'])->name('decks.remove-card');
-    Route::patch('/mazzi/{deck}/assembla', [DeckController::class, 'toggleAssembled'])->name('decks.toggle-assembled');
 });
-Route::get('/mazzi', [DeckController::class, 'index'])->name('decks.index'); // pubblica: mazzi pubblici + propri se loggato
-Route::get('/mazzi/{deck}/versioni', [DeckController::class, 'versions'])->name('decks.versions');
-```
-`{card}` nella rotta di rimozione fa route-model-binding su `Card` con la PK `id` (default del modello).
 
-#### 7.6.2 — Controller: metodi con logica non banale
+// Visualizzazione mazzo (pubblica se is_public, oppure proprietario)
+Route::get('/mazzo/{username}/{deckname}', [DeckController::class, 'show'])->name('decks.show');
+Route::get('/mazzo/{username}/{deckname}/versioni', [DeckController::class, 'versions'])->name('decks.versions');
+
+// Modifica mazzo e azioni di deck-building (solo proprietario)
+Route::middleware(['auth', 'verified'])->prefix('mazzo/modifica/{username}/{deckname}')->group(function () {
+    Route::get('/', [DeckController::class, 'edit'])->name('decks.edit');
+    Route::put('/carte', [DeckController::class, 'syncCards'])->name('decks.sync-cards'); // Flusso principale batch: aggiunge, aggiorna e rimuove in un'unica operazione
+    Route::post('/carte', [DeckController::class, 'addCard'])->name('decks.add-card'); // Singola aggiunta (fallback)
+    Route::delete('/carte/{card}', [DeckController::class, 'removeCard'])->name('decks.remove-card'); // Singola rimozione (fallback)
+    Route::patch('/assembla', [DeckController::class, 'toggleAssembled'])->name('decks.toggle-assembled');
+    Route::post('/versione', [DeckController::class, 'createVersion'])->name('decks.create-version');
+});
+```
+`{card}` nella rotta di rimozione fa route-model-binding su `Card` con la PK `id` (default del modello). Il salvataggio batch via `PUT /carte` rappresenta il flusso primario dall'interfaccia grafica.
+
+
+#### 7.6.2 — Controller: metodi con logica di business e risoluzione
 ```
 php artisan make:controller DeckController
 ```
@@ -36,16 +50,33 @@ php artisan make:controller DeckController
 use App\Enums\DeckFormat;
 use App\Models\Card;
 use App\Models\Deck;
+use App\Models\User;
 use App\Services\DeckValidation\DeckFormatValidatorFactory;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 /**
- * Lists public decks plus the logged-in user's own decks
+ * Risolve il mazzo dall'utente e dal nome mazzo (ultima versione attiva)
+ */
+protected function resolveDeck(string $username, string $deckname): Deck
+{
+    $user = User::where('name', $username)->firstOrFail();
+
+    return Deck::where('user_id', $user->id)
+        ->where('name', $deckname)
+        ->latest('version')
+        ->firstOrFail();
+}
+
+/**
  * Elenca i mazzi pubblici più quelli dell'utente loggato
  */
 public function index(): View
 {
-    $decks = Deck::with('leaders', 'baseCard') // eager load: anteprima nella lista senza N+1
+    $decks = Deck::with('leaders', 'baseCard', 'user') // eager load: anteprima nella lista senza N+1
         ->where('is_public', true)
         ->when(auth()->id(), fn ($q, $userId) => $q->orWhere('user_id', $userId))
         ->latest()
@@ -54,11 +85,22 @@ public function index(): View
     return view('decks.index', compact('decks'));
 }
 
+public function create(): View
+{
+    return view('decks.create');
+}
+
 public function store(Request $request): RedirectResponse
 {
     $validated = $request->validate([
-        'name' => ['required', 'string', 'max:255'],
+        'name' => [
+            'required',
+            'string',
+            'max:255',
+            Rule::unique('decks')->where(fn ($q) => $q->where('user_id', $request->user()->id)),
+        ],
         'format' => ['required', Rule::enum(DeckFormat::class)],
+        'is_public' => ['boolean'],
     ]);
 
     $deck = Deck::create([
@@ -66,14 +108,78 @@ public function store(Request $request): RedirectResponse
         'name' => $validated['name'],
         'format' => $validated['format'],
         'is_public' => $request->boolean('is_public'),
+        'version' => 1,
     ]);
 
-    return redirect()->route('decks.edit', $deck);
+    return redirect()->route('decks.edit', [
+        'username' => $request->user()->name,
+        'deckname' => $deck->name,
+    ]);
 }
 
-public function addCard(Request $request, Deck $deck): RedirectResponse
+/**
+ * Visualizzazione in sola lettura (accessibile se mazzo pubblico o se proprietario)
+ */
+public function show(string $username, string $deckname): View
 {
+    $deck = $this->resolveDeck($username, $deckname);
+    $this->authorize('view', $deck);
+
+    $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
+    $validationErrors = DeckFormatValidatorFactory::make($deck->format)->validate($deck);
+
+    return view('decks.show', compact('deck', 'validationErrors'));
+}
+
+/**
+ * Pagina di deck-building/modifica (riservata esclusivamente al proprietario)
+ */
+public function edit(string $username, string $deckname): View
+{
+    $deck = $this->resolveDeck($username, $deckname);
     $this->authorize('update', $deck);
+
+    $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
+
+    return view('decks.edit', compact('deck'));
+}
+
+/**
+ * Salvataggio batch delle carte del mazzo (flusso principale di modifica)
+ * Riceve l'elenco completo o delta delle carte, aggiunge/aggiorna quelle con quantity > 0
+ * e stacca (detach) quelle rimosse o con quantity = 0.
+ */
+public function syncCards(Request $request, string $username, string $deckname): RedirectResponse
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    $this->authorize('update', $deck);
+
+    $validated = $request->validate([
+        'cards' => ['nullable', 'array'],
+        'cards.*.card_id' => ['required_with:cards', 'exists:cards,id'],
+        'cards.*.quantity' => ['required_with:cards', 'integer', 'min:0'],
+    ]);
+
+    $syncData = collect($validated['cards'] ?? [])
+        ->filter(fn ($item) => (int) ($item['quantity'] ?? 0) > 0)
+        ->keyBy('card_id')
+        ->map(fn ($item) => ['quantity' => (int) $item['quantity']])
+        ->all();
+
+    $deck->cards()->sync($syncData);
+
+    $errors = DeckFormatValidatorFactory::make($deck->format)->validate($deck->fresh());
+
+    return redirect()->route('decks.edit', [$username, $deckname])
+        ->with('status', 'Modifiche al mazzo salvate con successo.')
+        ->with('deck-errors', $errors);
+}
+
+public function addCard(Request $request, string $username, string $deckname): RedirectResponse
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    $this->authorize('update', $deck);
+
     $validated = $request->validate([
         'card_id' => ['required', 'exists:cards,id'],
         'quantity' => ['required', 'integer', 'min:1'],
@@ -85,31 +191,65 @@ public function addCard(Request $request, Deck $deck): RedirectResponse
 
     $errors = DeckFormatValidatorFactory::make($deck->format)->validate($deck->fresh());
 
-    return back()->with('deck-errors', $errors); // warning non bloccanti nella vista: la carta resta comunque aggiunta
+    return back()->with('deck-errors', $errors);
 }
 
-public function removeCard(Deck $deck, Card $card): RedirectResponse
+public function removeCard(string $username, string $deckname, Card $card): RedirectResponse
 {
+    $deck = $this->resolveDeck($username, $deckname);
     $this->authorize('update', $deck);
+
     $deck->cards()->detach($card->id);
 
     return back();
 }
 
-public function toggleAssembled(Deck $deck): RedirectResponse
+public function toggleAssembled(string $username, string $deckname): RedirectResponse
 {
+    $deck = $this->resolveDeck($username, $deckname);
     $this->authorize('update', $deck);
+
     $deck->update(['assembled' => ! $deck->assembled]);
 
     return back();
 }
 
 /**
- * Lists the whole version chain the deck belongs to, oldest first
+ * Snapshot on-demand: crea una nuova versione (v2, v3...) clonando le carte del mazzo attuale
+ */
+public function createVersion(string $username, string $deckname): RedirectResponse
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    $this->authorize('update', $deck);
+
+    $newDeck = DB::transaction(function () use ($deck) {
+        $newVersion = $deck->replicate(['assembled']);
+        $newVersion->version = $deck->version + 1;
+        $newVersion->previous_version_id = $deck->id;
+        $newVersion->save();
+
+        // Snapshot delle sole ~25-30 righe di deck_cards
+        foreach ($deck->cards as $card) {
+            $newVersion->cards()->attach($card->id, [
+                'quantity' => $card->pivot->quantity,
+            ]);
+        }
+
+        return $newVersion;
+    });
+
+    return redirect()->route('decks.edit', [
+        'username' => $username,
+        'deckname' => $newDeck->name,
+    ])->with('status', "Nuova versione v{$newDeck->version} creata con successo.");
+}
+
+/**
  * Elenca l'intera catena di versioni a cui appartiene il mazzo, dalla più vecchia
  */
-public function versions(Deck $deck): View
+public function versions(string $username, string $deckname): View
 {
+    $deck = $this->resolveDeck($username, $deckname);
     $this->authorize('view', $deck);
 
     $chain = collect([$deck]);
@@ -120,25 +260,51 @@ public function versions(Deck $deck): View
         $chain->push($d->nextVersion);
     }
 
-    return view('decks.versions', ['decks' => $chain]);
+    return view('decks.versions', ['deck' => $deck, 'decks' => $chain]);
 }
 ```
-`create()` e `edit()` restituiscono solo la vista (`decks.create`, `decks.edit`); `edit()` fa prima `$this->authorize('update', $deck)`.
-La validazione è **informativa, non bloccante**: la vecchia versione permetteva di costruire un mazzo incompleto e vederne gli errori, non impediva il salvataggio riga per riga.
+La validazione del formato è **informativa, non bloccante**: permette di visualizzare gli errori e le incongruenze senza impedire il salvataggio incrementale della lista.
 
 #### 7.6.3 — Viste
 Tutte estendono `<x-app-layout>`, con titolo nello slot `header`.
-- `resources/views/decks/index.blade.php`: lista (stesso pattern tabella + paginazione delle pagine admin), anteprima di leader e base grazie all'eager load.
+- `resources/views/decks/index.blade.php`: lista (tabella + paginazione), anteprima di leader e base grazie all'eager load; link a `/mazzo/{username}/{deckname}`.
 - `resources/views/decks/create.blade.php`: form nuovo mazzo con `name`, `format` come `<select>` sui `case` di `DeckFormat` e checkbox `is_public`.
-- `resources/views/decks/edit.blade.php`: pagina di deck-building (la più complessa del progetto): carte nel mazzo con quantità, ricerca per aggiungerne (riusa `CardSearch`, Step 10.1), pulsanti
-  per `toggle-assembled` e per la rimozione di una riga, errori di `deck-errors` in un riquadro di warning. Estrarre la riga-carta in un componente (`<x-deck-card-row>`): lo stesso markup ricorre in `decks/gap.blade.php` (Fase 8).
-- `resources/views/decks/versions.blade.php`: elenco della catena di versioni (`$decks`) con link a ciascuna.
+- `resources/views/decks/show.blade.php`: vista di **sola lettura** pubblica (o del proprietario):
+  - Mostra leader, base, carte raggruppate per tipologia e costo, statistiche rapide.
+  - Eventuali warning di formato (`$validationErrors`).
+  - Se `@can('update', $deck)`: mostra pulsante in evidenza "Modifica mazzo" verso `route('decks.edit', [$deck->user->name, $deck->name])`.
+  - Link verso "Cronologia versioni" `route('decks.versions', [$deck->user->name, $deck->name])`.
+- `resources/views/decks/edit.blade.php`: pagina di **deck-building interattivo** (riservata al proprietario):
+  - **Flusso primario di modifica in batch**: form `<form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}">` con `@method('PUT')`.
+    - Consente all'utente di aggiungere e togliere N carte e regolarne le quantità all'interno della stessa schermata prima del salvataggio.
+    - Selettore/pulsanti `+` e `-` per ciascuna carta già presente, pulsante di rimozione riga (che rimuove l'elemento dal form o imposta la quantità a 0).
+    - Ricerca carte (`CardSearch`, Step 10.1): selezionando una carta dai risultati viene aggiunta una nuova riga alla bozza del mazzo.
+    - Tasto primario in evidenza **"Salva modifiche"** / **"Conferma modifiche"** (in testa e in coda alla lista) per inviare l'intero stato delle carte in un'unica richiesta atomica a `decks.sync-cards`.
+  - Componente `<x-deck-card-row>` per la riga-carta (riutilizzabile anche in `decks/gap.blade.php`).
+  - Errori e avvisi di formato in riquadro di alert non bloccante (`session('deck-errors')`).
+  - Pulsante secondario separato per `toggle-assembled` (`PATCH decks.toggle-assembled`).
+  - Pulsante secondario **"Crea nuova versione"** che invia una `POST` a `route('decks.create-version', [$deck->user->name, $deck->name])`.
+  - Le rotte atomiche singole (`decks.add-card` e `decks.remove-card`) restano implementate nel backend per interoperabilità e fallback, ma la UI è progettata attorno al salvataggio batch.
+- `resources/views/decks/versions.blade.php`: elenco cronologico delle versioni con badge della versione (`v1`, `v2`), data di creazione, stato (pubblico/privato, assemblato) e link alla consultazione.
 
-#### 7.6.4 — Decisioni aperte
-- **Pagina di sola lettura per i mazzi pubblici**: `GET /mazzi/{deck}` è la rotta di modifica e sta nel gruppo `auth`, quindi un mazzo pubblico di un altro utente compare in `decks.index` ma non si può aprire
-  (`authorize('update')` risponde 403). La policy `view` è già pronta per una rotta `decks.show` pubblica; non è prevista in nessun step, va decisa.
-- **Creazione di una nuova versione**: le colonne `version` e `previous_version_id` e le relazioni `previousVersion()`/`nextVersion()` esistono, ma nessuno step descrive come si crea una versione successiva
-  (duplicare il mazzo con `version + 1` e `previous_version_id` = mazzo corrente, incluse le righe di `deck_cards`?).
+#### 7.6.4 — Risoluzione decisioni di architettura mazzi
+
+##### 1. Rotte pulite e controllo degli accessi
+- **Formato URL**: `/mazzo/{username}/{deckname}` per la visualizzazione e `/mazzo/modifica/{username}/{deckname}` per l'editing.
+- **Supporto multi-utente**: utenti differenti possono avere mazzi con lo stesso nome (es. `Aggro Sabine`), poiché l'identificatore URL è contestualizzato all'`username`. Il database garantisce l'unicità del nome mazzo per singolo utente tramite `Rule::unique('decks')->where('user_id', $user->id)`.
+- **Policy di accesso**:
+  - `view`: autorizzata se `($deck->is_public || (auth()->check() && auth()->id() === $deck->user_id))`.
+  - `update`: autorizzata **esclusivamente** se l'utente possiede il mazzo (`auth()->id() === $deck->user_id`) o possiede il permesso admin `decks.manage-any`.
+
+##### 2. Strategia di versioning (Snapshot on-demand)
+- **Nessuna duplicazione nelle modifiche ordinarie**: durante il normale deck-building (aggiungere carte, cambiare quantità, togliere carte), le operazioni avvengono direttamente sulle righe di `deck_cards` del mazzo corrente. Non viene creata nessuna nuova versione ad ogni singola modifica.
+- **Nessuna ricostruzione storica complessa**: non si ricorre a complicati registri differenziali/event-sourcing (che renderebbero lento ed ostico ricostruire rimozioni di carte o fare eager loading Eloquent).
+- **Snapshot intenzionale esplicito**: quando l'utente vuole congelare una milestone (es. "v1 per il torneo", "v2 con nuove carte"), preme il pulsante "Crea nuova versione". Il sistema duplica il record `Deck` impostando `version = $old->version + 1` e `previous_version_id = $old->id`, e copia le ~25-30 righe di `deck_cards` (operazione da 1 millisecondo e <1KB). Ciascuna versione resta così un'entità indipendente, perfettamente queryabile, esportabile e visualizzabile.
+
+##### 3. Modifica in Batch vs Singola
+- Nella pagina di modifica le modifiche avvengono prevalentemente in batch: l'utente sperimenta, aggiunge o toglie liberamente carte, incrementa/decrementa quantità e poi consolida l'intero mazzo premendo "Salva modifiche" (`PUT /carte`).
+- I metodi singoli `addCard` e `removeCard` rimangono mantenuti nel controller e nelle rotte per completezza e compatibilità, ma non sono il flusso primario dell'interfaccia.
+
 
 ### Step 7.7 — Export/Import mazzi
 

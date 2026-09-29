@@ -93,7 +93,7 @@ Il modello si chiama `App\Models\CardTrait` perché `Trait` è una parola riserv
 |---|---|---|
 | `id` | bigint, PK | Un mazzo non ha un codice naturale stabile. |
 | `user_id` | FK `users.id` | |
-| `name` | string | Non univoco (vedi decisione aperta nel piano 10). |
+| `name` | string | Univoco per utente (piano 07/10: rotte `/mazzo/{username}/{deckname}`). |
 | `format` | enum SQL (`premier`, `eternal`, `twin_suns`), default `premier` | Cast a `DeckFormat` (piano 06). |
 | `is_public` | boolean, default `false` | |
 | `assembled` | boolean, default `false` | Se il mazzo è "montato" fisicamente: serve al calcolo delle carte impegnate altrove (piano 08). |

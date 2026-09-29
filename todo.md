@@ -64,7 +64,7 @@
 - [ ] 5.4.13 Evitare l'auto-lockout in `UserManagementController::update`
 - [ ] 5.5.1 Bug `context['error']` mancante nell'email admin
 - [ ] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione
-- [ ] 5.5.3 Decisione: volume degli errori "già presente" a ogni scan settimanale
+- [x] 5.5.3 Decisione chiusa: Opzione (a) — collection carte già presenti (espansione, numero) e report Telegram senza salvarle come SystemError
 - [ ] 5.5.4 Test del rendering di `AdminScanReportEmail`
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
@@ -97,10 +97,10 @@
 - [ ] 7.5 `DeckPolicy` (`view` accetta anche gli ospiti)
 
 ## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md`
-- [ ] 7.6.1 Rotte mazzi
-- [ ] 7.6.2 `DeckController`
-- [ ] 7.6.3 Viste mazzi (index, create, edit, versions)
-- [ ] 7.6.4 Decisioni aperte: pagina pubblica di sola lettura dei mazzi, creazione di una nuova versione
+- [ ] 7.6.1 Rotte mazzi (`/mazzo/{username}/{deckname}`, `/mazzo/modifica/...`)
+- [ ] 7.6.2 `DeckController` (con risoluzione deck, show pubblica/owner, edit owner, `syncCards` batch e `createVersion`)
+- [ ] 7.6.3 Viste mazzi (index, create, show di sola lettura, edit con deck-building batch e tasto salva, versions)
+- [x] 7.6.4 Decisioni chiuse: rotte contestuali all'utente, show per chi possiede/pubblico, edit per proprietario, versioning snapshot on-demand, salvataggio batch primario
 - [ ] 7.7 Export/Import mazzi (verificare la sintassi dell'export ufficiale SWU)
 
 ## 08 — Collezione (Fase 8) `implementationPlan-08-ricostruzioneCollezione.md`

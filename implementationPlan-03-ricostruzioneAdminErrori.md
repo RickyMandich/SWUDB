@@ -295,9 +295,22 @@ Salvare il messaggio:
 'context' => ['raw' => $cardData, 'error' => $e->getMessage()],
 ```
 
-#### 5.5.3 — Decisione aperta: volume degli errori "già presente"
-Ad ogni scan settimanale ogni carta già in database genera un `SystemError` con stato `ignored` e finisce nella mail agli admin (con migliaia di carte, migliaia di righe ogni lunedì).
-Da decidere, non c'è un default: (a) non salvare questi casi come errore ma solo contarli nel messaggio Telegram finale; (b) salvarli ma escluderli dalla mail se sono gli unici; (c) lasciare tutto com'è.
+#### 5.5.3 — Risoluzione: volume degli errori "già presente" (Opzione A adottata)
+**Decisione confermata: Opzione (a).**
+Ad ogni scan periodico, le carte già presenti nel database non devono essere salvate come `SystemError` (evitando di intasare la tabella `system_errors` con migliaia di righe a stato `ignored` e di gonfiare inutilmente il report email agli admin).
+- In `app/Jobs/ImportCardsFromSwuApiJob.php`:
+  - Rimuovere la chiamata a `SystemError::create(...)` nel ramo `else` di `! $existed`.
+  - Gestire una Collection in memoria (es. `$existingCards = collect()`) in cui inserire per ogni carta già presente una struttura con espansione e numero:
+    ```php
+    $existingCards->push([
+        'expansion' => $card->expansion,
+        'number' => $card->number,
+    ]);
+    ```
+    In questo modo si ha a disposizione sia il totale (`$existingCards->count()`), sia l'elenco esatto di quali carte erano già presenti nel DB.
+  - Riportare il numero di carte già presenti/aggiornate nel log di processo e nel messaggio riepilogativo di Telegram (`"Scan completato: X carte lette, Y nuove, Z già presenti/aggiornate, W errori"`), con la possibilità di ispezionare o loggare la collection se necessario.
+  - La tabella `system_errors` e l'invio dell'email admin vengono attivati esclusivamente in caso di veri errori o eccezioni (nel blocco `catch`).
+
 
 #### 5.5.4 — Test
 In `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` aggiungere un test che esegue lo scan con una carta già presente e verifica che il report si renderizzi:
