@@ -27,7 +27,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
     use Queueable, InteractsWithQueue, SerializesModels;
 
     public $tries = 3;
-    public $backoff = 60;
+    public $backoff = 180;
 
     public function handle(TelegramService $telegram, CardImageDownloader $imageDownloader): void
     {
@@ -37,8 +37,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         $newCards = collect();
         $errors   = collect();
         $page     = 1;
-
+        $lastPage = 'not yet readed';
+        
         do {
+            $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
                 'locale'                        => 'it',
                 'filters[variantOf][id][$null]' => 'true',
@@ -63,8 +65,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             foreach ($payload['data'] ?? [] as $cardEntry) {
                 $this->processCard($cardEntry['attributes'] ?? [], $lastestRotation, $imageDownloader, $newCards, $errors);
             }
-
-            $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
+            $telegram->editMessage($adminChatId, $progress->messageId, "Scan completato: pagina {$page}/{$lastPage}...");
             $page++;
         } while ($page <= $lastPage);
 
