@@ -22,6 +22,7 @@ class CardImageDownloader
      */
     public function download(string $sourceUrl, Card $card, string $side): ?string
     {
+        $response = null;
         // 1. Http::get($sourceUrl) -> se fallisce, ritorna null (il chiamante logga il SystemError)
         try {
             $response = Http::get($sourceUrl);
@@ -32,8 +33,8 @@ class CardImageDownloader
         } catch (ConnectionException $e) {
             SystemError::create([
                 'source' => CardImageDownloader::class,
-                'message' => "Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
-                'stack_trace' => $e->getTrace(),
+                'message' => "Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title}), returned code {{$response?->status()}}",
+                'stack_trace' => $e->getTraceAsString(),
                 'context' => ['source_url' => $sourceUrl, 'card' => $card, 'side' => $side],
             ]);
 

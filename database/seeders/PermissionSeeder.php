@@ -2,10 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -36,16 +33,5 @@ class PermissionSeeder extends Seeder
 
         $admin = Role::findOrCreate('admin');
         $admin->givePermissionTo($permissions);
-
-        $user = User::create(
-            [
-                'name' => 'RickyMandich',
-                'email' => 'ricky.mandich@gmail.com',
-                'password' => Hash::make('R1cc4rd0006'),
-            ]
-        )->assignRole($admin);
-
-        $user->email_verified_at = Carbon::now();
-        $user->save();
     }
 }

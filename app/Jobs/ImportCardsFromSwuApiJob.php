@@ -39,7 +39,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         $newCards = collect();
         $errors = collect();
-        $page = 1;
+        $page = 35;
         $lastPage = 'not yet readed';
         $cardPerPage = 40;
         $deltaProgress = $progress;
@@ -128,8 +128,6 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             Log::info("Processo carta {$cid}");
 
             $existed = Card::where('cid', $cid)->exists();
-
-            $this->createExpansionIfMissing($cardData, $lastestRotation);
             $convertType = function ($type) {
                 return match ($type) {
                     'Base' => 'Base',
@@ -144,6 +142,13 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     default => $type,
                 };
             };
+
+            if (str_contains($convertType($cardData['type']['data']['attributes']['name'] ?? null), 'Token')) {
+                $cardData['expansion']['data']['attributes']['code'] =
+                    "T{$cardData['expansion']['data']['attributes']['code']}";
+            }
+
+            $this->createExpansionIfMissing($cardData, $lastestRotation);
 
             $card = Card::updateOrCreate(
                 ['cid' => $cid],
@@ -165,9 +170,6 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'max_copies' => $cardData['cardNumber'] == 256 && $cardData['expansion']['data']['attributes']['code'] == 'JTL' ? 15 : null,
                 ]
             );
-            if (str_contains($card->type, 'Token')) {
-                $card->expansion = "T{$card->expansion}";
-            }
             $card->save();
             Log::info("Dati della carta {$cid} ('{$card->expansion}-{$card->number}') recuperati dall'api e record inserito/aggiornato, sincronizzazione altri dati in corso", ['card' => $card, 'cid' => $cid]);
 
@@ -179,11 +181,20 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             $this->downloadImages($card, $cardData, $imageDownloader);
 
         } catch (\Throwable $e) {
+            $espansione = $card->expansion ?? 'Espansione Mancante';
+            $numero = $card->number ?? 'Numero Mancante';
             $err = SystemError::create([
                 'source' => self::class,
-                'message' => "Errore su carta {$cid}".($cid ? '' : ' (cid mancante)'),
+                'message' => "Errore su carta {$cid} ({$espansione}-{$numero})",
                 'stack_trace' => $e->getTraceAsString(),
-                'context' => ['raw' => $cardData, 'error' => $e],
+                'context' => [
+                    'error_message' => $e->getMessage(),
+                    'error_line' => $e->getLine(),
+                    'error_code' => $e->getCode(),
+                    'error_file' => $e->getFile(),
+                    'error_trace_as_string' => $e->getTraceAsString(),
+                    'raw' => $cardData,
+                ],
             ]);
             $errors->push($err);
             throw $e;
