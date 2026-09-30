@@ -2,10 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
 {
@@ -29,7 +32,20 @@ class PermissionSeeder extends Seeder
             Permission::findOrCreate($permission);
         }
 
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         $admin = Role::findOrCreate('admin');
         $admin->givePermissionTo($permissions);
+
+        $user = User::create(
+            [
+                'name' => 'RickyMandich',
+                'email' => 'ricky.mandich@gmail.com',
+                'password' => Hash::make('R1cc4rd0006'),
+            ]
+        )->assignRole($admin);
+
+        $user->email_verified_at = Carbon::now();
+        $user->save();
     }
 }

@@ -19,68 +19,94 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 class ImportCardsFromSwuApiJob implements ShouldQueue
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 1;
+
     public $backoff = 180;
 
     public function handle(TelegramService $telegram, CardImageDownloader $imageDownloader): void
     {
         $adminChatId = config('services.telegram.admin_chat_id');
-        $progress    = $telegram->sendMessage($adminChatId, 'Scan avviato...');
+        $progress = $telegram->sendMessage($adminChatId, 'Scan avviato...');
+        Log::debug('message status', ['progress' => $progress]);
 
         $newCards = collect();
-        $errors   = collect();
-        $page     = 1;
+        $errors = collect();
+        $page = 1;
         $lastPage = 'not yet readed';
-        
+        $cardPerPage = 40;
+        $deltaProgress = $progress;
+        $firstRun = true;
+        Log::info('start cicle');
         do {
-            $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
+            $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
+            Log::info('message status', ['deltaProgress' => $deltaProgress]);
             Log::info("Scan in corso: pagina {$page}/{$lastPage}...");
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
-                'locale'                        => 'it',
+                'locale' => 'it',
                 'filters[variantOf][id][$null]' => 'true',
-                'fields'                        => ['cardUid', 'cardNumber', 'title', 'subtitle', 'unique', 'cost', 'hp', 'power', 'text', 'artist'],
-                'pagination[page]'              => $page,
-                'pagination[pageSize]'          => 40,
+                'fields' => ['cardUid', 'cardNumber', 'title', 'subtitle', 'unique', 'cost', 'hp', 'power', 'text', 'artist', 'publishedAt'],
+                'pagination[page]' => $page,
+                'pagination[pageSize]' => $cardPerPage,
             ]);
 
+            Log::info("finish api call of page {$page}/{$lastPage}");
+
             if ($response->failed()) {
-                SystemError::create([
-                    'source'  => self::class,
-                    'message' => "Pagina {$page}: richiesta API fallita ({$response->status()})",
-                    'context' => ['page' => $page, 'body' => $response->body()],
-                ]);
-                Log::warning("Pagina {$page}: richiesta API fallita ({$response})");
+                $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Pagina {$page}: richiesta API fallita ({$response->status()})");
+                Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                Log::warning("Pagina {$page}: richiesta API fallita ({$response->status()})");
                 break;
             }
 
+            $payload = $response->json();
+            $lastPage = $payload['meta']['pagination']['pageCount'] ?? $page;
+            $latestRotation = Expansion::max('rotation') ?? '0';
 
-            $payload         = $response->json();
-            $lastPage        = $payload['meta']['pagination']['pageCount'] ?? $page;
-            $lastestRotation = Expansion::max('rotation') ?? '0';
-
-            foreach ($payload['data'] ?? [] as $cardEntry) {
-                $this->processCard($cardEntry['attributes'] ?? [], $lastestRotation, $imageDownloader, $newCards, $errors);
+            Log::info("trovate pagine totali: {$lastPage}", ['lastPage' => $lastPage]);
+            if ($firstRun) {
+                $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
+                Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                $firstRun = false;
             }
-            $telegram->editMessage($adminChatId, $progress->messageId, "Scan completato: pagina {$page}/{$lastPage}...");
+            $currentCardOnPage = 1;
+            foreach ($payload['data'] ?? [] as $cardEntry) {
+                try {
+                    $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
+                    Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                    Log::info("Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
+
+                    $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $errors);
+                } catch (\Throwable $th) {
+                    Log::warning("errore nell'elaborazione della carta", ['raw' => $cardEntry, 'error' => $th]);
+                    $errors->push($th);
+
+                    continue;
+                } finally {
+                    $currentCardOnPage++;
+                }
+            }
+            $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan completato: pagina {$page}/{$lastPage}...");
+            Log::debug('message status', ['deltaProgress' => $deltaProgress]);
             Log::info("Scan completato: pagina {$page}/{$lastPage}...");
             $page++;
-        } while ($page <= $lastPage);
+        } while (is_int($lastPage) && $page <= $lastPage);
 
         $this->sendNotifications($newCards, $errors);
 
-        $telegram->editMessage(
+        $deltaProgress = $telegram->editMessage(
             $adminChatId,
             $progress->messageId,
             "Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi."
         );
+        Log::debug('message status', ['deltaProgress' => $deltaProgress]);
         Log::info("Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi.");
     }
 
@@ -94,35 +120,55 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         $cid = $cardData['cardUid'] ?? null;
 
         try {
-            if (!$cid) {
-                Log::warning("cardUid mancante nel payload", ['raw' => $cardData]);
+            if (! $cid) {
+                Log::warning('cardUid mancante nel payload', ['raw' => $cardData]);
                 throw new \RuntimeException('cardUid mancante nel payload');
             }
 
+            Log::info("Processo carta {$cid}");
+
             $existed = Card::where('cid', $cid)->exists();
 
-            $this->upsertExpansion($cardData, $lastestRotation);
+            $this->createExpansionIfMissing($cardData, $lastestRotation);
+            $convertType = function ($type) {
+                return match ($type) {
+                    'Base' => 'Base',
+                    'Evento' => 'Event',
+                    'Leader' => 'Leader',
+                    'Miglioria' => 'Upgrade',
+                    'Miglioria Segnalino' => 'TokenUpgrade',
+                    'Segnalino Credito' => 'CreditToken',
+                    'Segnalino Forza' => 'ForceToken',
+                    'Unità' => 'Unit',
+                    'Unità Segnalino' => 'TokenUnit',
+                    default => $type,
+                };
+            };
 
             $card = Card::updateOrCreate(
                 ['cid' => $cid],
                 [
-                    'expansion'    => $cardData['expansion']['data']['attributes']['code'] ?? null,
-                    'number'       => $cardData['cardNumber'],
-                    'unique_card'  => $cardData['unique'] ?? false,
-                    'name'         => $cardData['title'],
-                    'title'        => $cardData['subtitle'] ?? null,
-                    'type'         => $cardData['type']['data']['attributes']['value'] ?? null,
-                    'rarity'       => $cardData['rarity']['data']['attributes']['englishName'] ?? null,
-                    'cost'         => $cardData['cost'] ?? null,
-                    'health'       => $cardData['hp'] ?? null,
-                    'power'        => $cardData['power'] ?? null,
-                    'text'         => $cardData['text'] ?? '',
-                    'arena'        => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
-                    'artist'       => $cardData['artist'] ?? null,
+                    'expansion' => $cardData['expansion']['data']['attributes']['code'] ?? null,
+                    'number' => $cardData['cardNumber'],
+                    'unique_card' => $cardData['unique'] ?? false,
+                    'name' => $cardData['title'],
+                    'title' => $cardData['subtitle'] ?? null,
+                    'type' => $convertType($cardData['type']['data']['attributes']['name'] ?? null),
+                    'rarity' => $cardData['rarity']['data']['attributes']['name'] ?? null,
+                    'cost' => $cardData['cost'] ?? null,
+                    'health' => $cardData['hp'] ?? null,
+                    'power' => $cardData['power'] ?? null,
+                    'text' => $cardData['text'] ?? '',
+                    'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
+                    'artist' => $cardData['artist'] ?? null,
                     'release_date' => Carbon::parse($cardData['publishedAt'])->toDateString() ?? null,
-                    'max_copies'   => $cardData['cardNumber'] == 256 && $cardData['expansion']['data']['attributes']['code'] == 'JTL' ? 15 : null,
+                    'max_copies' => $cardData['cardNumber'] == 256 && $cardData['expansion']['data']['attributes']['code'] == 'JTL' ? 15 : null,
                 ]
             );
+            if (str_contains($card->type, 'Token')) {
+                $card->expansion = "T{$card->expansion}";
+            }
+            $card->save();
             Log::info("Dati della carta {$cid} ('{$card->expansion}-{$card->number}') recuperati dall'api e record inserito/aggiornato, sincronizzazione altri dati in corso", ['card' => $card, 'cid' => $cid]);
 
             if (! $existed) {
@@ -134,42 +180,47 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         } catch (\Throwable $e) {
             $err = SystemError::create([
-                'source'      => self::class,
-                'message'     => "Errore su carta {$cid}" . ($cid ? '' : ' (cid mancante)'),
+                'source' => self::class,
+                'message' => "Errore su carta {$cid}".($cid ? '' : ' (cid mancante)'),
                 'stack_trace' => $e->getTraceAsString(),
-                'context'     => ['raw' => $cardData, 'error' => $e],
+                'context' => ['raw' => $cardData, 'error' => $e],
             ]);
             $errors->push($err);
+            throw $e;
         }
         Log::info("Fine elaborazione carta {$cid}", ['card' => $card, 'cid' => $cid]);
     }
 
-    private function upsertExpansion(array $cardData, string $lastestRotation): void
+    private function createExpansionIfMissing(array $cardData, string $lastestRotation): void
     {
+        Log::info("inizio processo di creazione dell'espansione se manca");
         $expansionData = $cardData['expansion']['data']['attributes'] ?? null;
         $expansionCode = $expansionData['code'] ?? null;
 
-        if ($expansionCode) {
-            Expansion::firstOrCreate(
-                ['expansion' => $expansionCode],
+        if ($expansionCode && ! Expansion::where('expansion', $expansionCode)->exists()) {
+            Log::info("l'espansione non era presente: creazione dell'espansione {$expansionCode}", ['code' => $expansionCode]);
+            Expansion::create(
                 [
+                    'expansion' => $expansionCode,
                     'legal_date' => Carbon::parse($expansionData['publishedAt'])->toDateString(),
-                    'rotation'   => $lastestRotation,
+                    'rotation' => $lastestRotation,
                 ]
             );
         }
+        Log::info("fine processo di creazione dell'espansione se manca");
     }
 
     private function syncAspectsAndTraits(Card $card, array $cardData): void
     {
         $aspectIds = collect($cardData['aspects']['data'] ?? [])->map(function ($aspectEntry) {
             $attr = $aspectEntry['attributes'];
+
             return Aspect::updateOrCreate(
                 ['name' => $attr['name']],
                 [
                     'color' => $attr['color'] ?? null,
                     'order' => $attr['sortValue'] ?? Aspect::max('order') + 1,
-                    'slug'  => Str::slug($attr['englishName'] ?? $attr['name']),
+                    'slug' => Str::slug($attr['englishName'] ?? $attr['name']),
                 ]
             )->id;
         });
@@ -187,20 +238,17 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             ?? null;
 
         if ($frontUrl && ! $card->front_art_path) {
-            $path = $imageDownloader->download($frontUrl, $card->expansion, $card->number, 'front');
-            $path ? $card->update(['front_art_path' => $path]) : SystemError::create([
-                'source'  => CardImageDownloader::class,
-                'message' => "Download immagine davanti fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
-            ]);
+            $path = $imageDownloader->download($frontUrl, $card, 'front');
+            $path ? $card->update(['front_art_path' => $path]) : null;
         }
 
         $backAttrs = $cardData['artBack']['data']['attributes'] ?? null;
-        $backUrl   = $backAttrs['url'] ?? $backAttrs['formats']['card']['url'] ?? null;
+        $backUrl = $backAttrs['url'] ?? $backAttrs['formats']['card']['url'] ?? null;
 
         if ($backUrl && ! $card->back_art_path) {
-            $path = $imageDownloader->download($backUrl, $card->expansion, $card->number, 'back');
+            $path = $imageDownloader->download($backUrl, $card, 'back');
             $path ? $card->update(['back_art_path' => $path]) : SystemError::create([
-                'source'  => CardImageDownloader::class,
+                'source' => CardImageDownloader::class,
                 'message' => "Download immagine retro fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
             ]);
         }
