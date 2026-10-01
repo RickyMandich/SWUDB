@@ -121,6 +121,8 @@
 ## 11 — Deploy (Fase 12) `implementationPlan-11-ricostruzioneDeploy.md`
 - [x] Deploy automatizzato: merge su branch `laravel` → la pipeline fa il resto
 - [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker`
+- [ ] 12.0.1 Fix produzione: installare `supervisor` nell'immagine (`apk add supervisor` nel `Dockerfile`), altrimenti il container `unlimiteddb_worker` va in loop con `supervisord: not found`
+- [ ] 12.0.2 Fix produzione: nel servizio `nginx` di `docker-compose.yml` montare `build_assets` su `/var/www/html/public/build:ro` (oggi su `public_build`, path che nginx non serve) → ripristina CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`)
 - [ ] 12.1 Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato (serve anche `schedule:run`), immagini carta su `/storage/...`, icone su `/favicon.ico`, container `_worker` `Up`
 - [ ] 12.2.0 Verificare che il redeploy non sovrascriva le personalizzazioni di `Dockerfile`, `entrypoint.sh`, `nginx/default.conf`, `docker-compose.yml`
 - [ ] 12.2 Redeploy pulito a fine sviluppo (non ora): stop container → branch nuovo come default → commenta Action del vecchio sito → verifica `.env` → cancella `~/sites/SWUDB` → rilancia `new-site.sh`

@@ -39,7 +39,7 @@ RUN sed -i 's/\r$//' /usr/local/bin/generate-icons.sh \
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache \
-    libpng-dev libzip-dev libxml2-dev oniguruma-dev \
+    libpng-dev libzip-dev libxml2-dev oniguruma-dev supervisor \
     && docker-php-ext-install pdo_mysql mbstring bcmath xml gd zip
 
 WORKDIR /var/www/html
