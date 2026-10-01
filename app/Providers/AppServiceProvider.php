@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Source - https://stackoverflow.com/a/51819095
+        // Posted by Amitesh Bharti, modified by community. See post 'Timeline' for change history
+        // Retrieved 2026-10-01, License - CC BY-SA 4.0
+        if ($this->app->environment('production')) {
+            \URL::forceScheme('https');
+        }
     }
 }
