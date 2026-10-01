@@ -39,7 +39,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         $newCards = collect();
         $errors = collect();
-        $page = 35;
+        $page = 1;
         $lastPage = 'not yet readed';
         $cardPerPage = 40;
         $deltaProgress = $progress;
