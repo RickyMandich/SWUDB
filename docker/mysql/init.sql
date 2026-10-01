@@ -1,3 +1,3 @@
-CREATE USER IF NOT EXISTS 'unlimiteddb'@'172.23.0.%' IDENTIFIED BY '';
-GRANT ALL PRIVILEGES ON unlimiteddb.* TO 'unlimiteddb'@'172.23.0.%';
+CREATE USER IF NOT EXISTS 'laravel'@'172.22.0.%' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON unlimiteddb.* TO 'laravel'@'172.22.0.%';
 FLUSH PRIVILEGES;
