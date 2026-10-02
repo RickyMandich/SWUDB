@@ -48,6 +48,10 @@ class UserManagementController extends Controller
             'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
+        if ($user->is($request->user()) && ! in_array('admin', $validated['roles'] ?? [], true)) {
+            return back()->withErrors(['roles' => 'Non puoi togliere a te stesso il ruolo admin.']);
+        }
+
         $user->syncRoles($validated['roles'] ?? []);
         $user->syncPermissions($validated['permissions'] ?? []);
 
