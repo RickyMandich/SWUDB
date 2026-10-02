@@ -4,20 +4,21 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::create('card_trait', function (Blueprint $table) {
-            $table->string('id');
+            $table->string('card_id', 20);
             $table->string('trait_name');
-            $table->foreign('id')->references('id')->on('cards')->cascadeOnDelete();
-            $table->foreign('trait_name')->references('name')->on('traits')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->primary(['id', 'trait_name']);
+            $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete();
+            $table->foreign('trait_name')->references('name')->on('traits')->cascadeOnDelete();
+            $table->primary(['card_id', 'trait_name']);
         });
     }
 

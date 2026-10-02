@@ -15,11 +15,11 @@ class UserManagementController extends Controller
     /**
      * Lists every user with their assigned roles, for the admin overview table
      * Elenca tutti gli utenti con i loro ruoli assegnati, per la tabella di riepilogo admin
-     * @return View
      */
     public function index(): View
     {
         $users = User::with('roles')->orderBy('name')->paginate(20);
+
         return view('admin.users.index', compact('users'));
     }
 
@@ -36,9 +36,9 @@ class UserManagementController extends Controller
     }
 
     /**
-    * Overwrites the user's roles and direct permissions with whatever was checked in the form
-    * Sovrascrive ruoli e permessi diretti dell'utente con quanto selezionato nel form
-    */
+     * Overwrites the user's roles and direct permissions with whatever was checked in the form
+     * Sovrascrive ruoli e permessi diretti dell'utente con quanto selezionato nel form
+     */
     public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
@@ -51,6 +51,7 @@ class UserManagementController extends Controller
         $user->syncRoles($validated['roles'] ?? []);
         $user->syncPermissions($validated['permissions'] ?? []);
 
-        return redirect()->route('admin.users.index')->with('status', 'Utente aggiornato.');
+        return redirect()->route('admin.users.index')->with('status', 'Utente aggiornato.')
+            ->with('status_level', 'success');
     }
 }

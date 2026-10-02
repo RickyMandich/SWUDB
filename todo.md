@@ -28,12 +28,12 @@
 - [x] 4bis.3 Worker attivo in locale e in produzione
 
 ## 01 — TelegramService (Fase 9a) — bloccante per lo scan `implementationPlan-01-ricostruzioneTelegramService.md`
-- [ ] 9.1 Libreria: facade `Http`, nessun SDK
-- [ ] 9.2.1 Variabili `TELEGRAM_*` in `.env.example`, `.env` locale e di produzione
-- [ ] 9.2.2 `TelegramActionResult`
-- [ ] 9.2.3 `TelegramService` (chatId/messageId nullable, nessuna richiesta HTTP senza token)
-- [ ] 9.2.4 Test `TelegramServiceTest`
-- [ ] 9.2.5 Verifica: `cards:scan` esegue il job senza errori nel worker
+- [X] 9.1 Libreria: facade `Http`, nessun SDK
+- [X] 9.2.1 Variabili `TELEGRAM_*` in `.env.example`, `.env` locale e di produzione
+- [X] 9.2.2 `TelegramActionResult`
+- [X] 9.2.3 `TelegramService` (chatId/messageId nullable, nessuna richiesta HTTP senza token)
+- [X] 9.2.4 Test `TelegramServiceTest`
+- [X] 9.2.5 Verifica: `cards:scan` esegue il job senza errori nel worker
 
 ## 02 — Allineamento schema, modelli e test (Fase 4ter) `implementationPlan-02-ricostruzioneAllineamentoSchema.md`
 - [ ] 4ter.1 Riscrivere le migration delle pivot con `card_id` (`card_aspect`, `card_trait`, `deck_cards`; oggi la colonna si chiama `id`, e `card_aspect` ha anche un `id()` duplicato)

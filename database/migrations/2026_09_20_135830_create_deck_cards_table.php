@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -12,12 +13,12 @@ return new class extends Migration {
     {
         Schema::create('deck_cards', function (Blueprint $table) {
             $table->foreignId('deck_id')->constrained()->cascadeOnDelete();
-            $table->string('id');
-            $table->foreign('id')->references('id')->on('cards')->cascadeOnDelete();
+            $table->string('card_id', 20);
             $table->unsignedTinyInteger('quantity');
             $table->timestamps();
 
-            $table->primary(['deck_id', 'id']);
+            $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete();
+            $table->primary(['deck_id', 'card_id']);
         });
     }
 

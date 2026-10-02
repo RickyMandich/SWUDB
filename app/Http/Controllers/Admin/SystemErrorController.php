@@ -40,7 +40,8 @@ class SystemErrorController extends Controller
             'resolved_at' => $validated['status'] === SystemError::STATUS_RESOLVED ? now() : null,
         ]);
 
-        return back()->with('status', 'Errore aggiornato.');
+        return back()->with('status', 'Errore aggiornato.')
+            ->with('status_level', 'success');
     }
 
     /**

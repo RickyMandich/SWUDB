@@ -12,7 +12,7 @@ class DeckCard extends Pivot
 
     protected $fillable = [
         'deck_id',
-        'id',
+        'card_id',
         'quantity',
     ];
 
@@ -22,7 +22,7 @@ class DeckCard extends Pivot
 
     public function card()
     {
-        return $this->belongsTo(Card::class, 'id', 'id');
+        return $this->belongsTo(Card::class, 'card_id', 'id');
     }
 
     public function deck()

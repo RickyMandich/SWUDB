@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Aspect extends Model
 {
     protected $table = 'aspects';
+
     protected $fillable = [
         'name',
         'slug',
@@ -16,6 +17,6 @@ class Aspect extends Model
 
     public function cards()
     {
-        return $this->belongsToMany(Card::class, 'card_aspect', 'aspect_id', 'id');
+        return $this->belongsToMany(Card::class, 'card_aspect', 'aspect_id', 'card_id');
     }
 }

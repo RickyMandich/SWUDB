@@ -33,7 +33,7 @@ Ordine consigliato: prima i bug (5.4.3, 5.4.8, 5.4.9), poi i componenti (5.4.1, 
 Stato di ogni punto: 5.4.4 e 5.4.7 sono già fatti, gli altri sono da fare.
 
 #### 5.4.1 — Rinominare e sistemare `<x-flash-message>`
-Il componente esiste ma il file si chiama **`flash-massage.blade.php`** (refuso), quindi si usa come `<x-flash-massage />`. Rinominarlo (`git mv resources/views/components/flash-massage.blade.php resources/views/components/flash-message.blade.php`)
+Il componente esiste ma il file si chiama **`flash-massage.blade.php`** (refuso), quindi si usa come `<x-flash-message />`. Rinominarlo (`git mv resources/views/components/flash-massage.blade.php resources/views/components/flash-message.blade.php`)
 e sostituire il contenuto: oggi il testo non ha padding né colore, quindi su sfondo colorato è illeggibile.
 ```blade
 {{-- resources/views/components/flash-message.blade.php --}}
@@ -51,7 +51,7 @@ e sostituire il contenuto: oggi il testo non ha padding né colore, quindi su sf
     </div>
 @endif
 ```
-Poi sostituire `<x-flash-massage />` con `<x-flash-message />` in `admin/users/index.blade.php` e `admin/errors/index.blade.php`. Aggiungere `->with('status_level', 'success')` anche in
+Poi sostituire `<x-flash-message />` con `<x-flash-message />` in `admin/users/index.blade.php` e `admin/errors/index.blade.php`. Aggiungere `->with('status_level', 'success')` anche in
 `SystemErrorController::update()` e in `UserManagementController::update()` (oggi solo `bulkUpdate()` lo imposta, gli altri mostrano il flash in blu).
 
 #### 5.4.2 — Titolo nello slot `header`

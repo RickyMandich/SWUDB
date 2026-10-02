@@ -23,7 +23,7 @@ class Deck extends Model
 
     public function cards()
     {
-        return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'id', 'id', 'id')
+        return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'card_id')
             ->using(DeckCard::class)
             ->withPivot('quantity')
             ->withTimestamps();
@@ -35,6 +35,7 @@ class Deck extends Model
             return $this->hasMany(Card::class)
                 ->where('type', 'leader');
         }
+
         return $this->hasOne(Card::class)
             ->where('type', 'leader');
     }

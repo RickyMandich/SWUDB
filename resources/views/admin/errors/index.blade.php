@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-flash-massage />
+    <x-flash-message />
     <form method="GET" action="{{ route('admin.errors.index') }}" class="mb-4 flex gap-4">
         <select name="status" onchange="this.form.submit()">
             <option value="">Tutti</option>

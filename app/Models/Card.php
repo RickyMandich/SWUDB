@@ -12,8 +12,11 @@ class Card extends Model
      * @var string
      */
     protected $table = 'cards';
+
     protected $primaryKey = 'id';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected static function booted(): void
@@ -22,6 +25,7 @@ class Card extends Model
             $card->id = "{$card->expansion}{$card->number}";
         });
     }
+
     protected $fillable = [
         'expansion',
         'number',
@@ -50,17 +54,17 @@ class Card extends Model
 
     public function aspects()
     {
-        return $this->belongsToMany(Aspect::class, 'card_aspect', 'id', 'aspect_id');
+        return $this->belongsToMany(Aspect::class, 'card_aspect', 'card_id', 'aspect_id');
     }
 
     public function traits()
     {
-        return $this->belongsToMany(CardTrait::class, 'card_trait', 'id', 'trait_name');
+        return $this->belongsToMany(CardTrait::class, 'card_trait', 'card_id', 'trait_name');
     }
 
     public function decks()
     {
-        return $this->belongsToMany(Deck::class, 'deck_cards', 'id', 'deck_id', 'id', 'id')
+        return $this->belongsToMany(Deck::class, 'deck_cards', 'card_id', 'deck_id')
             ->using(DeckCard::class)
             ->withPivot('quantity')
             ->withTimestamps();

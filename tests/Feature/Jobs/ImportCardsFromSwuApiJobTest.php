@@ -1,8 +1,8 @@
 <?php
 
 use App\Jobs\ImportCardsFromSwuApiJob;
-use App\Mail\NewCardsEmail;
 use App\Mail\AdminScanReportEmail;
+use App\Mail\NewCardsEmail;
 use App\Models\Card;
 use App\Models\Expansion;
 use App\Models\SystemError;
@@ -10,26 +10,37 @@ use App\Services\CardImageDownloader;
 use App\Services\TelegramService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 // Fixture minima ma fedele alla struttura reale confermata su test.json (Strapi: data[].attributes,
 // relazioni annidate come attributes.expansion.data.attributes.code). Un helper tipo cardFixture(['cardUid' => ...])
 // che parta da questo scheletro e sovrascriva solo i campi che cambiano evita di ripeterlo in ogni test.
+
+/** Simula l'API SWU e risponde con un PNG finto a qualunque altro URL (immagini CDN). */
+function fakeSwuHttp($cardListResponse): void
+{
+    Storage::fake('public');
+    Http::fake([
+        'admin.starwarsunlimited.com/api/card-list*' => $cardListResponse,
+        '*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png']),
+    ]);
+}
 function fakeCardEntry(array $overrides = []): array
 {
     static $base = null;
 
     if ($base === null) {
-        $json    = \Illuminate\Support\Facades\Storage::disk('local')->get('api-example-result.json');
-        $all     = json_decode($json, true);
-        $first   = reset($all);           // primo URL come chiave
-        $base    = $first['data'][0];     // prima card: Luke Skywalker (id 7)
+        $json = Storage::disk('local')->get('api-example-result.json');
+        $all = json_decode($json, true);
+        $first = reset($all);           // primo URL come chiave
+        $base = $first['data'][0];     // prima card: Luke Skywalker (id 7)
     }
 
     return array_replace_recursive($base, $overrides);
 }
 
 it('crea le carte nuove ricevute dall\'API', function () {
-    Http::fake([
+    fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
             'data' => [
                 fakeCardEntry(),
@@ -40,28 +51,28 @@ it('crea le carte nuove ricevute dall\'API', function () {
     ]);
     Mail::fake();
 
-    (new ImportCardsFromSwuApiJob())->handle(app(TelegramService::class), app(CardImageDownloader::class));
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
 
     expect(Card::count())->toBe(2);
     Mail::assertQueued(NewCardsEmail::class);
 });
 
 it('pagina correttamente su piu\' pagine', function () {
-    Http::fake([
+    fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::sequence()
             ->push(['data' => [fakeCardEntry()], 'meta' => ['pagination' => ['pageCount' => 2]]])
             ->push(['data' => [fakeCardEntry(['attributes' => ['cardUid' => '1111111111', 'cardNumber' => 12]])], 'meta' => ['pagination' => ['pageCount' => 2]]]),
     ]);
     Mail::fake();
 
-    (new ImportCardsFromSwuApiJob())->handle(app(TelegramService::class), app(CardImageDownloader::class));
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
 
-    Http::assertSentCount(2);
+    expect(Http::recorded(fn ($request) => str_contains($request->url(), 'card-list')))->toHaveCount(2);
     expect(Card::count())->toBe(2);
 });
 
 it('registra un SystemError su dati malformati invece di fermare lo scan', function () {
-    Http::fake([
+    fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
             'data' => [['id' => 1, 'attributes' => ['cardUid' => null /* campo obbligatorio mancante, forza l\'eccezione */]]],
             'meta' => ['pagination' => ['pageCount' => 1]],
@@ -69,26 +80,26 @@ it('registra un SystemError su dati malformati invece di fermare lo scan', funct
     ]);
     Mail::fake();
 
-    (new ImportCardsFromSwuApiJob())->handle(app(TelegramService::class), app(CardImageDownloader::class));
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
 
     expect(SystemError::count())->toBeGreaterThan(0);
 });
 
 it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', function () {
     Expansion::create([
-        'code'     => 'SOR',
+        'expansion' => 'SOR',
         'rotation' => '0',
     ]);
     // gia' presente, l'API la rispedisce
     Card::create([
-        'cid'      => '2579145458',
+        'cid' => '2579145458',
         'expansion' => 'SOR',
-        'number'   => 5,
+        'number' => 5,
         'name' => 'Luke Skywalker',
         'type' => 'Leader',
         'rarity' => 'Special',
     ]);
-    Http::fake([
+    fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
             'data' => [fakeCardEntry()],
             'meta' => ['pagination' => ['pageCount' => 1]],
@@ -96,7 +107,7 @@ it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', func
     ]);
     Mail::fake();
 
-    (new ImportCardsFromSwuApiJob())->handle(app(TelegramService::class), app(CardImageDownloader::class));
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
 
     Mail::assertQueued(AdminScanReportEmail::class);
 });
