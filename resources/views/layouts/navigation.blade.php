@@ -63,6 +63,15 @@
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
                         </form>
+
+
+
+                        <!-- Log viewer -->
+                        @can('log.viewer')
+                            <x-dropdown-link :href="route('log-viewer.index')">
+                                {{ __('Log viewer') }}
+                            </x-dropdown-link>
+                        @endcan
                     </x-slot>
 
                 </x-dropdown>

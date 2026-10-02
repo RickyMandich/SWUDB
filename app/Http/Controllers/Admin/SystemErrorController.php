@@ -14,12 +14,12 @@ class SystemErrorController extends Controller
     {
         $status = $request->query('status'); // 'open' | 'resolved' | 'ignored' | null (tutti)
 
-        $errors = SystemError::when($status, fn ($q) => $q->where('status', $status))
+        $systemErrors = SystemError::when($status, fn ($q) => $q->where('status', $status))
             ->latest()
             ->paginate(30)
             ->withQueryString(); // mantiene il filtro ?status= nei link di paginazione
 
-        return view('admin.errors.index', compact('errors', 'status'));
+        return view('admin.errors.index', compact('systemErrors', 'status'));
     }
 
     public function show(SystemError $systemError): View

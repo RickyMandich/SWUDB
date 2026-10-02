@@ -36,11 +36,11 @@
 - [X] 9.2.5 Verifica: `cards:scan` esegue il job senza errori nel worker
 
 ## 02 — Allineamento schema, modelli e test (Fase 4ter) `implementationPlan-02-ricostruzioneAllineamentoSchema.md`
-- [ ] 4ter.1 Riscrivere le migration delle pivot con `card_id` (`card_aspect`, `card_trait`, `deck_cards`; oggi la colonna si chiama `id`, e `card_aspect` ha anche un `id()` duplicato)
-- [ ] 4ter.2 Aggiornare relazioni in `Card`, `Aspect`, `CardTrait`, `DeckCard`, `Deck::cards()`
-- [ ] 4ter.3 `migrate:fresh --seed`, verifica colonne, rifare la promozione ad admin
-- [ ] 4ter.4 Verificare `publishedAt` nel payload dell'import (altrimenti `release_date` = data dello scan)
-- [ ] 4ter.5 Riparare `ImportCardsFromSwuApiJobTest` (`Expansion::create` con `expansion`, helper `fakeSwuHttp`, conteggio richieste `card-list`)
+- [X] 4ter.1 Riscrivere le migration delle pivot con `card_id` (`card_aspect`, `card_trait`, `deck_cards`; oggi la colonna si chiama `id`, e `card_aspect` ha anche un `id()` duplicato)
+- [X] 4ter.2 Aggiornare relazioni in `Card`, `Aspect`, `CardTrait`, `DeckCard`, `Deck::cards()`
+- [X] 4ter.3 `migrate:fresh --seed`, verifica colonne, rifare la promozione ad admin
+- [X] 4ter.4 Verificare `publishedAt` nel payload dell'import (altrimenti `release_date` = data dello scan)
+- [X] 4ter.5 Riparare `ImportCardsFromSwuApiJobTest` (`Expansion::create` con `expansion`, helper `fakeSwuHttp`, conteggio richieste `card-list`)
 
 ## 03 — Admin errori (Fase 5) `implementationPlan-03-ricostruzioneAdminErrori.md`
 - [x] 5.1 Migration e modello `SystemError`
@@ -51,9 +51,9 @@
 - [x] 5.3.4 Vista dettaglio (esiste in versione grezza: da rifare con 5.4.10)
 - [x] 5.4.4 Link a `errors.show`
 - [x] 5.4.7 Voci di navigazione responsive
-- [ ] 5.4.1 Rinominare `flash-massage` → `flash-message`, sistemarne lo stile, aggiungere `status_level` dove manca
-- [ ] 5.4.2 Titoli nello slot `header`
-- [ ] 5.4.3 Bug `$error->stack` (colonna inesistente)
+- [X] 5.4.1 Rinominare `flash-massage` → `flash-message`, sistemarne lo stile, aggiungere `status_level` dove manca
+- [X] 5.4.2 Titoli nello slot `header`
+- [X] 5.4.3 Bug `$error->stack` (colonna inesistente)
 - [ ] 5.4.5 Componente `<x-badge>` + `SystemError::statusColor()`
 - [ ] 5.4.6 Pulsanti (`<x-primary-button>` in `admin/users/edit`)
 - [ ] 5.4.8 Bug variabile `$errors` sovrascritta + rifacimento vista lista (incorpora 5.4.9 e 5.4.11)

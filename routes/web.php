@@ -9,7 +9,7 @@ use App\Models\SystemError;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('dashboard');
 });
 
 Route::get('/dashboard', function () {
@@ -28,12 +28,11 @@ Route::middleware(['auth', 'verified', 'permission:users.manage'])
     ->prefix('admin')
     ->name('admin.')
     ->controller(UserManagementController::class)
-    ->group(function (){
+    ->group(function () {
         Route::get('/utenti', 'index')->name('users.index');
         Route::get('/utenti/{user}/modifica', 'edit')->name('users.edit');
         Route::put('/utenti/{user}', 'update')->name('users.update');
     });
-
 
 Route::middleware(['auth', 'verified', 'permission:system.manage-errors'])
     ->prefix('admin')
@@ -45,7 +44,7 @@ Route::middleware(['auth', 'verified', 'permission:system.manage-errors'])
         Route::patch('/errori/{systemError}', [SystemErrorController::class, 'update'])->name('errors.update');
     });
 
-Route::middleware(['auth', 'verified', 'permission:mails.test'])->get('/render-mail/{type}', function (string $type){
+Route::middleware(['auth', 'verified', 'permission:mails.test'])->get('/render-mail/{type}', function (string $type) {
     $errors = collect();
     $errors->push(
         new SystemError([
@@ -53,6 +52,7 @@ Route::middleware(['auth', 'verified', 'permission:mails.test'])->get('/render-m
             'context' => ['error' => 'Errore di test'],
         ])
     );
+
     return match ($type) {
         'new-cards' => new NewCardsEmail(collect()),
         'admin-scan-report' => new AdminScanReportEmail($errors),

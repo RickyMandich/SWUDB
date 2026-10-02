@@ -1,93 +1,82 @@
 <x-app-layout>
-    <x-flash-message />
-    <form method="GET" action="{{ route('admin.errors.index') }}" class="mb-4 flex gap-4">
-        <select name="status" onchange="this.form.submit()">
-            <option value="">Tutti</option>
-            <option value="open" @selected($status === 'open')>Aperti</option>
-            <option value="resolved" @selected($status === 'resolved')>Risolti</option>
-            <option value="ignored" @selected($status === 'ignored')>Ignorati</option>
-        </select>
-    </form>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestione Errori di Sistema</h2>
+    </x-slot>
 
-    @if ($errors->isEmpty())
-        <div class="p-6 text-gray-500">Nessun errore.</div>
-    @else
-        <form method="POST" action="{{ route('admin.errors.bulk-update') }}">
-            <div class="text-white">
+    <div class="max-w-5xl mx-auto py-6 px-4">
+        <x-flash-message />
+
+        <form method="GET" action="{{ route('admin.errors.index') }}" class="mb-4">
+            <select name="status" onchange="this.form.submit()" class="rounded-md border-gray-300 shadow-sm">
+                <option value="">Tutti</option>
+                <option value="open" @selected($status === 'open')>Aperti</option>
+                <option value="resolved" @selected($status === 'resolved')>Risolti</option>
+                <option value="ignored" @selected($status === 'ignored')>Ignorati</option>
+            </select>
+        </form>
+
+        @if ($systemErrors->isEmpty())
+            <div class="p-6 text-gray-500">Nessun errore.</div>
+        @else
+            <form method="POST" action="{{ route('admin.errors.bulk-update') }}">
                 @csrf
                 @method('PATCH')
+                <x-input-error :messages="$errors->get('ids')" class="mb-2" />
 
-                @foreach ($errors as $error)
-                    @php
-                        $bgClass = match (true) {
-                            $error->status === 'open' => 'bg-red-400',
-                            $error->status === 'resolved' => 'bg-green-400',
-                            default => 'bg-gray-400',
-                        };
-                    @endphp
-                    <div class="border border-gray-200 p-4 mb-3 rounded ms-4 me-4 {{ $bgClass }}">
-                        <input type="checkbox" name="ids[]" value="{{ $error->id }}">
-                        <p>{{ $error->message }}</p>
-                        <p class="font-semibold">{{ $error->source }}</p>
-                        @if ($error->status === 'open')
-                            <pre class="mt-2 text-xs text-gray-500">{{ $error->stack }}</pre>
-                        @endif
+                @foreach ($systemErrors as $error)
+                    <div class="bg-white border border-gray-200 p-4 mb-3 rounded">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="ids[]" value="{{ $error->id }}"
+                                class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <x-badge :color="$error->statusColor()">{{ $error->status }}</x-badge>
+                                    <span class="font-semibold">{{ $error->source }}</span>
+                                </div>
+                                <p class="mt-1">{{ $error->message }}</p>
 
-                        <div class="flex gap-2 mt-3">
-                            <button type="submit" form="resolve-{{ $error->id }}"
-                                class="px-3 py-1 bg-green-500 rounded">
-                                Segna come risolto
-                            </button>
-                            <button type="submit" form="ignore-{{ $error->id }}"
-                                class="px-3 py-1 bg-gray-500 rounded">
-                                Ignora
-                            </button>
-                            <button type="submit" form="reopen-{{ $error->id }}"
-                                class="px-3 py-1 bg-red-500 rounded">
-                                Riapri
-                            </button>
-                            <a href="{{ route('admin.errors.show', $error) }}" class="px-3 py-1 bg-blue-500 rounded">
-                                Mostra
-                            </a>
+                                <div class="flex flex-wrap gap-2 mt-3">
+                                    @if ($error->status === 'open')
+                                        <button type="submit" form="resolve-{{ $error->id }}"
+                                            class="px-3 py-1 bg-green-600 text-white rounded">Segna come
+                                            risolto</button>
+                                        <button type="submit" form="ignore-{{ $error->id }}"
+                                            class="px-3 py-1 bg-gray-600 text-white rounded">Ignora</button>
+                                    @else
+                                        <button type="submit" form="reopen-{{ $error->id }}"
+                                            class="px-3 py-1 bg-red-600 text-white rounded">Riapri</button>
+                                    @endif
+                                    <a href="{{ route('admin.errors.show', $error) }}"
+                                        class="px-3 py-1 bg-blue-600 text-white rounded">Mostra</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endforeach
 
-                <div class="flex gap-2 mt-4">
-                    <button type="submit" name="status" value="resolved" class="px-3 py-1 bg-green-500 rounded">
-                        Risolvi selezionati
-                    </button>
-                    <button type="submit" name="status" value="ignored" class="px-3 py-1 bg-gray-500 rounded">
-                        Ignora selezionati
-                    </button>
-                    <button type="submit" name="status" value="open" class="px-3 py-1 bg-red-500 rounded">
-                        Riapri selezionati
-                    </button>
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <button type="submit" name="status" value="resolved"
+                        class="px-3 py-1 bg-green-600 text-white rounded">Risolvi selezionati</button>
+                    <button type="submit" name="status" value="ignored"
+                        class="px-3 py-1 bg-gray-600 text-white rounded">Ignora selezionati</button>
+                    <button type="submit" name="status" value="open"
+                        class="px-3 py-1 bg-red-600 text-white rounded">Riapri selezionati</button>
                 </div>
-            </div>
-        </form>
+            </form>
 
-        {{-- Form esterni per le azioni riga-per-riga --}}
-        @foreach ($errors as $error)
-            <form id="resolve-{{ $error->id }}" method="POST" action="{{ route('admin.errors.update', $error) }}"
-                class="hidden">
-                @csrf
-                @method('PATCH')
-                <input type="hidden" name="status" value="resolved">
-            </form>
-            <form id="ignore-{{ $error->id }}" method="POST" action="{{ route('admin.errors.update', $error) }}"
-                class="hidden">
-                @csrf
-                @method('PATCH')
-                <input type="hidden" name="status" value="ignored">
-            </form>
-            <form id="reopen-{{ $error->id }}" method="POST" action="{{ route('admin.errors.update', $error) }}"
-                class="hidden">
-                @csrf
-                @method('PATCH')
-                <input type="hidden" name="status" value="open">
-            </form>
-        @endforeach
-    @endif
+            {{ $systemErrors->links() }}
 
+            {{-- Form esterni per le azioni riga-per-riga (un <form> non può stare dentro un altro) --}}
+            @foreach ($systemErrors as $error)
+                @foreach (['resolve' => 'resolved', 'ignore' => 'ignored', 'reopen' => 'open'] as $prefix => $newStatus)
+                    <form id="{{ $prefix }}-{{ $error->id }}" method="POST"
+                        action="{{ route('admin.errors.update', $error) }}" class="hidden">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="{{ $newStatus }}">
+                    </form>
+                @endforeach
+            @endforeach
+        @endif
+    </div>
 </x-app-layout>

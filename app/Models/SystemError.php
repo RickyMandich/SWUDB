@@ -6,10 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class SystemError extends Model
 {
-    const STATUS_OPEN = 'open';
-    const STATUS_IGNORED = 'ignored';
-    const STATUS_RESOLVED = 'resolved';
+    public const STATUS_OPEN = 'open';
+
+    public const STATUS_IGNORED = 'ignored';
+
+    public const STATUS_RESOLVED = 'resolved';
+
     protected $table = 'system_errors';
+
     protected $fillable = [
         'source',
         'message',
@@ -18,8 +22,18 @@ class SystemError extends Model
         'status',
         'resolved_at',
     ];
+
     protected $casts = [
         'context' => 'array',
         'resolved_at' => 'datetime',
     ];
+
+    public function statusColor(): string
+    {
+        return match ($this->status) {
+            self::STATUS_OPEN => '#ef4444',
+            self::STATUS_RESOLVED => '#22c55e',
+            default => '#6b7280',
+        };
+    }
 }
