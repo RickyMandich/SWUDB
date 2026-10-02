@@ -55,7 +55,7 @@ class UserManagementController extends Controller
         $user->syncRoles($validated['roles'] ?? []);
         $user->syncPermissions($validated['permissions'] ?? []);
 
-        return redirect()->route('admin.users.index')->with('status', 'Utente aggiornato.')
+        return redirect()->route('admin.users.index')->with('status', $user->name.' è stato aggiornato.')
             ->with('status_level', 'success');
     }
 }

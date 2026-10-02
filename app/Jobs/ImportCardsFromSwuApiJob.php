@@ -192,11 +192,9 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'error_line' => $e->getLine(),
                     'error_code' => $e->getCode(),
                     'error_file' => $e->getFile(),
-                    'error_trace_as_string' => $e->getTraceAsString(),
                     'raw' => $cardData,
                 ],
             ]);
-            $errors->push($err);
             throw $e;
         }
         Log::info("Fine elaborazione carta {$cid}", ['card' => $card, 'cid' => $cid]);

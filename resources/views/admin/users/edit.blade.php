@@ -11,26 +11,28 @@
             <h2 class="font-medium mt-4">Ruoli</h2>
             @foreach ($roles as $role)
                 <label class="block">
-                    <input type="checkbox" name="roles[]" value="{{ $role->name }}" @checked($user->hasRole($role->name))
-                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                    <input type="checkbox" name="roles[]" value="{{ $role->name }}"
+                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                        @checked($user->hasRole($role->name))>
                     {{ $role->name }}
                 </label>
             @endforeach
+            <x-input-error :messages="$errors->get('roles')" class="mt-2" />
 
             <h2 class="font-medium mt-4">Permessi diretti</h2>
             @foreach ($permissions as $permission)
                 <label class="block">
                     <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"
+                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                         @checked($user->hasDirectPermission($permission->name))>
                     {{ $permission->name }}
                 </label>
             @endforeach
+            <x-input-error :messages="$errors->get('permissions')" class="mt-2" />
 
-            <div class="mt-4">
-                <x-primary-button class="mr-2">Salva</x-primary-button>
-                <a href="{{ route('admin.users.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition ease-in-out duration-150">Torna
-                    all'elenco</a>
+            <div class="flex items-center gap-4 mt-4">
+                <x-primary-button>Salva</x-primary-button>
+                <a href="{{ route('admin.users.index') }}" class="text-sm text-gray-600 hover:underline">Annulla</a>
             </div>
         </form>
     </div>
