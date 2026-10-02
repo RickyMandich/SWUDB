@@ -102,9 +102,12 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         $this->sendNotifications($newCards, $errors);
 
-        $deltaProgress = $telegram->editMessage(
+        // delete the message so at the end the user receive a notification, otherwise he have to check once in a while if the process is finished
+        $deltaProgress = $telegram->deleteMessage($adminChatId, $progress->messageId);
+        Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+
+        $deltaProgress = $telegram->sendMessage(
             $adminChatId,
-            $progress->messageId,
             "Scan completato: {$newCards->count()} nuove carte, {$existingCards->count()} carte già presenti, {$errors->count()} problemi."
         );
         Log::debug('message status', ['deltaProgress' => $deltaProgress]);
