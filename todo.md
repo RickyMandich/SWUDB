@@ -54,18 +54,18 @@
 - [X] 5.4.1 Rinominare `flash-massage` → `flash-message`, sistemarne lo stile, aggiungere `status_level` dove manca
 - [X] 5.4.2 Titoli nello slot `header`
 - [X] 5.4.3 Bug `$error->stack` (colonna inesistente)
-- [ ] 5.4.5 Componente `<x-badge>` + `SystemError::statusColor()`
-- [ ] 5.4.6 Pulsanti (`<x-primary-button>` in `admin/users/edit`)
-- [ ] 5.4.8 Bug variabile `$errors` sovrascritta + rifacimento vista lista (incorpora 5.4.9 e 5.4.11)
-- [ ] 5.4.9 Paginazione nella lista errori
-- [ ] 5.4.10 Rifare la vista dettaglio
-- [ ] 5.4.11 Pulsanti di stato contestuali
-- [ ] 5.4.12 Tabelle e stile di `admin/users/*` (+ `<x-input-error>`)
-- [ ] 5.4.13 Evitare l'auto-lockout in `UserManagementController::update`
-- [ ] 5.5.1 Bug `context['error']` mancante nell'email admin
-- [ ] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione
-- [x] 5.5.3 Decisione chiusa: Opzione (a) — collection carte già presenti (espansione, numero) e report Telegram senza salvarle come SystemError
-- [ ] 5.5.4 Test del rendering di `AdminScanReportEmail`
+- [X] 5.4.5 Componente `<x-badge>` + `SystemError::statusColor()`
+- [X] 5.4.6 Pulsanti (`<x-primary-button>` in `admin/users/edit`)
+- [X] 5.4.8 Bug variabile `$errors` sovrascritta + rifacimento vista lista (incorpora 5.4.9 e 5.4.11)
+- [X] 5.4.9 Paginazione nella lista errori
+- [X] 5.4.10 Rifare la vista dettaglio
+- [X] 5.4.11 Pulsanti di stato contestuali
+- [X] 5.4.12 Tabelle e stile di `admin/users/*` (+ `<x-input-error>`)
+- [X] 5.4.13 Evitare l'auto-lockout in `UserManagementController::update`
+- [X] 5.5.1 Bug `context['error']` mancante nell'email admin
+- [X] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione
+- [X] 5.5.3 Decisione chiusa: Opzione (a) — collection carte già presenti (espansione, numero) e report Telegram senza salvarle come SystemError
+- [X] 5.5.4 Test del rendering di `AdminScanReportEmail`
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
 - [ ] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)

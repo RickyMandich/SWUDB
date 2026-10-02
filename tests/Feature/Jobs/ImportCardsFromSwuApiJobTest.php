@@ -111,3 +111,16 @@ it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', func
 
     Mail::assertQueued(AdminScanReportEmail::class);
 });
+
+it('renderizza il report admin anche con errori senza chiave error nel contesto', function () {
+    $error = SystemError::create([
+        'source' => 'test',
+        'message' => "Carta X gia' presente, dati aggiornati",
+        'status' => SystemError::STATUS_IGNORED,
+        'context' => ['card' => ['name' => 'X']],
+    ]);
+
+    $html = (new AdminScanReportEmail(collect([$error])))->render();
+
+    expect($html)->toContain('Carta X');
+});
