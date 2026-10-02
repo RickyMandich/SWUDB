@@ -39,6 +39,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         $newCards = collect();
         $errors = collect();
+        $existingCards = collect();
         $page = 1;
         $lastPage = 'not yet readed';
         $cardPerPage = 40;
@@ -104,10 +105,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         $deltaProgress = $telegram->editMessage(
             $adminChatId,
             $progress->messageId,
-            "Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi."
+            "Scan completato: {$newCards->count()} nuove carte, {$existingCards->count()} carte già presenti, {$errors->count()} problemi."
         );
         Log::debug('message status', ['deltaProgress' => $deltaProgress]);
-        Log::info("Scan completato: {$newCards->count()} nuove carte, {$errors->count()} problemi.");
+        Log::info("Scan completato: {$newCards->count()} nuove carte, {$existingCards->count()} carte già presenti, {$errors->count()} problemi.");
     }
 
     private function processCard(
@@ -115,7 +116,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         string $lastestRotation,
         CardImageDownloader $imageDownloader,
         Collection $newCards,
-        Collection $errors
+        Collection $existingCards
     ): void {
         $cid = $cardData['cardUid'] ?? null;
 
@@ -175,6 +176,8 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
             if (! $existed) {
                 $newCards->push($card);
+            } else {
+                $existingCards->push($card);
             }
 
             $this->syncAspectsAndTraits($card, $cardData);
