@@ -111,10 +111,10 @@
             @endcan
             <!-- Log viewer -->
             @can('log.viewer')
-                <x-dropdown-link :href="route('log-viewer.index')">
+                <x-responsive-nav-link :href="route('log-viewer.index')">
                     {{ __('Log viewer') }}
-                </x-dropdown-link>
-            @endcan
+                    </x-dropdown-link>
+                @endcan
         </div>
 
         <!-- Responsive Settings Options -->
