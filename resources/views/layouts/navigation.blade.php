@@ -109,6 +109,12 @@
                     {{ __('Gestione errori') }}
                 </x-responsive-nav-link>
             @endcan
+            <!-- Log viewer -->
+            @can('log.viewer')
+                <x-dropdown-link :href="route('log-viewer.index')">
+                    {{ __('Log viewer') }}
+                </x-dropdown-link>
+            @endcan
         </div>
 
         <!-- Responsive Settings Options -->
