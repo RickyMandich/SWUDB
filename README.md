@@ -32,15 +32,14 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
 
 **Non ancora implementato / non funzionante**
-- Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il service antepone `dev: ` a ogni messaggio e caption (vedi "Debito tecnico" in `todo.md`).
-- Mail agli admin dello scan (`todo.md`, 5.5.5, 5.5.6): il job passa a `AdminScanReportEmail` dei `Throwable`, mentre la mail e la sua vista si aspettano modelli `SystemError`, quindi con errori reali non si renderizza. Alcuni test del job vanno riallineati al codice.
+- Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
+- Test del job di import: riscritti, da lanciare con `php artisan test` (`todo.md`, 5.5.6).
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
   validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
 - Collezione, admin espansioni (i dati di `expansions` si correggono solo a mano sul DB), ricerca carte,
   statistiche, API pubblica: non iniziati.
 - Nessuna pagina pubblica oltre alle pagine di autenticazione: `/` fa redirect a `/dashboard` (che richiede login e email verificata). `layouts/navigation.blade.php` legge `Auth::user()` senza controlli, quindi `<x-app-layout>` non è ancora utilizzabile dagli ospiti (piano 05, Step 10.3).
-- Nessun servizio scheduler nel compose di sviluppo né in quello di produzione: `cards:scan` parte da solo solo se qualcosa esegue
-  `schedule:run`/`schedule:work` (vedi Fase 12 del `todo.md`).
+- Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
 - Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano `implementationPlan-githubActionBuildGhcr.md`.
 
 ## Stack
@@ -103,9 +102,8 @@ per ricostruirla `docker compose -f docker-compose.dev.yml build app` oppure `up
 `docker-compose.dev.yml` è il compose di **sviluppo**; `docker-compose.yml` è quello di **produzione** (Traefik, rete
 esterna `proxy`, host `unlimiteddb-test.mandich.dev`, worker con `supervisord -c /etc/supervisor/worker.conf`).
 
-`migrate --seed` crea permessi e ruolo `admin` (`PermissionSeeder`) e un utente admin con email già verificata,
-i cui dati (email e password) sono scritti nel `DatabaseSeeder`: da spostare in variabili d'ambiente ("Debito
-tecnico" in `todo.md`).
+`migrate --seed` crea permessi e ruolo `admin` (`PermissionSeeder`) e, se `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` sono
+impostate nel `.env`, un utente admin con email già verificata (`DatabaseSeeder`, tramite `config/seed.php`).
 
 ### Asset frontend
 Gli asset Vite sono compilati nello stage `node-builder` del `Dockerfile` e l'`entrypoint.sh` li copia in
@@ -138,7 +136,8 @@ sensibili). `bootstrap/app.php` carica `.env-overrides` **prima** del `.env`, qu
 | `QUEUE_CONNECTION=database` | le code girano nel worker (default di `.env.example`) |
 | `MAIL_MAILER`, `RESEND_API_KEY` | `.env.example` imposta `MAIL_MAILER=log`; per inviare email vere serve `resend` + la chiave (dominio `mandich.dev` verificato su Resend) |
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | mittente delle email |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` | lette da `config/services.php`; il job di scan usa `TELEGRAM_ADMIN_CHAT_ID` (presenti, vuote, in `.env.example`) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_MESSAGE_PREFIX` | lette da `config/services.php`; il job di scan usa `TELEGRAM_ADMIN_CHAT_ID`; il prefisso (es. `dev: `) è anteposto a ogni messaggio ed è vuoto di default (le prime tre sono in `.env.example`, il prefisso no) |
+| `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | credenziali dell'utente admin creato da `db:seed`, lette tramite `config/seed.php` (non sono in `.env.example`: vanno aggiunte al proprio `.env`) |
 | `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_PORT` | solo per gli script FTP in `bash/` |
 | `APP_VERSION_*` (in `.env-overrides`) | versione dell'app, gestita da `bash/all.sh` |
 
@@ -192,14 +191,15 @@ Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità
 1. `routes/console.php` schedula `cards:scan` ogni **lunedì alle 00:00** (serve uno scheduler che giri).
 2. `cards:scan` mette in coda `ImportCardsFromSwuApiJob`.
 3. Il **worker** (`php artisan queue:work`) esegue il job: invia un messaggio di avanzamento alla chat admin
-   Telegram (tramite `TelegramService`, messaggi con prefisso `dev: `), interroga
+   Telegram (tramite `TelegramService`, prefisso opzionale `TELEGRAM_MESSAGE_PREFIX`), interroga
    `https://admin.starwarsunlimited.com/api/card-list` (locale `it`, pagine da 40), fa upsert di espansioni,
    carte, aspetti e tratti e scarica le immagini con `CardImageDownloader`.
 4. Le eccezioni (es. download immagine fallito) vengono salvate in `system_errors` e conteggiate; le carte già
    presenti non vanno tra gli `system_errors` (Opzione (a) del piano 03): sono contate a parte e riportate nel
    messaggio Telegram finale. A fine scan partono le email `NewCardsEmail` (a tutti gli utenti, se ci sono nuove
-   carte) e `AdminScanReportEmail` (agli utenti con ruolo `admin`, se la collection errori non è vuota; vedi
-   "Non ancora implementato" per il problema noto della mail).
+   carte) e `AdminScanReportEmail` (agli utenti con ruolo `admin`, se la collection errori, fatta di `SystemError`, non è
+   vuota). Un lato dell'immagine assente nell'API è solo loggato (`Log::debug`); un `SystemError` nasce solo se l'URL
+   c'è ma il download fallisce.
 5. Eccezione hardcoded nel job: la carta JTL #256 ha `max_copies` = 15.
 
 Lancio manuale: `docker compose -f docker-compose.dev.yml exec app php artisan cards:scan`.
@@ -218,8 +218,8 @@ docker compose -f docker-compose.dev.yml exec app php artisan test
 ```
 
 Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`
-e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import; quest'ultimo va riallineato al codice
-e riverificato (todo 5.5.6): un test si aspetta la mail agli admin per una carta già presente, che il job non segnala più.
+e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import (riscritto di recente: lanciare la suite per
+confermare che passi, todo 5.5.6).
 
 ## Deploy
 

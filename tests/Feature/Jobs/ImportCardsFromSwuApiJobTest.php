@@ -5,7 +5,6 @@ use App\Mail\AdminScanReportEmail;
 use App\Mail\NewCardsEmail;
 use App\Models\Card;
 use App\Models\Expansion;
-use App\Models\Role;
 use App\Models\SystemError;
 use App\Models\User;
 use App\Services\CardImageDownloader;
@@ -13,6 +12,7 @@ use App\Services\TelegramService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 
 // Fixture minima ma fedele alla struttura reale confermata su test.json (Strapi: data[].attributes,
 // relazioni annidate come attributes.expansion.data.attributes.code). Un helper tipo cardFixture(['cardUid' => ...])

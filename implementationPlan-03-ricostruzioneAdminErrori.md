@@ -331,7 +331,7 @@ it('renderizza il report admin anche con errori senza chiave error nel contesto'
 ```
 Serve `use App\Mail\AdminScanReportEmail;` (già importato nel file di test) e le rotte `admin.errors.show` (già esistenti).
 
-#### 5.5.5 — La mail agli admin riceve `Throwable`, non `SystemError`
+#### 5.5.5 — La mail agli admin riceve `Throwable`, non `SystemError` (applicato in `handle()`/`processCard()`, restano due correzioni in `downloadImages()`)
 In `ImportCardsFromSwuApiJob::handle()` il `catch (\Throwable $th)` fa `$errors->push($th)`, e `sendNotifications()` passa quella collection ad `AdminScanReportEmail`.
 La vista `emails/admin-scan-report.blade.php` però usa `$error->message`, `$error->context['error_message']` e `route('admin.errors.show', $error)`, cioè si aspetta modelli `SystemError`:
 con un'eccezione vera `message` è una proprietà protetta e la route non trova un id. Il `SystemError` che `processCard()` crea nel suo `catch` (`$err`) non esce mai dal metodo.
@@ -339,7 +339,8 @@ Correzione proposta: far arrivare a `handle()` i `SystemError` e non le eccezion
 - In `processCard()` aggiungere un parametro `Collection $errors` e, nel `catch`, `$errors->push($err);` subito dopo il `SystemError::create(...)` (prima del `throw $e`).
 - In `handle()` passarglielo e nel `catch (\Throwable $th)` lasciare solo il `Log::warning(...)`, senza `$errors->push($th)`.
 - Il conteggio `{$errors->count()} problemi` del messaggio Telegram resta corretto.
-- Il `SystemError::create` per il retro non scaricato, in `downloadImages()`, va fatto confluire nella stessa collection.
+- In `downloadImages()` (decisione del 2026-10-03): un lato **assente nell'API** (il retro manca nella maggior parte delle carte) non è un errore e produce solo un `Log::debug`; un `SystemError` nella collection `$errors` nasce solo se l'URL c'è ma `CardImageDownloader::download()` non restituisce un path, per entrambi i lati (prima il fronte falliva in silenzio).
+- Correzioni ancora da fare nel codice attuale: (1) `processCard()` chiama `$this->downloadImages($card, $cardData, $imageDownloader)` senza il quarto argomento `$errors` ora obbligatorio, quindi ogni carta va in `ArgumentCountError` dopo il salvataggio; (2) i due `Log::debug` "Immagine davanti/retro non trovata" stanno dentro `if ($frontUrl)` / `if ($backUrl)`, cioè si attivano quando l'URL c'è: vanno spostati in un `else`.
 
 #### 5.5.6 — Riallineare i test del job al codice
 In `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`:

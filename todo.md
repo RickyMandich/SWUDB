@@ -66,8 +66,8 @@
 - [X] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione (chiavi `error_message`, `error_line`, `error_code`, `error_file`, `raw`)
 - [X] 5.5.3 Decisione chiusa: Opzione (a) — carte già presenti non salvate come SystemError, ma contate a parte (`$existingCards` passata a `processCard()`, conteggio nel messaggio Telegram finale)
 - [X] 5.5.4 Test del rendering di `AdminScanReportEmail`
-- [ ] 5.5.5 Il job mette nella collection `$errors` i `Throwable` (`$errors->push($th)`), ma `AdminScanReportEmail` e la sua vista si aspettano modelli `SystemError` (`$error->message`, `route('admin.errors.show', $error)`): con errori reali la mail non si renderizza. Il `SystemError` creato in `processCard()` non viene restituito al chiamante
-- [ ] 5.5.6 Test del job da riallineare al codice: `invia la mail agli admin quando ci sono errori o carte gia' presenti` non crea nessun admin, usa `rarity => 'Special'` (l'enum SQL è in italiano) e si aspetta la mail per una carta già presente, che il job non segnala più; inoltre `fakeSwuHttp()` riceve già un array con la chiave dell'URL e la annida di nuovo (da verificare lanciando la suite)
+- [X] 5.5.5 Mail admin con `SystemError` invece di `Throwable`: `$errors` passata a `processCard()` e `downloadImages()` e popolata con i `SystemError`; un lato assente nell'API è solo loggato (`Log::debug`), un `SystemError` nasce solo se l'URL c'è e il download fallisce
+- [ ] 5.5.6 Test del job riscritti (helper `fakeSwuHttp(array $routes)`, due test sulla mail admin) e import di `Role` corretto; manca solo lanciare la suite (`php artisan test`) e spuntare
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
 - [ ] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)
@@ -142,11 +142,11 @@
 - [ ] Step 9 README (sezione Deploy) e rinomina del piano in `implementationPlan-V-...`
 
 ## Debito tecnico trovato il 2026-10-03 (confronto codice/piani, senza piano dedicato)
-- [ ] `TelegramService` antepone `dev: ` a testo e caption di ogni messaggio (`sendMessage`, `sendPhoto`, `editMessage`): togliere o rendere configurabile prima di usare il bot in produzione (il piano 01 non lo prevedeva)
-- [ ] `DatabaseSeeder` crea un utente admin con email e password scritte nel file (tracciato in Git): spostarli in variabili d'ambiente o rigenerare la password se il seeder è stato eseguito fuori dal locale
-- [ ] `layouts/navigation.blade.php`, blocco responsive: il link "Log viewer" apre `<x-responsive-nav-link>` ma lo chiude con `</x-dropdown-link>` (Blade non dà errore perché compila tutti i tag di chiusura allo stesso modo, ma il tag è sbagliato)
-- [ ] Nessun servizio scheduler né in `docker-compose.dev.yml` né in `docker-compose.yml`: `cards:scan` (lunedì 00:00) non parte da solo finché qualcosa non esegue `schedule:run`/`schedule:work` (vedi 12.1.3)
-- [ ] `docker-compose.dev.yml`: nel servizio `app` `DB_PASSWORD=${DB_PASSWORD}`, nel `worker` `DB_PASSWORD=` vuoto; funziona perché `init.dev.sql` crea l'utente con password vuota, ma i due servizi andrebbero allineati
+- [X] `TelegramService`: il prefisso dei messaggi è configurabile (`TELEGRAM_MESSAGE_PREFIX`, default vuoto); impostare `"dev: "` solo negli `.env` di sviluppo/test
+- [ ] Seeder admin da variabili d'ambiente: `config/seed.php` e `DatabaseSeeder` ci sono; restano `SEED_ADMIN_*` e `TELEGRAM_MESSAGE_PREFIX` in `.env.example`, la riga `$user->save();` finale inutile e il cambio della vecchia password se l'utente esiste su un DB raggiungibile da fuori (resta nella cronologia Git)
+- [X] `layouts/navigation.blade.php`, blocco responsive: tag di chiusura del link "Log viewer" corretto
+- [X] Scheduler in produzione: `schedule:work` come programma di `docker/supervisor/worker.conf` nel container `worker` (da verificare dopo il deploy; in dev volutamente assente, lo scan si lancia a mano)
+- [X] `docker-compose.dev.yml`: `DB_PASSWORD=${DB_PASSWORD}` ora in entrambi i servizi `app` e `worker`
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi

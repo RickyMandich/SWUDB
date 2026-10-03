@@ -46,8 +46,5 @@ class DatabaseSeeder extends Seeder
         );
         $user->forceFill(['email_verified_at' => Carbon::now()])->save();
         $user->assignRole(Role::findOrCreate('admin'));
-
-        $user->email_verified_at = Carbon::now();
-        $user->save();
     }
 }

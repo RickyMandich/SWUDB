@@ -185,7 +185,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             }
 
             $this->syncAspectsAndTraits($card, $cardData);
-            $this->downloadImages($card, $cardData, $imageDownloader);
+            $this->downloadImages($card, $cardData, $imageDownloader, $errors);
 
         } catch (\Throwable $e) {
             $espansione = $card->expansion ?? 'Espansione Mancante';
@@ -258,10 +258,12 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         $sides = [];
         if ($frontUrl) {
             $sides['front'] = $frontUrl;
+        } else {
             Log::debug("Immagine davanti non trovata per {$card->id} {{$card->name} {$card->title}}");
         }
         if ($backUrl) {
             $sides['back'] = $backUrl;
+        } else {
             Log::debug("Immagine retro non trovata per {$card->id} {{$card->name} {$card->title}}");
         }
 
