@@ -26,23 +26,22 @@ Sito: <https://unlimiteddb.mandich.dev>
   schedulato ogni lunedì 00:00 (vedi "Scansione carte").
 - Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}` (l'anteprima `new-cards` per ora dà errore: il template usa le rotte `cards.new-release` e `card.show`, che non esistono ancora; piano 05, Step 10.5).
 - Icone del sito (favicon, apple-touch-icon, manifest) generate dal `Dockerfile` da `public/icon-mine.svg` (vedi "Icone del sito").
-- Worker delle code (servizio `worker` nel compose di sviluppo).
+- Worker delle code (servizio `worker` nel compose di sviluppo; `app` e `worker` condividono la stessa immagine `unlimiteddb:dev`).
+- `TelegramService` (facade `Http`, nessun SDK) con `TelegramActionResult`: invio, modifica e cancellazione di messaggi, invio foto; senza `TELEGRAM_BOT_TOKEN` o `chat_id` non parte nessuna richiesta HTTP.
+- Admin errori: vista di dettaglio `/admin/errori/{id}`, componenti `<x-flash-message>` e `<x-badge>`, lista paginata.
+- Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
 
 **Non ancora implementato / non funzionante**
-- `App\Services\TelegramService` **non esiste**, ma `ImportCardsFromSwuApiJob` lo usa (Fase 9.2 del `todo.md`):
-  finché non viene creato il job fallisce appena parte, quindi anche `cards:scan`. Il bot Telegram (webhook,
-  comandi, ricerca carte, `NotifyAdminJob`) non esiste.
-- Vista di dettaglio errore: `resources/views/admin/errors/show.blade.php` esiste in una prima versione grezza (da rifinire, piano 03, Step 5.4.10).
-- Viste admin da sistemare (titolo nello slot `header`, lista errori con bug sulla variabile `$errors` e senza paginazione, componente flash con nome `flash-massage`): piano 03.
-- Email agli admin: `admin-scan-report` legge `context['error']`, assente negli errori "carta già presente", quindi la mail si rompe proprio nel caso più comune (piano 03, Step 5.5).
-- Schema: le tabelle pivot `card_aspect`, `card_trait` e `deck_cards` chiamano `id` la colonna che punta alla carta (i piani prevedono `card_id`): piano 02.
+- Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il service antepone `dev: ` a ogni messaggio e caption (vedi "Debito tecnico" in `todo.md`).
+- Job di scan e mail agli admin con problemi noti (`todo.md`, 5.5.3, 5.5.5, 5.5.6): le carte già presenti vengono contate tra gli errori (cablaggio sbagliato tra `handle()` e `processCard()`) e il report agli admin riceve dei `Throwable` invece di `SystemError`, quindi la mail può partire senza errori reali oppure non renderizzarsi.
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
-  validatore**. `Deck::cards()`, `Deck::leader()` e `Deck::base()` sono da correggere (vedi `todo.md`, Fase 7).
+  validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
 - Collezione, admin espansioni (i dati di `expansions` si correggono solo a mano sul DB), ricerca carte,
   statistiche, API pubblica: non iniziati.
-- Nessuna pagina pubblica oltre alla `welcome` di default e alle pagine di autenticazione. `layouts/navigation.blade.php` legge `Auth::user()` senza controlli, quindi `<x-app-layout>` non è ancora utilizzabile dagli ospiti (piano 05, Step 10.3).
-- Nessun servizio scheduler nel compose di sviluppo: `cards:scan` parte da solo solo se qualcosa esegue
-  `schedule:run`/`schedule:work` (in produzione da verificare, vedi Fase 12 del `todo.md`).
+- Nessuna pagina pubblica oltre alle pagine di autenticazione: `/` fa redirect a `/dashboard` (che richiede login e email verificata). `layouts/navigation.blade.php` legge `Auth::user()` senza controlli, quindi `<x-app-layout>` non è ancora utilizzabile dagli ospiti (piano 05, Step 10.3).
+- Nessun servizio scheduler nel compose di sviluppo né in quello di produzione: `cards:scan` parte da solo solo se qualcosa esegue
+  `schedule:run`/`schedule:work` (vedi Fase 12 del `todo.md`).
+- Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano `implementationPlan-githubActionBuildGhcr.md`.
 
 ## Stack
 

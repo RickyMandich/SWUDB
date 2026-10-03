@@ -15,9 +15,9 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | N. | File | Contenuto | Stato |
 |---|---|---|---|
 | 00 | [`implementationPlan-V-00-ricostruzioneFondamenta.md`](implementationPlan-V-00-ricostruzioneFondamenta.md) | Fasi 1–4bis: setup, Docker, auth, Resend, import carte, worker | ✅ completato |
-| 01 | [`implementationPlan-01-ricostruzioneTelegramService.md`](implementationPlan-01-ricostruzioneTelegramService.md) | Fase 9a: `TelegramService` (senza, il job di scan fallisce) | da fare — **bloccante** |
-| 02 | [`implementationPlan-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-02-ricostruzioneAllineamentoSchema.md) | Fase 4ter: pivot con `card_id`, relazioni, `publishedAt`, test del job | da fare |
-| 03 | [`implementationPlan-03-ricostruzioneAdminErrori.md`](implementationPlan-03-ricostruzioneAdminErrori.md) | Fase 5: correzioni alle viste admin e alle email di scan | da fare |
+| 01 | [`implementationPlan-V-01-ricostruzioneTelegramService.md`](implementationPlan-V-01-ricostruzioneTelegramService.md) | Fase 9a: `TelegramService` | ✅ completato |
+| 02 | [`implementationPlan-V-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-V-02-ricostruzioneAllineamentoSchema.md) | Fase 4ter: pivot con `card_id`, relazioni, `publishedAt`, test del job | ✅ completato |
+| 03 | [`implementationPlan-03-ricostruzioneAdminErrori.md`](implementationPlan-03-ricostruzioneAdminErrori.md) | Fase 5: viste admin e email di scan | **quasi completato**: viste e controller applicati, restano gli Step 5.5.3, 5.5.5 e 5.5.6 (cablaggio errori/carte già presenti nel job, mail, test) |
 | 04 | [`implementationPlan-04-ricostruzioneAdminEspansioni.md`](implementationPlan-04-ricostruzioneAdminEspansioni.md) | Fase 6: pagina admin espansioni | da fare |
 | 05 | [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) | Fase 10: ricerca carte, dettaglio, nuove uscite, navigazione per ospiti (Step 10.2 dopo il 07) | da fare |
 | 06 | [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md) | Fase 7a: enum, relazioni, validator, policy dei mazzi | da fare |
@@ -26,6 +26,12 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | 09 | [`implementationPlan-09-ricostruzioneBotTelegramWebhook.md`](implementationPlan-09-ricostruzioneBotTelegramWebhook.md) | Fase 9b: webhook, comandi, `NotifyAdminJob` | da fare |
 | 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | da fare |
 | 11 | [`implementationPlan-11-ricostruzioneDeploy.md`](implementationPlan-11-ricostruzioneDeploy.md) | Fase 12: verifica post-deploy e redeploy pulito | da fare |
+
+### Piani trasversali (non numerati)
+| File | Contenuto | Stato |
+|---|---|---|
+| [`implementationPlan-githubActionBuildGhcr.md`](implementationPlan-githubActionBuildGhcr.md) | Build dell'immagine su GitHub Actions (ghcr.io) e deploy con pull sulla VM, branch `new` | da fare |
+| `implementationPlan-V-autoRebuildAssetsOnDockerBuild.md`, `implementationPlan-V-fixCardAspectMigration.md`, `implementationPlan-V-updateFakeCardEntryFromJson.md`, `implementationPlan-V-updateLogoComponent.md` | modifiche puntuali già applicate | ✅ completati |
 
 ### Struttura dei file (per l'indice dell'editor Markdown)
 Ogni parte usa la stessa gerarchia di titoli: `#` titolo del piano, `##` fase, `###` step, `####` sotto-punto operativo. Ogni cosa da fare è un titolo numerato (`Step N.M`, `N.M.k`), quindi un editor con outline la indicizza da solo.
@@ -68,7 +74,7 @@ Tabelle applicative decise, con ogni colonna e il perché. Le parti rimandano qu
 | `name` | string | Nome della carta. |
 | `title` | string, nullable | Sottotitolo. |
 | `type` | enum SQL (`Unit`, `Upgrade`, `Event`, `Leader`, `Base`, `CreditToken`, `ForceToken`, `TokenUnit`, `TokenUpgrade`) | Secondo l'API SWU. Opzionale un enum PHP `CardType` con cast, stesso pattern di `DeckFormat`. |
-| `rarity` | enum SQL (`Common`, `Uncommon`, `Rare`, `Legendary`, `Special`) | |
+| `rarity` | enum SQL (`Comune`, `Non Comune`, `Rara`, `Leggendaria`, `Speciale`) | Valori **in italiano**, come li restituisce l'API ufficiale con `locale=it` (l'import li salva così com'è). |
 | `cost`, `health`, `power` | unsigned tinyint, nullable | `health` e `power` solo per le unità. |
 | `text` | text, nullable | Testo delle abilità. |
 | `arena` | string, nullable | Arena in cui si gioca un'unità. |
@@ -86,7 +92,7 @@ Tabella dedicata invece di una colonna JSON: filtro per aspetto con una join ind
 `traits`: `name` (string, **PK**), timestamps. `card_trait`: `card_id` (FK `cards.id`), `trait_name` (FK `traits.name`), PK composta, timestamps.
 Il modello si chiama `App\Models\CardTrait` perché `Trait` è una parola riservata di PHP (`$primaryKey = 'name'`, `$incrementing = false`, `$keyType = 'string'`); la tabella resta `traits`.
 
-> **Stato del codice**: oggi le tre pivot (`card_aspect`, `card_trait`, `deck_cards`) chiamano `id` la colonna che punta alla carta. Va portata a `card_id`: piano 02.
+> **Stato del codice**: le tre pivot (`card_aspect`, `card_trait`, `deck_cards`) hanno la colonna `card_id` (piano 02, applicato). Le pivot `card_aspect` e `card_trait` hanno PK composta `card_id`+`aspect_id` / `card_id`+`trait_name`; `deck_cards` ha PK `deck_id`+`card_id`.
 
 ### `decks`
 | Colonna | Tipo | Note |
@@ -135,13 +141,13 @@ Due soli layout radice (Breeze), non crearne altri: `<x-app-layout>` per ogni pa
 Pubblico vs autenticato non è una cartella diversa: è solo il gruppo di middleware della rotta.
 
 ### Componenti condivisi già presenti
-`<x-primary-button>`, `<x-secondary-button>`, `<x-danger-button>`, `<x-text-input>`, `<x-input-label>`, `<x-input-error>`, `<x-modal>`, `<x-dropdown>`, `<x-dropdown-link>`, `<x-nav-link>`, `<x-responsive-nav-link>`: usarli sempre, niente `<input>`/`<button>` nudi.
+`<x-primary-button>`, `<x-secondary-button>`, `<x-danger-button>`, `<x-text-input>`, `<x-input-label>`, `<x-input-error>`, `<x-modal>`, `<x-dropdown>`, `<x-dropdown-link>`, `<x-nav-link>`, `<x-responsive-nav-link>`, `<x-flash-message>`, `<x-badge>`, `<x-application-logo>`: usarli sempre, niente `<input>`/`<button>` nudi.
 Ogni nuova sezione con pagina indice va aggiunta a **entrambi** i blocchi (desktop e responsive) di `layouts/navigation.blade.php`.
 Le icone del sito sono incluse da `layouts/favicons.blade.php`.
 
-### Componenti da estrarre o sistemare
-- `<x-flash-message>`: oggi il file si chiama `flash-massage.blade.php` (refuso) e va rinominato (piano 03, Step 5.4.1). Supporta `session('status_level')` (`success`/`error`/`warning`).
-- `<x-badge :color="...">`: da creare al piano 03 (Step 5.4.5), riusato per lo stato degli errori e per gli aspetti carta.
+### Componenti estratti al piano 03
+- `<x-flash-message>`: file `components/flash-message.blade.php` (il refuso `flash-massage` è stato corretto). Supporta `session('status_level')` (`success`/`error`/`warning`, altrimenti blu).
+- `<x-badge :color="...">`: usato per lo stato degli errori (`SystemError::statusColor()`); da riusare per gli aspetti carta.
 
 ### Stile Tailwind
 - Contenitore pagina: `<div class="max-w-{2xl|4xl|5xl} mx-auto py-6">` (cambia solo la larghezza).
@@ -168,6 +174,8 @@ Unica eccezione al "solo Blade + Alpine": Chart.js via CDN nella pagina statisti
 - **`decks.assembled`**: serve a calcolare non solo cosa manca ma anche cosa si possiede ed è impegnato in un altro mazzo montato.
 - **Immagini scaricate in locale**: il sito non dipende dal CDN ufficiale a runtime.
 - **Icone generate dall'immagine Docker** a partire da `public/icon-mine.svg`: modificare l'SVG e ricostruire basta, niente rigenerazione manuale.
+- **Un'immagine Docker sola per `app` e `worker`**: stesso codice, comando diverso (`php-fpm` / `queue:work`); in dev `image: unlimiteddb:dev` (build solo su `app`), in produzione `ghcr.io/rickymandich/swudb:new` (piano `githubActionBuildGhcr`).
+- **Log viewer** (`opcodesio/log-viewer`): pannello dei log dietro il permesso `log.viewer`, linkato dal menu utente.
 - Il file `implementationPlan-ricostruzioneUnlimitedDB.pdf` è una vecchia esportazione del piano unico e non è più aggiornato (è in `.gitignore`): da rigenerare da questo indice se serve.
 
 ## Backlog (non pianificato in dettaglio)

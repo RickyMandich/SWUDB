@@ -84,7 +84,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     Log::debug('message status', ['deltaProgress' => $deltaProgress]);
                     Log::info("Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
 
-                    $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $errors);
+                    $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $existingCards);
                 } catch (\Throwable $th) {
                     Log::warning("errore nell'elaborazione della carta", ['raw' => $cardEntry, 'error' => $th]);
                     $errors->push($th);

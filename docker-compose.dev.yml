@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    image: unlimiteddb:dev
     container_name: unlimiteddb_app_dev
     restart: unless-stopped
     volumes:
@@ -54,7 +55,7 @@ services:
       start_period: 10s
 
   worker:
-    build: .
+    image: unlimiteddb:dev
     container_name: unlimiteddb_worker_dev
     restart: unless-stopped
     command: php artisan queue:work --max-time=3600

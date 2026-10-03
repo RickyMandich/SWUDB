@@ -27,7 +27,7 @@
 - [x] 4bis.2 `worker` di produzione corretto + `new-site.sh` aggiornato
 - [x] 4bis.3 Worker attivo in locale e in produzione
 
-## 01 — TelegramService (Fase 9a) — bloccante per lo scan `implementationPlan-01-ricostruzioneTelegramService.md`
+## 01 — TelegramService (Fase 9a) ✅ `implementationPlan-V-01-ricostruzioneTelegramService.md`
 - [X] 9.1 Libreria: facade `Http`, nessun SDK
 - [X] 9.2.1 Variabili `TELEGRAM_*` in `.env.example`, `.env` locale e di produzione
 - [X] 9.2.2 `TelegramActionResult`
@@ -35,7 +35,7 @@
 - [X] 9.2.4 Test `TelegramServiceTest`
 - [X] 9.2.5 Verifica: `cards:scan` esegue il job senza errori nel worker
 
-## 02 — Allineamento schema, modelli e test (Fase 4ter) `implementationPlan-02-ricostruzioneAllineamentoSchema.md`
+## 02 — Allineamento schema, modelli e test (Fase 4ter) ✅ `implementationPlan-V-02-ricostruzioneAllineamentoSchema.md`
 - [X] 4ter.1 Riscrivere le migration delle pivot con `card_id` (`card_aspect`, `card_trait`, `deck_cards`; oggi la colonna si chiama `id`, e `card_aspect` ha anche un `id()` duplicato)
 - [X] 4ter.2 Aggiornare relazioni in `Card`, `Aspect`, `CardTrait`, `DeckCard`, `Deck::cards()`
 - [X] 4ter.3 `migrate:fresh --seed`, verifica colonne, rifare la promozione ad admin
@@ -62,10 +62,12 @@
 - [X] 5.4.11 Pulsanti di stato contestuali
 - [X] 5.4.12 Tabelle e stile di `admin/users/*` (+ `<x-input-error>`)
 - [X] 5.4.13 Evitare l'auto-lockout in `UserManagementController::update`
-- [X] 5.5.1 Bug `context['error']` mancante nell'email admin
-- [X] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione
-- [X] 5.5.3 Decisione chiusa: Opzione (a) — collection carte già presenti (espansione, numero) e report Telegram senza salvarle come SystemError
+- [X] 5.5.1 Bug `context['error']` mancante nell'email admin (il template ora legge `context['error_message']`)
+- [X] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione (chiavi `error_message`, `error_line`, `error_code`, `error_file`, `raw`)
+- [ ] 5.5.3 Decisione chiusa: Opzione (a) — carte già presenti non salvate come SystemError, ma contate a parte. **Nel codice il cablaggio è sbagliato**: `handle()` passa `$errors` come quinto argomento di `processCard()` (il parametro si chiama `$existingCards`), quindi le carte già presenti finiscono in `$errors` e `$existingCards` resta sempre vuota (vedi piano 03, Step 5.5.3)
 - [X] 5.5.4 Test del rendering di `AdminScanReportEmail`
+- [ ] 5.5.5 Il job mette nella collection `$errors` i `Throwable` (`$errors->push($th)`), ma `AdminScanReportEmail` e la sua vista si aspettano modelli `SystemError` (`->message`, `route('admin.errors.show', $error)`): la mail non si renderizza con errori reali
+- [ ] 5.5.6 Test `invia la mail agli admin quando ci sono errori o carte gia' presenti`: oggi passa solo per il bug di 5.5.3; va riscritto (carta già presente → nessuna mail agli admin; errore vero → mail con `SystemError`)
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
 - [ ] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)
@@ -119,13 +121,32 @@
 - [ ] 11.4 API Resources (`CardResource`, `DeckResource`)
 
 ## 11 — Deploy (Fase 12) `implementationPlan-11-ricostruzioneDeploy.md`
-- [x] Deploy automatizzato: merge su branch `laravel` → la pipeline fa il resto
+- [x] Deploy automatizzato del branch `laravel` (vecchia SWUDB): merge → la pipeline fa il resto. Per il branch `new` nel repo non c'è nessun `.github/workflows`: vedi sezione "Pipeline di build su GitHub Actions"
 - [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker`
-- [ ] 12.0.1 Fix produzione: installare `supervisor` nell'immagine (`apk add supervisor` nel `Dockerfile`), altrimenti il container `unlimiteddb_worker` va in loop con `supervisord: not found`
-- [ ] 12.0.2 Fix produzione: nel servizio `nginx` di `docker-compose.yml` montare `build_assets` su `/var/www/html/public/build:ro` (oggi su `public_build`, path che nginx non serve) → ripristina CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`)
+- [x] `docker-compose.dev.yml`: immagine unica `unlimiteddb:dev` condivisa da `app` (con `build: .`) e `worker` (solo `image:`), così in locale si costruisce una volta sola
+- [x] 12.0.1 Fix produzione: `supervisor` installato nell'immagine (`apk add ... supervisor` nel `Dockerfile`); il container `unlimiteddb_worker` andava in loop con `supervisord: not found` (da riverificare sulla VM dopo il prossimo build)
+- [x] 12.0.2 Fix produzione: nel servizio `nginx` di `docker-compose.yml` `build_assets` è montato su `/var/www/html/public/build:ro` (era `public_build`) → CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`) (da riverificare sulla VM)
 - [ ] 12.1 Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato (serve anche `schedule:run`), immagini carta su `/storage/...`, icone su `/favicon.ico`, container `_worker` `Up`
 - [ ] 12.2.0 Verificare che il redeploy non sovrascriva le personalizzazioni di `Dockerfile`, `entrypoint.sh`, `nginx/default.conf`, `docker-compose.yml`
 - [ ] 12.2 Redeploy pulito a fine sviluppo (non ora): stop container → branch nuovo come default → commenta Action del vecchio sito → verifica `.env` → cancella `~/sites/SWUDB` → rilancia `new-site.sh`
+
+## Pipeline di build su GitHub Actions (piano trasversale) `implementationPlan-githubActionBuildGhcr.md`
+- [ ] Step 0 Pulizia sulla VM (build appese, `docker system df`)
+- [ ] Step 1 `~/scripts/deploy-image.sh` sulla VM
+- [ ] Step 2 Chiave SSH dedicata e secret `SSH_PRIVATE_KEY_UNLIMITEDDB`
+- [ ] Step 3 `docker-compose.yml`: `image: ghcr.io/rickymandich/swudb:new` su `app` e `worker` (il `worker` senza `build`)
+- [ ] Step 4 Workflow `.github/workflows/deploy-unlimiteddb.yml`
+- [ ] Step 5 Commit e push su `new`
+- [ ] Step 6 Primo run e accesso a ghcr.io dalla VM
+- [ ] Step 7 Verifica post-deploy e `docker builder prune`
+- [ ] Step 9 README (sezione Deploy) e rinomina del piano in `implementationPlan-V-...`
+
+## Debito tecnico trovato il 2026-10-03 (confronto codice/piani, senza piano dedicato)
+- [ ] `TelegramService` antepone `dev: ` a testo e caption di ogni messaggio (`sendMessage`, `sendPhoto`, `editMessage`): togliere o rendere configurabile prima di usare il bot in produzione (il piano 01 non lo prevedeva)
+- [ ] `DatabaseSeeder` crea un utente admin con email e password scritte nel file (tracciato in Git): spostarli in variabili d'ambiente o rigenerare la password se il seeder è stato eseguito fuori dal locale
+- [ ] `layouts/navigation.blade.php`, blocco responsive: il link "Log viewer" usa `<x-dropdown-link>` invece di `<x-responsive-nav-link>`
+- [ ] Nessun servizio scheduler né in `docker-compose.dev.yml` né in `docker-compose.yml`: `cards:scan` (lunedì 00:00) non parte da solo finché qualcosa non esegue `schedule:run`/`schedule:work` (vedi 12.1.3)
+- [ ] `docker-compose.dev.yml`: nel servizio `app` `DB_PASSWORD=${DB_PASSWORD}`, nel `worker` `DB_PASSWORD=` vuoto; funziona perché `init.dev.sql` crea l'utente con password vuota, ma i due servizi andrebbero allineati
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
