@@ -4,15 +4,15 @@
 > Dalla vecchia versione: "creare pagina admin di gestione espansioni e rotazioni". Serve perché `rotation`, `legal_date`, `confirmed` e `group_main_expansion` sono dati
 > curati a mano da un admin (il job di import crea le espansioni nuove con valori approssimativi, `confirmed = false`).
 >
-> Prerequisito consigliato: aver applicato [`implementationPlan-03-ricostruzioneAdminErrori.md`](implementationPlan-03-ricostruzioneAdminErrori.md), Step 5.4.1 e 5.4.5,
-> perché le viste di questa fase usano `<x-flash-message />` (oggi il file si chiama ancora `flash-massage`).
+> Prerequisito (già soddisfatto nel codice): [`implementationPlan-03-ricostruzioneAdminErrori.md`](implementationPlan-03-ricostruzioneAdminErrori.md), Step 5.4.1 e 5.4.5,
+> perché le viste di questa fase usano `<x-flash-message />` e `<x-badge>`, che ora esistono in `resources/views/components/`.
 
 ## Fase 6 — Admin espansioni
 
 ### Step 6.1 — Permesso `expansions.manage`
 
 #### 6.1.1 — Seeder
-In `database/seeders/PermissionSeeder.php` aggiungere `'expansions.manage'` all'array `$permissions` (oggi contiene 8 permessi e non questo). Il ruolo `admin` lo riceve dalla riga `$admin->givePermissionTo($permissions);` già presente.
+In `database/seeders/PermissionSeeder.php` aggiungere `'expansions.manage'` all'array `$permissions` (oggi contiene 9 permessi, compreso `log.viewer`, e non questo). Il ruolo `admin` lo riceve dalla riga `$admin->givePermissionTo($permissions);` già presente.
 
 #### 6.1.2 — Applicare
 ```bash

@@ -13,7 +13,7 @@ class TelegramService
      */
     public function sendMessage(int|string|null $chatId, string $text, array $options = []): TelegramActionResult
     {
-        return $this->call('sendMessage', ['chat_id' => $chatId, 'text' => 'dev: '.$text] + $options);
+        return $this->call('sendMessage', ['chat_id' => $chatId, 'text' => $this->prefixed($text)] + $options);
     }
 
     /**
@@ -22,7 +22,7 @@ class TelegramService
      */
     public function sendPhoto(int|string|null $chatId, string $photoUrl, string $caption = '', array $options = []): TelegramActionResult
     {
-        return $this->call('sendPhoto', ['chat_id' => $chatId, 'photo' => $photoUrl, 'caption' => 'dev: '.$caption] + $options);
+        return $this->call('sendPhoto', ['chat_id' => $chatId, 'photo' => $photoUrl, 'caption' => $this->prefixed($caption)] + $options);
     }
 
     /**
@@ -35,7 +35,7 @@ class TelegramService
             return new TelegramActionResult(false, null, 'messageId assente: il messaggio iniziale non è stato inviato');
         }
 
-        return $this->call('editMessageText', ['chat_id' => $chatId, 'message_id' => $messageId, 'text' => 'dev: '.$text]);
+        return $this->call('editMessageText', ['chat_id' => $chatId, 'message_id' => $messageId, 'text' => $this->prefixed($text)]);
     }
 
     /**
@@ -77,5 +77,10 @@ class TelegramService
             $body['description'] ?? null,
             $body,
         );
+    }
+
+    private function prefixed(string $text): string
+    {
+        return config('services.telegram.message_prefix', '').$text;
     }
 }

@@ -3,7 +3,7 @@
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). Le pagine e l'export/import stanno in
 > [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md) (Fase 7b, da fare dopo questa).
 >
-> **Prerequisito**: [`implementationPlan-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-02-ricostruzioneAllineamentoSchema.md) applicato (pivot con `card_id`, `Deck::cards()` corretta).
+> **Prerequisito**: [`implementationPlan-V-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-V-02-ricostruzioneAllineamentoSchema.md) applicato (pivot con `card_id`, `Deck::cards()` corretta).
 >
 > Stato del codice: esistono le migration `decks`/`deck_cards` e i modelli `Deck`/`DeckCard`; non esistono enum, validatori, factory dei validatori, policy, rotte, controller né viste dei mazzi.
 > La colonna `decks.format` è un `enum` SQL nativo (`premier`/`eternal`/`twin_suns`), non una stringa libera.

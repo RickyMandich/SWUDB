@@ -1,10 +1,11 @@
 # Implementation plan 09 — Ricostruzione UnlimitedDB · Fase 9b: bot Telegram, webhook e notifiche
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
-> **Prerequisiti**: [`implementationPlan-01-ricostruzioneTelegramService.md`](implementationPlan-01-ricostruzioneTelegramService.md) (il `TelegramService` usato qui) e
+> **Prerequisiti**: [`implementationPlan-V-01-ricostruzioneTelegramService.md`](implementationPlan-V-01-ricostruzioneTelegramService.md) (il `TelegramService` usato qui, già nel codice) e
 > [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (la rotta `cards.show` usata dal messaggio di ripiego di `/search`).
 >
-> Stato del codice: non esistono controller del bot, rotta webhook né job di notifica.
+> Stato del codice: esiste `app/Services/TelegramService.php` (con `TelegramActionResult`), ma non esistono controller del bot, rotta webhook né job di notifica.
+> Il `TelegramService` attuale antepone `dev: ` a testo e caption di ogni messaggio: da togliere o rendere configurabile prima di collegare il bot in produzione (voce "Debito tecnico" di `todo.md`).
 
 ## Fase 9 — Bot Telegram (webhook e notifiche)
 
@@ -98,8 +99,9 @@ In locale l'URL dell'immagine non è raggiungibile da Telegram: `sendPhoto` fall
 
 #### 9.3.5 — Registrazione del webhook (una tantum, da terminale)
 ```
-curl -F "url=https://unlimiteddb.mandich.dev/telegram/webhook" -F "secret_token=IL_TUO_SECRET" https://api.telegram.org/bot<TOKEN>/setWebhook
+curl -F "url=https://unlimiteddb-test.mandich.dev/telegram/webhook" -F "secret_token=IL_TUO_SECRET" https://api.telegram.org/bot<TOKEN>/setWebhook
 ```
+L'host è quello configurato oggi in `docker-compose.yml` e `docker/nginx/default.conf`; se cambia il dominio, va riregistrato il webhook.
 
 ### Step 9.6 — `NotifyAdminJob`
 ```php

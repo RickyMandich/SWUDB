@@ -27,7 +27,7 @@ push su `new`
 - **Migrazioni automatiche**: lo script esegue `php artisan migrate --force` ad ogni deploy. Se non lo vuoi, togli quella riga (Step 1).
 - **Pacchetto ghcr privato**: di default un pacchetto nuovo può essere privato, quindi la VM deve fare un `docker login ghcr.io` una tantum (Step 6).
 - **Costo**: su un repo privato le build consumano minuti di GitHub Actions (2000/mese nel piano gratuito); una build con cache dovrebbe stare sotto i 10 minuti.
-- `docker-compose.dev.yml` non cambia: lo sviluppo locale continua a costruire in locale.
+- `docker-compose.dev.yml` non va toccato da questo piano: lo sviluppo locale continua a costruire in locale. L'immagine unica per `app` e `worker` è già applicata in dev (`image: unlimiteddb:dev`, `build: .` solo su `app`); lo Step 3 fa lo stesso in produzione con l'immagine di ghcr.io.
 - Non rilanciare `finish-unlimiteddb.sh`: fa la build sulla VM e al passo 10 creerebbe una chiave con forced command `deploy.sh`. Di quello script restano utili solo due cose, entrambe già coperte qui sotto: restart di Traefik (Step 7) e import SQL opzionale (a mano).
 
 ## Step 0 — Pulizia sulla VM

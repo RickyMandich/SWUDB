@@ -4,7 +4,7 @@ Database delle carte di **Star Wars: Unlimited** in italiano, con (a regime) ges
 collezione personale e le altre funzioni tipiche dei siti database per TCG, più un bot Telegram per la scansione
 delle nuove carte e le notifiche all'admin.
 
-Sito: <https://unlimiteddb.mandich.dev>
+Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-compose.yml` e `docker/nginx/default.conf`)
 
 > Questo repository è la **ricostruzione da zero** del vecchio progetto SWUDB (che girava su Altervista e
 > usava soluzioni pezzotte come il `fireAndForget` con POST HTTP ricorsive). Qui si usano code reali,
@@ -33,7 +33,7 @@ Sito: <https://unlimiteddb.mandich.dev>
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il service antepone `dev: ` a ogni messaggio e caption (vedi "Debito tecnico" in `todo.md`).
-- Job di scan e mail agli admin con problemi noti (`todo.md`, 5.5.3, 5.5.5, 5.5.6): le carte già presenti vengono contate tra gli errori (cablaggio sbagliato tra `handle()` e `processCard()`) e il report agli admin riceve dei `Throwable` invece di `SystemError`, quindi la mail può partire senza errori reali oppure non renderizzarsi.
+- Mail agli admin dello scan (`todo.md`, 5.5.5, 5.5.6): il job passa a `AdminScanReportEmail` dei `Throwable`, mentre la mail e la sua vista si aspettano modelli `SystemError`, quindi con errori reali non si renderizza. Alcuni test del job vanno riallineati al codice.
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
   validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
 - Collezione, admin espansioni (i dati di `expansions` si correggono solo a mano sul DB), ricerca carte,
@@ -67,13 +67,13 @@ app/
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
   Mail/                               NewCardsEmail, AdminScanReportEmail
   Models/                             Aspect, Card, CardTrait, Deck, DeckCard, Expansion, SystemError, User
-  Services/CardImageDownloader.php    scarica le immagini carta in storage
+  Services/                           CardImageDownloader (immagini carta in storage), TelegramService + TelegramActionResult (Telegram)
 bash/                                 script di commit/versionamento/FTP (vedi "Versionamento")
 database/migrations, seeders          schema e PermissionSeeder
-docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, icons/generate-icons.sh
+docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, supervisor/worker.conf, icons/generate-icons.sh
 resources/views/                      viste Blade (admin/users, admin/errors, auth, profile, ...)
 routes/web.php, routes/console.php    rotte web e schedulazione
-tests/                                test Pest (Feature/Auth, Feature/Jobs, ProfileTest, ...)
+tests/                                test Pest (Feature/Auth, Feature/Jobs, Feature/Services, ProfileTest, ...)
 .agent/rules/*.md                     regole specifiche del progetto (da rispettare sempre)
 .env-overrides                        variabili NON sensibili tracciate in Git (versione app)
 todo.md                               roadmap/avanzamento
@@ -97,12 +97,15 @@ docker compose -f docker-compose.dev.yml exec app php artisan migrate --seed
 
 Il sito risponde su <http://localhost:66>. Servizi del compose di sviluppo: `app` (php-fpm), `nginx`,
 `db` (MariaDB, senza password), `worker` (`queue:work`). Tutti con `restart: unless-stopped`.
+`app` e `worker` usano la stessa immagine (`image: unlimiteddb:dev`, costruita una volta sola dal servizio `app`):
+per ricostruirla `docker compose -f docker-compose.dev.yml build app` oppure `up -d --build`.
 
-`docker-compose.dev.yml` è il compose di **sviluppo**; quello di produzione (`docker-compose.yml`) viene
-generato sul server da `new-site.sh` (infrastruttura `mandich.dev`) e non sta in questa cartella.
+`docker-compose.dev.yml` è il compose di **sviluppo**; `docker-compose.yml` è quello di **produzione** (Traefik, rete
+esterna `proxy`, host `unlimiteddb-test.mandich.dev`, worker con `supervisord -c /etc/supervisor/worker.conf`).
 
-`migrate --seed` crea permessi e ruolo `admin` (`PermissionSeeder`) e un utente di test
-`test@example.com` (`DatabaseSeeder`, via `UserFactory`).
+`migrate --seed` crea permessi e ruolo `admin` (`PermissionSeeder`) e un utente admin con email già verificata,
+i cui dati (email e password) sono scritti nel `DatabaseSeeder`: da spostare in variabili d'ambiente ("Debito
+tecnico" in `todo.md`).
 
 ### Asset frontend
 Gli asset Vite sono compilati nello stage `node-builder` del `Dockerfile` e l'`entrypoint.sh` li copia in
@@ -135,7 +138,7 @@ sensibili). `bootstrap/app.php` carica `.env-overrides` **prima** del `.env`, qu
 | `QUEUE_CONNECTION=database` | le code girano nel worker (default di `.env.example`) |
 | `MAIL_MAILER`, `RESEND_API_KEY` | `.env.example` imposta `MAIL_MAILER=log`; per inviare email vere serve `resend` + la chiave (dominio `mandich.dev` verificato su Resend) |
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | mittente delle email |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` | lette da `config/services.php`; il job di scan usa `TELEGRAM_ADMIN_CHAT_ID` (non presenti in `.env.example`) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET` | lette da `config/services.php`; il job di scan usa `TELEGRAM_ADMIN_CHAT_ID` (presenti, vuote, in `.env.example`) |
 | `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_PORT` | solo per gli script FTP in `bash/` |
 | `APP_VERSION_*` (in `.env-overrides`) | versione dell'app, gestita da `bash/all.sh` |
 
@@ -152,9 +155,9 @@ Migrazioni in `database/migrations`. Tabelle:
 - `cards`: PK `id` (stringa `"{expansion}{number}"`, es. `JTL256`, generata dal modello `Card`), `UNIQUE(expansion, number)` e `cid`
   univoco (`cardUid` dell'API, chiave di lookup dell'import); FK `expansion` → `expansions.expansion`.
   `front_art_path`/`back_art_path` sono path relativi nel disk `public`.
-- `aspects` + `card_aspect`; `traits` (PK `name`) + `card_trait`: aspetti e tratti normalizzati. In queste pivot (e in `deck_cards`) la colonna che punta alla carta si chiama oggi `id`, non `card_id` (allineamento: piano 02).
+- `aspects` + `card_aspect`; `traits` (PK `name`) + `card_trait`: aspetti e tratti normalizzati. Le pivot hanno la colonna `card_id` (PK composta `card_id`+`aspect_id` / `card_id`+`trait_name`).
 - `decks` (`user_id`, `name`, `format` premier/eternal/twin_suns, `is_public`, `assembled`, `version`,
-  `previous_version_id`) e `deck_cards` (PK `deck_id`+`id`, `quantity`). Il ruolo Leader/Base non è una colonna:
+  `previous_version_id`) e `deck_cards` (PK `deck_id`+`card_id`, `quantity`). Il ruolo Leader/Base non è una colonna:
   si deduce da `cards.type`. Vedi "Non ancora implementato" per lo stato della funzionalità.
 - `system_errors`: `source`, `message`, `stack_trace`, `context` (json), `status` (`open`/`ignored`/`resolved`),
   `resolved_at` (valorizzato solo quando lo stato è `resolved`).
@@ -164,23 +167,23 @@ Migrazioni in `database/migrations`. Tabelle:
 
 Registrazione/login con Breeze, email da verificare. Permessi definiti in `PermissionSeeder`:
 `cards.import`, `cards.manage`, `decks.manage-any`, `collections.manage-any`, `users.manage`,
-`bot.notifications.receive`, `mails.test`, `system.manage-errors`. Il ruolo `admin` li ha tutti.
+`bot.notifications.receive`, `mails.test`, `system.manage-errors`, `log.viewer`. Il ruolo `admin` li ha tutti.
 
-Oggi le rotte ne usano solo tre (`users.manage`, `system.manage-errors`, `mails.test`); gli altri sono definiti in
-vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middleware `role`/`permission`/
+Oggi le rotte ne usano tre (`users.manage`, `system.manage-errors`, `mails.test`); `log.viewer` abilita il link al
+Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middleware `role`/`permission`/
 `role_or_permission` sono registrati a mano in `bootstrap/app.php`.
 
 ## Rotte (`routes/web.php`)
 
 | Rotta | Accesso | Descrizione |
 |---|---|---|
-| `GET /` | pubblica | `welcome` di default |
+| `GET /` | pubblica | redirect a `/dashboard` |
 | `GET /dashboard` | login + email verificata | dashboard |
 | `/profile` (GET, PATCH, DELETE) | login | profilo utente (Breeze) |
 | rotte di `routes/auth.php` | — | login, registrazione, reset password, verifica email (Breeze) |
 | `GET /admin/utenti`, `GET /admin/utenti/{user}/modifica`, `PUT /admin/utenti/{user}` | `users.manage` | gestione utenti |
 | `GET /admin/errori` | `system.manage-errors` | lista errori (filtro `?status=`) |
-| `GET /admin/errori/{systemError}` | `system.manage-errors` | dettaglio errore (**vista ancora vuota**) |
+| `GET /admin/errori/{systemError}` | `system.manage-errors` | dettaglio errore |
 | `PATCH /admin/errori/{systemError}`, `PATCH /admin/errori/bulk` | `system.manage-errors` | cambio stato singolo / bulk |
 | `GET /render-mail/{type}` | `mails.test` | anteprima email (`new-cards`, `admin-scan-report`) |
 
@@ -189,12 +192,14 @@ vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middlewa
 1. `routes/console.php` schedula `cards:scan` ogni **lunedì alle 00:00** (serve uno scheduler che giri).
 2. `cards:scan` mette in coda `ImportCardsFromSwuApiJob`.
 3. Il **worker** (`php artisan queue:work`) esegue il job: invia un messaggio di avanzamento alla chat admin
-   Telegram (tramite `TelegramService`, **non ancora esistente**, vedi sopra), interroga
+   Telegram (tramite `TelegramService`, messaggi con prefisso `dev: `), interroga
    `https://admin.starwarsunlimited.com/api/card-list` (locale `it`, pagine da 40), fa upsert di espansioni,
    carte, aspetti e tratti e scarica le immagini con `CardImageDownloader`.
-4. Gli errori finiscono in `system_errors` (anche i "carta già presente, dati aggiornati", con stato `ignored`);
-   a fine scan partono le email `NewCardsEmail` (a tutti gli utenti, se ci sono nuove carte) e
-   `AdminScanReportEmail` (agli utenti con ruolo `admin`, se ci sono errori).
+4. Le eccezioni (es. download immagine fallito) vengono salvate in `system_errors` e conteggiate; le carte già
+   presenti non vanno tra gli `system_errors` (Opzione (a) del piano 03): sono contate a parte e riportate nel
+   messaggio Telegram finale. A fine scan partono le email `NewCardsEmail` (a tutti gli utenti, se ci sono nuove
+   carte) e `AdminScanReportEmail` (agli utenti con ruolo `admin`, se la collection errori non è vuota; vedi
+   "Non ancora implementato" per il problema noto della mail).
 5. Eccezione hardcoded nel job: la carta JTL #256 ha `max_copies` = 15.
 
 Lancio manuale: `docker compose -f docker-compose.dev.yml exec app php artisan cards:scan`.
@@ -212,14 +217,17 @@ docker compose -f docker-compose.dev.yml exec app php artisan test
 # oppure, con PHP locale: composer test
 ```
 
-Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`
-per il job di import; quest'ultimo oggi non gira (dipende da `TelegramService`, inesistente) e ha altri problemi da sistemare (piano 01 e piano 02, Step 4ter.5).
+Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`
+e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import; quest'ultimo va riallineato al codice
+e riverificato (todo 5.5.6): un test si aspetta la mail agli admin per una carta già presente, che il job non segnala più.
 
 ## Deploy
 
-Automatizzato: **il merge sul branch `laravel` fa partire la pipeline** che ricostruisce e riavvia i container
-sulla VM Oracle (infrastruttura Docker + Traefik dei siti `*.mandich.dev`). In produzione c'è anche il servizio
-`worker`; l'utente MySQL deve essere autorizzato sulla subnet dei container (`utente@172.23.0.%`, vedi
+Il branch `new` gira sulla VM Oracle (infrastruttura Docker + Traefik dei siti `*.mandich.dev`, host
+`unlimiteddb-test.mandich.dev`) e nel repo **non ha ancora una pipeline** (nessuna cartella `.github/workflows`):
+il piano `implementationPlan-githubActionBuildGhcr.md` prevede build su GitHub Actions, immagine su `ghcr.io` e
+pull sulla VM. La pipeline "merge sul branch `laravel`" riguarda la vecchia SWUDB. In produzione c'è anche il
+servizio `worker`; l'utente MySQL deve essere autorizzato sulla subnet dei container (`laravel@172.22.0.%`, vedi
 `docker/mysql/init.sql`), non su un IP singolo.
 Da verificare post-deploy (aperto in `todo.md`): worker `Up`, `failed_jobs` vuota, scan schedulato, immagini
 raggiungibili su `/storage/...`.

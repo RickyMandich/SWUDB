@@ -1,7 +1,7 @@
 # Implementation plan 08 — Ricostruzione UnlimitedDB · Fase 8: collezione e carte mancanti
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
-> **Prerequisiti**: [`implementationPlan-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-02-ricostruzioneAllineamentoSchema.md) (colonne `card_id`),
+> **Prerequisiti**: [`implementationPlan-V-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-V-02-ricostruzioneAllineamentoSchema.md) (colonne `card_id`),
 > [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md) (relazioni dei mazzi) e, per la ricerca,
 > [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
 >

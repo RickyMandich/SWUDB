@@ -29,13 +29,23 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
 
-        $user = User::create(
+        $admin = config('seed.admin');
+
+        if (! $admin['email'] || ! $admin['password']) {
+            $this->command->warn('SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD non impostate: utente admin non creato.');
+
+            return;
+        }
+
+        $user = User::updateOrCreate(
+            ['email' => $admin['email']],
             [
-                'name' => 'RickyMandich',
-                'email' => 'ricky.mandich@gmail.com',
-                'password' => Hash::make('R1cc4rd0006'),
+                'name' => $admin['name'],
+                'password' => Hash::make($admin['password']),
             ]
-        )->assignRole(Role::findOrCreate('admin'));
+        );
+        $user->forceFill(['email_verified_at' => Carbon::now()])->save();
+        $user->assignRole(Role::findOrCreate('admin'));
 
         $user->email_verified_at = Carbon::now();
         $user->save();

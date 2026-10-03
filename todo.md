@@ -64,10 +64,10 @@
 - [X] 5.4.13 Evitare l'auto-lockout in `UserManagementController::update`
 - [X] 5.5.1 Bug `context['error']` mancante nell'email admin (il template ora legge `context['error_message']`)
 - [X] 5.5.2 Salvare `$e->getMessage()` nel `context`, non l'oggetto eccezione (chiavi `error_message`, `error_line`, `error_code`, `error_file`, `raw`)
-- [ ] 5.5.3 Decisione chiusa: Opzione (a) — carte già presenti non salvate come SystemError, ma contate a parte. **Nel codice il cablaggio è sbagliato**: `handle()` passa `$errors` come quinto argomento di `processCard()` (il parametro si chiama `$existingCards`), quindi le carte già presenti finiscono in `$errors` e `$existingCards` resta sempre vuota (vedi piano 03, Step 5.5.3)
+- [X] 5.5.3 Decisione chiusa: Opzione (a) — carte già presenti non salvate come SystemError, ma contate a parte (`$existingCards` passata a `processCard()`, conteggio nel messaggio Telegram finale)
 - [X] 5.5.4 Test del rendering di `AdminScanReportEmail`
-- [ ] 5.5.5 Il job mette nella collection `$errors` i `Throwable` (`$errors->push($th)`), ma `AdminScanReportEmail` e la sua vista si aspettano modelli `SystemError` (`->message`, `route('admin.errors.show', $error)`): la mail non si renderizza con errori reali
-- [ ] 5.5.6 Test `invia la mail agli admin quando ci sono errori o carte gia' presenti`: oggi passa solo per il bug di 5.5.3; va riscritto (carta già presente → nessuna mail agli admin; errore vero → mail con `SystemError`)
+- [ ] 5.5.5 Il job mette nella collection `$errors` i `Throwable` (`$errors->push($th)`), ma `AdminScanReportEmail` e la sua vista si aspettano modelli `SystemError` (`$error->message`, `route('admin.errors.show', $error)`): con errori reali la mail non si renderizza. Il `SystemError` creato in `processCard()` non viene restituito al chiamante
+- [ ] 5.5.6 Test del job da riallineare al codice: `invia la mail agli admin quando ci sono errori o carte gia' presenti` non crea nessun admin, usa `rarity => 'Special'` (l'enum SQL è in italiano) e si aspetta la mail per una carta già presente, che il job non segnala più; inoltre `fakeSwuHttp()` riceve già un array con la chiave dell'URL e la annida di nuovo (da verificare lanciando la suite)
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
 - [ ] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)
@@ -144,7 +144,7 @@
 ## Debito tecnico trovato il 2026-10-03 (confronto codice/piani, senza piano dedicato)
 - [ ] `TelegramService` antepone `dev: ` a testo e caption di ogni messaggio (`sendMessage`, `sendPhoto`, `editMessage`): togliere o rendere configurabile prima di usare il bot in produzione (il piano 01 non lo prevedeva)
 - [ ] `DatabaseSeeder` crea un utente admin con email e password scritte nel file (tracciato in Git): spostarli in variabili d'ambiente o rigenerare la password se il seeder è stato eseguito fuori dal locale
-- [ ] `layouts/navigation.blade.php`, blocco responsive: il link "Log viewer" usa `<x-dropdown-link>` invece di `<x-responsive-nav-link>`
+- [ ] `layouts/navigation.blade.php`, blocco responsive: il link "Log viewer" apre `<x-responsive-nav-link>` ma lo chiude con `</x-dropdown-link>` (Blade non dà errore perché compila tutti i tag di chiusura allo stesso modo, ma il tag è sbagliato)
 - [ ] Nessun servizio scheduler né in `docker-compose.dev.yml` né in `docker-compose.yml`: `cards:scan` (lunedì 00:00) non parte da solo finché qualcosa non esegue `schedule:run`/`schedule:work` (vedi 12.1.3)
 - [ ] `docker-compose.dev.yml`: nel servizio `app` `DB_PASSWORD=${DB_PASSWORD}`, nel `worker` `DB_PASSWORD=` vuoto; funziona perché `init.dev.sql` crea l'utente con password vuota, ma i due servizi andrebbero allineati
 

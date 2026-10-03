@@ -5,7 +5,9 @@ use App\Mail\AdminScanReportEmail;
 use App\Mail\NewCardsEmail;
 use App\Models\Card;
 use App\Models\Expansion;
+use App\Models\Role;
 use App\Models\SystemError;
+use App\Models\User;
 use App\Services\CardImageDownloader;
 use App\Services\TelegramService;
 use Illuminate\Support\Facades\Http;
@@ -17,13 +19,10 @@ use Illuminate\Support\Facades\Storage;
 // che parta da questo scheletro e sovrascriva solo i campi che cambiano evita di ripeterlo in ogni test.
 
 /** Simula l'API SWU e risponde con un PNG finto a qualunque altro URL (immagini CDN). */
-function fakeSwuHttp($cardListResponse): void
+function fakeSwuHttp(array $routes): void
 {
     Storage::fake('public');
-    Http::fake([
-        'admin.starwarsunlimited.com/api/card-list*' => $cardListResponse,
-        '*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png']),
-    ]);
+    Http::fake($routes + ['*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png'])]);
 }
 function fakeCardEntry(array $overrides = []): array
 {
@@ -85,20 +84,13 @@ it('registra un SystemError su dati malformati invece di fermare lo scan', funct
     expect(SystemError::count())->toBeGreaterThan(0);
 });
 
-it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', function () {
-    Expansion::create([
-        'expansion' => 'SOR',
-        'rotation' => '0',
-    ]);
-    // gia' presente, l'API la rispedisce
+it('non manda la mail agli admin per una carta gia\' presente', function () {
+    User::factory()->create()->assignRole(Role::findOrCreate('admin'));
+    Expansion::create(['expansion' => 'SOR', 'rotation' => '0']);
     Card::create([
-        'cid' => '2579145458',
-        'expansion' => 'SOR',
-        'number' => 5,
-        'name' => 'Luke Skywalker',
-        'type' => 'Leader',
-        'rarity' => 'Special',
-    ]);
+        'cid' => '2579145458', 'expansion' => 'SOR', 'number' => 5,
+        'name' => 'Luke Skywalker', 'type' => 'Leader', 'rarity' => 'Speciale',
+    ]); // se la migration richiede altri campi non nullable, aggiungili qui
     fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
             'data' => [fakeCardEntry()],
@@ -109,7 +101,25 @@ it('invia la mail agli admin quando ci sono errori o carte gia\' presenti', func
 
     (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
 
-    Mail::assertQueued(AdminScanReportEmail::class);
+    Mail::assertNotQueued(AdminScanReportEmail::class);
+});
+
+it('manda la mail agli admin quando una carta va in errore e il report si renderizza', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::findOrCreate('admin'));
+    fakeSwuHttp([
+        'admin.starwarsunlimited.com/api/card-list*' => Http::response([
+            'data' => [['id' => 1, 'attributes' => ['cardUid' => null]]],
+            'meta' => ['pagination' => ['pageCount' => 1]],
+        ]),
+    ]);
+    Mail::fake();
+
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
+
+    Mail::assertQueued(AdminScanReportEmail::class, fn ($mail) => $mail->hasTo($admin->email)
+        && $mail->errors->first() instanceof SystemError);
+    expect((new AdminScanReportEmail(SystemError::all()))->render())->toContain('cardUid mancante nel payload');
 });
 
 it('renderizza il report admin anche con errori senza chiave error nel contesto', function () {

@@ -1,8 +1,9 @@
 # Implementation plan 03 — Ricostruzione UnlimitedDB · Fase 5: log errori scan (rifiniture e correzioni)
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
-> Controller, rotte, permesso e prima stesura delle viste sono già nel codice; restano le correzioni alle viste e alle email di scan.
-> Verificato riga per riga su `admin/errors/*`, `admin/users/*`, `components/`, `layouts/navigation.blade.php` e `ImportCardsFromSwuApiJob`.
+> Stato (verificato sul codice il 2026-10-03): controller, rotte, permesso, viste admin, componenti `<x-flash-message>` e `<x-badge>`, auto-lockout e Opzione (a) del job sono **già nel codice**.
+> Restano solo gli Step 5.5.5 e 5.5.6 (mail agli admin e test del job): per questo il file non è ancora `implementationPlan-V-03-...`.
+> Gli step 5.1–5.4 sotto restano come riferimento di ciò che è stato fatto.
 
 ## Fase 5 — Log errori scan (`system_errors`)
 
@@ -22,15 +23,15 @@ Presente in `PermissionSeeder` e assegnato al ruolo `admin`.
 Gruppo `auth` + `verified` + `permission:system.manage-errors`, prefisso `admin`. **Ordine da rispettare**: `PATCH /errori/bulk` va registrata **prima** di `PATCH /errori/{systemError}`,
 altrimenti "bulk" verrebbe interpretato come id del modello. Nel codice l'ordine è già quello giusto.
 
-#### 5.3.3 — Vista lista: funziona ma è grezza
-`admin/errors/index.blade.php` esiste e funziona; i problemi sono elencati negli Step 5.4.x.
+#### 5.3.3 — Vista lista ✅
+`admin/errors/index.blade.php`: lista paginata con filtro per stato e azioni singole/bulk (Step 5.4.8).
 
-#### 5.3.4 — Vista dettaglio: esiste in versione grezza
-`admin/errors/show.blade.php` **non è vuota** (README e `todo.md` la davano per vuota): contiene la prima stesura, da rifinire con lo Step 5.4.10.
+#### 5.3.4 — Vista dettaglio ✅
+`admin/errors/show.blade.php` esiste nella versione rifinita dello Step 5.4.10.
 
 ### Step 5.4 — Correzioni alle view già scritte
 Ordine consigliato: prima i bug (5.4.3, 5.4.8, 5.4.9), poi i componenti (5.4.1, 5.4.5), poi lo stile (5.4.2, 5.4.6, 5.4.10, 5.4.11, 5.4.12), infine 5.4.13.
-Stato di ogni punto: 5.4.4 e 5.4.7 sono già fatti, gli altri sono da fare.
+Stato di ogni punto: tutti gli step 5.4.x sono applicati nel codice (anche 5.4.13, `status_level` nei controller e `$systemErrors` nella lista).
 
 #### 5.4.1 — Rinominare e sistemare `<x-flash-message>`
 Il componente esiste ma il file si chiama **`flash-massage.blade.php`** (refuso), quindi si usa come `<x-flash-message />`. Rinominarlo (`git mv resources/views/components/flash-massage.blade.php resources/views/components/flash-message.blade.php`)
@@ -282,20 +283,20 @@ if ($user->is($request->user()) && ! in_array('admin', $validated['roles'] ?? []
 L'errore è visibile grazie all'`<x-input-error>` dello Step 5.4.12.2.
 
 ### Step 5.5 — Correzioni alle email di scan
-Trovato leggendo `ImportCardsFromSwuApiJob` insieme ai template: l'email agli admin si rompe proprio sul caso più comune ("carta già presente").
+Trovato leggendo `ImportCardsFromSwuApiJob` insieme ai template: l'email agli admin si rompeva proprio sul caso più comune ("carta già presente"). Gli Step 5.5.1–5.5.4 sono applicati; restano 5.5.5 e 5.5.6.
 
-#### 5.5.1 — Bug: `context['error']` non esiste per gli errori "già presente"
+#### 5.5.1 — Bug: `context['error']` non esiste per gli errori "già presente" ✅ (nel codice il template legge `context['error_message'] ?? 'Errore sconosciuto'`)
 `resources/views/emails/admin-scan-report.blade.php` legge `$error->context['error']`, ma per i `SystemError` "Carta {cid} gia' presente" il job salva `context = ['card' => $card]`, senza chiave `error`:
 `Undefined array key "error"` mentre la mail viene renderizzata dal worker, e la mail non parte. Sostituire nel template `{{ $error->context['error'] }}` con `{{ $error->context['error'] ?? '—' }}`.
 
-#### 5.5.2 — Bug: l'eccezione nel `context` diventa `{}`
+#### 5.5.2 — Bug: l'eccezione nel `context` diventa `{}` ✅ (nel codice le chiavi sono `error_message`, `error_line`, `error_code`, `error_file`, `raw`)
 Nel `catch` di `processCard()` il job salva `'context' => ['raw' => $cardData, 'error' => $e]`. Un oggetto `Throwable` serializzato in JSON non ha proprietà pubbliche: nel database finisce `{}`, quindi il dettaglio dell'errore va perso.
 Salvare il messaggio:
 ```php
 'context' => ['raw' => $cardData, 'error' => $e->getMessage()],
 ```
 
-#### 5.5.3 — Risoluzione: volume degli errori "già presente" (Opzione A adottata)
+#### 5.5.3 — Risoluzione: volume degli errori "già presente" (Opzione A adottata) ✅ applicato nel codice
 **Decisione confermata: Opzione (a).**
 Ad ogni scan periodico, le carte già presenti nel database non devono essere salvate come `SystemError` (evitando di intasare la tabella `system_errors` con migliaia di righe a stato `ignored` e di gonfiare inutilmente il report email agli admin).
 - In `app/Jobs/ImportCardsFromSwuApiJob.php`:
@@ -312,7 +313,7 @@ Ad ogni scan periodico, le carte già presenti nel database non devono essere sa
   - La tabella `system_errors` e l'invio dell'email admin vengono attivati esclusivamente in caso di veri errori o eccezioni (nel blocco `catch`).
 
 
-#### 5.5.4 — Test
+#### 5.5.4 — Test ✅
 In `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` aggiungere un test che esegue lo scan con una carta già presente e verifica che il report si renderizzi:
 ```php
 it('renderizza il report admin anche con errori senza chiave error nel contesto', function () {
@@ -329,3 +330,21 @@ it('renderizza il report admin anche con errori senza chiave error nel contesto'
 });
 ```
 Serve `use App\Mail\AdminScanReportEmail;` (già importato nel file di test) e le rotte `admin.errors.show` (già esistenti).
+
+#### 5.5.5 — La mail agli admin riceve `Throwable`, non `SystemError`
+In `ImportCardsFromSwuApiJob::handle()` il `catch (\Throwable $th)` fa `$errors->push($th)`, e `sendNotifications()` passa quella collection ad `AdminScanReportEmail`.
+La vista `emails/admin-scan-report.blade.php` però usa `$error->message`, `$error->context['error_message']` e `route('admin.errors.show', $error)`, cioè si aspetta modelli `SystemError`:
+con un'eccezione vera `message` è una proprietà protetta e la route non trova un id. Il `SystemError` che `processCard()` crea nel suo `catch` (`$err`) non esce mai dal metodo.
+Correzione proposta: far arrivare a `handle()` i `SystemError` e non le eccezioni.
+- In `processCard()` aggiungere un parametro `Collection $errors` e, nel `catch`, `$errors->push($err);` subito dopo il `SystemError::create(...)` (prima del `throw $e`).
+- In `handle()` passarglielo e nel `catch (\Throwable $th)` lasciare solo il `Log::warning(...)`, senza `$errors->push($th)`.
+- Il conteggio `{$errors->count()} problemi` del messaggio Telegram resta corretto.
+- Il `SystemError::create` per il retro non scaricato, in `downloadImages()`, va fatto confluire nella stessa collection.
+
+#### 5.5.6 — Riallineare i test del job al codice
+In `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`:
+- `fakeSwuHttp()` mette la risposta sotto la chiave dell'URL, ma i test le passano un array che ha già quella chiave: annidata due volte, la risposta finta non contiene `data`. Passare direttamente `Http::response(...)` / `Http::sequence()`.
+- Il test `invia la mail agli admin quando ci sono errori o carte gia' presenti`: creare un utente con ruolo `admin`, usare un `rarity` valido per l'enum italiano (es. `Speciale`, non `Special`) e dividerlo in due.
+  Carta già presente → `Mail::assertNotQueued(AdminScanReportEmail::class)`; carta con `cardUid` nullo → `Mail::assertQueued(AdminScanReportEmail::class)`.
+- Dopo lo Step 5.5.5 aggiungere un test che renderizza `AdminScanReportEmail` con il `SystemError` prodotto dal job.
+Lanciare l'intera suite (`php artisan test`) prima e dopo, perché qui lo stato attuale dei test è dedotto dalla lettura, non da un'esecuzione.

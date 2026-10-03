@@ -84,10 +84,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     Log::debug('message status', ['deltaProgress' => $deltaProgress]);
                     Log::info("Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
 
-                    $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $existingCards);
+                    $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $existingCards, $errors);
                 } catch (\Throwable $th) {
                     Log::warning("errore nell'elaborazione della carta", ['raw' => $cardEntry, 'error' => $th]);
-                    $errors->push($th);
+                    // niente $errors->push($th): il SystemError è già stato messo in $errors da processCard()
 
                     continue;
                 } finally {
@@ -119,7 +119,8 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         string $lastestRotation,
         CardImageDownloader $imageDownloader,
         Collection $newCards,
-        Collection $existingCards
+        Collection $existingCards,
+        Collection $errors
     ): void {
         $cid = $cardData['cardUid'] ?? null;
 
@@ -201,6 +202,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'raw' => $cardData,
                 ],
             ]);
+            $errors->push($err);
             throw $e;
         }
         Log::info("Fine elaborazione carta {$cid}", ['card' => $card, 'cid' => $cid]);
@@ -246,26 +248,41 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         $card->traits()->sync($traitNames);
     }
 
-    private function downloadImages(Card $card, array $cardData, CardImageDownloader $imageDownloader): void
+    private function downloadImages(Card $card, array $cardData, CardImageDownloader $imageDownloader, Collection $errors): void
     {
         $frontUrl = $cardData['artFront']['data']['attributes']['url']
             ?? $cardData['artFront']['data']['attributes']['formats']['card']['url']
             ?? null;
-
-        if ($frontUrl && ! $card->front_art_path) {
-            $path = $imageDownloader->download($frontUrl, $card, 'front');
-            $path ? $card->update(['front_art_path' => $path]) : null;
-        }
-
         $backAttrs = $cardData['artBack']['data']['attributes'] ?? null;
         $backUrl = $backAttrs['url'] ?? $backAttrs['formats']['card']['url'] ?? null;
+        $sides = [];
+        if ($frontUrl) {
+            $sides['front'] = $frontUrl;
+            Log::debug("Immagine davanti non trovata per {$card->id} {{$card->name} {$card->title}}");
+        }
+        if ($backUrl) {
+            $sides['back'] = $backUrl;
+            Log::debug("Immagine retro non trovata per {$card->id} {{$card->name} {$card->title}}");
+        }
 
-        if ($backUrl && ! $card->back_art_path) {
-            $path = $imageDownloader->download($backUrl, $card, 'back');
-            $path ? $card->update(['back_art_path' => $path]) : SystemError::create([
-                'source' => CardImageDownloader::class,
-                'message' => "Download immagine retro fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
-            ]);
+        foreach ($sides as $side => $url) {
+            $column = "{$side}_art_path";
+
+            if (! $url || $card->{$column}) {
+                continue;
+            }
+
+            $path = $imageDownloader->download($url, $card, $side);
+
+            if ($path) {
+                $card->update([$column => $path]);
+            } else {
+                $errors->push(SystemError::create([
+                    'source' => CardImageDownloader::class,
+                    'message' => "Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
+                    'context' => ['error_message' => "Il download di {$url} non ha restituito un path"],
+                ]));
+            }
         }
     }
 

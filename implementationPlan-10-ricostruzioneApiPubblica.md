@@ -1,7 +1,7 @@
 # Implementation plan 10 — Ricostruzione UnlimitedDB · Fase 11: API REST pubblica
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
-> **Prerequisiti**: [`implementationPlan-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-02-ricostruzioneAllineamentoSchema.md) (relazioni con `card_id`),
+> **Prerequisiti**: [`implementationPlan-V-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-V-02-ricostruzioneAllineamentoSchema.md) (relazioni con `card_id`),
 > [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`, condiviso con la pagina `/carte`) e
 > [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md) (enum e relazioni dei mazzi).
 >
