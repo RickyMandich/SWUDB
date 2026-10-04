@@ -31,11 +31,10 @@ class CardImageDownloader
                 throw new ConnectionException("Failed to download image from {$sourceUrl}");
             }
         } catch (ConnectionException $e) {
-            SystemError::create([
-                'source' => CardImageDownloader::class,
-                'message' => "Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title}), returned code {{$response?->status()}}",
-                'stack_trace' => $e->getTraceAsString(),
-                'context' => ['source_url' => $sourceUrl, 'card' => $card, 'side' => $side],
+            Log::warning("Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title}), returned code {{$response?->status()}}", [
+                'source_url' => $sourceUrl,
+                'card' => $card,
+                'side' => $side,
             ]);
 
             return null;
