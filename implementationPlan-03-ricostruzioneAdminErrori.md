@@ -33,7 +33,7 @@ altrimenti "bulk" verrebbe interpretato come id del modello. Nel codice l'ordine
 Ordine consigliato: prima i bug (5.4.3, 5.4.8, 5.4.9), poi i componenti (5.4.1, 5.4.5), poi lo stile (5.4.2, 5.4.6, 5.4.10, 5.4.11, 5.4.12), infine 5.4.13.
 Stato di ogni punto: tutti gli step 5.4.x sono applicati nel codice (anche 5.4.13, `status_level` nei controller e `$systemErrors` nella lista).
 
-#### 5.4.1 — Rinominare e sistemare `<x-flash-message>`
+#### 5.4.1 — Rinominare e sistemare `<x-flash-message>` ✅
 Il componente esiste ma il file si chiama **`flash-massage.blade.php`** (refuso), quindi si usa come `<x-flash-message />`. Rinominarlo (`git mv resources/views/components/flash-massage.blade.php resources/views/components/flash-message.blade.php`)
 e sostituire il contenuto: oggi il testo non ha padding né colore, quindi su sfondo colorato è illeggibile.
 ```blade
@@ -52,10 +52,10 @@ e sostituire il contenuto: oggi il testo non ha padding né colore, quindi su sf
     </div>
 @endif
 ```
-Poi sostituire `<x-flash-message />` con `<x-flash-message />` in `admin/users/index.blade.php` e `admin/errors/index.blade.php`. Aggiungere `->with('status_level', 'success')` anche in
+Poi usare `<x-flash-message />` (al posto del vecchio `<x-flash-massage />`) in `admin/users/index.blade.php` e `admin/errors/index.blade.php`. Aggiungere `->with('status_level', 'success')` anche in
 `SystemErrorController::update()` e in `UserManagementController::update()` (oggi solo `bulkUpdate()` lo imposta, gli altri mostrano il flash in blu).
 
-#### 5.4.2 — Titolo nello slot `header`
+#### 5.4.2 — Titolo nello slot `header` ✅
 `admin/users/index`, `admin/users/edit` e `admin/errors/show` hanno l'`<h1>` nel corpo; `admin/errors/index` non ha titolo. Spostarlo nello slot, come in `dashboard.blade.php`:
 ```blade
 <x-app-layout>
@@ -65,16 +65,16 @@ Poi sostituire `<x-flash-message />` con `<x-flash-message />` in `admin/users/i
     <div class="max-w-4xl mx-auto py-6">
         ...
 ```
-Titoli: "Gestione utenti", "Modifica {{ $user->name }}", "Log errori scan", "Errore #{{ $systemError->id }}". Si usa `h2` (non `h1`) come nella dashboard di Breeze. Il pezzo di 5.4.8 e 5.4.10 già lo include.
+Titoli: "Gestione utenti", "Modifica {{ $user->name }}", "Gestione Errori di Sistema" (la lista errori), "Errore #{{ $systemError->id }}". Si usa `h2` (non `h1`) come nella dashboard di Breeze. Il pezzo di 5.4.8 e 5.4.10 già lo include.
 
-#### 5.4.3 — Bug: `$error->stack` non esiste
+#### 5.4.3 — Bug: `$error->stack` non esiste ✅
 In `admin/errors/index.blade.php` il blocco `<pre>{{ $error->stack }}</pre>` legge una colonna inesistente (si chiama `stack_trace`), quindi resta sempre vuoto. Corretto, l'intero stack trace comparirebbe in ogni riga aperta:
 toglierlo dalla lista (c'è già la pagina di dettaglio). Il rifacimento completo della lista è nello Step 5.4.8.
 
 #### 5.4.4 — Link a `errors.show` ✅
 Ogni riga ha già il pulsante "Mostra" verso `route('admin.errors.show', $error)`.
 
-#### 5.4.5 — Componente `<x-badge>` per lo stato
+#### 5.4.5 — Componente `<x-badge>` per lo stato ✅
 Serve identico per gli aspetti carta (Step 10.1): un solo componente.
 ```blade
 {{-- resources/views/components/badge.blade.php --}}
@@ -96,18 +96,18 @@ public function statusColor(): string
 }
 ```
 
-#### 5.4.6 — Pulsanti
+#### 5.4.6 — Pulsanti ✅
 I pulsanti colorati a mano della lista (verde/grigio/rosso) possono restare per mantenere la distinzione risolto/ignora/riapri. Negli altri form usare i componenti Breeze:
 in `admin/users/edit.blade.php` sostituire `<button type="submit" class="mt-4">Salva</button>` con `<x-primary-button class="mt-4">Salva</x-primary-button>`.
 
 #### 5.4.7 — Voci di navigazione responsive ✅
 "Gestione utenti" e "Gestione errori" sono già presenti sia nel blocco desktop sia in `<!-- Responsive Navigation Menu -->` di `layouts/navigation.blade.php`.
 
-#### 5.4.8 — Bug: la variabile `$errors` sovrascrive quella di Laravel
+#### 5.4.8 — Bug: la variabile `$errors` sovrascrive quella di Laravel ✅
 `SystemErrorController::index()` passa `compact('errors', 'status')`; in ogni vista Blade `$errors` è già il `ViewErrorBag` della validazione, e qui viene sostituito dal paginator.
 Conseguenza: premendo "Risolvi selezionati" senza spuntare nulla la validazione fallisce e la vista non può mostrare l'errore. Correzione:
 
-##### 5.4.8.1 — Controller
+##### 5.4.8.1 — Controller ✅
 ```php
 $systemErrors = SystemError::when($status, fn ($q) => $q->where('status', $status))
     ->latest()
@@ -117,12 +117,12 @@ $systemErrors = SystemError::when($status, fn ($q) => $q->where('status', $statu
 return view('admin.errors.index', compact('systemErrors', 'status'));
 ```
 
-##### 5.4.8.2 — Vista lista completa (`resources/views/admin/errors/index.blade.php`)
+##### 5.4.8.2 — Vista lista completa (`resources/views/admin/errors/index.blade.php`) ✅
 Questa versione applica in un colpo solo 5.4.1, 5.4.2, 5.4.3, 5.4.5, 5.4.8, 5.4.9 e 5.4.11:
 ```blade
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Log errori scan</h2>
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Gestione Errori di Sistema</h2>
     </x-slot>
 
     <div class="max-w-5xl mx-auto py-6 px-4">
@@ -203,10 +203,10 @@ Questa versione applica in un colpo solo 5.4.1, 5.4.2, 5.4.3, 5.4.5, 5.4.8, 5.4.
 </x-app-layout>
 ```
 
-#### 5.4.9 — Paginazione mancante
+#### 5.4.9 — Paginazione mancante ✅
 Coperto dallo Step 5.4.8.2: `{{ $systemErrors->links() }}` va **fuori** dal `<form>` del bulk.
 
-#### 5.4.10 — Rifare la vista dettaglio (`resources/views/admin/errors/show.blade.php`)
+#### 5.4.10 — Rifare la vista dettaglio (`resources/views/admin/errors/show.blade.php`) ✅
 Problemi della prima stesura: commento Blade copiato dal piano, classi `dark:*` (il resto dell'app non ha il dark mode), etichette in inglese, nessun `source`/`status`/date, `@if` dentro i `<pre>` che aggiungono a capo,
 `json_encode` senza flag (accenti e `/` escapati), contenitore diverso dalle altre pagine admin. Sostituire l'intero file:
 ```blade
@@ -261,19 +261,19 @@ Problemi della prima stesura: commento Blade copiato dal piano, classi `dark:*` 
 ```
 Il `update()` del controller fa `back()`, quindi dopo il cambio di stato si resta sulla pagina.
 
-#### 5.4.11 — Pulsanti di stato contestuali
+#### 5.4.11 — Pulsanti di stato contestuali ✅
 Coperto dallo Step 5.4.8.2: un errore aperto mostra "Segna come risolto" e "Ignora", uno risolto o ignorato mostra solo "Riapri". Anche la pagina di dettaglio (5.4.10) nasconde la transizione verso lo stato corrente.
 
-#### 5.4.12 — Tabelle e stile di `admin/users/*`
+#### 5.4.12 — Tabelle e stile di `admin/users/*` ✅
 
-##### 5.4.12.1 — `admin/users/index.blade.php`
-Avvolgere la tabella in `<div class="overflow-x-auto">` e dare a `<th>`/`<td>` padding e bordo (`px-3 py-2 border-b`). Fare lo stesso su ogni tabella admin futura (Fase 6 inclusa), non solo qui.
+##### 5.4.12.1 — `admin/users/index.blade.php` ✅
+Avvolgere la tabella in `<div class="overflow-x-auto">` e dare a `<th>`/`<td>` padding e bordo (`px-2 py-2 border-b`, come nel codice). Fare lo stesso su ogni tabella admin futura (Fase 6 inclusa), non solo qui.
 
-##### 5.4.12.2 — `admin/users/edit.blade.php`
+##### 5.4.12.2 — `admin/users/edit.blade.php` ✅
 Checkbox con le classi Breeze `rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500`, link "Annulla" verso `route('admin.users.index')` accanto al pulsante Salva,
 e sotto ogni gruppo `<x-input-error :messages="$errors->get('roles')" class="mt-2" />` / `$errors->get('permissions')` (il controller valida ma la vista non mostra gli errori).
 
-#### 5.4.13 — Evitare l'auto-lockout in `UserManagementController::update`
+#### 5.4.13 — Evitare l'auto-lockout in `UserManagementController::update` ✅
 Se un admin toglie a se stesso il ruolo `admin`, nessuno può più aprire `/admin/utenti`. Prima dei `sync`:
 ```php
 if ($user->is($request->user()) && ! in_array('admin', $validated['roles'] ?? [], true)) {
