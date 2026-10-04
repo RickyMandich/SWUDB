@@ -16,7 +16,7 @@ class ExpansionController extends Controller
      */
     public function index(): View
     {
-        $expansions = Expansion::orderBy('expansion')->get();
+        $expansions = Expansion::orderByDesc('rotation')->orderByDesc('legal_date')->get();
 
         return view('admin.expansions.index', compact('expansions'));
     }
