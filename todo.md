@@ -68,6 +68,7 @@
 - [X] 5.5.4 Test del rendering di `AdminScanReportEmail`
 - [X] 5.5.5 Mail admin con `SystemError` invece di `Throwable`: `$errors` passata a `processCard()` e `downloadImages()` e popolata con i `SystemError`; un lato assente nell'API è solo loggato (`Log::debug`), un `SystemError` nasce solo se l'URL c'è e il download fallisce
 - [ ] 5.5.6 Test del job riscritti (helper `fakeSwuHttp(array $routes)`, due test sulla mail admin) e import di `Role` corretto; manca solo lanciare la suite (`php artisan test`) e spuntare
+- [ ] 5.5.7 Doppio `SystemError` sul download immagine fallito (lo crea `CardImageDownloader::download()` e poi `downloadImages()`; solo il secondo finisce nel report admin): togliere quello del downloader (lasciare un `Log::warning`) e arricchire il `context` di quello del job con `source_url` e `side`
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
 - [ ] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)

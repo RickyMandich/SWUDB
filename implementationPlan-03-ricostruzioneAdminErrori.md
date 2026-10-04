@@ -1,8 +1,8 @@
 # Implementation plan 03 — Ricostruzione UnlimitedDB · Fase 5: log errori scan (rifiniture e correzioni)
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
-> Stato (verificato sul codice il 2026-10-03): controller, rotte, permesso, viste admin, componenti `<x-flash-message>` e `<x-badge>`, auto-lockout e Opzione (a) del job sono **già nel codice**.
-> Restano solo gli Step 5.5.5 e 5.5.6 (mail agli admin e test del job): per questo il file non è ancora `implementationPlan-V-03-...`.
+> Stato (verificato sul codice il 2026-10-04): controller, rotte, permesso, viste admin, componenti `<x-flash-message>` e `<x-badge>`, auto-lockout, Opzione (a) del job e correzioni alle email di scan (5.5.1–5.5.5) sono **già nel codice**.
+> Restano lo Step 5.5.6 (test scritti ma da confermare con `php artisan test`) e lo Step 5.5.7 (doppio `SystemError` sul download fallito, da decidere): per questo il file non è ancora `implementationPlan-V-03-...`.
 > Gli step 5.1–5.4 sotto restano come riferimento di ciò che è stato fatto.
 
 ## Fase 5 — Log errori scan (`system_errors`)
@@ -283,17 +283,24 @@ if ($user->is($request->user()) && ! in_array('admin', $validated['roles'] ?? []
 L'errore è visibile grazie all'`<x-input-error>` dello Step 5.4.12.2.
 
 ### Step 5.5 — Correzioni alle email di scan
-Trovato leggendo `ImportCardsFromSwuApiJob` insieme ai template: l'email agli admin si rompeva proprio sul caso più comune ("carta già presente"). Gli Step 5.5.1–5.5.4 sono applicati; restano 5.5.5 e 5.5.6.
+Trovato leggendo `ImportCardsFromSwuApiJob` insieme ai template: l'email agli admin si rompeva proprio sul caso più comune ("carta già presente"). Gli Step 5.5.1–5.5.5 sono applicati; restano 5.5.6 e 5.5.7. Gli esempi di codice sotto sono allineati al codice attuale, non alle prime bozze.
 
 #### 5.5.1 — Bug: `context['error']` non esiste per gli errori "già presente" ✅ (nel codice il template legge `context['error_message'] ?? 'Errore sconosciuto'`)
-`resources/views/emails/admin-scan-report.blade.php` legge `$error->context['error']`, ma per i `SystemError` "Carta {cid} gia' presente" il job salva `context = ['card' => $card]`, senza chiave `error`:
-`Undefined array key "error"` mentre la mail viene renderizzata dal worker, e la mail non parte. Sostituire nel template `{{ $error->context['error'] }}` con `{{ $error->context['error'] ?? '—' }}`.
+`resources/views/emails/admin-scan-report.blade.php` leggeva `$error->context['error']`, chiave che non esisteva: il job salva l'eccezione sotto `error_message` (Step 5.5.2), e il vecchio `context = ['card' => $card]` dei "già presente" non c'è più (Step 5.5.3).
+Senza la chiave, la mail andava in `Undefined array key` mentre il worker la renderizzava, e non partiva. Nel template ora c'è `{{ $error->context['error_message'] ?? 'Errore sconosciuto' }}`: oggi tutti i `SystemError` del job hanno `error_message`, il fallback resta come difesa per righe con `context` diverso (copre il test dello Step 5.5.4).
 
 #### 5.5.2 — Bug: l'eccezione nel `context` diventa `{}` ✅ (nel codice le chiavi sono `error_message`, `error_line`, `error_code`, `error_file`, `raw`)
-Nel `catch` di `processCard()` il job salva `'context' => ['raw' => $cardData, 'error' => $e]`. Un oggetto `Throwable` serializzato in JSON non ha proprietà pubbliche: nel database finisce `{}`, quindi il dettaglio dell'errore va perso.
-Salvare il messaggio:
+Nel `catch` di `processCard()` il job salvava `'context' => ['raw' => $cardData, 'error' => $e]`. Un oggetto `Throwable` serializzato in JSON non ha proprietà pubbliche: nel database finiva `{}`, quindi il dettaglio dell'errore andava perso.
+Nel codice ora si salva il messaggio e i dati utili dell'eccezione, in più lo stack trace nella colonna `stack_trace`:
 ```php
-'context' => ['raw' => $cardData, 'error' => $e->getMessage()],
+'stack_trace' => $e->getTraceAsString(),
+'context' => [
+    'error_message' => $e->getMessage(),
+    'error_line' => $e->getLine(),
+    'error_code' => $e->getCode(),
+    'error_file' => $e->getFile(),
+    'raw' => $cardData,
+],
 ```
 
 #### 5.5.3 — Risoluzione: volume degli errori "già presente" (Opzione A adottata) ✅ applicato nel codice
@@ -303,18 +310,15 @@ Ad ogni scan periodico, le carte già presenti nel database non devono essere sa
   - Rimuovere la chiamata a `SystemError::create(...)` nel ramo `else` di `! $existed`.
   - Gestire una Collection in memoria (es. `$existingCards = collect()`) in cui inserire per ogni carta già presente una struttura con espansione e numero:
     ```php
-    $existingCards->push([
-        'expansion' => $card->expansion,
-        'number' => $card->number,
-    ]);
+    $existingCards->push($card);
     ```
-    In questo modo si ha a disposizione sia il totale (`$existingCards->count()`), sia l'elenco esatto di quali carte erano già presenti nel DB.
-  - Riportare il numero di carte già presenti/aggiornate nel log di processo e nel messaggio riepilogativo di Telegram (`"Scan completato: X carte lette, Y nuove, Z già presenti/aggiornate, W errori"`), con la possibilità di ispezionare o loggare la collection se necessario.
-  - La tabella `system_errors` e l'invio dell'email admin vengono attivati esclusivamente in caso di veri errori o eccezioni (nel blocco `catch`).
+    In questo modo si ha a disposizione sia il totale (`$existingCards->count()`), sia i modelli `Card` esatti di quali carte erano già presenti nel DB (nel codice si inserisce l'intero modello, non solo espansione e numero).
+  - Riportare il numero di carte già presenti/aggiornate nel log di processo e nel messaggio riepilogativo di Telegram. Testo nel codice: `"Scan completato: {nuove} nuove carte, {già presenti} carte già presenti, {errori} problemi."` (le carte lette non sono contate a parte).
+  - La tabella `system_errors` e l'invio dell'email admin vengono attivati solo per veri problemi: un'eccezione nel `catch` di `processCard()` oppure un download di immagine fallito in `downloadImages()` (che non lancia eccezioni, vedi 5.5.5).
 
 
 #### 5.5.4 — Test ✅
-In `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` aggiungere un test che esegue lo scan con una carta già presente e verifica che il report si renderizzi:
+In `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` c'è un test che renderizza il report con un `SystemError` il cui `context` non ha `error_message` (non esegue lo scan: copre il fallback del template, Step 5.5.1):
 ```php
 it('renderizza il report admin anche con errori senza chiave error nel contesto', function () {
     $error = SystemError::create([
@@ -331,21 +335,21 @@ it('renderizza il report admin anche con errori senza chiave error nel contesto'
 ```
 Serve `use App\Mail\AdminScanReportEmail;` (già importato nel file di test) e le rotte `admin.errors.show` (già esistenti).
 
-#### 5.5.5 — La mail agli admin riceve `Throwable`, non `SystemError` (applicato in `handle()`/`processCard()`, restano due correzioni in `downloadImages()`)
-In `ImportCardsFromSwuApiJob::handle()` il `catch (\Throwable $th)` fa `$errors->push($th)`, e `sendNotifications()` passa quella collection ad `AdminScanReportEmail`.
-La vista `emails/admin-scan-report.blade.php` però usa `$error->message`, `$error->context['error_message']` e `route('admin.errors.show', $error)`, cioè si aspetta modelli `SystemError`:
-con un'eccezione vera `message` è una proprietà protetta e la route non trova un id. Il `SystemError` che `processCard()` crea nel suo `catch` (`$err`) non esce mai dal metodo.
-Correzione proposta: far arrivare a `handle()` i `SystemError` e non le eccezioni.
-- In `processCard()` aggiungere un parametro `Collection $errors` e, nel `catch`, `$errors->push($err);` subito dopo il `SystemError::create(...)` (prima del `throw $e`).
-- In `handle()` passarglielo e nel `catch (\Throwable $th)` lasciare solo il `Log::warning(...)`, senza `$errors->push($th)`.
-- Il conteggio `{$errors->count()} problemi` del messaggio Telegram resta corretto.
-- In `downloadImages()` (decisione del 2026-10-03): un lato **assente nell'API** (il retro manca nella maggior parte delle carte) non è un errore e produce solo un `Log::debug`; un `SystemError` nella collection `$errors` nasce solo se l'URL c'è ma `CardImageDownloader::download()` non restituisce un path, per entrambi i lati (prima il fronte falliva in silenzio).
-- Correzioni ancora da fare nel codice attuale: (1) `processCard()` chiama `$this->downloadImages($card, $cardData, $imageDownloader)` senza il quarto argomento `$errors` ora obbligatorio, quindi ogni carta va in `ArgumentCountError` dopo il salvataggio; (2) i due `Log::debug` "Immagine davanti/retro non trovata" stanno dentro `if ($frontUrl)` / `if ($backUrl)`, cioè si attivano quando l'URL c'è: vanno spostati in un `else`.
+#### 5.5.5 — La mail agli admin riceveva `Throwable`, non `SystemError` ✅
+Problema: il `catch (\Throwable $th)` di `handle()` metteva i `Throwable` in `$errors`, ma `AdminScanReportEmail` e la sua vista si aspettano modelli `SystemError` (`$error->message`, `$error->context['error_message']`, `route('admin.errors.show', $error)`): con un'eccezione `message` è una proprietà protetta e la route non trova un id.
+Come è nel codice:
+- `processCard()` riceve `Collection $errors` e, nel suo `catch`, fa `$errors->push($err)` col `SystemError` appena creato, prima di rilanciare l'eccezione. `handle()` gli passa `$errors` e nel proprio `catch (\Throwable $th)` fa solo `Log::warning(...)`.
+- `downloadImages($card, $cardData, $imageDownloader, $errors)`: un lato **assente nell'API** (il retro manca nella maggior parte delle carte) non è un errore e produce solo un `Log::debug` (nel ramo `else`); un `SystemError` entra in `$errors` solo se l'URL c'è ma `CardImageDownloader::download()` restituisce `null`, per fronte e retro (prima il fronte falliva in silenzio).
+- Il conteggio `{$errors->count()} problemi` del messaggio Telegram conta quindi i `SystemError` raccolti dal job.
+In `downloadImages()` i messaggi usano le graffe doppie (`{{$card->cid}}`) per delimitare i valori nei log: scelta voluta, stampa `{valore}`.
 
-#### 5.5.6 — Riallineare i test del job al codice
+#### 5.5.6 — Riallineare i test del job al codice (scritti, da confermare)
 In `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`:
-- `fakeSwuHttp()` mette la risposta sotto la chiave dell'URL, ma i test le passano un array che ha già quella chiave: annidata due volte, la risposta finta non contiene `data`. Passare direttamente `Http::response(...)` / `Http::sequence()`.
-- Il test `invia la mail agli admin quando ci sono errori o carte gia' presenti`: creare un utente con ruolo `admin`, usare un `rarity` valido per l'enum italiano (es. `Speciale`, non `Special`) e dividerlo in due.
-  Carta già presente → `Mail::assertNotQueued(AdminScanReportEmail::class)`; carta con `cardUid` nullo → `Mail::assertQueued(AdminScanReportEmail::class)`.
-- Dopo lo Step 5.5.5 aggiungere un test che renderizza `AdminScanReportEmail` con il `SystemError` prodotto dal job.
-Lanciare l'intera suite (`php artisan test`) prima e dopo, perché qui lo stato attuale dei test è dedotto dalla lettura, non da un'esecuzione.
+- `fakeSwuHttp(array $routes)` unisce le rotte passate dal test a una risposta PNG finta per qualunque altro URL (`$routes + ['*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png'])]`). Prima metteva la risposta sotto la chiave dell'URL anche se il test passava già un array con quella chiave: annidata due volte, la risposta finta non conteneva `data`. I test passano `['admin.starwarsunlimited.com/api/card-list*' => Http::response(...)]` oppure `Http::sequence()`.
+- Test `non manda la mail agli admin per una carta gia' presente` (crea un admin con `Spatie\Permission\Models\Role`, e la carta con `rarity => 'Speciale'` perché l'enum SQL è in italiano) e test `manda la mail agli admin quando una carta va in errore e il report si renderizza` (`cardUid` nullo: verifica che la mail sia in coda all'admin con dentro dei `SystemError` e che il report contenga `cardUid mancante nel payload`).
+- Da verificare lanciando `php artisan test`: il test della carta già presente crea la `Card` solo con alcuni campi, quindi la migration `cards` non deve richiedere altri campi non nulli (il job usa `'text' => ... ?? ''`, segno che `text` lo è), e `cid`, `expansion` e `number` devono coincidere con la prima carta di `storage/app/private/api-example-result.json`.
+
+#### 5.5.7 — Doppio `SystemError` sul download fallito (da decidere)
+`CardImageDownloader::download()` crea già un proprio `SystemError` quando `Http::get` fallisce (il `catch (ConnectionException)` include anche la risposta non riuscita lanciata a mano) e restituisce `null`; subito dopo `downloadImages()` vede `null` e ne crea un secondo.
+Per un download fallito ci sono quindi due righe in `system_errors`: quella del downloader (con stack trace, `source_url` e codice HTTP) non finisce nella collection `$errors` né nel report agli admin, quella del job sì. Se invece la risposta è buona ma il `Content-Type` non è webp/jpeg/png, il downloader restituisce `null` senza errore e c'è solo la riga del job. Il docblock del downloader dice "il chiamante logga il SystemError": l'intenzione era la seconda.
+Correzione proposta: togliere il `SystemError::create` dal `catch` del downloader (sostituirlo con un `Log::warning` con URL e status) e arricchire quello del job: `'context' => ['error_message' => ..., 'source_url' => $url, 'side' => $side]`. Alternativa: tenere solo quello del downloader e fargli restituire il modello, ma cambia la firma di `download()`.
