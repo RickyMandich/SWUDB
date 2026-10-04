@@ -22,6 +22,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Permessi granulari (spatie/laravel-permission) e ruolo `admin`.
 - Pagina admin utenti (`/admin/utenti`).
 - Pagina admin errori di sistema (`/admin/errori`): lista con filtro per stato, cambio stato singolo e bulk.
+- Pagina admin espansioni (`/admin/espansioni`, permesso `expansions.manage`): una riga con form inline per espansione per correggere `legal_date`, `rotation`, `group_main_expansion` e `confirmed`.
 - Comando `cards:scan` + `ImportCardsFromSwuApiJob` (import carte, espansioni, aspetti, tratti e download immagini),
   schedulato ogni lunedì 00:00 (vedi "Scansione carte").
 - Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}` (l'anteprima `new-cards` per ora dà errore: il template usa le rotte `cards.new-release` e `card.show`, che non esistono ancora; piano 05, Step 10.5).
@@ -36,7 +37,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Test del job di import: riscritti, da lanciare con `php artisan test` (`todo.md`, 5.5.6).
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
   validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
-- Collezione, admin espansioni (i dati di `expansions` si correggono solo a mano sul DB), ricerca carte,
+- Collezione, ricerca carte,
   statistiche, API pubblica: non iniziati.
 - Nessuna pagina pubblica oltre alle pagine di autenticazione: `/` fa redirect a `/dashboard` (che richiede login e email verificata). `layouts/navigation.blade.php` legge `Auth::user()` senza controlli, quindi `<x-app-layout>` non è ancora utilizzabile dagli ospiti (piano 05, Step 10.3).
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
@@ -61,7 +62,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 ```
 app/
   Console/Commands/ScanCards.php      comando `cards:scan` (mette in coda l'import)
-  Http/Controllers/Admin/             SystemErrorController, UserManagementController
+  Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
   Http/Controllers/Auth/              controller Breeze
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
   Mail/                               NewCardsEmail, AdminScanReportEmail
@@ -70,7 +71,7 @@ app/
 bash/                                 script di commit/versionamento/FTP (vedi "Versionamento")
 database/migrations, seeders          schema e PermissionSeeder
 docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, supervisor/worker.conf, icons/generate-icons.sh
-resources/views/                      viste Blade (admin/users, admin/errors, auth, profile, ...)
+resources/views/                      viste Blade (admin/users, admin/errors, admin/expansions, auth, profile, ...)
 routes/web.php, routes/console.php    rotte web e schedulazione
 tests/                                test Pest (Feature/Auth, Feature/Jobs, Feature/Services, ProfileTest, ...)
 .agent/rules/*.md                     regole specifiche del progetto (da rispettare sempre)
@@ -100,7 +101,7 @@ Il sito risponde su <http://localhost:66>. Servizi del compose di sviluppo: `app
 per ricostruirla `docker compose -f docker-compose.dev.yml build app` oppure `up -d --build`.
 
 `docker-compose.dev.yml` è il compose di **sviluppo**; `docker-compose.yml` è quello di **produzione** (Traefik, rete
-esterna `proxy`, host `unlimiteddb-test.mandich.dev`, worker con `supervisord -c /etc/supervisor/worker.conf`).
+esterna `proxy`, host `unlimiteddb-test.mandich.dev`, worker con `supervisord -c /etc/supervisor/worker.conf`). Anche qui `app` e `worker` condividono un'unica immagine (`unlimiteddb:prod`, costruita dal servizio `app`).
 
 `migrate --seed` crea permessi e ruolo `admin` (`PermissionSeeder`) e, se `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` sono
 impostate nel `.env`, un utente admin con email già verificata (`DatabaseSeeder`, tramite `config/seed.php`).
@@ -150,7 +151,7 @@ Migrazioni in `database/migrations`. Tabelle:
   finestra di rotazione: in formato Premier sono giocabili le ultime due); `confirmed` (dati controllati da un
   admin); `group_main_expansion` (auto-riferimento all'espansione principale del gruppo; nullo per i set standalone).
   Il job crea le espansioni nuove con `rotation` = massima rotazione esistente e `legal_date` = data di pubblicazione
-  dell'API (valori approssimativi da correggere a mano).
+  dell'API (valori approssimativi da correggere a mano dalla pagina `/admin/espansioni`).
 - `cards`: PK `id` (stringa `"{expansion}{number}"`, es. `JTL256`, generata dal modello `Card`), `UNIQUE(expansion, number)` e `cid`
   univoco (`cardUid` dell'API, chiave di lookup dell'import); FK `expansion` → `expansions.expansion`.
   `front_art_path`/`back_art_path` sono path relativi nel disk `public`.
@@ -166,9 +167,9 @@ Migrazioni in `database/migrations`. Tabelle:
 
 Registrazione/login con Breeze, email da verificare. Permessi definiti in `PermissionSeeder`:
 `cards.import`, `cards.manage`, `decks.manage-any`, `collections.manage-any`, `users.manage`,
-`bot.notifications.receive`, `mails.test`, `system.manage-errors`, `log.viewer`. Il ruolo `admin` li ha tutti.
+`bot.notifications.receive`, `mails.test`, `system.manage-errors`, `log.viewer`, `expansions.manage`. Il ruolo `admin` li ha tutti.
 
-Oggi le rotte ne usano tre (`users.manage`, `system.manage-errors`, `mails.test`); `log.viewer` abilita il link al
+Oggi le rotte ne usano quattro (`users.manage`, `system.manage-errors`, `mails.test`, `expansions.manage`); `log.viewer` abilita il link al
 Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middleware `role`/`permission`/
 `role_or_permission` sono registrati a mano in `bootstrap/app.php`.
 
@@ -184,6 +185,7 @@ Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità
 | `GET /admin/errori` | `system.manage-errors` | lista errori (filtro `?status=`) |
 | `GET /admin/errori/{systemError}` | `system.manage-errors` | dettaglio errore |
 | `PATCH /admin/errori/{systemError}`, `PATCH /admin/errori/bulk` | `system.manage-errors` | cambio stato singolo / bulk |
+| `GET /admin/espansioni`, `PUT /admin/espansioni/{expansion}` | `expansions.manage` | lista espansioni e modifica dei campi curati a mano |
 | `GET /render-mail/{type}` | `mails.test` | anteprima email (`new-cards`, `admin-scan-report`) |
 
 ## Scansione carte

@@ -27,5 +27,7 @@
 implementationPlan-V-*.md
 implementationPlan-*.pdf
 
+*.sql
+
 /examples
 /storage/app/public/cards

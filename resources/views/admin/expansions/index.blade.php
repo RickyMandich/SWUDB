@@ -4,6 +4,11 @@
     </x-slot>
 
     <div class="max-w-5xl mx-auto py-6 px-4">
+        @if ($filter)
+            <x-primary-button form="filter-form">Mostra Tutte</x-primary-button>
+        @else
+            <x-primary-button form="filter-form">Mostra solo Non Confermate</x-primary-button>
+        @endif
         <x-flash-message />
 
         <div class="overflow-x-auto">
@@ -35,16 +40,15 @@
                                     class="rounded-md border-gray-300 shadow-sm">
                                     <option value="">—</option>
                                     @foreach ($expansions as $option)
-                                        <option value="{{ $option->expansion }}"
-                                            @selected($expansion->group_main_expansion === $option->expansion)>
+                                        <option value="{{ $option->expansion }}" @selected($expansion->group_main_expansion === $option->expansion)>
                                             {{ $option->expansion }}
                                         </option>
                                     @endforeach
                                 </select>
                             </td>
                             <td class="px-3 py-2 border-b">
-                                <input type="checkbox" name="confirmed" value="1" form="exp-{{ $expansion->expansion }}"
-                                    @checked($expansion->confirmed)
+                                <input type="checkbox" name="confirmed" value="1"
+                                    form="exp-{{ $expansion->expansion }}" @checked($expansion->confirmed)
                                     class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
                             </td>
                             <td class="px-3 py-2 border-b">
@@ -54,6 +58,7 @@
                     @endforeach
                 </tbody>
             </table>
+            <x-input-error :messages="$errors->all()" class="mt-2" />
         </div>
 
         @foreach ($expansions as $expansion)
@@ -63,5 +68,13 @@
                 @method('PUT')
             </form>
         @endforeach
+
+        <form action="{{ route('admin.expansions.index') }}" id="filter-form" method="GET" class="hidden">
+            @if ($filter)
+                <input type="hidden" name="filter" value="0" />
+            @else
+                <input type="hidden" name="filter" value="1" />
+            @endif
+        </form>
     </div>
 </x-app-layout>

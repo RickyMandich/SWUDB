@@ -72,14 +72,14 @@
 - [ ] 5.5.8 Cause dei test del job falliti: (1) il fixture `api-example-result.json` non ha `publishedAt` al primo livello di `attributes` mentre il job lo chiede nei `fields` → `Undefined array key "publishedAt"` su ogni carta (riga ~174): aggiungerlo in `fakeCardEntry()` e rendere il job tollerante, `release_date` è nullable; (2) `sendNotifications()` usa `User::role('admin')`, che lancia `RoleDoesNotExist` se il ruolo non c'è: usare `User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))`; (3) il `Log::warning` in `handle()` scrive l'intero payload e lo stack trace, già nel `SystemError`: loggare solo `cardUid` e messaggio
 - [ ] I test si lanciano da host (`composer test`), non nel container: l'immagine usa `composer install --no-dev`; su Windows non usare `:` nel nome del file di log (crea un alternate data stream e il file resta vuoto): rinominare/eliminare `test_2026-10-04_09` nella radice
 
-## 04 — Admin espansioni (Fase 6) `implementationPlan-04-ricostruzioneAdminEspansioni.md`
-- [ ] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)
-- [ ] 6.2.1 Cast `legal_date`/`confirmed` su `Expansion`
-- [ ] 6.2.2 `ExpansionController`
-- [ ] 6.2.3 Rotte `/admin/espansioni`
-- [ ] 6.2.4 Vista `admin/expansions/index`
-- [ ] 6.3 Voce di navigazione (desktop e responsive)
-- [ ] 6.4 Verifica
+## 04 — Admin espansioni (Fase 6) `implementationPlan-V-04-ricostruzioneAdminEspansioni.md`
+- [x] 6.1 Permesso `expansions.manage` (seeder + `db:seed --class=PermissionSeeder`)
+- [x] 6.2.1 Cast `legal_date`/`confirmed` su `Expansion`
+- [x] 6.2.2 `ExpansionController` (unica differenza dal piano: `index` ordina per `rotation` e `legal_date` decrescenti, non per codice)
+- [x] 6.2.3 Rotte `/admin/espansioni`
+- [x] 6.2.4 Vista `admin/expansions/index` (con `<x-input-error>` sotto la tabella per gli errori di validazione)
+- [x] 6.3 Voce di navigazione (desktop e responsive; nel blocco responsive sta dopo "Log viewer" e non subito dopo "Gestione errori", solo estetico)
+- [ ] 6.4 Verifica manuale con utente admin (cambio `rotation` con flash verde "Espansione XXX aggiornata."; gruppo inesistente → errore di validazione ora visibile sotto la tabella). Piano già rinominato in `V-`
 
 ## 05 — Catalogo pubblico e UI (Fase 10) `implementationPlan-05-ricostruzioneCatalogoPubblico.md`
 - [ ] 10.3 Rendere `layouts/navigation.blade.php` utilizzabile dagli ospiti (oggi legge `Auth::user()`), prerequisito delle pagine pubbliche
@@ -127,6 +127,7 @@
 - [x] Deploy automatizzato del branch `laravel` (vecchia SWUDB): merge → la pipeline fa il resto. Per il branch `new` nel repo non c'è nessun `.github/workflows`: vedi sezione "Pipeline di build su GitHub Actions"
 - [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker`
 - [x] `docker-compose.dev.yml`: immagine unica `unlimiteddb:dev` condivisa da `app` (con `build: .`) e `worker` (solo `image:`), così in locale si costruisce una volta sola
+- [x] `docker-compose.yml` (produzione): stesso schema, immagine unica `unlimiteddb:prod` condivisa da `app` (con `build: .`) e `worker` (solo `image:`); lo Step 3 di `implementationPlan-githubActionBuildGhcr.md` la sostituirà con `ghcr.io/rickymandich/swudb:new` (da riverificare sulla VM al prossimo `up -d --build`)
 - [x] 12.0.1 Fix produzione: `supervisor` installato nell'immagine (`apk add ... supervisor` nel `Dockerfile`); il container `unlimiteddb_worker` andava in loop con `supervisord: not found` (da riverificare sulla VM dopo il prossimo build)
 - [x] 12.0.2 Fix produzione: nel servizio `nginx` di `docker-compose.yml` `build_assets` è montato su `/var/www/html/public/build:ro` (era `public_build`) → CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`) (da riverificare sulla VM)
 - [ ] 12.1 Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato (serve anche `schedule:run`), immagini carta su `/storage/...`, icone su `/favicon.ico`, container `_worker` `Up`

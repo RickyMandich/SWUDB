@@ -14,11 +14,17 @@ class ExpansionController extends Controller
      * Lists every expansion, tokens included (T* codes are separate rows on purpose)
      * Elenca tutte le espansioni, token inclusi (i codici T* sono righe a sé, volutamente)
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $expansions = Expansion::orderByDesc('rotation')->orderByDesc('legal_date')->get();
+        $filter = (bool) $request->input('filter', true);
 
-        return view('admin.expansions.index', compact('expansions'));
+        if ($filter) {
+            $expansions = Expansion::where('confirmed', false)->orderByDesc('rotation')->orderByDesc('legal_date')->get();
+        } else {
+            $expansions = Expansion::orderByDesc('rotation')->orderByDesc('legal_date')->get();
+        }
+
+        return view('admin.expansions.index', compact('expansions', 'filter'));
     }
 
     /**

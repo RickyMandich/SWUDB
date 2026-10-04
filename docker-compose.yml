@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    image: unlimiteddb:prod
     container_name: unlimiteddb_app
     restart: unless-stopped
     volumes:
@@ -61,7 +62,7 @@ services:
       start_period: 10s
 
   worker:
-    build: .
+    image: unlimiteddb:prod
     container_name: unlimiteddb_worker
     restart: unless-stopped
     command: supervisord -c /etc/supervisor/worker.conf
