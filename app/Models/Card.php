@@ -47,6 +47,11 @@ class Card extends Model
         'release_date',
     ];
 
+    protected $casts = [
+        'release_date' => 'date',
+        'unique_card' => 'boolean',
+    ];
+
     public function expansionModel()
     {
         return $this->belongsTo(Expansion::class, 'expansion', 'expansion');

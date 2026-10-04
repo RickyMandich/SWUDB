@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ExpansionController;
 use App\Http\Controllers\Admin\SystemErrorController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\CardController;
 use App\Http\Controllers\ProfileController;
 use App\Mail\AdminScanReportEmail;
 use App\Mail\NewCardsEmail;
@@ -69,3 +70,6 @@ Route::middleware(['auth', 'verified', 'permission:expansions.manage'])
         Route::get('/espansioni', 'index')->name('expansions.index');
         Route::put('/espansioni/{expansion}', 'update')->name('expansions.update');
     });
+
+Route::get('/carte', [CardController::class, 'index'])->name('cards.index');
+Route::get('/carte/{expansion}/{number}', [CardController::class, 'show'])->name('cards.show');
