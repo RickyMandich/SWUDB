@@ -212,14 +212,21 @@ Niente `storage:link` in Docker: nginx le serve con l'alias `/storage/` (`docker
 
 ## Test
 
+I test si lanciano **dal computer locale**, non nel container: l'immagine Docker installa le dipendenze con
+`composer install --no-dev`, quindi Pest non c'è.
+
 ```bash
-docker compose -f docker-compose.dev.yml exec app php artisan test
-# oppure, con PHP locale: composer test
+composer test
+# oppure: php artisan test
 ```
 
+Su Windows, se si redirige l'output in un file non usare `:` nel nome (`> test_2026-10-04_09-18.log`): il `:` crea un
+alternate data stream NTFS e il file principale resta vuoto.
+
 Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`
-e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import (riscritto di recente: lanciare la suite per
-confermare che passi, todo 5.5.6).
+e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import. Ultima esecuzione (2026-10-04): 29 test
+passati e 5 falliti (4 del job e l'`ExampleTest` di Breeze, che si aspetta 200 su `/` mentre ora c'è un redirect); le
+cause sono in `todo.md`, 5.5.6 e 5.5.8.
 
 ## Deploy
 
