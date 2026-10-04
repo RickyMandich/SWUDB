@@ -8,15 +8,20 @@ use Illuminate\Database\Eloquent\Model;
 class Expansion extends Model
 {
     use HasFactory;
+
     /**
      * The table associated with the model.
      *
      * @var string
      */
     protected $table = 'expansions';
+
     protected $primaryKey = 'expansion';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $fillable = [
         'expansion',
         'legal_date',
@@ -24,18 +29,27 @@ class Expansion extends Model
         'confirmed',
         'group_main_expansion',
     ];
+
+    protected $casts = [
+        'legal_date' => 'date',
+        'confirmed' => 'boolean',
+    ];
+
     public function cards()
     {
         return $this->hasMany(Card::class, 'expansion', 'expansion');
     }
+
     public function mainExpansion()
     {
         return $this->belongsTo(Expansion::class, 'group_main_expansion', 'expansion');
     }
+
     public function subExpansions()
     {
         return $this->hasMany(Expansion::class, 'group_main_expansion', 'expansion');
     }
+
     public function scopeConfirmed($query)
     {
         return $query->where('confirmed', true);

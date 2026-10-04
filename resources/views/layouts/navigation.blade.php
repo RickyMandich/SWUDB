@@ -26,6 +26,11 @@
                             {{ __('Gestione errori') }}
                         </x-nav-link>
                     @endcan
+                    @can('expansions.manage')
+                        <x-nav-link :href="route('admin.expansions.index')" :active="request()->routeIs('admin.expansions.*')">
+                            {{ __('Gestione espansioni') }}
+                        </x-nav-link>
+                    @endcan
                 </div>
             </div>
 
@@ -113,6 +118,11 @@
             @can('log.viewer')
                 <x-responsive-nav-link :href="route('log-viewer.index')">
                     {{ __('Log viewer') }}
+                </x-responsive-nav-link>
+            @endcan
+            @can('expansions.manage')
+                <x-responsive-nav-link :href="route('admin.expansions.index')" :active="request()->routeIs('admin.expansions.*')">
+                    {{ __('Gestione espansioni') }}
                 </x-responsive-nav-link>
             @endcan
         </div>

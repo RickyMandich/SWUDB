@@ -82,7 +82,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                 try {
                     $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
                     Log::debug('message status', ['deltaProgress' => $deltaProgress]);
-                    Log::info("Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
+                    // Log::info("Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
 
                     $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $existingCards, $errors);
                 } catch (\Throwable $th) {

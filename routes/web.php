@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ExpansionController;
 use App\Http\Controllers\Admin\SystemErrorController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\ProfileController;
@@ -59,3 +60,12 @@ Route::middleware(['auth', 'verified', 'permission:mails.test'])->get('/render-m
         default => null,
     };
 });
+
+Route::middleware(['auth', 'verified', 'permission:expansions.manage'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->controller(ExpansionController::class)
+    ->group(function () {
+        Route::get('/espansioni', 'index')->name('expansions.index');
+        Route::put('/espansioni/{expansion}', 'update')->name('expansions.update');
+    });
