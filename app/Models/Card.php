@@ -52,6 +52,26 @@ class Card extends Model
         'unique_card' => 'boolean',
     ];
 
+    protected $appends = [
+        'snippet',
+    ];
+
+    /**
+     * Get the card's snippet attribute for display purposes
+     * Ottiene il testo di anteprima della carta per la visualizzazione
+     *
+     * @return string The formatted snippet with ID, name and title (if present)
+     */
+    public function getSnippetAttribute()
+    {
+        $snippet = "$this->id - ⟡$this->name";
+        if (isset($this->title) && strlen($this->title) > 0) {
+            return $snippet.', '.strtoupper($this->title);
+        }
+
+        return str_replace('⟡', '', $snippet);
+    }
+
     public function expansionModel()
     {
         return $this->belongsTo(Expansion::class, 'expansion', 'expansion');

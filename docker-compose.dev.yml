@@ -39,6 +39,8 @@ services:
     image: mariadb:11
     container_name: unlimiteddb_db_dev
     restart: unless-stopped
+    ports:
+      - 3306:3306
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_DATABASE=unlimiteddb

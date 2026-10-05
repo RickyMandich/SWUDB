@@ -1,24 +1,25 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Carte</h2>
+        <h2 class="text-xl font-semibold leading-tight text-gray-800">
+            Carte
+        </h2>
     </x-slot>
 
-    <div class="max-w-5xl mx-auto py-6 px-4">
+    <div class="mx-auto max-w-5xl px-4 py-6">
         <form action="{{ route('cards.index') }}" method="get">
-
+            {{-- filtri --}}
         </form>
     </div>
+
     <x-flash-message />
-    <div class="overflow-x-auto">
+
+    <div class="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 sm:grid-cols-2 lg:grid-cols-3">
         @foreach ($cards as $card)
-            <div class="card">
-                <div class="image-box">
-                    <img src="{{ asset('storage/' . $card->front_art_path) }}" alt="{{ $card->id }}" loading="lazy">
-                    <script>
-                        console.log('{{ $card->front_art_path }}');
-                    </script>
-                </div>
-            </div>
+            <x-card :card="$card" />
         @endforeach
+    </div>
+
+    <div class="mx-auto max-w-7xl px-4 py-6">
+        {{ $cards->links() }}
     </div>
 </x-app-layout>
