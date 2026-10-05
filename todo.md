@@ -42,7 +42,7 @@
 - [X] 4ter.4 Verificare `publishedAt` nel payload dell'import (altrimenti `release_date` = data dello scan)
 - [X] 4ter.5 Riparare `ImportCardsFromSwuApiJobTest` (`Expansion::create` con `expansion`, helper `fakeSwuHttp`, conteggio richieste `card-list`)
 
-## 03 — Admin errori (Fase 5) `implementationPlan-03-ricostruzioneAdminErrori.md`
+## 03 — Admin errori (Fase 5) `implementationPlan-V-03-ricostruzioneAdminErrori.md` (file già rinominato con `V-`, ma 5.5.6–5.5.8 sono ancora aperti: restano tracciati qui sotto)
 - [x] 5.1 Migration e modello `SystemError`
 - [x] 5.2 Permesso `system.manage-errors`
 - [x] 5.3.1 Controller (`resolved_at` valorizzato solo se risolto, ignorato resta NULL)
@@ -82,12 +82,14 @@
 - [ ] 6.4 Verifica manuale con utente admin (cambio `rotation` con flash verde "Espansione XXX aggiornata."; gruppo inesistente → errore di validazione ora visibile sotto la tabella). Piano già rinominato in `V-`
 
 ## 05 — Catalogo pubblico e UI (Fase 10) `implementationPlan-05-ricostruzioneCatalogoPubblico.md`
-- [ ] 10.3 Rendere `layouts/navigation.blade.php` utilizzabile dagli ospiti (oggi legge `Auth::user()`), prerequisito delle pagine pubbliche
-- [ ] 10.1.1 `CardSearch`
-- [ ] 10.1.2 `CardController` (`index`, `show`)
-- [ ] 10.1.3 Rotte `cards.index`, `cards.show` (`/carte/{expansion}/{number}`)
-- [ ] 10.1.4 Cast su `Card` (`release_date`, `unique_card`)
-- [ ] 10.1.5 Vista lista carte (occhio al bug del campo nome non ripopolato)
+- [x] 10.3 `layouts/navigation.blade.php` utilizzabile dagli ospiti (`@if (Auth::check()) ... @else` con link Login/Register, desktop e responsive). Differenza dal piano: il logo punta ancora a `route('dashboard')` (per un ospite porta al login) invece di `url('/')`, da decidere
+- [x] 10.1.1 `CardSearch`
+- [x] 10.1.2 `CardController::index` (differenze dal piano: `with(['aspects','traits'])`, ordinamento per `legal_date` dell'espansione decrescente, poi `expansion` e `number`). `show` esiste ma restituisce il modello come JSON: placeholder fino a 10.1.6
+- [ ] 10.1.2bis `CardController::index`: `->paginate(3)// 24)` è un residuo di debug, riportare a `paginate(24)`
+- [x] 10.1.3 Rotte `cards.index`, `cards.show` (`/carte/{expansion}/{number}`)
+- [x] 10.1.4 Cast su `Card` (`release_date`, `unique_card`)
+- [ ] 10.1.5 Vista lista carte (occhio al bug del campo nome non ripopolato). Fatto: `cards/index.blade.php` con griglia, paginazione e componente `<x-card>` (`components/card.blade.php`, non previsto dal piano: immagine, snippet, tratti, aspetti, costo/potenza/vita, rarità). **Manca il form dei filtri**: nella vista c'è solo il segnaposto `{{-- filtri --}}`, quindi i filtri di `CardSearch` non sono raggiungibili dall'UI e il ripopolamento dei campi non è verificabile
+- [ ] 10.1.5bis `<x-card>`: `Storage::url($card->front_art_path)` con `front_art_path` nullo produce un'immagine rotta (gestire il caso senza immagine); il piano 10.1.6 prevede `<x-badge>` per gli aspetti, la card usa invece `style` inline con `color`/`text_color`
 - [ ] 10.1.6 Vista dettaglio carta
 - [ ] 10.1.7 Voce di navigazione "Carte"
 - [ ] 10.4 Pagina "Nuove uscite" (`cards.new-releases`) + voce di navigazione

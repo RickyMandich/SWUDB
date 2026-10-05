@@ -133,22 +133,8 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             Log::info("Processo carta {$cid}");
 
             $existed = Card::where('cid', $cid)->exists();
-            $convertType = function ($type) {
-                return match ($type) {
-                    'Base' => 'Base',
-                    'Evento' => 'Event',
-                    'Leader' => 'Leader',
-                    'Miglioria' => 'Upgrade',
-                    'Miglioria Segnalino' => 'TokenUpgrade',
-                    'Segnalino Credito' => 'CreditToken',
-                    'Segnalino Forza' => 'ForceToken',
-                    'Unità' => 'Unit',
-                    'Unità Segnalino' => 'TokenUnit',
-                    default => $type,
-                };
-            };
 
-            if (str_contains($convertType($cardData['type']['data']['attributes']['name'] ?? null), 'Token')) {
+            if (str_contains($cardData['type']['data']['attributes']['name'] ?? null, 'Segnalino')) {
                 $cardData['expansion']['data']['attributes']['code'] =
                     "T{$cardData['expansion']['data']['attributes']['code']}";
             }
@@ -163,7 +149,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'unique_card' => $cardData['unique'] ?? false,
                     'name' => $cardData['title'],
                     'title' => $cardData['subtitle'] ?? null,
-                    'type' => $convertType($cardData['type']['data']['attributes']['name'] ?? null),
+                    'type' => $cardData['type']['data']['attributes']['name'] ?? null,
                     'rarity' => $cardData['rarity']['data']['attributes']['name'] ?? null,
                     'cost' => $cardData['cost'] ?? null,
                     'health' => $cardData['hp'] ?? null,
@@ -243,8 +229,17 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         });
         $card->aspects()->sync($aspectIds);
 
-        $traitNames = collect($cardData['traits']['data'] ?? [])->pluck('attributes.name');
-        $traitNames->each(fn ($name) => CardTrait::firstOrCreate(['name' => $name]));
+        $traitNames = collect($cardData['traits']['data'] ?? [])
+            ->pluck('attributes.name')
+            ->map(fn ($name) => trim($name))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $traitNames->each(
+            fn ($name) => CardTrait::firstOrCreate(['name' => $name])
+        );
+
         $card->traits()->sync($traitNames);
     }
 

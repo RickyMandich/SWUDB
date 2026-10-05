@@ -6,9 +6,8 @@
     </x-slot>
 
     <div class="mx-auto max-w-5xl px-4 py-6">
-        <form action="{{ route('cards.index') }}" method="get">
-            {{-- filtri --}}
-        </form>
+        <x-cards-filter :aspects="$aspects" :traits="$traits" :types="$types" :expansions="$expansions" :filters="$filters"
+            :action="route('cards.index')" />
     </div>
 
     <x-flash-message />

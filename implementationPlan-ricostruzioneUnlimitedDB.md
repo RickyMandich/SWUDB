@@ -17,9 +17,9 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | 00 | [`implementationPlan-V-00-ricostruzioneFondamenta.md`](implementationPlan-V-00-ricostruzioneFondamenta.md) | Fasi 1–4bis: setup, Docker, auth, Resend, import carte, worker | ✅ completato |
 | 01 | [`implementationPlan-V-01-ricostruzioneTelegramService.md`](implementationPlan-V-01-ricostruzioneTelegramService.md) | Fase 9a: `TelegramService` | ✅ completato |
 | 02 | [`implementationPlan-V-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-V-02-ricostruzioneAllineamentoSchema.md) | Fase 4ter: pivot con `card_id`, relazioni, `publishedAt`, test del job | ✅ completato |
-| 03 | [`implementationPlan-03-ricostruzioneAdminErrori.md`](implementationPlan-03-ricostruzioneAdminErrori.md) | Fase 5: viste admin e email di scan | **quasi completato**: viste, controller e job applicati, restano gli Step 5.5.5 e 5.5.6 (mail agli admin con `Throwable` invece di `SystemError`, test del job da riallineare) |
-| 04 | [`implementationPlan-04-ricostruzioneAdminEspansioni.md`](implementationPlan-04-ricostruzioneAdminEspansioni.md) | Fase 6: pagina admin espansioni | da fare |
-| 05 | [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) | Fase 10: ricerca carte, dettaglio, nuove uscite, navigazione per ospiti (Step 10.2 dopo il 07) | da fare |
+| 03 | [`implementationPlan-V-03-ricostruzioneAdminErrori.md`](implementationPlan-V-03-ricostruzioneAdminErrori.md) | Fase 5: viste admin e email di scan | rinominato `V-`, ma restano aperti gli Step 5.5.6–5.5.8 (test del job falliti, doppio `SystemError` sul download, cause nel `todo.md`) |
+| 04 | [`implementationPlan-V-04-ricostruzioneAdminEspansioni.md`](implementationPlan-V-04-ricostruzioneAdminEspansioni.md) | Fase 6: pagina admin espansioni | ✅ completato (resta la verifica manuale 6.4 nel `todo.md`) |
+| 05 | [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) | Fase 10: ricerca carte, dettaglio, nuove uscite, navigazione per ospiti (Step 10.2 dopo il 07) | **in corso**: fatti 10.3, 10.1.1–10.1.4 e la griglia di 10.1.5; mancano form filtri, 10.1.6, 10.1.7, 10.4, 10.5 (dettaglio nel `todo.md`) |
 | 06 | [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md) | Fase 7a: enum, relazioni, validator, policy dei mazzi | da fare |
 | 07 | [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md) | Fase 7b: pagine mazzi, export/import | da fare |
 | 08 | [`implementationPlan-08-ricostruzioneCollezione.md`](implementationPlan-08-ricostruzioneCollezione.md) | Fase 8: collezione, carte mancanti/presenti | da fare |
@@ -137,11 +137,11 @@ Sempre la stessa tripla: `view('admin.users.index')` ⇄ `resources/views/admin/
 
 ### Layout
 Due soli layout radice (Breeze), non crearne altri: `<x-app-layout>` per ogni pagina con navigazione, pubblica o autenticata (titolo nello slot `header`, come `dashboard.blade.php`),
-`<x-guest-layout>` solo per le pagine di autenticazione. `<x-app-layout>` è utilizzabile dagli ospiti solo dopo lo Step 10.3 del piano 05 (la navigazione oggi legge `Auth::user()` senza controlli).
+`<x-guest-layout>` solo per le pagine di autenticazione. `<x-app-layout>` è utilizzabile dagli ospiti (Step 10.3 del piano 05 applicato: la navigazione mostra Login/Register se non c'è un utente).
 Pubblico vs autenticato non è una cartella diversa: è solo il gruppo di middleware della rotta.
 
 ### Componenti condivisi già presenti
-`<x-primary-button>`, `<x-secondary-button>`, `<x-danger-button>`, `<x-text-input>`, `<x-input-label>`, `<x-input-error>`, `<x-modal>`, `<x-dropdown>`, `<x-dropdown-link>`, `<x-nav-link>`, `<x-responsive-nav-link>`, `<x-flash-message>`, `<x-badge>`, `<x-application-logo>`: usarli sempre, niente `<input>`/`<button>` nudi.
+`<x-primary-button>`, `<x-secondary-button>`, `<x-danger-button>`, `<x-text-input>`, `<x-input-label>`, `<x-input-error>`, `<x-modal>`, `<x-dropdown>`, `<x-dropdown-link>`, `<x-nav-link>`, `<x-responsive-nav-link>`, `<x-flash-message>`, `<x-badge>`, `<x-card>` (scheda carta della griglia `/carte`), `<x-application-logo>`: usarli sempre, niente `<input>`/`<button>` nudi.
 Ogni nuova sezione con pagina indice va aggiunta a **entrambi** i blocchi (desktop e responsive) di `layouts/navigation.blade.php`.
 Le icone del sito sono incluse da `layouts/favicons.blade.php`.
 

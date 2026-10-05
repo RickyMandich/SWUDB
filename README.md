@@ -25,21 +25,22 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Pagina admin espansioni (`/admin/espansioni`, permesso `expansions.manage`): una riga con form inline per espansione per correggere `legal_date`, `rotation`, `group_main_expansion` e `confirmed`.
 - Comando `cards:scan` + `ImportCardsFromSwuApiJob` (import carte, espansioni, aspetti, tratti e download immagini),
   schedulato ogni lunedì 00:00 (vedi "Scansione carte").
-- Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}` (l'anteprima `new-cards` per ora dà errore: il template usa le rotte `cards.new-release` e `card.show`, che non esistono ancora; piano 05, Step 10.5).
+- Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}` (l'anteprima `new-cards` per ora dà errore: il template usa le rotte `cards.new-release` e `card.show`, che non esistono (esistono `cards.index` e `cards.show`, ma non `cards.new-releases`), e legge `$cards->first()->release_date` anche con collezione vuota; piano 05, Step 10.5).
 - Icone del sito (favicon, apple-touch-icon, manifest) generate dal `Dockerfile` da `public/icon-mine.svg` (vedi "Icone del sito").
 - Worker delle code (servizio `worker` nel compose di sviluppo; `app` e `worker` condividono la stessa immagine `unlimiteddb:dev`).
 - `TelegramService` (facade `Http`, nessun SDK) con `TelegramActionResult`: invio, modifica e cancellazione di messaggi, invio foto; senza `TELEGRAM_BOT_TOKEN` o `chat_id` non parte nessuna richiesta HTTP.
 - Admin errori: vista di dettaglio `/admin/errori/{id}`, componenti `<x-flash-message>` e `<x-badge>`, lista paginata.
 - Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
+- Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata di `<x-card>` ordinata per `legal_date` dell'espansione, poi codice e numero. `CardSearch` applica i filtri GET (`nome`, `espansione`, `tipo`, `costo`, `aspetto`, `tratto`, `unique_card`) ma **la pagina non ha ancora il form per usarli** (vedi sotto). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register).
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
 - Test del job di import: riscritti, da lanciare con `php artisan test` (`todo.md`, 5.5.6).
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
   validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
-- Collezione, ricerca carte,
-  statistiche, API pubblica: non iniziati.
-- Nessuna pagina pubblica oltre alle pagine di autenticazione: `/` fa redirect a `/dashboard` (che richiede login e email verificata). `layouts/navigation.blade.php` legge `Auth::user()` senza controlli, quindi `<x-app-layout>` non è ancora utilizzabile dagli ospiti (piano 05, Step 10.3).
+- Collezione, statistiche, API pubblica: non iniziati.
+- Catalogo carte incompleto (piano 05): il form dei filtri in `cards/index.blade.php` è un segnaposto; `/carte/{expansion}/{number}` restituisce il modello come JSON perché la vista `cards.show` non esiste; manca la voce "Carte" nel menu; la paginazione è temporaneamente a 3 carte per pagina (residuo di debug, deve essere 24); la pagina "Nuove uscite" (`/nuove-uscite`) non esiste.
+- `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
 - Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano `implementationPlan-githubActionBuildGhcr.md`.
 
@@ -62,12 +63,13 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 ```
 app/
   Console/Commands/ScanCards.php      comando `cards:scan` (mette in coda l'import)
+  Http/Controllers/CardController.php catalogo pubblico (`index` funzionante, `show` ancora placeholder)
   Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
   Http/Controllers/Auth/              controller Breeze
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
   Mail/                               NewCardsEmail, AdminScanReportEmail
   Models/                             Aspect, Card, CardTrait, Deck, DeckCard, Expansion, SystemError, User
-  Services/                           CardImageDownloader (immagini carta in storage), TelegramService + TelegramActionResult (Telegram)
+  Services/                           CardImageDownloader (immagini carta in storage), CardSearch (filtri catalogo), TelegramService + TelegramActionResult (Telegram)
 bash/                                 script di commit/versionamento/FTP (vedi "Versionamento")
 database/migrations, seeders          schema e PermissionSeeder
 docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, supervisor/worker.conf, icons/generate-icons.sh
@@ -178,6 +180,8 @@ Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità
 | Rotta | Accesso | Descrizione |
 |---|---|---|
 | `GET /` | pubblica | redirect a `/dashboard` |
+| `GET /carte` | pubblica | catalogo carte paginato, filtri GET (`CardSearch`) |
+| `GET /carte/{expansion}/{number}` | pubblica | dettaglio carta: oggi restituisce il modello in JSON (vista da fare) |
 | `GET /dashboard` | login + email verificata | dashboard |
 | `/profile` (GET, PATCH, DELETE) | login | profilo utente (Breeze) |
 | rotte di `routes/auth.php` | — | login, registrazione, reset password, verifica email (Breeze) |

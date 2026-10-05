@@ -21,14 +21,14 @@ return new class extends Migration
             $table->string('title')->nullable();
             $table->enum('type', [
                 'Base',
-                'Event',
+                'Evento',
                 'Leader',
-                'Upgrade',
-                'TokenUpgrade',
-                'CreditToken',
-                'ForceToken',
-                'Unit',
-                'TokenUnit',
+                'Miglioria',
+                'Miglioria Segnalino',
+                'Segnalino Credito',
+                'Segnalino Forza',
+                'Unità',
+                'Unità Segnalino',
             ]);
             $table->enum('rarity', [
                 'Comune',
