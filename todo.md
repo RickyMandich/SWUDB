@@ -88,8 +88,17 @@
 - [ ] 10.1.2bis `CardController::index`: `->paginate(3)// 24)` è un residuo di debug, riportare a `paginate(24)`
 - [x] 10.1.3 Rotte `cards.index`, `cards.show` (`/carte/{expansion}/{number}`)
 - [x] 10.1.4 Cast su `Card` (`release_date`, `unique_card`)
-- [ ] 10.1.5 Vista lista carte (occhio al bug del campo nome non ripopolato). Fatto: `cards/index.blade.php` con griglia, paginazione e componente `<x-card>` (`components/card.blade.php`, non previsto dal piano: immagine, snippet, tratti, aspetti, costo/potenza/vita, rarità). **Manca il form dei filtri**: nella vista c'è solo il segnaposto `{{-- filtri --}}`, quindi i filtri di `CardSearch` non sono raggiungibili dall'UI e il ripopolamento dei campi non è verificabile
+- [ ] 10.1.5 Vista lista carte (occhio al bug del campo nome non ripopolato). Fatto: `cards/index.blade.php` con griglia, paginazione e componente `<x-card>` (`components/card.blade.php`, non previsto dal piano: immagine, snippet, tratti, aspetti, costo/potenza/vita, rarità). Il form dei filtri esiste (`<x-cards-filter>`, collassabile con Alpine; tipi e aspetti già badge) ma legge ancora i nomi singoli lato backend, quindi per ora non filtra: vedi `implementationPlan-filtroCarteGrafica.md` (grafica) e la sua Parte B (backend)
 - [ ] 10.1.5bis `<x-card>`: `Storage::url($card->front_art_path)` con `front_art_path` nullo produce un'immagine rotta (gestire il caso senza immagine); il piano 10.1.6 prevede `<x-badge>` per gli aspetti, la card usa invece `style` inline con `color`/`text_color`
+- [ ] 10.1.5ter Filtro carte, grafica — `implementationPlan-filtroCarteGrafica.md` (Parte A)
+  - [ ] Step 1 CSS dei pallini dello slider (`resources/css/app.css`)
+  - [ ] Step 2 Componente `x-range-slider` (costo, vita, potenza: due pallini su una linea)
+  - [ ] Step 3 Componente `x-multi-datalist` (espansioni e tratti: datalist + chip rimovibili)
+  - [ ] Step 4 Riscrivere `components/cards-filter.blade.php` (id univoci, `bounds` provvisori, layout a 3 colonne)
+  - [ ] Step 5 Verifica visiva su `/carte` (checklist nel piano)
+  - [ ] Step 6 (opzionale) plugin `@alpinejs/collapse` per l'animazione di apertura dei filtri
+  - [ ] Step 7 README aggiornato dopo l'applicazione
+- [ ] 10.1.5quater Filtro carte, backend — Parte B dello stesso piano (da dettagliare dopo la verifica grafica): nuovi nomi dei parametri nel controller, `$bounds` min/max dal DB per costo/vita/potenza, `CardSearch` con `whereIn`/AND e intervalli applicati solo se più stretti dei limiti, test Pest
 - [ ] 10.1.6 Vista dettaglio carta
 - [ ] 10.1.7 Voce di navigazione "Carte"
 - [ ] 10.4 Pagina "Nuove uscite" (`cards.new-releases`) + voce di navigazione
