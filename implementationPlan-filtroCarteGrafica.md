@@ -373,8 +373,18 @@ Un'unica query aggregata (`min`/`max` di `cost`, `health`, `power`, che ignorano
   - Se nessuno dei due estremi è attivo il campo non viene filtrato e le carte con valore `NULL` (Basi, Segnalini, ecc.) restano nei risultati.
 - Decisione presa: appena almeno un estremo è attivo le carte con valore `NULL` per quel campo vengono scartate (è il comportamento naturale del confronto SQL, nessun codice in più); con tutti e due gli estremi attivi vale a maggior ragione.
 - Limite noto: con lo slider tutto aperto (da min a max) non si può chiedere "solo carte che hanno un costo", perché equivale a nessun filtro. Se servisse, aggiungere in seguito una checkbox dedicata.
+- `unique_card` è un filtro a **tre stati** (nel form: radio "Tutte" / "Solo uniche" / "Solo non uniche"), non più una checkbox: il parametro vale vuoto (o assente) = nessun filtro, `1` = solo uniche, `0` = solo non uniche. Attenzione al `'0'`: `->when($filters['unique_card'] ?? null, ...)` lo tratta come falso e non applicherebbe il filtro, quindi la condizione di `when()` deve essere un booleano esplicito:
+
+  ```php
+  ->when(
+      isset($filters['unique_card']) && $filters['unique_card'] !== '',
+      fn ($q) => $q->where('unique_card', (bool) $filters['unique_card'])
+  )
+  ```
+
+  Il cast `(bool) '0'` dà `false`, `(bool) '1'` dà `true`. Rispetto a oggi (`unique_card` presente = solo uniche) `unique_card=1` continua a funzionare uguale, quindi il cambio è retrocompatibile per l'API pubblica. `where('unique_card', false)` esclude le carte con `unique_card` a `NULL`: l'import scrive sempre `true`/`false`, quindi non dovrebbe capitare.
 - `CardSearch` è condiviso con l'API pubblica (Fase 11): i nuovi nomi vanno riportati nella documentazione dell'API quando esisterà.
 
 ## B.4 — Test
 
-Test Pest di `CardSearch` per: più aspetti in AND, `whereIn` su espansioni/tipi, intervallo che coincide con i limiti (nessun filtro), intervallo ristretto, carte con valori `NULL`.
+Test Pest di `CardSearch` per: più aspetti in AND, `whereIn` su espansioni/tipi, intervallo che coincide con i limiti (nessun filtro), intervallo ristretto, carte con valori `NULL`, `unique_card` vuoto / `1` / `0` (tutte, solo uniche, solo non uniche: il caso `0` è quello che si rompe con un `when()` sul valore grezzo).

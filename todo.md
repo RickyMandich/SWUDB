@@ -98,7 +98,9 @@
   - [ ] Step 5 Verifica visiva su `/carte` (checklist nel piano)
   - [ ] Step 6 (opzionale) plugin `@alpinejs/collapse` per l'animazione di apertura dei filtri
   - [ ] Step 7 README aggiornato dopo l'applicazione
-- [ ] 10.1.5quater Filtro carte, backend — Parte B dello stesso piano (da dettagliare dopo la verifica grafica): nuovi nomi dei parametri nel controller, `$bounds` min/max dal DB per costo/vita/potenza, `CardSearch` con `whereIn`/AND e intervalli applicati solo se più stretti dei limiti, test Pest
+  - [ ] Modifica fuori piano (2026-10-06): il pannello "Filtri" si apre solo se c'è un filtro realmente attivo (slider fermi sui limiti = nessun filtro; `page` e parametri sconosciuti ignorati), calcolato in `@php` in cima a `cards-filter.blade.php`
+  - [ ] Modifica fuori piano (2026-10-06): filtro carte uniche a tre stati (`unique_card` = vuoto/`1`/`0`: tutte, solo uniche, solo non uniche) con radio a badge in `cards-filter.blade.php`; la parte backend (`CardSearch`) è descritta in B.3 del piano e va applicata con la Parte B (10.1.5quater)
+- [ ] 10.1.5quater Filtro carte, backend — Parte B dello stesso piano (da dettagliare dopo la verifica grafica): nuovi nomi dei parametri nel controller, `$bounds` min/max dal DB per costo/vita/potenza, `CardSearch` con `whereIn`/AND, intervalli applicati solo se più stretti dei limiti e `unique_card` a tre stati (vuoto/`1`/`0`), test Pest
 - [ ] 10.1.6 Vista dettaglio carta
 - [ ] 10.1.7 Voce di navigazione "Carte"
 - [ ] 10.4 Pagina "Nuove uscite" (`cards.new-releases`) + voce di navigazione
