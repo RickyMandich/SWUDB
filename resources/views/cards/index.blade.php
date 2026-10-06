@@ -16,6 +16,9 @@
         @foreach ($cards as $card)
             <x-card :card="$card" />
         @endforeach
+        @if ($cards->isEmpty())
+            <p class="text-center">Non ho trovato carte che soddisfino tutti i criteri di ricerca.</p>
+        @endif
     </div>
 
     <div class="mx-auto max-w-7xl px-4 py-6">
