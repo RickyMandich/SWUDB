@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold leading-tight text-gray-800">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
             Carte
         </h2>
     </x-slot>
@@ -17,7 +17,7 @@
             <x-card :card="$card" />
         @endforeach
         @if ($cards->isEmpty())
-            <p class="text-center">Non ho trovato carte che soddisfino tutti i criteri di ricerca.</p>
+            <p class="text-center text-gray-800 dark:text-gray-200 col-span-full">Non ho trovato carte che soddisfino tutti i criteri di ricerca.</p>
         @endif
     </div>
 

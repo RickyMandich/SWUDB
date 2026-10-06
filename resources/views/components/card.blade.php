@@ -1,4 +1,4 @@
-<article class="h-full rounded-xl border border-gray-500 bg-gray-600 p-3 shadow-sm transition hover:shadow-md">
+<article class="h-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-sm transition hover:shadow-md">
     <a href="{{ route('cards.show', [
         'expansion' => $card->expansion,
         'number' => $card->number,
@@ -13,13 +13,13 @@
 
             {{-- Informazioni --}}
             <div class="min-w-0">
-                <h5 class="mb-2 text-lg font-semibold leading-tight text-white">
+                <h5 class="mb-2 text-lg font-semibold leading-tight text-gray-900 dark:text-gray-100">
                     {{ $card->snippet }}
                 </h5>
 
                 {{-- Tratti --}}
                 @if ($card->traits->isNotEmpty())
-                    <div class="mb-2 text-sm text-gray-300">
+                    <div class="mb-2 text-sm text-gray-600 dark:text-gray-400">
                         @foreach ($card->traits as $trait)
                             <span class="mr-1 font-semibold">
                                 {{ $trait->name }}
@@ -40,7 +40,7 @@
                 @endif
 
                 {{-- Costo --}}
-                <div class="mb-1 flex items-center  text-yellow-300">
+                <div class="mb-1 flex items-center text-yellow-600 dark:text-yellow-300">
                     <span class="w-9/12">
                         costo:
                     </span>
@@ -51,7 +51,7 @@
                 </div>
 
                 {{-- Potenza --}}
-                <div class="mb-1 flex items-center  text-red-400">
+                <div class="mb-1 flex items-center text-red-600 dark:text-red-400">
                     <span class="w-9/12">
                         potenza:
                     </span>
@@ -62,7 +62,7 @@
                 </div>
 
                 {{-- Vita --}}
-                <div class="mb-1 flex items-center  text-blue-300">
+                <div class="mb-1 flex items-center text-blue-600 dark:text-blue-400">
                     <span class="w-9/12">
                         vita:
                     </span>
@@ -74,7 +74,7 @@
 
                 {{-- Rarità --}}
                 <div class="mt-2 text-center">
-                    <span class="font-semibold text-grey-100">
+                    <span class="font-semibold text-gray-700 dark:text-gray-300">
                         {{ $card->rarity }}
                     </span>
                 </div>

@@ -1,13 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Errore #{{ $systemError->id }}</h2>
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Errore #{{ $systemError->id }}</h2>
     </x-slot>
 
     <div class="max-w-4xl mx-auto py-6 px-4">
         <x-flash-message />
-        <a href="{{ route('admin.errors.index') }}" class="text-sm text-indigo-600 hover:underline">← Torna alla lista</a>
+        <a href="{{ route('admin.errors.index') }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">← Torna alla lista</a>
 
-        <div class="bg-white shadow-sm rounded-lg p-6 my-4 text-gray-700">
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 my-4 text-gray-700 dark:text-gray-300">
             <dl class="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
                 <dt class="font-semibold">Sorgente</dt>
                 <dd>{{ $systemError->source }}</dd>
@@ -35,14 +35,14 @@
             </div>
         </div>
 
-        <div class="bg-white shadow-sm rounded-lg p-6 mb-6 text-gray-700">
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 mb-6 text-gray-700 dark:text-gray-300">
             <h3 class="text-lg font-semibold mb-2">Stack trace</h3>
-            <pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto">{{ $systemError->stack_trace ?? 'Nessuno stack trace per questo errore.' }}</pre>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded text-sm overflow-x-auto">{{ $systemError->stack_trace ?? 'Nessuno stack trace per questo errore.' }}</pre>
         </div>
 
-        <div class="bg-white shadow-sm rounded-lg p-6 text-gray-700">
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 text-gray-700 dark:text-gray-300">
             <h3 class="text-lg font-semibold mb-2">Contesto</h3>
-            <pre class="bg-gray-100 p-4 rounded text-sm overflow-x-auto">{{ $systemError->context ? json_encode($systemError->context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : 'Nessun contesto salvato per questo errore.' }}</pre>
+            <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded text-sm overflow-x-auto">{{ $systemError->context ? json_encode($systemError->context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : 'Nessun contesto salvato per questo errore.' }}</pre>
         </div>
     </div>
 </x-app-layout>

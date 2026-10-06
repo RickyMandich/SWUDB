@@ -29,7 +29,7 @@
     <div class="mt-2 flex flex-wrap gap-2">
         <template x-for="value in selected" :key="value">
             <span
-                class="inline-flex items-center gap-1 rounded-md border-2 border-gray-600 bg-gray-600 px-2 py-1 text-sm font-medium text-white">
+                class="inline-flex items-center gap-1 rounded-md border-2 border-gray-600 dark:border-gray-500 bg-gray-600 dark:bg-gray-500 px-2 py-1 text-sm font-medium text-white">
                 <span x-text="value"></span>
                 <input type="hidden" name="{{ $name }}[]" :value="value">
                 <button type="button" x-on:click="remove(value)" class="leading-none hover:text-gray-200"

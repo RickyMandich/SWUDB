@@ -165,6 +165,12 @@
 - [X] Scheduler in produzione: `schedule:work` come programma di `docker/supervisor/worker.conf` nel container `worker` (da verificare dopo il deploy; in dev volutamente assente, lo scan si lancia a mano)
 - [X] `docker-compose.dev.yml`: `DB_PASSWORD=${DB_PASSWORD}` ora in entrambi i servizi `app` e `worker`
 
+## 12 — Dark Mode UI (Fase 12) `implementationPlan-V-12-darkModeUi.md`
+- [x] 12.1 Layouts
+- [x] 12.2 Navigazione
+- [x] 12.3 Componenti e Viste base
+- [x] 12.4 Aggiornamento colori (solo per il dark mode)
+
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
 - Tag personalizzati per i mazzi (Aggro/Control/Budget/Meta)

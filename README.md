@@ -278,3 +278,10 @@ La versione sta in `.env-overrides` (`APP_VERSION_PRIMARY/SECONDARY/TERTIARY`). 
   in "Non ancora implementato".
 - Viste Blade: layout `x-app-layout` / `x-guest-layout`, riuso dei componenti Breeze, stile Tailwind
   (dettagli nella sezione "Convenzioni per le view" di `implementationPlan-ricostruzioneUnlimitedDB.md`).
+- **Dark Mode e Pallette UI**: l'app supporta la dark mode tramite la classe `dark:` di Tailwind. La pallette da mantenere coerente è:
+  - Sfondo primario: `bg-gray-100` / `dark:bg-gray-900`
+  - Sfondo secondario (card, header, nav): `bg-white` / `dark:bg-gray-800`
+  - Testo principale: `text-gray-800` o `text-gray-900` / `dark:text-gray-100` o `dark:text-gray-200`
+  - Testo secondario: `text-gray-500` / `dark:text-gray-400`
+  - Bordi: `border-gray-200` / `dark:border-gray-700`
+  - Colori Aspetti: sono fissi a DB e non variano col tema (Vigilanza #4073d4, Eroismo #ffffff, Offensiva #d30808, Malvagità #000000, Autorità #0b992d, Astuzia #eb9f1c).

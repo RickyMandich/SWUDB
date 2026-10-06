@@ -25,7 +25,7 @@
 
 <div x-data="{ open: {{ $hasFilters ? 'true' : 'false' }} }">
     <button type="button" @click="open = !open"
-        class="flex w-full items-center justify-between rounded-md bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+        class="flex w-full items-center justify-between rounded-md bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700">
         <span>Filtri</span>
         <svg :class="{ 'rotate-180': open }" class="h-5 w-5 transition-transform duration-200" fill="none"
             viewBox="0 0 24 24" stroke="currentColor">
@@ -39,8 +39,8 @@
             {{-- Testo e datalist --}}
             <div>
                 <x-input-label for="nome" value="Nome" />
-                <x-text-input id="nome" name="nome" type="text" class="mt-1 block w-full"
-                    :value="$filters['nome'] ?? ''" />
+                <x-text-input id="nome" placeholder="Scrivi per cercare..." name="nome" type="text"
+                    class="mt-1 block w-full" :value="$filters['nome'] ?? ''" />
             </div>
 
             <x-multi-datalist name="espansioni" label="Espansione" :options="$expansions" :selected="$filters['espansioni'] ?? []" />
@@ -56,7 +56,7 @@
                             <input type="checkbox" name="tipi[]" value="{{ $type }}"
                                 id="tipo-{{ Str::slug($type) }}" class="hidden peer" @checked(in_array($type, (array) ($filters['tipi'] ?? [])))>
                             <label for="tipo-{{ Str::slug($type) }}"
-                                class="inline-block cursor-pointer select-none rounded-md border-2 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 peer-checked:bg-gray-600 peer-checked:text-white">
+                                class="inline-block cursor-pointer select-none rounded-md border-2 border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 peer-checked:bg-gray-600 dark:peer-checked:bg-gray-500 peer-checked:text-white dark:peer-checked:text-white">
                                 {{ $type }}
                             </label>
                         </span>
@@ -72,7 +72,7 @@
                             <input type="checkbox" name="aspetti[]" value="{{ $aspect->id }}"
                                 id="aspetto-{{ $aspect->id }}" class="hidden peer" @checked(in_array($aspect->id, (array) ($filters['aspetti'] ?? [])))>
                             <label for="aspetto-{{ $aspect->id }}"
-                                class="inline-block cursor-pointer select-none rounded-md border-2 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 peer-checked:bg-gray-600 peer-checked:text-white">
+                                class="inline-block cursor-pointer select-none rounded-md border-2 border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 peer-checked:bg-gray-600 dark:peer-checked:bg-gray-500 peer-checked:text-white dark:peer-checked:text-white">
                                 {{ $aspect->name }}
                             </label>
                         </span>
@@ -100,7 +100,7 @@
                             <input type="radio" name="unique_card" value="{{ $value }}"
                                 id="unica-{{ $loop->index }}" class="hidden peer" @checked((string) ($filters['unique_card'] ?? '') === $value)>
                             <label for="unica-{{ $loop->index }}"
-                                class="inline-block cursor-pointer select-none rounded-md border-2 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 peer-checked:bg-gray-600 peer-checked:text-white">
+                                class="inline-block cursor-pointer select-none rounded-md border-2 border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 peer-checked:bg-gray-600 dark:peer-checked:bg-gray-500 peer-checked:text-white dark:peer-checked:text-white">
                                 {{ $text }}
                             </label>
                         </span>
@@ -110,7 +110,8 @@
 
             <div class="flex items-end gap-3 lg:col-span-2">
                 <x-primary-button>Cerca</x-primary-button>
-                <a href="{{ route('cards.index') }}" class="text-sm text-gray-500 hover:text-gray-700">Azzera</a>
+                <a href="{{ route('cards.index') }}"
+                    class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Azzera</a>
             </div>
         </form>
     </div>
