@@ -90,17 +90,17 @@
 - [x] 10.1.4 Cast su `Card` (`release_date`, `unique_card`)
 - [ ] 10.1.5 Vista lista carte (occhio al bug del campo nome non ripopolato). Fatto: `cards/index.blade.php` con griglia, paginazione e componente `<x-card>` (`components/card.blade.php`, non previsto dal piano: immagine, snippet, tratti, aspetti, costo/potenza/vita, rarità). Il form dei filtri esiste (`<x-cards-filter>`, collassabile con Alpine; tipi e aspetti già badge) ma legge ancora i nomi singoli lato backend, quindi per ora non filtra: vedi `implementationPlan-filtroCarteGrafica.md` (grafica) e la sua Parte B (backend)
 - [ ] 10.1.5bis `<x-card>`: `Storage::url($card->front_art_path)` con `front_art_path` nullo produce un'immagine rotta (gestire il caso senza immagine); il piano 10.1.6 prevede `<x-badge>` per gli aspetti, la card usa invece `style` inline con `color`/`text_color`
-- [ ] 10.1.5ter Filtro carte, grafica — `implementationPlan-filtroCarteGrafica.md` (Parte A)
-  - [ ] Step 1 CSS dei pallini dello slider (`resources/css/app.css`)
-  - [ ] Step 2 Componente `x-range-slider` (costo, vita, potenza: due pallini su una linea)
-  - [ ] Step 3 Componente `x-multi-datalist` (espansioni e tratti: datalist + chip rimovibili)
-  - [ ] Step 4 Riscrivere `components/cards-filter.blade.php` (id univoci, `bounds` provvisori, layout a 3 colonne)
-  - [ ] Step 5 Verifica visiva su `/carte` (checklist nel piano)
-  - [ ] Step 6 (opzionale) plugin `@alpinejs/collapse` per l'animazione di apertura dei filtri
-  - [ ] Step 7 README aggiornato dopo l'applicazione
-  - [ ] Modifica fuori piano (2026-10-06): il pannello "Filtri" si apre solo se c'è un filtro realmente attivo (slider fermi sui limiti = nessun filtro; `page` e parametri sconosciuti ignorati), calcolato in `@php` in cima a `cards-filter.blade.php`
-  - [ ] Modifica fuori piano (2026-10-06): filtro carte uniche a tre stati (`unique_card` = vuoto/`1`/`0`: tutte, solo uniche, solo non uniche) con radio a badge in `cards-filter.blade.php`; la parte backend (`CardSearch`) è descritta in B.3 del piano e va applicata con la Parte B (10.1.5quater)
-- [ ] 10.1.5quater Filtro carte, backend — Parte B dello stesso piano (da dettagliare dopo la verifica grafica): nuovi nomi dei parametri nel controller, `$bounds` min/max dal DB per costo/vita/potenza, `CardSearch` con `whereIn`/AND, intervalli applicati solo se più stretti dei limiti e `unique_card` a tre stati (vuoto/`1`/`0`), test Pest
+- [x] 10.1.5ter Filtro carte, grafica — `implementationPlan-V-filtroCarteGrafica.md` (Parte A)
+  - [x] Step 1 CSS dei pallini dello slider (`resources/css/app.css`)
+  - [x] Step 2 Componente `x-range-slider` (costo, vita, potenza: due pallini su una linea)
+  - [x] Step 3 Componente `x-multi-datalist` (espansioni e tratti: datalist + chip rimovibili)
+  - [x] Step 4 Riscrivere `components/cards-filter.blade.php` (id univoci, `bounds` provvisori, layout a 3 colonne)
+  - [x] Step 5 Verifica visiva su `/carte` (checklist nel piano)
+  - [x] Step 6 (opzionale) plugin `@alpinejs/collapse` per l'animazione di apertura dei filtri
+  - [x] Step 7 README aggiornato dopo l'applicazione
+  - [x] Modifica fuori piano (2026-10-06): il pannello "Filtri" si apre solo se c'è un filtro realmente attivo (slider fermi sui limiti = nessun filtro; `page` e parametri sconosciuti ignorati), calcolato in `@php` in cima a `cards-filter.blade.php`
+  - [x] Modifica fuori piano (2026-10-06): filtro carte uniche a tre stati (`unique_card` = vuoto/`1`/`0`: tutte, solo uniche, solo non uniche) con radio a badge in `cards-filter.blade.php`; la parte backend (`CardSearch`) è descritta in B.3 del piano e va applicata con la Parte B (10.1.5quater)
+- [x] 10.1.5quater Filtro carte, backend — Parte B dello stesso piano (da dettagliare dopo la verifica grafica): nuovi nomi dei parametri nel controller, `$bounds` min/max dal DB per costo/vita/potenza, `CardSearch` con `whereIn`/AND, intervalli applicati solo se più stretti dei limiti e `unique_card` a tre stati (vuoto/`1`/`0`), test Pest
 - [ ] 10.1.6 Vista dettaglio carta
 - [ ] 10.1.7 Voce di navigazione "Carte"
 - [ ] 10.4 Pagina "Nuove uscite" (`cards.new-releases`) + voce di navigazione

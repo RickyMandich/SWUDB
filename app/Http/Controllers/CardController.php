@@ -19,11 +19,16 @@ class CardController extends Controller
                 Card::query()->with(['aspects', 'traits']),
                 $request->only([
                     'nome',
-                    'espansione',
-                    'tipo',
-                    'costo',
-                    'aspetto',
-                    'tratto',
+                    'espansioni',
+                    'tipi',
+                    'aspetti',
+                    'tratti',
+                    'costo_min',
+                    'costo_max',
+                    'vita_min',
+                    'vita_max',
+                    'potenza_min',
+                    'potenza_max',
                     'unique_card',
                 ])
             )
@@ -33,12 +38,13 @@ class CardController extends Controller
             )
             ->orderBy('expansion')
             ->orderBy('number')
-            ->paginate(3)// 24)
+            ->paginate(config('app.env') === 'production' ? 24 : 3)
             ->withQueryString();
 
         return view('cards.index', [
             'cards' => $cards,
             'filters' => $request->all(),
+            'bounds' => $search->getBounds(),
             'expansions' => Expansion::orderByDesc('legal_date')
                 ->where(function ($q) {
                     $q->whereColumn('group_main_expansion', 'expansion')
