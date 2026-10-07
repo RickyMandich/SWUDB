@@ -40,6 +40,7 @@ class Card extends Model
         'health',
         'power',
         'text',
+        'deploy_text',
         'arena',
         'artist',
         'front_art_path',
@@ -80,7 +81,10 @@ class Card extends Model
 
     public function aspects()
     {
-        return $this->belongsToMany(Aspect::class, 'card_aspect', 'card_id', 'aspect_id');
+        return $this->belongsToMany(Aspect::class, 'card_aspect', 'card_id', 'aspect_id')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
     }
 
     public function traits()

@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\Card;
-use App\Models\SystemError;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 

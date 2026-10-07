@@ -69,7 +69,5 @@ class CardController extends Controller
             ->firstOrFail();
 
         return view('cards.show', compact('card'));
-
-        return $card;
     }
 }

@@ -4,6 +4,8 @@
     // optional content shown to the right of the value, e.g. an edit link
     'action' => null,
     'class' => '',
+    'label_class' => 'font-medium text-gray-500 dark:text-gray-400',
+    'value_class' => 'text-gray-800 dark:text-gray-200',
 ])
 @aware([
     // @aware only sees an explicitly-passed attribute on the root, never its
@@ -20,9 +22,8 @@
     'bg-gray-50/60 dark:bg-dark-800/40 px-3 -mx-3 rounded-md' => $striped,
     "$class",
 ])>
-    <dt class="text-sm font-medium text-gray-500 dark:text-dark-400">{{ $label }}</dt>
-    <dd
-        class="mt-1 flex items-center justify-between gap-2 text-sm text-gray-800 dark:text-gray-200 sm:col-span-2 sm:mt-0">
+    <dt class="text-sm {{ $label_class }}">{{ $label }}</dt>
+    <dd class="mt-1 flex items-center justify-between gap-2 text-sm {{ $value_class }} sm:col-span-2 sm:mt-0">
         <span class="grow">{{ $slot }}</span>
         @isset($action)
             <span class="shrink-0">{{ $action }}</span>

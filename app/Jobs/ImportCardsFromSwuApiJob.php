@@ -53,7 +53,20 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
                 'locale' => 'it',
                 'filters[variantOf][id][$null]' => 'true',
-                'fields' => ['cardUid', 'cardNumber', 'title', 'subtitle', 'unique', 'cost', 'hp', 'power', 'text', 'artist', 'publishedAt'],
+                'fields' => [
+                    'cardUid',
+                    'cardNumber',
+                    'title',
+                    'subtitle',
+                    'unique',
+                    'cost',
+                    'hp',
+                    'power',
+                    'text',
+                    'deployBox',
+                    'artist',
+                    'publishedAt',
+                ],
                 'pagination[page]' => $page,
                 'pagination[pageSize]' => $cardPerPage,
             ]);
@@ -71,7 +84,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             $lastPage = $payload['meta']['pagination']['pageCount'] ?? $page;
             $latestRotation = Expansion::max('rotation') ?? '0';
 
-            Log::info("trovate pagine totali: {$lastPage}", ['lastPage' => $lastPage]);
+            Log::info("trovate pagine totali: {$lastPage}", ['lastPage' => $lastPage, $payload]);
             if ($firstRun) {
                 $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
                 Log::debug('message status', ['deltaProgress' => $deltaProgress]);
@@ -154,7 +167,8 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'cost' => $cardData['cost'] ?? null,
                     'health' => $cardData['hp'] ?? null,
                     'power' => $cardData['power'] ?? null,
-                    'text' => $cardData['text'] ?? '',
+                    'text' => $cardData['text'] ?? null,
+                    'deploy_text' => $cardData['deployBox'] ?? null,
                     'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                     'artist' => $cardData['artist'] ?? null,
                     'release_date' => Carbon::parse($cardData['publishedAt'])->toDateString() ?? null,

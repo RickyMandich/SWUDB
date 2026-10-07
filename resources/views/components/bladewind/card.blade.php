@@ -59,60 +59,58 @@
 
     $radius_css = getRadiusString($radius);
     $class = "bg-white dark:bg-dark-800/25 $radius_css $class";
-    $contact_card_css =   ($isContactCard) ? 'bw-contact-card' : 'bw-card';
-    $has_border_css =   ($hasBorder) ? 'border border-neutral-200 dark:border-dark-600/60 focus:outline-none' : '';
+    $contact_card_css = $isContactCard ? 'bw-contact-card' : 'bw-card';
+    $has_border_css = $hasBorder ? 'border border-neutral-200 dark:border-dark-600/60 focus:outline-none' : '';
     // an explicit padding wins over the compact/no_padding booleans, which stay
     // exactly as they were for markup that already uses them
     if ($padding !== '') {
         $padding_css = array_key_exists($padding, $named_padding) ? $named_padding[$padding] : $padding;
-        $header_compact_css = (!$header) ? $padding_css : '';
+        $header_compact_css = !$header ? $padding_css : '';
     } else {
-        $header_compact_css = (!$header && ! $compact && !$noPadding) ? 'p-6' : (($compact) ? 'p-4' : '');
+        $header_compact_css = !$header && !$compact && !$noPadding ? 'p-6' : ($compact ? 'p-4' : '');
     }
-    $shadow_css =   ($hasShadow) ? 'shadowed' : '';
-    $hover_css =  ($hasHover || !empty($url)) ? 'shadowed-hover hover:border hover:border-neutral-400/70 cursor-pointer' : '';
+    $shadow_css = $hasShadow ? 'shadowed' : '';
+    $hover_css =
+        $hasHover || !empty($url) ? 'shadowed-hover hover:border hover:border-neutral-400/70 cursor-pointer' : '';
 
-    $classes = implode(' ', array_filter([
-        $class,
-        $contact_card_css,
-        $has_border_css,
-        $header_compact_css,
-        $shadow_css,
-        $hover_css
-    ]));
-    if(!empty($url)) {
-        if(str_contains($url, '(') && str_contains($url, ')')) {
+    $classes = implode(
+        ' ',
+        array_filter([$class, $contact_card_css, $has_border_css, $header_compact_css, $shadow_css, $hover_css]),
+    );
+    if (!empty($url)) {
+        if (str_contains($url, '(') && str_contains($url, ')')) {
             $redirect = "javascript:$url";
-        } elseif (str_starts_with($url, 'http')){
-            $redirect = "window.open('".addslashes($url)."')";
+        } elseif (str_starts_with($url, 'http')) {
+            $redirect = "window.open('" . addslashes($url) . "')";
         } else {
-            $redirect = "location.href='".addslashes($url)."'";
+            $redirect = "location.href='" . addslashes($url) . "'";
         }
     }
 @endphp
 {{-- format-ignore-end --}}
 
-<div {{ $attributes->exceptPropAliases(get_defined_vars())->merge([ 'class' => $classes]) }}
-     @if($url) onclick="{!! $redirect !!}" role="link" tabindex="0" data-bw-card-clickable @endif>
-    @if($header)
+<div {{ $attributes->exceptPropAliases(get_defined_vars())->merge(['class' => $classes]) }}
+    @if ($url) onclick="{!! $redirect !!}" role="link" tabindex="0" data-bw-card-clickable @endif>
+    @if ($header)
         <div class="border-b border-gray-100/30 dark:border-dark-600/60">
             {{ $header }}
         </div>
     @endif
-    @if($title && ! $header)
-        <div class="uppercase tracking-wide text-sm text-gray-500 mb-2 antialiased">{{ $title }}</div>
+    @if ($title && !$header)
+        <div class="uppercase tracking-wide text-sm text-gray-500 dark:text-gray-400 mb-2 antialiased">
+            {{ $title }}</div>
     @endif
-    <div @if($title && ! $header) class="mt-6" @endif>
+    <div @if ($title && !$header) class="mt-6" @endif>
         {{ $slot }}
     </div>
-    @if($footer)
+    @if ($footer)
         <div class="border-t border-gray-100/30 dark:border-dark-600/60">
-            {{$footer}}
+            {{ $footer }}
         </div>
     @endif
 </div>
 
-@if($url)
+@if ($url)
     @once
         <x-bladewind::script :nonce="$nonce">
             bwActivateOnKey('[data-bw-card-clickable]');
