@@ -12,7 +12,7 @@
             @foreach ($roles as $role)
                 <label class="block">
                     <input type="checkbox" name="roles[]" value="{{ $role->name }}"
-                        class="rounded border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
+                        class="rounded-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-xs focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
                         @checked($user->hasRole($role->name))>
                     {{ $role->name }}
                 </label>
@@ -23,7 +23,7 @@
             @foreach ($permissions as $permission)
                 <label class="block">
                     <input type="checkbox" name="permissions[]" value="{{ $permission->name }}"
-                        class="rounded border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
+                        class="rounded-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-xs focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
                         @checked($user->hasDirectPermission($permission->name))>
                     {{ $permission->name }}
                 </label>

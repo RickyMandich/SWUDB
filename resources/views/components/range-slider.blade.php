@@ -18,8 +18,8 @@
     </div>
 
     <div class="relative mt-2 h-5">
-        <div class="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
-        <div class="absolute top-1/2 h-1 -translate-y-1/2 rounded bg-gray-600 dark:bg-gray-400"
+        <div class="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-sm bg-gray-200 dark:bg-gray-700"></div>
+        <div class="absolute top-1/2 h-1 -translate-y-1/2 rounded-sm bg-gray-600 dark:bg-gray-400"
             :style="`left: ${fromPct}%; width: ${toPct - fromPct}%`"></div>
 
         <input type="range" name="{{ $name }}_min" :min="min" :max="max" step="1"

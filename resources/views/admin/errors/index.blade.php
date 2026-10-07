@@ -24,10 +24,10 @@
                 <x-input-error :messages="$errors->get('ids')" class="mb-2" />
 
                 @foreach ($systemErrors as $error)
-                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 mb-3 rounded">
+                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 mb-3 rounded-sm">
                         <div class="flex items-start gap-3">
                             <input type="checkbox" name="ids[]" value="{{ $error->id }}"
-                                class="mt-1 rounded border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
+                                class="mt-1 rounded-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-xs focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">
                                     <x-badge :color="$error->statusColor()">{{ $error->status }}</x-badge>
@@ -38,16 +38,16 @@
                                 <div class="flex flex-wrap gap-2 mt-3">
                                     @if ($error->status === 'open')
                                         <button type="submit" form="resolve-{{ $error->id }}"
-                                            class="px-3 py-1 bg-green-600 text-white rounded">Segna come
+                                            class="px-3 py-1 bg-green-600 text-white rounded-sm">Segna come
                                             risolto</button>
                                         <button type="submit" form="ignore-{{ $error->id }}"
-                                            class="px-3 py-1 bg-gray-600 text-white rounded">Ignora</button>
+                                            class="px-3 py-1 bg-gray-600 text-white rounded-sm">Ignora</button>
                                     @else
                                         <button type="submit" form="reopen-{{ $error->id }}"
-                                            class="px-3 py-1 bg-red-600 text-white rounded">Riapri</button>
+                                            class="px-3 py-1 bg-red-600 text-white rounded-sm">Riapri</button>
                                     @endif
                                     <a href="{{ route('admin.errors.show', $error) }}"
-                                        class="px-3 py-1 bg-blue-600 text-white rounded">Mostra</a>
+                                        class="px-3 py-1 bg-blue-600 text-white rounded-sm">Mostra</a>
                                 </div>
                             </div>
                         </div>
@@ -56,11 +56,11 @@
 
                 <div class="flex flex-wrap gap-2 mt-4">
                     <button type="submit" name="status" value="resolved"
-                        class="px-3 py-1 bg-green-600 text-white rounded">Risolvi selezionati</button>
+                        class="px-3 py-1 bg-green-600 text-white rounded-sm">Risolvi selezionati</button>
                     <button type="submit" name="status" value="ignored"
-                        class="px-3 py-1 bg-gray-600 text-white rounded">Ignora selezionati</button>
+                        class="px-3 py-1 bg-gray-600 text-white rounded-sm">Ignora selezionati</button>
                     <button type="submit" name="status" value="open"
-                        class="px-3 py-1 bg-red-600 text-white rounded">Riapri selezionati</button>
+                        class="px-3 py-1 bg-red-600 text-white rounded-sm">Riapri selezionati</button>
                 </div>
             </form>
 

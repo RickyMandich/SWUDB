@@ -25,7 +25,7 @@
 
 <div x-data="{ open: {{ $hasFilters ? 'true' : 'false' }} }">
     <button type="button" @click="open = !open"
-        class="flex w-full items-center justify-between rounded-md bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+        class="flex w-full items-center justify-between rounded-md bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-xs hover:bg-gray-50 dark:hover:bg-gray-700">
         <span>Filtri</span>
         <svg :class="{ 'rotate-180': open }" class="h-5 w-5 transition-transform duration-200" fill="none"
             viewBox="0 0 24 24" stroke="currentColor">

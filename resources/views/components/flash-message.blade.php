@@ -8,7 +8,7 @@
             default => 'bg-blue-600',
         };
     @endphp
-    <div {{ $attributes->merge(['class' => "mb-4 px-4 py-2 rounded text-white {$color}"]) }}>
+    <div {{ $attributes->merge(['class' => "mb-4 px-4 py-2 rounded-sm text-white {$color}"]) }}>
         {{ session('status') }}
     </div>
 @endif

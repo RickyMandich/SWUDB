@@ -29,14 +29,14 @@
             <a href="{{ route('login') }}"
                 class="{{ request()->routeIs('login') ? 'pointer-events-none opacity-50' : 'hover:bg-blue-700' }}">
                 <button
-                    class="{{ request()->routeIs('login') ? 'bg-blue-900 text-white' : 'bg-blue-500 text-black' }} font-bold py-2 px-4 rounded">
+                    class="{{ request()->routeIs('login') ? 'bg-blue-900 text-white' : 'bg-blue-500 text-black' }} font-bold py-2 px-4 rounded-sm">
                     Login
                 </button>
             </a>
             <a href="{{ route('register') }}"
                 class="{{ request()->routeIs('register') ? 'pointer-events-none opacity-50' : 'hover:bg-blue-700' }}">
                 <button
-                    class="{{ request()->routeIs('register') ? 'bg-blue-900 text-white' : 'bg-blue-500 text-black' }} font-bold py-2 px-4 rounded">
+                    class="{{ request()->routeIs('register') ? 'bg-blue-900 text-white' : 'bg-blue-500 text-black' }} font-bold py-2 px-4 rounded-sm">
                     Registrati
                 </button>
             </a>

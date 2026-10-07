@@ -1,4 +1,4 @@
-<article class="h-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-sm transition hover:shadow-md">
+<article class="h-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-xs transition hover:shadow-md">
     <a href="{{ route('cards.show', [
         'expansion' => $card->expansion,
         'number' => $card->number,

@@ -48,7 +48,7 @@
                             <td class="px-3 py-2 border-b dark:border-gray-700">
                                 <input type="checkbox" name="confirmed" value="1"
                                     form="exp-{{ $expansion->expansion }}" @checked($expansion->confirmed)
-                                    class="rounded border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
+                                    class="rounded-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-xs focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
                             </td>
                             <td class="px-3 py-2 border-b dark:border-gray-700">
                                 <x-primary-button form="exp-{{ $expansion->expansion }}">Salva</x-primary-button>
