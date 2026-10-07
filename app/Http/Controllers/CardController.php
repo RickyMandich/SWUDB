@@ -68,7 +68,8 @@ class CardController extends Controller
             ->where('number', $number)
             ->firstOrFail();
 
-        // return view('cards.show', compact('card'));
+        return view('cards.show', compact('card'));
+
         return $card;
     }
 }

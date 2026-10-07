@@ -65,7 +65,7 @@ class Card extends Model
      */
     public function getSnippetAttribute()
     {
-        $snippet = "$this->id - ⟡$this->name";
+        $snippet = "$this->expansion-$this->number - ⟡$this->name";
         if (isset($this->title) && strlen($this->title) > 0) {
             return $snippet.', '.strtoupper($this->title);
         }
