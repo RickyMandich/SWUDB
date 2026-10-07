@@ -11,7 +11,7 @@ class CardSearch
     public function getBounds(): array
     {
         return Cache::remember('cards_bounds', 3600, function () {
-            $boundsRaw = Card::query()->selectRaw('
+            $boundsRaw = Card::query()->toBase()->selectRaw('
                 MIN(cost) as cost_min, MAX(cost) as cost_max,
                 MIN(health) as health_min, MAX(health) as health_max,
                 MIN(power) as power_min, MAX(power) as power_max
@@ -49,27 +49,27 @@ class CardSearch
             })
             ->when(
                 isset($filters['costo_min']) && $filters['costo_min'] !== '' && (int) $filters['costo_min'] > $bounds['cost'][0],
-                fn($q) => $q->where('cost', '>=', (int) $filters['costo_min'])
+                fn ($q) => $q->where('cost', '>=', (int) $filters['costo_min'])
             )
             ->when(
                 isset($filters['costo_max']) && $filters['costo_max'] !== '' && (int) $filters['costo_max'] < $bounds['cost'][1],
-                fn($q) => $q->where('cost', '<=', (int) $filters['costo_max'])
+                fn ($q) => $q->where('cost', '<=', (int) $filters['costo_max'])
             )
             ->when(
                 isset($filters['vita_min']) && $filters['vita_min'] !== '' && (int) $filters['vita_min'] > $bounds['health'][0],
-                fn($q) => $q->where('health', '>=', (int) $filters['vita_min'])
+                fn ($q) => $q->where('health', '>=', (int) $filters['vita_min'])
             )
             ->when(
                 isset($filters['vita_max']) && $filters['vita_max'] !== '' && (int) $filters['vita_max'] < $bounds['health'][1],
-                fn($q) => $q->where('health', '<=', (int) $filters['vita_max'])
+                fn ($q) => $q->where('health', '<=', (int) $filters['vita_max'])
             )
             ->when(
                 isset($filters['potenza_min']) && $filters['potenza_min'] !== '' && (int) $filters['potenza_min'] > $bounds['power'][0],
-                fn($q) => $q->where('power', '>=', (int) $filters['potenza_min'])
+                fn ($q) => $q->where('power', '>=', (int) $filters['potenza_min'])
             )
             ->when(
                 isset($filters['potenza_max']) && $filters['potenza_max'] !== '' && (int) $filters['potenza_max'] < $bounds['power'][1],
-                fn($q) => $q->where('power', '<=', (int) $filters['potenza_max'])
+                fn ($q) => $q->where('power', '<=', (int) $filters['potenza_max'])
             )
             ->when(
                 isset($filters['unique_card']) && $filters['unique_card'] !== '',

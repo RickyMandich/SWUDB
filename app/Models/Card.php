@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Builders\CardBuilder;
 use Illuminate\Database\Eloquent\Model;
 
 class Card extends Model
@@ -93,5 +94,10 @@ class Card extends Model
             ->using(DeckCard::class)
             ->withPivot('quantity')
             ->withTimestamps();
+    }
+
+    public function newEloquentBuilder($query): CardBuilder
+    {
+        return new CardBuilder($query);
     }
 }

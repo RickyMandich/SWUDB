@@ -215,18 +215,23 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
     private function syncAspectsAndTraits(Card $card, array $cardData): void
     {
-        $aspectIds = collect($cardData['aspects']['data'] ?? [])->map(function ($aspectEntry) {
-            $attr = $aspectEntry['attributes'];
+        $aspectIds = collect($cardData['aspects']['data'] ?? [])
+            ->values()
+            ->mapWithKeys(function ($aspectEntry, $index) {
+                $attr = $aspectEntry['attributes'];
 
-            return Aspect::updateOrCreate(
-                ['name' => $attr['name']],
-                [
-                    'color' => $attr['color'] ?? null,
-                    'order' => $attr['sortValue'] ?? Aspect::max('order') + 1,
-                    'slug' => Str::slug($attr['englishName'] ?? $attr['name']),
-                ]
-            )->id;
-        });
+                $id = Aspect::updateOrCreate(
+                    ['name' => $attr['name']],
+                    [
+                        'color' => $attr['color'] ?? null,
+                        'order' => $attr['sortValue'] ?? Aspect::max('order') + 1,
+                        'slug' => Str::slug($attr['englishName'] ?? $attr['name']),
+                    ]
+                )->id;
+
+                return [$id => ['position' => $index]];
+            });
+
         $card->aspects()->sync($aspectIds);
 
         $traitNames = collect($cardData['traits']['data'] ?? [])
