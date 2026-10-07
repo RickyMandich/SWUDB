@@ -31,15 +31,15 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - `TelegramService` (facade `Http`, nessun SDK) con `TelegramActionResult`: invio, modifica e cancellazione di messaggi, invio foto; senza `TELEGRAM_BOT_TOKEN` o `chat_id` non parte nessuna richiesta HTTP.
 - Admin errori: vista di dettaglio `/admin/errori/{id}`, componenti `<x-flash-message>` e `<x-badge>`, lista paginata.
 - Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
-- Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata di `<x-card>` ordinata per `legal_date` dell'espansione, poi codice e numero. Il componente `<x-cards-filter>` usa `<x-multi-datalist>` (suggerimenti testuali con chip rimovibili per espansioni e tratti) e `<x-range-slider>` (slider a doppio input con limiti dal database per costo, salute, potenza). `CardSearch` implementa la logica reale dei filtri via parametri GET (multi-valore in AND per aspetti e tratti, e `whereIn` per espansioni e tipi). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register).
+- Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata (24 carte per pagina) di `<x-card>` con l'ordinamento di default di `CardBuilder` (Leader, Base, poi aspetti, tipo, costo, nome, `legal_date` dell'espansione e numero). Il componente `<x-cards-filter>` usa `<x-multi-datalist>` (suggerimenti testuali con chip rimovibili per espansioni e tratti) e `<x-range-slider>` (slider a doppio input con limiti dal database per costo, salute, potenza). `CardSearch` implementa la logica reale dei filtri via parametri GET (multi-valore in AND per aspetti e tratti, e `whereIn` per espansioni e tipi). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register) e ha la voce "Carte". Pagina di dettaglio `/carte/{expansion}/{number}` (`cards/show.blade.php`, con componenti Bladewind): immagine fronte, aspetti, tratti, tipo, rarità, costo, vita, potenza, arena, artista, abilità e abilità "Da schierato".
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
 - Test del job di import: riscritti, da lanciare con `php artisan test` (`todo.md`, 5.5.6).
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
   validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
-- Collezione, statistiche, API pubblica: non iniziati.
-- Catalogo carte incompleto (piano 05): il form dei filtri in `cards/index.blade.php` è un segnaposto; `/carte/{expansion}/{number}` restituisce il modello come JSON perché la vista `cards.show` non esiste; manca la voce "Carte" nel menu; la paginazione è temporaneamente a 3 carte per pagina (residuo di debug, deve essere 24); la pagina "Nuove uscite" (`/nuove-uscite`) non esiste.
+- Collezione, API pubblica: non iniziati. Statistiche mazzo: pianificate nel piano 07 (Step 7.8), dopo le pagine dei mazzi.
+- Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): la pagina "Nuove uscite" (`/nuove-uscite`) non esiste (Step 10.4); nel dettaglio carta il pulsante "Gira la carta" compare se la carta ha un retro ma non fa ancora nulla (la pagina non mostra il retro), e con `front_art_path` nullo (qui come in `<x-card>`) l'immagine è rotta; nel menu responsive il link "Carte" non è visibile agli ospiti.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
 - Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano `implementationPlan-githubActionBuildGhcr.md`.
@@ -54,7 +54,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 | Database | MariaDB 11 |
 | Code / cache / sessioni | driver `database` |
 | Email | Resend (`resend/resend-php`) |
-| Frontend | Blade, Tailwind CSS 4, Alpine.js, Vite 7 |
+| Frontend | Blade, Tailwind CSS 4, Alpine.js, Vite 7, BladewindUI (`bladewindui/ui` e `bladewindui/table`, componenti pubblicati in `resources/views/components/bladewind`) |
 | Test | Pest 3 |
 | Infrastruttura | Docker (php-fpm + nginx + mariadb + worker), Traefik su VM Oracle in produzione |
 
@@ -63,12 +63,13 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 ```
 app/
   Console/Commands/ScanCards.php      comando `cards:scan` (mette in coda l'import)
-  Http/Controllers/CardController.php catalogo pubblico (`index` funzionante, `show` ancora placeholder)
+  Http/Controllers/CardController.php catalogo pubblico (`index` con filtri e `show` con la vista di dettaglio)
   Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
   Http/Controllers/Auth/              controller Breeze
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
   Mail/                               NewCardsEmail, AdminScanReportEmail
   Models/                             Aspect, Card, CardTrait, Deck, DeckCard, Expansion, SystemError, User
+  Models/Builders/CardBuilder.php     builder Eloquent di `Card` con ordinamento di default (usato da `/carte`; si applica solo se la query non ha già un `orderBy`)
   Services/                           CardImageDownloader (immagini carta in storage), CardSearch (filtri catalogo), TelegramService + TelegramActionResult (Telegram)
 bash/                                 script di commit/versionamento/FTP (vedi "Versionamento")
 database/migrations, seeders          schema e PermissionSeeder
@@ -158,8 +159,8 @@ Migrazioni in `database/migrations`. Tabelle:
   dell'API (valori approssimativi da correggere a mano dalla pagina `/admin/espansioni`).
 - `cards`: PK `id` (stringa `"{expansion}{number}"`, es. `JTL256`, generata dal modello `Card`), `UNIQUE(expansion, number)` e `cid`
   univoco (`cardUid` dell'API, chiave di lookup dell'import); FK `expansion` → `expansions.expansion`.
-  `front_art_path`/`back_art_path` sono path relativi nel disk `public`.
-- `aspects` + `card_aspect`; `traits` (PK `name`) + `card_trait`: aspetti e tratti normalizzati. Le pivot hanno la colonna `card_id` (PK composta `card_id`+`aspect_id` / `card_id`+`trait_name`).
+  `front_art_path`/`back_art_path` sono path relativi nel disk `public`. `type` e `rarity` sono enum SQL con i valori **in italiano** dell'API (`Unità`, `Evento`, `Miglioria`, `Leader`, `Base`, ...); `deploy_text` è il testo dell'abilità "Da schierato".
+- `aspects` + `card_aspect`; `traits` (PK `name`) + `card_trait`: aspetti e tratti normalizzati. Le pivot hanno la colonna `card_id` (PK composta `card_id`+`aspect_id` / `card_id`+`trait_name`); `card_aspect` ha anche `position` (ordine degli aspetti sulla carta, scritto dal job di import).
 - `decks` (`user_id`, `name`, `format` premier/eternal/twin_suns, `is_public`, `assembled`, `version`,
   `previous_version_id`) e `deck_cards` (PK `deck_id`+`card_id`, `quantity`). Il ruolo Leader/Base non è una colonna:
   si deduce da `cards.type`. Vedi "Non ancora implementato" per lo stato della funzionalità.
@@ -183,7 +184,7 @@ Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità
 |---|---|---|
 | `GET /` | pubblica | redirect a `/dashboard` |
 | `GET /carte` | pubblica | catalogo carte paginato, filtri GET (`CardSearch`) |
-| `GET /carte/{expansion}/{number}` | pubblica | dettaglio carta: oggi restituisce il modello in JSON (vista da fare) |
+| `GET /carte/{expansion}/{number}` | pubblica | dettaglio carta (vista `cards.show`) |
 | `GET /dashboard` | login + email verificata | dashboard |
 | `/profile` (GET, PATCH, DELETE) | login | profilo utente (Breeze) |
 | rotte di `routes/auth.php` | — | login, registrazione, reset password, verifica email (Breeze) |
@@ -231,7 +232,7 @@ composer test
 Su Windows, se si redirige l'output in un file non usare `:` nel nome (`> test_2026-10-04_09-18.log`): il `:` crea un
 alternate data stream NTFS e il file principale resta vuoto.
 
-Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`
+Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`, `tests/Feature/Services/CardSearchTest.php` (filtri del catalogo)
 e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import. Ultima esecuzione (2026-10-04): 29 test
 passati e 5 falliti (4 del job e l'`ExampleTest` di Breeze, che si aspetta 200 su `/` mentre ora c'è un redirect); le
 cause sono in `todo.md`, 5.5.6 e 5.5.8.
@@ -278,7 +279,7 @@ La versione sta in `.env-overrides` (`APP_VERSION_PRIMARY/SECONDARY/TERTIARY`). 
 - **Il README va di pari passo con il codice effettivamente implementato**, non con quello solo pianificato: si
   aggiorna quando una funzionalità è davvero nel codice, e ciò che è pianificato ma assente si segnala come tale
   in "Non ancora implementato".
-- Viste Blade: layout `x-app-layout` / `x-guest-layout`, riuso dei componenti Breeze, stile Tailwind
+- Viste Blade: layout `x-app-layout` / `x-guest-layout`, riuso dei componenti Breeze, componenti Bladewind (`<x-bladewind.*>`) per i widget che Breeze non ha, stile Tailwind
   (dettagli nella sezione "Convenzioni per le view" di `implementationPlan-ricostruzioneUnlimitedDB.md`).
 - **Dark Mode e Pallette UI**: l'app supporta la dark mode tramite la classe `dark:` di Tailwind. La pallette da mantenere coerente è:
   - Sfondo primario: `bg-gray-100` / `dark:bg-gray-900`
@@ -286,4 +287,5 @@ La versione sta in `.env-overrides` (`APP_VERSION_PRIMARY/SECONDARY/TERTIARY`). 
   - Testo principale: `text-gray-800` o `text-gray-900` / `dark:text-gray-100` o `dark:text-gray-200`
   - Testo secondario: `text-gray-500` / `dark:text-gray-400`
   - Bordi: `border-gray-200` / `dark:border-gray-700`
+  - Componenti Bladewind: non seguono da soli la palette del progetto, quindi passare esplicitamente le classi `dark:` (es. `class="bg-white dark:bg-gray-800"` su `<x-bladewind.card>`)
   - Colori Aspetti: sono fissi a DB e non variano col tema (Vigilanza #4073d4, Eroismo #ffffff, Offensiva #d30808, Malvagità #000000, Autorità #0b992d, Astuzia #eb9f1c).

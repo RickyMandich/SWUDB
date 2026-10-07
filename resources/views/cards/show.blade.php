@@ -15,11 +15,27 @@
             <div class="flex flex-col gap-6 p-5 md:flex-row md:items-start">
 
                 {{-- Immagine --}}
-                <div class="w-full md:w-auto md:max-w-md">
+                <div class="w-full md:w-auto md:max-w-md" x-data="{ flipped: false }">
                     <x-bladewind.card compact="true" has_shadow="false" radius="medium"
                         class="bg-white dark:bg-gray-800">
-                        <img src="{{ Storage::url($card->front_art_path) }}" alt="{{ $card->name }}"
-                            class="block h-auto w-full rounded-lg">
+                        @if ($card->back_art_path)
+                            <x-bladewind.button x-on:click="flipped = !flipped" class="mb-3">
+                                Gira la carta
+                            </x-bladewind.button>
+                        @endif
+
+                        <div class="perspective-distant">
+                            <div class="grid transform-3d transition-transform duration-500 motion-reduce:transition-none"
+                                :class="{ 'rotate-y-180': flipped }">
+                                <img src="{{ Storage::url($card->front_art_path) }}" alt="{{ $card->name }}"
+                                    class="col-start-1 row-start-1 block h-auto w-full self-center rounded-lg backface-hidden">
+                                @if ($card->back_art_path)
+                                    <img src="{{ Storage::url($card->back_art_path) }}"
+                                        alt="{{ $card->name }} (retro)"
+                                        class="col-start-1 row-start-1 block h-auto w-full rounded-lg backface-hidden rotate-y-180">
+                                @endif
+                            </div>
+                        </div>
                     </x-bladewind.card>
                 </div>
 
@@ -36,6 +52,15 @@
                                 @foreach ($card->aspects as $aspect)
                                     <x-badge :color="$aspect->color" :text-color="$aspect->text_color">
                                         {{ $aspect->name }}
+                                    </x-badge>
+                                @endforeach
+                            </x-bladewind.description-list.item>
+
+                            <x-bladewind.description-list.item label="Tratti"
+                                class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                @foreach ($card->traits as $trait)
+                                    <x-badge>
+                                        {{ $trait->name }}
                                     </x-badge>
                                 @endforeach
                             </x-bladewind.description-list.item>

@@ -19,9 +19,9 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | 02 | [`implementationPlan-V-02-ricostruzioneAllineamentoSchema.md`](implementationPlan-V-02-ricostruzioneAllineamentoSchema.md) | Fase 4ter: pivot con `card_id`, relazioni, `publishedAt`, test del job | ✅ completato |
 | 03 | [`implementationPlan-V-03-ricostruzioneAdminErrori.md`](implementationPlan-V-03-ricostruzioneAdminErrori.md) | Fase 5: viste admin e email di scan | rinominato `V-`, ma restano aperti gli Step 5.5.6–5.5.8 (test del job falliti, doppio `SystemError` sul download, cause nel `todo.md`) |
 | 04 | [`implementationPlan-V-04-ricostruzioneAdminEspansioni.md`](implementationPlan-V-04-ricostruzioneAdminEspansioni.md) | Fase 6: pagina admin espansioni | ✅ completato (resta la verifica manuale 6.4 nel `todo.md`) |
-| 05 | [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) | Fase 10: ricerca carte, dettaglio, nuove uscite, navigazione per ospiti (Step 10.2 dopo il 07) | **in corso**: fatti 10.3, 10.1.1–10.1.4 e la griglia di 10.1.5; mancano form filtri, 10.1.6, 10.1.7, 10.4, 10.5 (dettaglio nel `todo.md`) |
+| 05 | [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) | Fase 10: ricerca carte, dettaglio, nuove uscite, navigazione per ospiti (Step 10.2 statistiche mazzo spostato nel piano 07, come Step 7.8) | **in corso**: fatti 10.3 e 10.1 (con rifiniture aperte); mancano 10.4 e 10.5 (dettaglio nel `todo.md`) |
 | 06 | [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md) | Fase 7a: enum, relazioni, validator, policy dei mazzi | da fare |
-| 07 | [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md) | Fase 7b: pagine mazzi, export/import | da fare |
+| 07 | [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md) | Fase 7b: pagine mazzi, export/import, statistiche mazzo (Step 7.8, ex 10.2 del piano 05) | da fare |
 | 08 | [`implementationPlan-08-ricostruzioneCollezione.md`](implementationPlan-08-ricostruzioneCollezione.md) | Fase 8: collezione, carte mancanti/presenti | da fare |
 | 09 | [`implementationPlan-09-ricostruzioneBotTelegramWebhook.md`](implementationPlan-09-ricostruzioneBotTelegramWebhook.md) | Fase 9b: webhook, comandi, `NotifyAdminJob` | da fare |
 | 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | da fare |
@@ -73,10 +73,11 @@ Tabelle applicative decise, con ogni colonna e il perché. Le parti rimandano qu
 | `unique_card` | boolean, default `false` | Regola "Unica" del gioco. |
 | `name` | string | Nome della carta. |
 | `title` | string, nullable | Sottotitolo. |
-| `type` | enum SQL (`Unit`, `Upgrade`, `Event`, `Leader`, `Base`, `CreditToken`, `ForceToken`, `TokenUnit`, `TokenUpgrade`) | Secondo l'API SWU. Opzionale un enum PHP `CardType` con cast, stesso pattern di `DeckFormat`. |
+| `type` | enum SQL (`Base`, `Evento`, `Leader`, `Miglioria`, `Miglioria Segnalino`, `Segnalino Credito`, `Segnalino Forza`, `Unità`, `Unità Segnalino`) | Valori **in italiano** come li restituisce l'API con `locale=it` (l'import li salva così), vedi la migration `create_cards_table`. Attenzione a non scrivere query con i nomi inglesi (`Unit`, `Upgrade`, `Event`). Opzionale un enum PHP `CardType` con cast, stesso pattern di `DeckFormat`. |
 | `rarity` | enum SQL (`Comune`, `Non Comune`, `Rara`, `Leggendaria`, `Speciale`) | Valori **in italiano**, come li restituisce l'API ufficiale con `locale=it` (l'import li salva così com'è). |
 | `cost`, `health`, `power` | unsigned tinyint, nullable | `health` e `power` solo per le unità. |
 | `text` | text, nullable | Testo delle abilità. |
+| `deploy_text` | text, nullable | Testo dell'abilità "Da schierato" (`deployBox` dell'API), usato per i Leader. |
 | `arena` | string, nullable | Arena in cui si gioca un'unità. |
 | `artist` | string, nullable | |
 | `front_art_path`, `back_art_path` | string, nullable | Path **relativo** nel disk `public` (`cards/{expansion}/{number}-front.{ext}`): le immagini sono scaricate in locale durante l'import. |
@@ -85,7 +86,7 @@ Tabelle applicative decise, con ogni colonna e il perché. Le parti rimandano qu
 | `created_at`/`updated_at` | timestamp | |
 
 ### `aspects` + `card_aspect`
-`aspects`: `id`, `name`, `color`, `slug`, `order`, timestamps. `card_aspect`: `card_id` (FK `cards.id`), `aspect_id` (FK `aspects.id`), PK composta, timestamps.
+`aspects`: `id`, `name`, `color`, `slug`, `order`, timestamps. `card_aspect`: `card_id` (FK `cards.id`), `aspect_id` (FK `aspects.id`), `position` (unsigned tinyint, default 0: ordine in cui gli aspetti compaiono sulla carta, scritto dal job di import), PK composta, timestamps.
 Tabella dedicata invece di una colonna JSON: filtro per aspetto con una join indicizzata, colore/slug/ordine centralizzati per la UI.
 
 ### `traits` + `card_trait`
@@ -129,7 +130,7 @@ Cardinalità e allineamento dei leader li verifica il validator del formato (pia
 | `created_at`/`updated_at` | timestamp | |
 
 ## Convenzioni per le view (riferimento per tutte le parti)
-Stack: Blade puro (niente Livewire/Inertia/Vue: la lentezza della vecchia versione era un bug preciso di Livewire), Tailwind con classi utility, Alpine.js solo per interattività leggera.
+Stack: Blade puro (niente Livewire/Inertia/Vue: la lentezza della vecchia versione era un bug preciso di Livewire), Tailwind con classi utility, Alpine.js solo per interattività leggera, BladewindUI per i componenti di visualizzazione che Breeze non ha (vedi "Componenti Bladewind").
 
 ### Corrispondenza cartella, vista e rotta
 Sempre la stessa tripla: `view('admin.users.index')` ⇄ `resources/views/admin/users/index.blade.php` ⇄ nome rotta `admin.users.index`. La cartella prende il primo segmento di rotta:
@@ -144,6 +145,14 @@ Pubblico vs autenticato non è una cartella diversa: è solo il gruppo di middle
 `<x-primary-button>`, `<x-secondary-button>`, `<x-danger-button>`, `<x-text-input>`, `<x-input-label>`, `<x-input-error>`, `<x-modal>`, `<x-dropdown>`, `<x-dropdown-link>`, `<x-nav-link>`, `<x-responsive-nav-link>`, `<x-flash-message>`, `<x-badge>`, `<x-card>` (scheda carta della griglia `/carte`), `<x-application-logo>`: usarli sempre, niente `<input>`/`<button>` nudi.
 Ogni nuova sezione con pagina indice va aggiunta a **entrambi** i blocchi (desktop e responsive) di `layouts/navigation.blade.php`.
 Le icone del sito sono incluse da `layouts/favicons.blade.php`.
+
+### Componenti Bladewind
+Libreria `bladewindui/ui` (+ `bladewindui/table`), componenti Blade con prefisso `<x-bladewind.nome>` (es. `<x-bladewind.card>`, `<x-bladewind.description-list>`, `<x-bladewind.button>`). Regole:
+- **Quando**: per i widget che Breeze e i componenti del progetto non hanno (card contenitore, liste descrittive, tab, ecc.). Se esiste un componente equivalente tra quelli sopra, si usa quello (stesso principio di "usarli sempre").
+- **Non modificare** `resources/views/components/bladewind/*` e `public/vendor/bladewind`: `composer update` li ripubblica con `--force` (`post-update-cmd` in `composer.json`) e le modifiche si perdono. Per cambiarne l'aspetto si passano `class` e prop dal punto d'uso.
+- **Dark mode**: i componenti non seguono da soli la palette del progetto, quindi si passano esplicitamente le classi `dark:` (es. `class="bg-white dark:bg-gray-800"`), come in `cards/show.blade.php`.
+- **Interattività**: i componenti inoltrano gli attributi extra al tag HTML (`$attributes`), quindi Alpine si usa come sempre. Sui tag dei componenti Blade scrivere `x-on:click="..."` e non `:attr="..."`: il `:` davanti a un attributo di un componente Blade viene letto come espressione PHP, non come binding Alpine (vale anche per `:class`, che va messo solo su tag HTML normali).
+- I colori dei badge (`<x-badge>`) non sono Bladewind: `color` deve essere un colore CSS valido (esadecimale), non un nome come `neutral`.
 
 ### Componenti estratti al piano 03
 - `<x-flash-message>`: file `components/flash-message.blade.php` (il refuso `flash-massage` è stato corretto). Supporta `session('status_level')` (`success`/`error`/`warning`, altrimenti blu).
@@ -184,7 +193,7 @@ Unica eccezione al "solo Blade + Alpine": Chart.js via CDN nella pagina statisti
 - Modalità offline/PWA per consultazione carte
 - Wishlist carte desiderate
 - Deck-building guidato per principianti
-- Probabilità ipergeometrica di pescare una carta nelle statistiche mazzo (piano 05, Step 10.2)
+- Probabilità ipergeometrica di pescare una carta nelle statistiche mazzo (piano 07, Step 7.8)
 - Apertura digitale dei booster pack (propedeutico `expansions.group_main_expansion`)
 
 ## Riferimenti documentazione Laravel 12

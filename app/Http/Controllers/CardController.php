@@ -32,13 +32,7 @@ class CardController extends Controller
                     'unique_card',
                 ])
             )
-            ->orderByDesc(
-                Expansion::select('legal_date')
-                    ->whereColumn('expansions.expansion', 'cards.expansion')
-            )
-            ->orderBy('expansion')
-            ->orderBy('number')
-            ->paginate(config('app.env') === 'production' ? 24 : 3)
+            ->paginate(24)
             ->withQueryString();
 
         return view('cards.index', [

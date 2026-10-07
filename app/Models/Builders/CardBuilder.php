@@ -40,7 +40,7 @@ class CardBuilder extends Builder
             ->orderByRaw($aspects);
 
         // 3. Tipo specifico: Unità, Miglioria, Evento (gli altri in fondo)
-        $this->orderByRaw("CASE cards.type WHEN 'Unit' THEN 0 WHEN 'Upgrade' THEN 1 WHEN 'Event' THEN 2 ELSE 3 END");
+        $this->orderByRaw("CASE cards.type WHEN 'Unità' THEN 0 WHEN 'Miglioria' THEN 1 WHEN 'Evento' THEN 2 ELSE 3 END");
 
         // 4. Costo crescente
         $this->orderBy('cards.cost');

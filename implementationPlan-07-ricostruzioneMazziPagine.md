@@ -271,6 +271,7 @@ Tutte estendono `<x-app-layout>`, con titolo nello slot `header`.
 - `resources/views/decks/create.blade.php`: form nuovo mazzo con `name`, `format` come `<select>` sui `case` di `DeckFormat` e checkbox `is_public`.
 - `resources/views/decks/show.blade.php`: vista di **sola lettura** pubblica (o del proprietario):
   - Mostra leader, base, carte raggruppate per tipologia e costo, statistiche rapide.
+  - Link verso "Statistiche" (`route('decks.statistics', [$deck->user->name, $deck->name])`, Step 7.8).
   - Eventuali warning di formato (`$validationErrors`).
   - Se `@can('update', $deck)`: mostra pulsante in evidenza "Modifica mazzo" verso `route('decks.edit', [$deck->user->name, $deck->name])`.
   - Link verso "Cronologia versioni" `route('decks.versions', [$deck->user->name, $deck->name])`.
@@ -357,3 +358,52 @@ class DeckImporter
     }
 }
 ```
+
+### Step 7.8 — Statistiche mazzo
+
+> Spostato qui dal piano 05 (era lo Step 10.2): è una pagina dei mazzi e usa `DeckController`, `resolveDeck()` e le rotte `/mazzo/{username}/{deckname}` dello Step 7.6, quindi si esegue **dopo il 7.6**.
+> Differenze rispetto alla versione originale del piano 05:
+> - controller e rotta contestuali a `{username}/{deckname}`, come tutte le altre pagine mazzo (prima usavano il route-model-binding `{deck}` su `/mazzi/{deck}/statistiche`);
+> - il tipo unità è `'Unità'`, non `'Unit'`: i valori di `cards.type` sono in italiano, come li dà l'API con `locale=it` (vedi migration `create_cards_table`);
+> - `cards.traits` caricato in eager loading (evita N+1 sul conteggio dei tratti).
+
+#### 7.8.1 — Metodo del controller
+In `app/Http/Controllers/DeckController.php`, accanto a `show()`:
+```php
+/**
+ * Shows the statistics page of a deck (cost curve, card types, traits, averages)
+ * Mostra la pagina delle statistiche di un mazzo (curva dei costi, tipi di carta, tratti, medie)
+ */
+public function statistics(string $username, string $deckname): View
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    $this->authorize('view', $deck);
+
+    $deck->load(['cards.traits', 'user']);
+
+    $costCurve = $deck->cards->groupBy('cost')->map(fn ($cards) => $cards->sum(fn ($c) => $c->pivot->quantity));
+    $byType = $deck->cards->groupBy('type')->map(fn ($cards) => $cards->sum(fn ($c) => $c->pivot->quantity));
+    $traits = $deck->cards->flatMap(fn ($c) => $c->traits->pluck('name'))->countBy();
+    $avgPower = $deck->cards->where('type', 'Unità')->avg('power');
+    $avgHealth = $deck->cards->where('type', 'Unità')->avg('health');
+
+    return view('decks.statistics', compact('deck', 'costCurve', 'byType', 'traits', 'avgPower', 'avgHealth'));
+}
+```
+Da decidere prima di scrivere la vista (il codice sopra è quello originale del piano 05, non l'ho cambiato):
+- `$traits`, `$avgPower` e `$avgHealth` contano ogni carta **una volta sola**, mentre `$costCurve` e `$byType` pesano per `quantity`: con 3 copie della stessa unità le medie e i tratti non rispecchiano il mazzo reale. Per coerenza andrebbero pesati anche loro.
+- `$costCurve` raggruppa anche le carte con `cost` nullo (le Basi), che finiscono in un'unica barra senza etichetta: valutare di escluderle o di mostrarle a parte.
+
+#### 7.8.2 — Rotta
+In `routes/web.php`, nel blocco "Visualizzazione mazzo" dello Step 7.6.1, subito dopo la rotta `decks.versions` (pubblica come `show`: l'accesso lo decide la policy `view`):
+```php
+Route::get('/mazzo/{username}/{deckname}/statistiche', [DeckController::class, 'statistics'])->name('decks.statistics');
+```
+
+#### 7.8.3 — Vista `resources/views/decks/statistics.blade.php`
+Estende `<x-app-layout>` come ogni altra pagina, titolo nello slot `header`. Unica eccezione al "solo Blade + Alpine": Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`),
+un `<canvas>` per grafico e i dati passati con `@json($costCurve)` dentro lo `<script>` della pagina. Il `<script>` sta nel corpo della vista, non nel layout: è l'unica pagina che ne ha bisogno.
+Nessun bundler e nessun componente Vue/React per questo. Un link "Torna al mazzo" verso `route('decks.show', [$deck->user->name, $deck->name])`.
+
+#### 7.8.4 — Link dalla pagina del mazzo
+In `resources/views/decks/show.blade.php` (Step 7.6.3) il link "Statistiche" verso `route('decks.statistics', [$deck->user->name, $deck->name])`, vicino a "Cronologia versioni".

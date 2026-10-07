@@ -2,13 +2,12 @@
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
 >
-> **Ordine di esecuzione consigliato**: Step 10.3 → 10.1 → 10.4 → 10.5, poi il resto del progetto, e **Step 10.2 solo dopo il piano 07** (la statistica dei mazzi dipende dalle pagine mazzo di
-> [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md)).
+> **Ordine di esecuzione consigliato**: Step 10.3 → 10.1 → 10.4 → 10.5. Lo **Step 10.2 (statistiche mazzo) è stato spostato nel piano 07** e diventa lo Step 7.8 di
+> [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md): è una pagina dei mazzi e dipende da `DeckController`, rotte e viste di quel piano, quindi non ha senso che stia nel piano delle carte.
 >
-> Stato del codice: non esistono `CardSearch`, `CardController`, rotte `/carte` né viste `cards/*`. Trovato confrontando il piano con il codice:
-> - `layouts/navigation.blade.php` usa `Auth::user()->name` senza controllare che ci sia un utente, quindi **qualunque pagina pubblica con `<x-app-layout>` va in errore per gli ospiti** (Step 10.3);
-> - `emails/new-cards.blade.php` usa le rotte `cards.new-release` e `card.show`, mentre il piano (e il bot) usano `cards.new-releases` e `cards.show` (Step 10.5): finché le rotte non esistono, l'anteprima `/render-mail/new-cards` dà `RouteNotFoundException`;
-> - `Card` non ha `$casts` (`release_date` resta una stringa, `unique_card` un intero).
+> Stato del codice (2026-10-08): fatti 10.3 e 10.1 (`CardSearch`, `CardController`, rotte `/carte`, cast su `Card`, viste `cards/index` e `cards/show`, voce "Carte" nel menu); restano 10.4 e 10.5.
+> Dettaglio e scostamenti dal piano nel `todo.md`, sezione 05. Ancora vero oggi:
+> - `emails/new-cards.blade.php` usa le rotte `cards.new-release` e `card.show`, mentre il piano (e il bot) usano `cards.new-releases` e `cards.show` (Step 10.5): finché il template non è allineato, l'anteprima `/render-mail/new-cards` dà `RouteNotFoundException`.
 
 ## Fase 10 — UI/UX e funzioni comuni TCG
 
@@ -104,34 +103,8 @@ Mostra almeno: nome e titolo, immagine fronte (e retro se la carta ne ha uno, es
 #### 10.1.7 — Voce di navigazione "Carte"
 In `layouts/navigation.blade.php`, in entrambi i blocchi, un `<x-nav-link :href="route('cards.index')" :active="request()->routeIs('cards.*')">` visibile a tutti (fuori da `@can`).
 
-### Step 10.2 — Statistiche mazzo
-
-#### 10.2.1 — Metodo del controller
-In `app/Http/Controllers/DeckController.php`:
-```php
-public function statistics(Deck $deck): View
-{
-    $this->authorize('view', $deck);
-
-    $costCurve = $deck->cards->groupBy('cost')->map(fn ($cards) => $cards->sum(fn ($c) => $c->pivot->quantity));
-    $byType = $deck->cards->groupBy('type')->map(fn ($cards) => $cards->sum(fn ($c) => $c->pivot->quantity));
-    $traits = $deck->cards->flatMap(fn ($c) => $c->traits->pluck('name'))->countBy();
-    $avgPower = $deck->cards->where('type', 'Unit')->avg('power');
-    $avgHealth = $deck->cards->where('type', 'Unit')->avg('health');
-
-    return view('decks.statistics', compact('deck', 'costCurve', 'byType', 'traits', 'avgPower', 'avgHealth'));
-}
-```
-
-#### 10.2.2 — Rotta
-```php
-Route::get('/mazzi/{deck}/statistiche', [DeckController::class, 'statistics'])->name('decks.statistics');
-```
-
-#### 10.2.3 — Vista `resources/views/decks/statistics.blade.php`
-Estende `<x-app-layout>` come ogni altra pagina. Unica eccezione al "solo Blade + Alpine": Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`),
-un `<canvas>` per grafico e i dati passati con `@json($costCurve)` dentro lo `<script>` della pagina. Il `<script>` sta nel corpo della vista, non nel layout: è l'unica pagina che ne ha bisogno.
-Nessun bundler e nessun componente Vue/React per questo.
+### Step 10.2 — Statistiche mazzo (spostato nel piano 07)
+Spostato come **Step 7.8** in [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md). Il numero 10.2 resta volutamente vuoto per non rinumerare gli step 10.3–10.5, già citati in `todo.md`, README e negli altri piani.
 
 ### Step 10.3 — Viste pubbliche e autenticate
 
