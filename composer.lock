@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3b1d26a9b09cfefbf6879e7f25011d4d",
+    "content-hash": "9c211dfc5f20e76de7499aae8cef1edc",
     "packages": [
         {
             "name": "bladewindui/ui",
