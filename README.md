@@ -54,7 +54,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 | Database | MariaDB 11 |
 | Code / cache / sessioni | driver `database` |
 | Email | Resend (`resend/resend-php`) |
-| Frontend | Blade, Tailwind CSS 3, Alpine.js, Vite 7 |
+| Frontend | Blade, Tailwind CSS 4, Alpine.js, Vite 7 |
 | Test | Pest 3 |
 | Infrastruttura | Docker (php-fpm + nginx + mariadb + worker), Traefik su VM Oracle in produzione |
 
@@ -112,6 +112,8 @@ impostate nel `.env`, un utente admin con email già verificata (`DatabaseSeeder
 Gli asset Vite sono compilati nello stage `node-builder` del `Dockerfile` e l'`entrypoint.sh` li copia in
 `public/build` a ogni avvio del container `app`: basta `up -d --build` per averli aggiornati.
 In alternativa, fuori da Docker: `npm install && npm run dev`.
+
+**Tailwind CSS 4**: non esiste più `tailwind.config.js`, la configurazione sta in `resources/css/app.css` (`@import 'tailwindcss'`, `@plugin`, `@theme`, `@source`) e il plugin PostCSS in `postcss.config.js`. Tailwind individua da solo i file da scansionare partendo dalla radice del progetto (ignorando `.gitignore` e `node_modules`) più i path dichiarati con `@source`. Nello stage `node-builder` del `Dockerfile` ci sono solo `resources/` e `public/`, quindi i path `@source` che puntano altrove vanno resi disponibili lì: oggi le viste di paginazione di Laravel (`vendor/laravel/framework/src/Illuminate/Pagination/resources/views`) sono copiate dallo stage `composer-deps`. Se aggiungi un `@source` su un'altra cartella (es. `app/`), aggiungi anche la relativa `COPY` nello stage `node-builder`. `public/build` è in `.dockerignore` perché Tailwind scansionerebbe i vecchi build e ne manterrebbe le classi.
 
 ### Icone del sito
 Le icone si generano da un unico file, `public/icon-mine.svg`. Lo stage `icon-builder` del `Dockerfile` esegue `docker/icons/generate-icons.sh` (librsvg + ImageMagick) e produce in `public/build/icons/`:
@@ -260,7 +262,7 @@ La versione sta in `.env-overrides` (`APP_VERSION_PRIMARY/SECONDARY/TERTIARY`). 
 ## Convenzioni di sviluppo
 
 - **Non modificare mai** i file dei framework/dipendenze (`vendor/`, `node_modules/`, ecc.).
-- Leggere e rispettare le regole in `.agent/rules/*.md`. Oggi `vault.md`: l'agente non modifica il codice, scrive
+- Leggere e rispettare le regole in `.agent/rules/*.md`. Oggi `main.md`: l'agente non modifica il codice (può toccare solo la docker infra), scrive
   solo gli implementation plan che poi vengono applicati a mano; può invece modificare il README e gli altri file
   di documentazione markdown.
 - Flusso di lavoro per ogni modifica non banale:

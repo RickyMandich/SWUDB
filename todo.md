@@ -10,6 +10,8 @@
 - [ ] Verificare la build dell'immagine con lo stage `icon-builder` (`docker compose -f docker-compose.dev.yml up -d --build`) e che `public/build/icons/` contenga i file
 - [ ] Da ora in poi: il README descrive solo il codice effettivamente implementato (il pianificato va segnalato come "non ancora implementato") e si aggiorna a ogni modifica che cambia setup/struttura/rotte/env/permessi
 - [x] `welcome.blade.php` include `layouts/favicons.blade.php` come gli altri layout
+- [x] Upgrade a Tailwind CSS 4: `Dockerfile` aggiornato (via `COPY tailwind.config.js` che non esiste più, stage `composer-deps` separato da `composer-builder`, viste di paginazione Laravel copiate nello stage `node-builder` per il `@source` di `app.css`), `public/build` e `public/hot` in `.dockerignore`; README aggiornato. Compose dev e prod invariati (usano lo stesso `Dockerfile`)
+- [ ] Verificare la build dopo l'upgrade Tailwind 4: `docker compose -f docker-compose.dev.yml up -d --build` (e poi in prod), controllare che la paginazione di `/carte` e `/admin/errori` sia stilata e che il CSS in `public/build/assets` contenga le classi delle viste
 
 ## 00 — Fondamenta (Fasi 1–4bis) ✅ `implementationPlan-V-00-ricostruzioneFondamenta.md`
 - [x] Fase 1 — setup progetto (Breeze, Spatie, `.env-overrides`)

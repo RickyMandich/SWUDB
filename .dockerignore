@@ -2,3 +2,9 @@
 .git
 node_modules
 vendor
+# Output di Vite (e hot file): l'immagine li rigenera nello stage node-builder.
+# Tailwind 4 scansiona in automatico tutto ciò che trova partendo da /app: se
+# public/build locale entrasse nel contesto, le classi dei vecchi build
+# resterebbero nel CSS per sempre.
+public/build
+public/hot
