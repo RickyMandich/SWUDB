@@ -6,9 +6,9 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-  --font-sans:
-    Figtree, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans:
+        Figtree, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 /*
@@ -20,13 +20,14 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentcolor);
+    }
 }
 
 /* Slider a doppio input: components/range-slider.blade.php */
@@ -83,4 +84,13 @@
 .range-thumb:focus-visible::-moz-range-thumb {
     outline: 2px solid #6366f1;
     outline-offset: 2px;
+}
+
+/* Flip diagonale della carta (asse a 45°): cards/show.blade.php */
+.flip-diagonal {
+    transform: rotate3d(1, 1, 0, 180deg);
+}
+
+.card-ability img {
+    display: inline-block;
 }
