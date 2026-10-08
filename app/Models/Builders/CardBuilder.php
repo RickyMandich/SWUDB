@@ -57,4 +57,11 @@ class CardBuilder extends Builder
         // Tie-breaker finale per rendere stabile la paginazione
         $this->orderBy('cards.id');
     }
+
+    public function withDefaultOrder(): static
+    {
+        $this->applyDefaultOrder();
+
+        return $this;
+    }
 }

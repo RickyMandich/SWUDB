@@ -35,6 +35,9 @@
                             {{ __('Gestione espansioni') }}
                         </x-nav-link>
                     @endcan
+                    <x-nav-link :href="route('cards.new-releases')" :active="request()->routeIs('cards.new-releases')">
+                        {{ __('Ultime uscite') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -138,6 +141,9 @@
                         {{ __('Gestione espansioni') }}
                     </x-responsive-nav-link>
                 @endcan
+                <x-responsive-nav-link :href="route('cards.new-releases')" :active="request()->routeIs('cards.new-releases')">
+                    {{ __('Ultime uscite') }}
+                </x-responsive-nav-link>
                 <!-- Log viewer -->
                 @can('log.viewer')
                     <x-responsive-nav-link :href="route('log-viewer.index')">

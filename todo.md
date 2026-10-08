@@ -117,7 +117,10 @@
   - [x] Il default si applica ora a `/carte`: tolti gli `orderBy` da `CardController::index` (2026-10-08)
   - [x] Passo "tipo specifico" di `CardBuilder` corretto con i nomi italiani (`Unità`, `Miglioria`, `Evento`) (2026-10-08)
   - [x] Carte riscansionate dopo la migration su `position` (2026-10-08)
-- [ ] 10.4 Pagina "Nuove uscite" (`cards.new-releases`) + voce di navigazione
+- [ ] 10.4 Pagina "Nuove uscite" (`cards.new-releases`) + voce di navigazione. Suddivisione per data di rilascio: paginare la query e raggruppare la collezione della pagina in PHP (`groupBy` sulla collezione, non `GROUP BY` in SQL); `CardBuilder::withDefaultOrder()` pubblico per l'ordine dentro ogni data (vedi Step 10.4.1)
+  - [ ] 10.4bis `layouts/app.blade.php` chiude il body con `@bladewindScripts`, ma questa direttiva non esiste nel pacchetto installato (Blade la stampa come testo) e `public/vendor/bladewind/js/helpers.js` non viene mai caricato: da qui gli errori `domEl is not defined` e `positionSuffix is not defined` del datepicker. Sostituirla con `<script src="{{ asset('vendor/bladewind/js/helpers.js') }}"></script>` nel `<head>` (prima degli script inline dei componenti); controllare anche `layouts/guest.blade.php`
+  - [ ] 10.4ter Il CSS di Bladewind applica il tema scuro con la classe `.dark`, mentre il progetto usa il `dark:` di Tailwind 4 basato su `prefers-color-scheme` (nessun `@custom-variant` in `app.css`, nessuna classe `dark` su `<html>`): i componenti Bladewind (datepicker compreso) restano chiari. Sincronizzare la classe `dark` su `<html>` con `matchMedia` in uno script nel `<head>`
+  - [ ] 10.4quater Datepicker: `format="dd/mm/yyyy"` invia al server `01/07/2026`, che MariaDB non legge come data (confronto sbagliato = tutte le carte) e che `date` di Laravel interpreta come mese/giorno; `range="true"` (e anche `range="false"`, stringa truthy) invia un intervallo `da - a`, mentre `since` è una data sola; manca un pulsante di invio. Usare `format="yyyy-mm-dd"`, nessun attributo `range`, `date_format:Y-m-d` nella validazione e un `<x-primary-button>`
 - [ ] 10.5 Allineare `emails/new-cards.blade.php` ai nomi di rotta (`cards.new-releases`, `cards.show`)
 > 10.2 Statistiche mazzo: **spostato nel piano 07** (Step 7.8, vedi sezione 07). Il numero 10.2 resta vuoto per non rinumerare gli step successivi.
 

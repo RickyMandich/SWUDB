@@ -25,7 +25,7 @@
     'tabindex' => -1,
 
     // first day of the week
-    'weekStarts' => 'sunday',
+    'weekStarts' => 'Monday',
 
     // any extra classes for the datepicker
     'class' => '',
@@ -52,42 +52,27 @@
 @php
     $name = parseBladewindName($name);
     $required = parseBladewindVariable($required);
-    $weekStarts = in_array($weekStarts, ['sunday','monday']) ? $weekStarts : 'sunday';
+    $weekStarts = in_array($weekStarts, ['sunday', 'monday']) ? $weekStarts : 'sunday';
 @endphp
 {{-- format-ignore-end --}}
 
 <div class="relative w-full">
-    <x-bladewind::input
-            class="{{$name}} {{$class}}"
-            type="text"
-            id="{{ $name }}"
-            name="{{$name}}"
-            label="{{$label}}"
-            placeholder="{{ $placeholder }}"
-            size="{{$size}}"
-            suffix="calendar-days"
-            suffix_is_icon="true"
-            selected_value="{{$selectedValue}}"
-            suffix_icon_div_css="rtl:!right-[unset] rtl:!left-0"
-            suffix_icon_css="text-slate-300"
-            :fill_from_old="$fillFromOld"
-            :show_validation_error="$showValidationError"
-            :error_bag="$errorBag"
-            required="{{$required}}"/>
+    <x-bladewind::input class="{{ $name }} {{ $class }}" type="text" id="{{ $name }}"
+        name="{{ $name }}" label="{{ $label }}" placeholder="{{ $placeholder }}" size="{{ $size }}"
+        suffix="calendar-days" suffix_is_icon="true" selected_value="{{ $selectedValue }}"
+        suffix_icon_div_css="rtl:!right-[unset] rtl:!left-0" suffix_icon_css="text-slate-300" :fill_from_old="$fillFromOld"
+        :show_validation_error="$showValidationError" :error_bag="$errorBag" required="{{ $required }}" />
 </div>
 @once
     <span class="bw-datepicker-right-arrow hidden"><svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke-width="1.5" stroke="currentColor"
-                                                        class="size-6 cursor-pointer opacity-80 hover:opacity-100"><path
-                    stroke-linecap="round" stroke-linejoin="round"
-                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg></span>
-    <span class="bw-datepicker-left-arrow hidden"><svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                       viewBox="0 0 24 24"
-                                                       stroke-width="1.5" stroke="currentColor"
-                                                       class="size-6 cursor-pointer opacity-80 hover:opacity-100">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
-</svg></span>
+            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+            class="size-6 cursor-pointer opacity-80 hover:opacity-100">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+        </svg></span>
+    <span class="bw-datepicker-left-arrow hidden"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke-width="1.5" stroke="currentColor" class="size-6 cursor-pointer opacity-80 hover:opacity-100">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg></span>
     <x-bladewind::script :nonce="$nonce">
         const MONTH_NAMES = {
         jan: '{{ __('bladewind::bladewind.jan') }}',
@@ -117,13 +102,13 @@
 @endonce
 <x-bladewind::script :nonce="$nonce">
     initCalendar({
-    inputId: "{{$name}}",
-    weekStarts: "{{$weekStarts}}",
-    @if(!empty($minDate))
-        minDate: "{{$minDate}}",
-    @endif @if(!empty($maxDate))
-        maxDate: "{{$maxDate}}",
-    @endif dateFormat: "{{$format}}",
-    useRange: {{$range ? 1 : 0}}
-    });
+    inputId: "{{ $name }}",
+    weekStarts: "{{ $weekStarts }}",
+    @if (!empty($minDate))
+        minDate: "{{ $minDate }}",
+        @endif @if (!empty($maxDate))
+            maxDate: "{{ $maxDate }}",
+            @endif dateFormat: "{{ $format }}",
+            useRange: {{ $range ? 1 : 0 }}
+            });
 </x-bladewind::script>

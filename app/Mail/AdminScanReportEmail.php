@@ -18,7 +18,7 @@ class AdminScanReportEmail extends Mailable implements ShouldQueue
     /**
      * Create a new message instance.
      */
-    public function __construct(public readonly Collection $errors){}
+    public function __construct(public readonly Collection $errors) {}
 
     /**
      * Get the message envelope.
@@ -36,7 +36,7 @@ class AdminScanReportEmail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.admin-scan-report',
+            markdown: 'emails.md-admin-scan-report',
             with: ['errors' => $this->errors],
         );
     }

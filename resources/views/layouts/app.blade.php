@@ -15,6 +15,17 @@
 
     <link href="{{ asset('vendor/bladewind/css/bladewind-ui-no-preflight.min.css') }}" rel="stylesheet" />
 
+    @bladewindScripts
+
+    <script>
+        (() => {
+            const m = window.matchMedia('(prefers-color-scheme: dark)');
+            const apply = () => document.documentElement.classList.toggle('dark', m.matches);
+            apply();
+            m.addEventListener('change', apply);
+        })();
+    </script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -37,8 +48,6 @@
         </main>
 
     </div>
-
-    @bladewindScripts
 
 </body>
 

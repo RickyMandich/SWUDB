@@ -8,6 +8,8 @@ use App\Models\CardTrait;
 use App\Models\Expansion;
 use App\Services\CardSearch;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class CardController extends Controller
@@ -63,5 +65,37 @@ class CardController extends Controller
             ->firstOrFail();
 
         return view('cards.show', compact('card'));
+    }
+
+    public function newReleases(Request $request): View
+    {
+        $request->validate(['since' => ['nullable', 'date_format:d/m/Y']]);
+
+        $sinceInput = $request->query('since');
+
+        if (! $sinceInput) {
+            $maxDate = Card::max('release_date');
+            $sinceInput = ($maxDate ? Carbon::parse($maxDate) : Carbon::today())->format('d/m/Y');
+        }
+
+        $since = Carbon::createFromFormat('d/m/Y', $sinceInput)->startOfDay()->toDateString();
+
+        $cards = Card::where('release_date', '>=', $since)
+            ->orderByDesc('release_date')
+            ->withDefaultOrder()
+            ->paginate(24)
+            ->withQueryString();
+
+        Log::debug("found {$cards->total()} cards from {$sinceInput}", ['cards' => $cards]);
+
+        $groups = $cards->getCollection()
+            ->groupBy(fn (Card $card) => $card->release_date?->format('d/m/Y') ?? 'nd');
+
+        $firstRelease = Carbon::parse(Card::min('release_date'))->format('d/m/Y');
+        $lastRelease = Carbon::parse(Card::max('release_date'))->format('d/m/Y');
+
+        $since = $sinceInput;
+
+        return view('cards.new-releases', compact('cards', 'groups', 'since', 'firstRelease', 'lastRelease'));
     }
 }

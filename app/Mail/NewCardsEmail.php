@@ -5,12 +5,12 @@ namespace App\Mail;
 use App\Models\Card;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Collection;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Collection;
 
 class NewCardsEmail extends Mailable implements ShouldQueue
 {
@@ -18,7 +18,8 @@ class NewCardsEmail extends Mailable implements ShouldQueue
 
     /**
      * Create a new message instance.
-     * @param Collection<Card> $newCards
+     *
+     * @param  Collection<Card>  $newCards
      */
     public function __construct(public readonly Collection $newCards) {}
 
@@ -28,7 +29,7 @@ class NewCardsEmail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Nuove carte uscite su ' . config('app.name'),
+            subject: 'Nuove carte uscite su '.config('app.name'),
         );
     }
 
@@ -38,7 +39,7 @@ class NewCardsEmail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.new-cards',
+            markdown: 'emails.md-new-cards',
             with: [
                 'cards' => $this->newCards,
             ],

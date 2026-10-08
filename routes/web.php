@@ -49,9 +49,10 @@ Route::middleware(['auth', 'verified', 'permission:system.manage-errors'])
 Route::middleware(['auth', 'verified', 'permission:mails.test'])->get('/render-mail/{type}', function (string $type) {
     $errors = collect();
     $errors->push(
-        new SystemError([
+        (new SystemError)->forceFill([
+            'id' => 1,
             'message' => 'Errore di test',
-            'context' => ['error' => 'Errore di test'],
+            'context' => ['error_message' => 'Errore di test'],
         ])
     );
 
@@ -73,3 +74,4 @@ Route::middleware(['auth', 'verified', 'permission:expansions.manage'])
 
 Route::get('/carte', [CardController::class, 'index'])->name('cards.index');
 Route::get('/carte/{expansion}/{number}', [CardController::class, 'show'])->name('cards.show');
+Route::get('/nuove-uscite', [CardController::class, 'newReleases'])->name('cards.new-releases');

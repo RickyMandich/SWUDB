@@ -135,16 +135,42 @@ Verifica: aprire una pagina con `<x-app-layout>` in una finestra anonima; non de
 
 #### 10.4.1 — Metodo del controller
 Nello stesso `CardController`. Il parametro `since` (`YYYY-MM-DD`) è un intervallo arbitrario scelto dall'utente; se assente, il default è la data di rilascio più recente (`Card::max('release_date')`), non un intervallo fisso.
+
+**La suddivisione per data non si fa con `GROUP BY`**: `groupBy('release_date')` in SQL collassa le carte in una riga per data (e con `ONLY_FULL_GROUP_BY`, attivo su MariaDB, `select *` dà l'errore 1055). Si pagina la query normale e si raggruppa **la collezione della pagina** in PHP.
 ```php
 public function newReleases(Request $request): View
 {
-    $since = $request->query('since') ?? Card::max('release_date');
-    $cards = Card::where('release_date', '>=', $since)->orderByDesc('release_date')->paginate(24)->withQueryString();
+    $request->validate(['since' => ['nullable', 'date']]);
 
-    return view('cards.new-releases', compact('cards', 'since'));
+    $since = $request->query('since') ?? Card::max('release_date') ?? Carbon::today()->toDateString();
+
+    $cards = Card::where('release_date', '>=', $since)
+        ->orderByDesc('release_date')
+        ->withDefaultOrder()
+        ->paginate(24)
+        ->withQueryString();
+
+    $groups = $cards->getCollection()
+        ->groupBy(fn (Card $card) => $card->release_date?->toDateString() ?? 'nd');
+
+    return view('cards.new-releases', compact('cards', 'groups', 'since'));
 }
 ```
 Filtra su `cards.release_date`, non su `expansions.legal_date` (concetti diversi).
+
+Note:
+- `orderByDesc('release_date')` mette le date dalla più recente, quindi le chiavi di `$groups` escono già in ordine decrescente.
+- Con un `orderBy` nella query, `CardBuilder::get()` **non** applica l'ordinamento di default (si applica solo se `orders` è vuoto): per avere l'ordine di default *dentro* ogni data serve un metodo pubblico su `app/Models/Builders/CardBuilder.php`, da chiamare dopo l'`orderByDesc`:
+  ```php
+  public function withDefaultOrder(): static
+  {
+      $this->applyDefaultOrder();
+
+      return $this;
+  }
+  ```
+  (`get()` non lo riapplica, perché a quel punto `orders` non è più vuoto.)
+- Una data può essere spezzata tra due pagine: la pagina successiva ripete l'intestazione di quella data. È voluto, la paginazione resta per carte.
 
 #### 10.4.2 — Rotta
 ```php
@@ -152,7 +178,18 @@ Route::get('/nuove-uscite', [CardController::class, 'newReleases'])->name('cards
 ```
 
 #### 10.4.3 — Vista `resources/views/cards/new-releases.blade.php`
-Stessa griglia di `cards/index.blade.php` (se lì si estrae un partial o un componente per la singola card, riusarlo identico). Interfaccia: un `<input type="date" name="since">` in un form GET.
+Una sezione per ogni chiave di `$groups`: intestazione con la data (`\Illuminate\Support\Carbon::parse($date)->format('d/m/Y')`, o `translatedFormat('j F Y')` se il locale dell'app è italiano; la chiave `'nd'` per le carte senza data va gestita a parte) e sotto la stessa griglia di `cards/index.blade.php` (se lì si estrae un partial o un componente per la singola card, riusarlo identico). Dopo l'ultimo gruppo, `{{ $cards->links() }}`.
+```blade
+@foreach ($groups as $date => $group)
+    <h3 class="...">{{ $date === 'nd' ? 'Data non disponibile' : \Illuminate\Support\Carbon::parse($date)->format('d/m/Y') }}</h3>
+    <div class="grid ...">
+        @foreach ($group as $card)
+            <x-card :card="$card" />
+        @endforeach
+    </div>
+@endforeach
+```
+Interfaccia: un `<input type="date" name="since">` in un form GET.
 
 #### 10.4.4 — Voce di navigazione
 Un `<x-nav-link>` "Nuove uscite" verso `cards.new-releases`, visibile a tutti, in entrambi i blocchi di `layouts/navigation.blade.php`.
