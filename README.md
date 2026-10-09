@@ -25,13 +25,13 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Pagina admin espansioni (`/admin/espansioni`, permesso `expansions.manage`): una riga con form inline per espansione per correggere `legal_date`, `rotation`, `group_main_expansion` e `confirmed`.
 - Comando `cards:scan` + `ImportCardsFromSwuApiJob` (import carte, espansioni, aspetti, tratti e download immagini),
   schedulato ogni lunedì 00:00 (vedi "Scansione carte").
-- Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}` (l'anteprima `new-cards` per ora dà errore: il template usa le rotte `cards.new-release` e `card.show`, che non esistono (esistono `cards.index` e `cards.show`, ma non `cards.new-releases`), e legge `$cards->first()->release_date` anche con collezione vuota; piano 05, Step 10.5).
+- Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}`. Il template `emails/md-new-cards.blade.php` linka `cards.new-releases` (con `since` in formato `gg/mm/aaaa`) e `cards.show`, e regge anche una collezione vuota.
 - Icone del sito (favicon, apple-touch-icon, manifest) generate dal `Dockerfile` da `public/icon-mine.svg` (vedi "Icone del sito").
 - Worker delle code (servizio `worker` nel compose di sviluppo; `app` e `worker` condividono la stessa immagine `unlimiteddb:dev`).
 - `TelegramService` (facade `Http`, nessun SDK) con `TelegramActionResult`: invio, modifica e cancellazione di messaggi, invio foto; senza `TELEGRAM_BOT_TOKEN` o `chat_id` non parte nessuna richiesta HTTP.
 - Admin errori: vista di dettaglio `/admin/errori/{id}`, componenti `<x-flash-message>` e `<x-badge>`, lista paginata.
 - Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
-- Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata (24 carte per pagina) di `<x-card>` con l'ordinamento di default di `CardBuilder` (Leader, Base, poi aspetti, tipo, costo, nome, `legal_date` dell'espansione e numero). Il componente `<x-cards-filter>` usa `<x-multi-datalist>` (suggerimenti testuali con chip rimovibili per espansioni e tratti) e `<x-range-slider>` (slider a doppio input con limiti dal database per costo, salute, potenza). `CardSearch` implementa la logica reale dei filtri via parametri GET (multi-valore in AND per aspetti e tratti, e `whereIn` per espansioni e tipi). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register) e ha la voce "Carte". Pagina di dettaglio `/carte/{expansion}/{number}` (`cards/show.blade.php`, con componenti Bladewind): immagine fronte (con pulsante "Gira la carta" e flip 3D verso il retro, per le carte che ne hanno uno), aspetti, tratti, tipo, rarità, costo, vita, potenza, arena, artista, abilità e abilità "Da schierato".
+- Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata (24 carte per pagina) di `<x-card>` con l'ordinamento di default di `CardBuilder` (Leader, Base, poi aspetti, tipo, costo, nome, `legal_date` dell'espansione e numero). Il componente `<x-cards-filter>` usa `<x-multi-datalist>` (suggerimenti testuali con chip rimovibili per espansioni e tratti) e `<x-range-slider>` (slider a doppio input con limiti dal database per costo, salute, potenza). `CardSearch` implementa la logica reale dei filtri via parametri GET (multi-valore in AND per aspetti e tratti, e `whereIn` per espansioni e tipi). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register) e ha la voce "Carte". Pagina di dettaglio `/carte/{expansion}/{number}` (`cards/show.blade.php`, con componenti Bladewind): immagine fronte (con pulsante "Gira la carta" e flip 3D verso il retro, per le carte che ne hanno uno), aspetti, tratti, tipo, rarità, costo, vita, potenza, arena, artista, abilità e abilità "Da schierato". Pagina "Ultime uscite" `/nuove-uscite` (`cards/new-releases.blade.php`): un datepicker Bladewind (formato `gg/mm/aaaa`, limiti tra la prima e l'ultima data di rilascio) sceglie la data `since` (default: la data di rilascio più recente); le carte con `release_date` da quel giorno in poi sono paginate (24 per pagina), con l'ordinamento di default (`CardBuilder::withDefaultOrder()`), e raggruppate per data di rilascio all'interno della pagina.
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
@@ -39,7 +39,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
   validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
 - Collezione, API pubblica: non iniziati. Statistiche mazzo: pianificate nel piano 07 (Step 7.8), dopo le pagine dei mazzi.
-- Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): la pagina "Nuove uscite" (`/nuove-uscite`) non esiste (Step 10.4); nel dettaglio carta, con `front_art_path` nullo (qui come in `<x-card>`), l'immagine è rotta; nel menu responsive il link "Carte" non è visibile agli ospiti.
+- Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; nel menu responsive i link "Carte" e "Ultime uscite" non sono visibili agli ospiti; in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
 - Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano `implementationPlan-githubActionBuildGhcr.md`.
@@ -63,7 +63,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 ```
 app/
   Console/Commands/ScanCards.php      comando `cards:scan` (mette in coda l'import)
-  Http/Controllers/CardController.php catalogo pubblico (`index` con filtri e `show` con la vista di dettaglio)
+  Http/Controllers/CardController.php catalogo pubblico (`index` con filtri, `show` con la vista di dettaglio e `newReleases` per le ultime uscite)
   Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
   Http/Controllers/Auth/              controller Breeze
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
@@ -185,6 +185,7 @@ Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità
 | `GET /` | pubblica | redirect a `/dashboard` |
 | `GET /carte` | pubblica | catalogo carte paginato, filtri GET (`CardSearch`) |
 | `GET /carte/{expansion}/{number}` | pubblica | dettaglio carta (vista `cards.show`) |
+| `GET /nuove-uscite` | pubblica | carte rilasciate dalla data `since` (`gg/mm/aaaa`), raggruppate per data (vista `cards.new-releases`) |
 | `GET /dashboard` | login + email verificata | dashboard |
 | `/profile` (GET, PATCH, DELETE) | login | profilo utente (Breeze) |
 | rotte di `routes/auth.php` | — | login, registrazione, reset password, verifica email (Breeze) |

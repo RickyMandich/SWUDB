@@ -14,9 +14,11 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
+                    @auth
+                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
+                    @endauth
                     <x-nav-link :href="route('cards.index')" :active="request()->routeIs('cards.index')">
                         {{ __('Carte') }}
                     </x-nav-link>
@@ -118,40 +120,42 @@
 
     <!-- Responsive Navigation Menu -->
     <div :class="{ 'block': open, 'hidden': !open }" class="hidden sm:hidden">
-        @if (Auth::check())
-            <div class="pt-2 pb-3 space-y-1">
+        <div class="pt-2 pb-3 space-y-1">
+            <x-responsive-nav-link :href="route('cards.index')" :active="request()->routeIs('cards.index')">
+                {{ __('Carte') }}
+            </x-responsive-nav-link>
+            @auth
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('cards.index')" :active="request()->routeIs('cards.index')">
-                    {{ __('Carte') }}
+            @endauth
+            @can('users.manage')
+                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                    {{ __('Gestione utenti') }}
                 </x-responsive-nav-link>
-                @can('users.manage')
-                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                        {{ __('Gestione utenti') }}
-                    </x-responsive-nav-link>
-                @endcan
-                @can('system.manage-errors')
-                    <x-responsive-nav-link :href="route('admin.errors.index')" :active="request()->routeIs('admin.errors.*')">
-                        {{ __('Gestione errori') }}
-                    </x-responsive-nav-link>
-                @endcan
-                @can('expansions.manage')
-                    <x-responsive-nav-link :href="route('admin.expansions.index')" :active="request()->routeIs('admin.expansions.*')">
-                        {{ __('Gestione espansioni') }}
-                    </x-responsive-nav-link>
-                @endcan
-                <x-responsive-nav-link :href="route('cards.new-releases')" :active="request()->routeIs('cards.new-releases')">
-                    {{ __('Ultime uscite') }}
+            @endcan
+            @can('system.manage-errors')
+                <x-responsive-nav-link :href="route('admin.errors.index')" :active="request()->routeIs('admin.errors.*')">
+                    {{ __('Gestione errori') }}
                 </x-responsive-nav-link>
-                <!-- Log viewer -->
-                @can('log.viewer')
-                    <x-responsive-nav-link :href="route('log-viewer.index')">
-                        {{ __('Log viewer') }}
-                    </x-responsive-nav-link>
-                @endcan
-            </div>
+            @endcan
+            @can('expansions.manage')
+                <x-responsive-nav-link :href="route('admin.expansions.index')" :active="request()->routeIs('admin.expansions.*')">
+                    {{ __('Gestione espansioni') }}
+                </x-responsive-nav-link>
+            @endcan
+            <x-responsive-nav-link :href="route('cards.new-releases')" :active="request()->routeIs('cards.new-releases')">
+                {{ __('Ultime uscite') }}
+            </x-responsive-nav-link>
+            <!-- Log viewer -->
+            @can('log.viewer')
+                <x-responsive-nav-link :href="route('log-viewer.index')">
+                    {{ __('Log viewer') }}
+                </x-responsive-nav-link>
+            @endcan
+        </div>
 
+        @if (Auth::check())
             <!-- Responsive Settings Options -->
             <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
                 <div class="px-4">

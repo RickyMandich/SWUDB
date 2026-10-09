@@ -2,12 +2,11 @@
     /** @var \Illuminate\Support\Collection<App\Models\Card> $cards */
 @endphp
 @use (Carbon\Carbon;)
-{{-- blade-formatter-disable --}}
 <x-mail::message>
 # Nuove carte uscite su {{ config('app.name') }}
 Sono uscite nuove carte su {{ config('app.name') }}.
 Visualizzale cliccando il pulsante qui sotto:
-<x-mail::button :url="route('cards.new-releases', ['since' => $cards->first()->release_date ?? Carbon::today()])">
+<x-mail::button :url="route('cards.new-releases', ['since' => $cards?->first()?->release_date?->format('d/m/Y') ?? Carbon::today()->format('d/m/Y')])">
 Scopri le nuove carte
 </x-mail::button>
 Le carte inserite sono:
