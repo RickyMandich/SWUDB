@@ -1,14 +1,38 @@
 # Implementation plan 07 — Ricostruzione UnlimitedDB · Fase 7b: mazzi, pagine ed export/import
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
-> **Prerequisito**: [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md) (enum, relazioni `leaders()`/`baseCard()`, validator, policy) e, per le pagine con la ricerca carte,
-> [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
+> **Prerequisito**: [`implementationPlan-V-06-ricostruzioneMazziDominio.md`](implementationPlan-V-06-ricostruzioneMazziDominio.md) (enum, relazioni `leaders()`/`baseCard()`, validator, policy) e, per le pagine con la ricerca carte,
+> [`implementationPlan-05-V-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-V-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
 >
-> Stato del codice: nessuna rotta, controller o vista dei mazzi. Le viste seguono le "Convenzioni per le view" dell'indice.
+> Stato del codice (2026-10-09): `DeckController` scritto con lo snippet originale dello Step 7.6.2; le correzioni di questa versione del piano (`Gate::authorize`, versione nell'URL, leader e base nel form, `addCard` che somma, unique su `user_id`+`name`+`version`) vanno applicate sopra. Le viste seguono le "Convenzioni per le view" dell'indice.
 
 ## Fase 7 — Gestione mazzi multi-formato (pagine)
 
 ### Step 7.6 — Pagine mazzi
+
+#### 7.6.0 — Migration: unicità di `user_id` + `name` + `version`
+La migration `create_decks_table` non ha vincoli di unicità. Ogni versione di un mazzo condivide utente e nome con il resto della catena, quindi l'identificatore stabile è la terna `user_id`+`name`+`version`, che è anche quello che risolve l'URL `/mazzo/{username}/{deckname}/{version?}`.
+La tabella è già nell'ambiente di test: non si modifica la migration esistente, se ne aggiunge una nuova.
+```bash
+php artisan make:migration add_unique_user_name_version_to_decks_table --table=decks
+```
+```php
+public function up(): void
+{
+    Schema::table('decks', function (Blueprint $table) {
+        $table->unique(['user_id', 'name', 'version']);
+    });
+}
+
+public function down(): void
+{
+    Schema::table('decks', function (Blueprint $table) {
+        $table->dropUnique(['user_id', 'name', 'version']);
+    });
+}
+```
+Se nel DB esistono già righe duplicate la migration fallisce: controllarlo prima con `SELECT user_id, name, version, COUNT(*) FROM decks GROUP BY user_id, name, version HAVING COUNT(*) > 1`.
+`Rule::unique('decks')` in `store()` resta, per dare un errore leggibile sul nome prima che sia il database a rifiutare l'inserimento. Un doppio click su "Crea nuova versione" in condizioni di corsa darebbe una `UniqueConstraintViolationException` (500): accettabile, perché il caso normale (secondo click dopo il primo) crea semplicemente la versione successiva.
 
 #### 7.6.1 — Rotte
 In `routes/web.php`.
@@ -25,10 +49,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/mazzi', [DeckController::class, 'store'])->name('decks.store');
 });
 
-// Visualizzazione mazzo (pubblica se is_public, oppure proprietario)
-Route::get('/mazzo/{username}/{deckname}', [DeckController::class, 'show'])->name('decks.show');
-Route::get('/mazzo/{username}/{deckname}/versioni', [DeckController::class, 'versions'])->name('decks.versions');
-
 // Modifica mazzo e azioni di deck-building (solo proprietario)
 Route::middleware(['auth', 'verified'])->prefix('mazzo/modifica/{username}/{deckname}')->group(function () {
     Route::get('/', [DeckController::class, 'edit'])->name('decks.edit');
@@ -38,8 +58,15 @@ Route::middleware(['auth', 'verified'])->prefix('mazzo/modifica/{username}/{deck
     Route::patch('/assembla', [DeckController::class, 'toggleAssembled'])->name('decks.toggle-assembled');
     Route::post('/versione', [DeckController::class, 'createVersion'])->name('decks.create-version');
 });
+
+// Visualizzazione mazzo (pubblica se is_public, oppure proprietario).
+// Registrata DOPO il gruppo `mazzo/modifica/...` e con `{version?}` numerico: così `/mazzo/modifica/alice/2` (mazzo "2" di alice) non viene scambiato per il mazzo "alice" dell'utente "modifica".
+Route::get('/mazzo/{username}/{deckname}/versioni', [DeckController::class, 'versions'])->name('decks.versions');
+Route::get('/mazzo/{username}/{deckname}/{version?}', [DeckController::class, 'show'])->whereNumber('version')->name('decks.show');
 ```
 `{card}` nella rotta di rimozione fa route-model-binding su `Card` con la PK `id` (default del modello). Il salvataggio batch via `PUT /carte` rappresenta il flusso primario dall'interfaccia grafica.
+
+`decks.show` accetta una versione opzionale: senza `{version}` mostra l'ultima, con `/mazzo/alice/sabine-aggro/2` mostra la v2. `decks.versions` (e, nello Step 7.8, `decks.statistics`) va registrata **prima** di `decks.show`. Le rotte di modifica non hanno la versione: si modifica sempre l'ultima, le precedenti sono snapshot di sola lettura.
 
 
 #### 7.6.2 — Controller: metodi con logica di business e risoluzione
@@ -55,18 +82,20 @@ use App\Services\DeckValidation\DeckFormatValidatorFactory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Risolve il mazzo dall'utente e dal nome mazzo (ultima versione attiva)
+ * Risolve il mazzo dall'utente e dal nome mazzo: l'ultima versione, oppure quella indicata da $version
  */
-protected function resolveDeck(string $username, string $deckname): Deck
+protected function resolveDeck(string $username, string $deckname, ?int $version = null): Deck
 {
     $user = User::where('name', $username)->firstOrFail();
 
     return Deck::where('user_id', $user->id)
         ->where('name', $deckname)
+        ->when($version !== null, fn ($q) => $q->where('version', $version))
         ->latest('version')
         ->firstOrFail();
 }
@@ -120,10 +149,10 @@ public function store(Request $request): RedirectResponse
 /**
  * Visualizzazione in sola lettura (accessibile se mazzo pubblico o se proprietario)
  */
-public function show(string $username, string $deckname): View
+public function show(string $username, string $deckname, ?int $version = null): View
 {
-    $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('view', $deck);
+    $deck = $this->resolveDeck($username, $deckname, $version);
+    Gate::authorize('view', $deck);
 
     $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
     $validationErrors = DeckFormatValidatorFactory::make($deck->format)->validate($deck);
@@ -137,7 +166,7 @@ public function show(string $username, string $deckname): View
 public function edit(string $username, string $deckname): View
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('update', $deck);
+    Gate::authorize('update', $deck);
 
     $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
 
@@ -148,11 +177,13 @@ public function edit(string $username, string $deckname): View
  * Salvataggio batch delle carte del mazzo (flusso principale di modifica)
  * Riceve l'elenco completo o delta delle carte, aggiunge/aggiorna quelle con quantity > 0
  * e stacca (detach) quelle rimosse o con quantity = 0.
+ * Leader e base sono righe di `deck_cards` come le altre: il form deve inviarle sempre (anche per poterle cambiare),
+ * altrimenti `sync()` le stacca dal mazzo.
  */
 public function syncCards(Request $request, string $username, string $deckname): RedirectResponse
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('update', $deck);
+    Gate::authorize('update', $deck);
 
     $validated = $request->validate([
         'cards' => ['nullable', 'array'],
@@ -175,18 +206,24 @@ public function syncCards(Request $request, string $username, string $deckname):
         ->with('deck-errors', $errors);
 }
 
+/**
+ * Adds copies of a card: the quantity is added to the one already in the deck, it does not replace it
+ * Aggiunge copie di una carta: la quantità si somma a quella già nel mazzo, non la sostituisce
+ */
 public function addCard(Request $request, string $username, string $deckname): RedirectResponse
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('update', $deck);
+    Gate::authorize('update', $deck);
 
     $validated = $request->validate([
         'card_id' => ['required', 'exists:cards,id'],
         'quantity' => ['required', 'integer', 'min:1'],
     ]);
 
+    $current = $deck->cards()->find($validated['card_id'])?->pivot->quantity ?? 0;
+
     $deck->cards()->syncWithoutDetaching([
-        $validated['card_id'] => ['quantity' => $validated['quantity']],
+        $validated['card_id'] => ['quantity' => $current + $validated['quantity']],
     ]);
 
     $errors = DeckFormatValidatorFactory::make($deck->format)->validate($deck->fresh());
@@ -197,7 +234,7 @@ public function addCard(Request $request, string $username, string $deckname): R
 public function removeCard(string $username, string $deckname, Card $card): RedirectResponse
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('update', $deck);
+    Gate::authorize('update', $deck);
 
     $deck->cards()->detach($card->id);
 
@@ -207,7 +244,7 @@ public function removeCard(string $username, string $deckname, Card $card): Redi
 public function toggleAssembled(string $username, string $deckname): RedirectResponse
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('update', $deck);
+    Gate::authorize('update', $deck);
 
     $deck->update(['assembled' => ! $deck->assembled]);
 
@@ -220,7 +257,7 @@ public function toggleAssembled(string $username, string $deckname): RedirectRes
 public function createVersion(string $username, string $deckname): RedirectResponse
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('update', $deck);
+    Gate::authorize('update', $deck);
 
     $newDeck = DB::transaction(function () use ($deck) {
         $newVersion = $deck->replicate(['assembled']);
@@ -250,7 +287,7 @@ public function createVersion(string $username, string $deckname): RedirectRespo
 public function versions(string $username, string $deckname): View
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('view', $deck);
+    Gate::authorize('view', $deck);
 
     $chain = collect([$deck]);
     for ($d = $deck; $d->previousVersion; $d = $d->previousVersion) {
@@ -281,12 +318,13 @@ Tutte estendono `<x-app-layout>`, con titolo nello slot `header`.
     - Selettore/pulsanti `+` e `-` per ciascuna carta già presente, pulsante di rimozione riga (che rimuove l'elemento dal form o imposta la quantità a 0).
     - Ricerca carte (`CardSearch`, Step 10.1): selezionando una carta dai risultati viene aggiunta una nuova riga alla bozza del mazzo.
     - Tasto primario in evidenza **"Salva modifiche"** / **"Conferma modifiche"** (in testa e in coda alla lista) per inviare l'intero stato delle carte in un'unica richiesta atomica a `decks.sync-cards`.
+  - **Leader e base fanno parte del form**: sono righe di `deck_cards` come le altre e `sync()` stacca ciò che non riceve. Vanno mostrati nel form (con `quantity` 1, cambiabili con la ricerca carte filtrata per tipo `Leader`/`Base`) e inviati sempre in `cards[]`; così leader e base restano modificabili dopo la creazione del mazzo.
   - Componente `<x-deck-card-row>` per la riga-carta (riutilizzabile anche in `decks/gap.blade.php`).
   - Errori e avvisi di formato in riquadro di alert non bloccante (`session('deck-errors')`).
   - Pulsante secondario separato per `toggle-assembled` (`PATCH decks.toggle-assembled`).
   - Pulsante secondario **"Crea nuova versione"** che invia una `POST` a `route('decks.create-version', [$deck->user->name, $deck->name])`.
   - Le rotte atomiche singole (`decks.add-card` e `decks.remove-card`) restano implementate nel backend per interoperabilità e fallback, ma la UI è progettata attorno al salvataggio batch.
-- `resources/views/decks/versions.blade.php`: elenco cronologico delle versioni con badge della versione (`v1`, `v2`), data di creazione, stato (pubblico/privato, assemblato) e link alla consultazione.
+- `resources/views/decks/versions.blade.php`: elenco cronologico delle versioni con badge della versione (`v1`, `v2`), data di creazione, stato (pubblico/privato, assemblato) e link alla consultazione di quella versione (`route('decks.show', [$deck->user->name, $deck->name, $v->version])`).
 
 #### 7.6.4 — Risoluzione decisioni di architettura mazzi
 
@@ -304,7 +342,12 @@ Tutte estendono `<x-app-layout>`, con titolo nello slot `header`.
 
 ##### 3. Modifica in Batch vs Singola
 - Nella pagina di modifica le modifiche avvengono prevalentemente in batch: l'utente sperimenta, aggiunge o toglie liberamente carte, incrementa/decrementa quantità e poi consolida l'intero mazzo premendo "Salva modifiche" (`PUT /carte`).
-- I metodi singoli `addCard` e `removeCard` rimangono mantenuti nel controller e nelle rotte per completezza e compatibilità, ma non sono il flusso primario dell'interfaccia.
+- I metodi singoli `addCard` e `removeCard` rimangono mantenuti nel controller e nelle rotte per completezza e compatibilità, ma non sono il flusso primario dell'interfaccia. `addCard` **somma** la quantità richiesta a quella già presente (non imposta la quantità finale: per quello c'è `syncCards`).
+
+##### 4. Autorizzazione e versioni nell'URL
+- **`Gate::authorize()`, non `$this->authorize()`**: dal Laravel 11 la classe base `Controller` è vuota e non ha più il trait `AuthorizesRequests`. Il modo indicato dalla documentazione di Laravel 12 è `Gate::authorize('update', $deck)` (`use Illuminate\Support\Facades\Gate;`), che lancia `AuthorizationException` (403). Vale per ogni metodo del controller, statistiche comprese.
+- **Link alle versioni**: `/mazzo/{username}/{deckname}/{version?}`. Senza versione è l'ultima, con la versione (numerica, `whereNumber`) lo snapshot. La modifica resta solo sull'ultima: sulle versioni precedenti `decks/show` non mostra "Modifica mazzo" ma un avviso di sola lettura con link all'ultima.
+- **Unicità**: `UNIQUE(user_id, name, version)` a livello di database (Step 7.6.0).
 
 
 ### Step 7.7 — Export/Import mazzi
@@ -377,7 +420,7 @@ In `app/Http/Controllers/DeckController.php`, accanto a `show()`:
 public function statistics(string $username, string $deckname): View
 {
     $deck = $this->resolveDeck($username, $deckname);
-    $this->authorize('view', $deck);
+    Gate::authorize('view', $deck);
 
     $deck->load(['cards.traits', 'user']);
 

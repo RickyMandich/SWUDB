@@ -127,19 +127,20 @@
   - [ ] 10.4quinquies `CardController::newReleases` ha ancora un `Log::debug(...)` con l'intero paginatore (residuo di debug, come 10.1.2bis); nell'avviso di `cards/new-releases` `$cards->count()` e `$groups->count()` contano solo la pagina corrente, non il totale (`$cards->total()`)
 > 10.2 Statistiche mazzo: **spostato nel piano 07** (Step 7.8, vedi sezione 07). Il numero 10.2 resta vuoto per non rinumerare gli step successivi.
 
-## 06 — Mazzi, dominio (Fase 7a) `implementationPlan-06-ricostruzioneMazziDominio.md` (Step 7.1–7.5 applicati il 2026-10-09; restano da scrivere i test dei validator, poi rinominare il piano in `implementationPlan-V-06-...`)
+## 06 — Mazzi, dominio (Fase 7a) ✅ `implementationPlan-V-06-ricostruzioneMazziDominio.md` (Step 7.1–7.5 applicati il 2026-10-09; restano da scrivere i test dei validator, 7.5bis)
 - [x] 7.1 Enum `DeckFormat` + cast su `Deck`
 - [x] 7.2 `Deck::leader()`/`base()` sostituite da `leaders()`/`baseCard()` (`belongsToMany` su `deck_cards` filtrate per `cards.type`)
 - [x] 7.3 Validator per formato in `app/Services/DeckValidation/` (interfaccia `DeckFormatValidator`). Scostamenti dal piano, tutti voluti: il minimo di carte è controllato sulla somma delle copie escluse leader e base (50 per Premier/Eternal, 80 per Twin Suns; +10 se la base è `JTL24`, Data Vault); `unique_card` non limita le copie nel mazzo (solo quelle in gioco), quindi il limite è `max_copies ?? 3` ovunque tranne Twin Suns (`max_copies ?? 1`); Premier controlla la rotazione con `Expansion::validExpansions()` (ultime due rotazioni distinte, solo espansioni confermate) invece del TODO del piano
-  - [x] 7.3.4 Twin Suns: l'allineamento dei leader non richiede nessuna colonna nuova (il TODO del piano è superato): `Card::secondaryAspect()` restituisce l'aspetto Eroismo/Malvagità e il validator dà errore se i due leader ne hanno due diversi (stesso aspetto, uno solo o nessuno = legale). Il testo dello Step 7.3.4 del piano è da aggiornare
+  - [x] 7.3.4 Twin Suns: l'allineamento dei leader non richiede nessuna colonna nuova (il TODO del piano è superato): `Card::secondaryAspect()` restituisce l'aspetto Eroismo/Malvagità e il validator dà errore se i due leader ne hanno due diversi (stesso aspetto, uno solo o nessuno = legale). Step 7.3.4 del piano riscritto di conseguenza (2026-10-09)
 - [x] 7.4 `DeckFormatValidatorFactory`
 - [x] 7.5 `DeckPolicy` (`view` accetta anche gli ospiti; scoperta in automatico da Laravel)
   - [ ] 7.5bis Test Pest dei validator (nessun test sui mazzi esiste ancora): carte contate per copie, leader/base mancanti (nessuna eccezione senza base), rotazione di Premier, aspetti secondari di Twin Suns nei quattro casi
   - [ ] 7.5ter `'JTL24'` (Data Vault) è scritto a mano nei tre validator: valutare una costante o un campo sulla carta
 
 ## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md`
-- [ ] 7.6.1 Rotte mazzi (`/mazzo/{username}/{deckname}`, `/mazzo/modifica/...`)
-- [ ] 7.6.2 `DeckController` (con risoluzione deck, show pubblica/owner, edit owner, `syncCards` batch e `createVersion`)
+- [ ] 7.6.0 Migration `add_unique_user_name_version_to_decks_table`: `UNIQUE(user_id, name, version)` (verificare prima che non ci siano duplicati)
+- [ ] 7.6.1 Rotte mazzi (`/mazzo/{username}/{deckname}/{version?}` con `whereNumber('version')`, registrata dopo il gruppo `/mazzo/modifica/...`; `decks.versions` prima di `decks.show`)
+- [ ] 7.6.2 `DeckController` (con risoluzione deck, show pubblica/owner, edit owner, `syncCards` batch e `createVersion`). Scritto con lo snippet originale; da correggere: `Gate::authorize(...)` al posto di `$this->authorize(...)` (la classe base `Controller` di Laravel 12 è vuota, oggi ogni azione lancia `BadMethodCallException`), `resolveDeck`/`show` con `?int $version`, `addCard` che somma la quantità alla presente
 - [ ] 7.6.3 Viste mazzi (index, create, show di sola lettura, edit con deck-building batch e tasto salva, versions)
 - [x] 7.6.4 Decisioni chiuse: rotte contestuali all'utente, show per chi possiede/pubblico, edit per proprietario, versioning snapshot on-demand, salvataggio batch primario
 - [ ] 7.7 Export/Import mazzi (verificare la sintassi dell'export ufficiale SWU)
