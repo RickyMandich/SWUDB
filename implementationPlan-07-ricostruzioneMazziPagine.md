@@ -4,7 +4,7 @@
 > **Prerequisito**: [`implementationPlan-V-06-ricostruzioneMazziDominio.md`](implementationPlan-V-06-ricostruzioneMazziDominio.md) (enum, relazioni `leaders()`/`baseCard()`, validator, policy) e, per le pagine con la ricerca carte,
 > [`implementationPlan-05-V-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-V-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
 >
-> Stato del codice (2026-10-09): `DeckController` scritto con lo snippet originale dello Step 7.6.2; le correzioni di questa versione del piano (`Gate::authorize`, versione nell'URL, leader e base nel form, `addCard` che somma, unique su `user_id`+`name`+`version`) vanno applicate sopra. Le viste seguono le "Convenzioni per le view" dell'indice e la base di layout dello Step 7.6.3.0.
+> Stato del codice (2026-10-09): `DeckController` scritto con lo snippet originale dello Step 7.6.2; le correzioni di questa versione del piano (`Gate::authorize`, versione nell'URL, leader e base nel form, `addCard` che somma, unique su `user_id`+`name`+`version`) vanno applicate sopra. Le viste seguono le "Convenzioni per le view" dell'indice.
 
 ## Fase 7 — Gestione mazzi multi-formato (pagine)
 
@@ -303,95 +303,201 @@ public function versions(string $username, string $deckname): View
 La validazione del formato è **informativa, non bloccante**: permette di visualizzare gli errori e le incongruenze senza impedire il salvataggio incrementale della lista.
 
 #### 7.6.3 — Viste
+Tutte estendono `<x-app-layout>`, con titolo nello slot `header`. Ogni vista parte da uno **scheletro** (sotto, dopo la descrizione della vista) costruito con Tailwind e Bladewind UI: sono punti di partenza da rifinire, non markup definitivo.
 
-##### 7.6.3.0 — Base di layout (da creare prima delle viste)
+##### Regole comuni degli scheletri
+- **Bladewind solo con il punto**: i componenti sono già pubblicati in `resources/views/components/bladewind` (README, "Stack"), quindi `<x-bladewind.card>`, `<x-bladewind.table>`, `<x-bladewind.alert>`, **mai** `<x-bladewind::card>` (namespace del package, sotto `vendor/`). I file locali stanno in `resources/`, quindi Tailwind 4 ne scansiona le classi senza nuovi `@source` né `COPY` nel `Dockerfile`.
+- **Palette e dark mode** (README, "Convenzioni di sviluppo"), sempre con la variante `dark:`:
+  - sfondo pagina `bg-gray-100` / `dark:bg-gray-900` (già nel layout);
+  - superfici `bg-white` / `dark:bg-gray-800`;
+  - testo principale `text-gray-800` / `dark:text-gray-100`; secondario `text-gray-500` / `dark:text-gray-400`;
+  - bordi `border-gray-200` / `dark:border-gray-700`.
+- **Bladewind non segue la palette da solo**: ogni componente Bladewind riceve le classi `dark:` esplicite. Negli scheletri le classi della superficie sono `bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700` su ogni `<x-bladewind.card>`.
+- **Breeze dove c'è, Bladewind dove manca**: pulsanti con `<x-primary-button>` / `<x-secondary-button>` / `<x-danger-button>`, label e campi con `<x-input-label>`, `<x-text-input>`, `<x-input-error>`; Bladewind per card, tabella e alert.
+- `<x-card>` è la carta di gioco del catalogo, `<x-bladewind.card>` è il contenitore UI: non vanno scambiati.
+- **Colori degli aspetti** (fissi, non seguono il tema): Vigilanza #4073d4, Eroismo #ffffff, Offensiva #d30808, Malvagità #000000, Autorità #0b992d, Astuzia #eb9f1c. Applicarli con `style="background-color: ..."` e un bordo `border border-gray-300 dark:border-gray-600` (altrimenti Eroismo sparisce sul chiaro e Malvagità sullo scuro); mai classi Tailwind composte a runtime (`bg-{{ $x }}-500`), che Tailwind non vede.
+- **Da verificare in locale prima di copiare**: la firma di `<x-bladewind.table>` (negli scheletri è usata con `<x-slot name="header">` e righe `<tr>` a mano) e se `<x-bladewind.card>` propaga gli attributi extra; i nomi dei campi di `Card` (`name`, `type`, `cost`, `front_art_path`, `expansion`, `number`); se `baseCard` è una relazione a singolo modello o una collection (negli scheletri è trattata come singolo modello); se `DeckFormat` ha un metodo `label()` (altrimenti si usa `$case->value`). Gli scheletri usano l'asset delle immagini come `asset('storage/'.$card->front_art_path)` (nginx serve `/storage/`) con un `@if` perché `front_art_path` può essere nullo (rifinitura aperta del piano 05).
 
-Tutte le viste dei mazzi (Step 7.6.3, 7.8.3 e le eventuali pagine dello Step 7.7) passano da una **base di layout comune** costruita con Tailwind e Bladewind UI. La base **non tocca** `layouts/app.blade.php` (condiviso con admin, profilo e catalogo): è un componente Blade anonimo che lo incapsula.
+- `resources/views/decks/index.blade.php`: lista (tabella + paginazione), anteprima di leader e base grazie all'eager load; link a `/mazzo/{username}/{deckname}`.
 
-**Regola sui componenti Bladewind: solo classi pubblicate in locale.** I componenti Bladewind sono già pubblicati in `resources/views/components/bladewind` (README, sezione "Stack"), quindi si usano **sempre con il punto** — `<x-bladewind.card>`, `<x-bladewind.alert>`, `<x-bladewind.table>` — e **mai con il namespace del package** (`<x-bladewind::card>`). Motivi: i file locali stanno in `resources/`, quindi Tailwind 4 li scansiona da solo e le loro classi finiscono in `public/build`; quelli sotto `vendor/` no (nello stage `node-builder` ci sono solo `resources/` e `public/`) e comunque non si possono modificare. Nessun nuovo `@source` e nessuna nuova `COPY` nel `Dockerfile`.
-
-File da creare (tutti sotto `resources/views/components/decks/`, quindi nell'area già scansionata):
-
-1. `layout.blade.php` → `<x-decks.layout title="...">`: pagina completa con header, contenitore e messaggi di sessione.
-
+Scheletro:
 ```blade
-@props(['title'])
-
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                {{ $title }}
-            </h2>
-            @isset($actions)
-                <div class="flex flex-wrap items-center gap-2">{{ $actions }}</div>
-            @endisset
+        <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Mazzi</h2>
+            @auth
+                <a href="{{ route('decks.create') }}"><x-primary-button type="button">Nuovo mazzo</x-primary-button></a>
+            @endauth
         </div>
     </x-slot>
 
     <div class="py-8">
-        <div {{ $attributes->class(['mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8']) }}>
-            @if (session('status'))
-                <x-bladewind.alert type="success">{{ session('status') }}</x-bladewind.alert>
-            @endif
+        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <x-bladewind.table>
+                    <x-slot name="header">
+                        <th>Mazzo</th><th>Leader</th><th>Base</th><th>Formato</th><th>Autore</th><th>Versione</th>
+                    </x-slot>
+                    @forelse ($decks as $deck)
+                        <tr>
+                            <td>
+                                <a class="font-medium text-gray-800 hover:underline dark:text-gray-100"
+                                   href="{{ route('decks.show', [$deck->user->name, $deck->name]) }}">{{ $deck->name }}</a>
+                                @unless ($deck->is_public)
+                                    <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">privato</span>
+                                @endunless
+                            </td>
+                            <td>
+                                @foreach ($deck->leaders as $leader)
+                                    @if ($leader->front_art_path)
+                                        <img class="mr-1 inline h-12 rounded" src="{{ asset('storage/'.$leader->front_art_path) }}" alt="{{ $leader->name }}">
+                                    @endif
+                                @endforeach
+                            </td>
+                            <td>
+                                @if ($deck->baseCard?->front_art_path)
+                                    <img class="h-12 rounded" src="{{ asset('storage/'.$deck->baseCard->front_art_path) }}" alt="{{ $deck->baseCard->name }}">
+                                @endif
+                            </td>
+                            <td class="text-gray-500 dark:text-gray-400">{{ $deck->format->value }}</td>
+                            <td class="text-gray-500 dark:text-gray-400">{{ $deck->user->name }}</td>
+                            <td class="text-gray-500 dark:text-gray-400">v{{ $deck->version }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="text-gray-500 dark:text-gray-400">Nessun mazzo.</td></tr>
+                    @endforelse
+                </x-bladewind.table>
+            </x-bladewind.card>
 
-            @if (!empty(session('deck-errors')))
-                <x-bladewind.alert type="warning">
-                    <ul class="list-disc space-y-1 pl-5">
-                        @foreach ((array) session('deck-errors') as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </x-bladewind.alert>
-            @endif
-
-            {{ $slot }}
+            {{ $decks->links() }}
         </div>
     </div>
 </x-app-layout>
 ```
-   - `status` e `deck-errors` sono le chiavi di sessione impostate dal controller (Step 7.6.2: `syncCards`, `createVersion`): la vista non le ripete.
-   - `deck-errors` è non bloccante (warning, non error). Il cast `(array)` presuppone una lista di stringhe: se `validate()` restituisce un'altra struttura, adattare qui il `foreach` e basta.
-   - Lo slot `actions` è opzionale e ospita i pulsanti principali della pagina (es. "Modifica mazzo").
-   - `<x-app-layout>` funziona anche per gli ospiti (README: navigazione con Login/Register), quindi `index`, `show` e `versions` pubbliche non richiedono nulla in più.
-2. `panel.blade.php` → `<x-decks.panel>`: la superficie "card" riusata da ogni sezione, per non ripetere le classi `dark:` su ogni `<x-bladewind.card>`.
 
-```blade
-<x-bladewind.card {{ $attributes->class(['bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700']) }}>
-    {{ $slot }}
-</x-bladewind.card>
-```
-   Se `<x-bladewind.card>` non propaga gli attributi extra al suo elemento radice, passare le classi con la prop `class="..."` come fa già `cards/show.blade.php`.
-
-**Palette e dark mode** (README, "Convenzioni di sviluppo"): la base usa solo la palette del progetto e ogni colore ha la sua variante `dark:`.
-
-| Uso | Light | Dark |
-|---|---|---|
-| Sfondo pagina | `bg-gray-100` | `dark:bg-gray-900` |
-| Superfici (card, header, nav) | `bg-white` | `dark:bg-gray-800` |
-| Testo principale | `text-gray-800` / `text-gray-900` | `dark:text-gray-100` / `dark:text-gray-200` |
-| Testo secondario | `text-gray-500` | `dark:text-gray-400` |
-| Bordi | `border-gray-200` | `dark:border-gray-700` |
-
-Regole per chi scrive le viste:
-- **Bladewind non segue la palette da solo**: ogni componente Bladewind riceve le classi `dark:` esplicite (per le card si usa `<x-decks.panel>`; per tabelle, input e select si passano `class="..."` espliciti).
-- **Breeze dove c'è, Bladewind dove manca** (README): pulsanti con `<x-primary-button>`, `<x-secondary-button>`, `<x-danger-button>`; campi con `<x-input-label>`, `<x-text-input>`, `<x-input-error>`; badge con `<x-badge>`; Bladewind per `alert`, `table`, `card` e per i widget che Breeze non ha.
-- **Nome a rischio confusione**: `<x-card>` è la carta di gioco del catalogo, `<x-bladewind.card>` è il contenitore UI. Non vanno scambiati.
-- **Colori degli aspetti**: sono fissi e non cambiano col tema (Vigilanza #4073d4, Eroismo #ffffff, Offensiva #d30808, Malvagità #000000, Autorità #0b992d, Astuzia #eb9f1c). Si applicano con `style="background-color: ..."` (mai con classi Tailwind composte a runtime, che Tailwind non vedrebbe) e con un bordo `border border-gray-300 dark:border-gray-600`, altrimenti Eroismo sparisce sul chiaro e Malvagità sullo scuro.
-- **Niente classi dinamiche**: scrivere sempre i nomi di classe completi (`@class([...])` o ternari con classi intere), mai `bg-{{ $colore }}-500`.
-- **Asset Bladewind**: verificare in `layouts/app.blade.php` come vengono già caricati CSS/JS di Bladewind (le pagine `cards/show` e `cards/new-releases` li usano già) e **non aggiungere un secondo include** nella base.
-
-##### 7.6.3.1 — Le viste
-
-Tutte usano `<x-decks.layout title="...">` (che incapsula `<x-app-layout>`): il titolo si passa con la prop `title`, i pulsanti principali dell'header con `<x-slot name="actions">`, le sezioni con `<x-decks.panel>`.
-- `resources/views/decks/index.blade.php`: lista (`<x-bladewind.table>` con thead/tbody scritti a mano, dentro `<x-decks.panel>`, + paginazione), anteprima di leader e base grazie all'eager load; link a `/mazzo/{username}/{deckname}`.
 - `resources/views/decks/create.blade.php`: form nuovo mazzo con `name`, `format` come `<select>` sui `case` di `DeckFormat` e checkbox `is_public`.
+
+Scheletro:
+```blade
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Nuovo mazzo</h2>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <form method="POST" action="{{ route('decks.store') }}" class="space-y-6">
+                    @csrf
+
+                    <div>
+                        <x-input-label for="name" value="Nome" />
+                        <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name')" required autofocus />
+                        <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="format" value="Formato" />
+                        <select id="format" name="format"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                            @foreach (\App\Enums\DeckFormat::cases() as $case)
+                                <option value="{{ $case->value }}" @selected(old('format') === $case->value)>{{ $case->value }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('format')" class="mt-2" />
+                    </div>
+
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <input type="hidden" name="is_public" value="0">
+                        <input type="checkbox" name="is_public" value="1" @checked(old('is_public'))
+                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900">
+                        Mazzo pubblico
+                    </label>
+
+                    <div class="flex justify-end"><x-primary-button>Crea mazzo</x-primary-button></div>
+                </form>
+            </x-bladewind.card>
+        </div>
+    </div>
+</x-app-layout>
+```
+
 - `resources/views/decks/show.blade.php`: vista di **sola lettura** pubblica (o del proprietario):
   - Mostra leader, base, carte raggruppate per tipologia e costo, statistiche rapide.
   - Link verso "Statistiche" (`route('decks.statistics', [$deck->user->name, $deck->name])`, Step 7.8).
-  - Eventuali warning di formato (`$validationErrors`) in un `<x-bladewind.alert type="warning">` (non bloccante, come l'alert di `deck-errors` del layout).
-  - Se `@can('update', $deck)`: mostra pulsante in evidenza "Modifica mazzo" verso `route('decks.edit', [$deck->user->name, $deck->name])`, nello slot `actions` di `<x-decks.layout>`.
+  - Eventuali warning di formato (`$validationErrors`).
+  - Se `@can('update', $deck)`: mostra pulsante in evidenza "Modifica mazzo" verso `route('decks.edit', [$deck->user->name, $deck->name])`.
   - Link verso "Cronologia versioni" `route('decks.versions', [$deck->user->name, $deck->name])`.
+
+Scheletro:
+```blade
+@php
+    $body = $deck->cards->reject(fn ($c) => in_array($c->type, ['Leader', 'Base']));
+    $groups = $body->groupBy('type')->map(fn ($g) => $g->sortBy([['cost', 'asc'], ['name', 'asc']]));
+@endphp
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                {{ $deck->name }} <span class="text-sm text-gray-500 dark:text-gray-400">v{{ $deck->version }} · {{ $deck->user->name }}</span>
+            </h2>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('decks.versions', [$deck->user->name, $deck->name]) }}"><x-secondary-button type="button">Cronologia versioni</x-secondary-button></a>
+                <a href="{{ route('decks.statistics', [$deck->user->name, $deck->name]) }}"><x-secondary-button type="button">Statistiche</x-secondary-button></a>
+                @can('update', $deck)
+                    <a href="{{ route('decks.edit', [$deck->user->name, $deck->name]) }}"><x-primary-button type="button">Modifica mazzo</x-primary-button></a>
+                @endcan
+            </div>
+        </div>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            @if (!empty($validationErrors))
+                <x-bladewind.alert type="warning">
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ((array) $validationErrors as $error)<li>{{ $error }}</li>@endforeach
+                    </ul>
+                </x-bladewind.alert>
+            @endif
+
+            <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap gap-4">
+                    @foreach ($deck->leaders as $leader)
+                        @if ($leader->front_art_path)
+                            <img class="h-40 rounded-lg" src="{{ asset('storage/'.$leader->front_art_path) }}" alt="{{ $leader->name }}">
+                        @endif
+                    @endforeach
+                    @if ($deck->baseCard?->front_art_path)
+                        <img class="h-40 rounded-lg" src="{{ asset('storage/'.$deck->baseCard->front_art_path) }}" alt="{{ $deck->baseCard->name }}">
+                    @endif
+                </div>
+                <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                    {{ $deck->format->value }} · {{ $body->sum('pivot.quantity') }} carte
+                </p>
+            </x-bladewind.card>
+
+            @foreach ($groups as $type => $cards)
+                <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <h3 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">{{ $type }} ({{ $cards->sum('pivot.quantity') }})</h3>
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach ($cards as $card)
+                            <li class="flex items-center justify-between py-2 text-sm">
+                                <a class="text-gray-800 hover:underline dark:text-gray-100"
+                                   href="{{ route('cards.show', [$card->expansion, $card->number]) }}">{{ $card->name }}</a>
+                                <span class="text-gray-500 dark:text-gray-400">costo {{ $card->cost }} · ×{{ $card->pivot->quantity }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </x-bladewind.card>
+            @endforeach
+        </div>
+    </div>
+</x-app-layout>
+```
+Il raggruppamento nel `@php` può passare nel controller se la vista cresce.
+
 - `resources/views/decks/edit.blade.php`: pagina di **deck-building interattivo** (riservata al proprietario):
   - **Flusso primario di modifica in batch**: form `<form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}">` con `@method('PUT')`.
     - Consente all'utente di aggiungere e togliere N carte e regolarne le quantità all'interno della stessa schermata prima del salvataggio.
@@ -400,11 +506,124 @@ Tutte usano `<x-decks.layout title="...">` (che incapsula `<x-app-layout>`): il 
     - Tasto primario in evidenza **"Salva modifiche"** / **"Conferma modifiche"** (in testa e in coda alla lista) per inviare l'intero stato delle carte in un'unica richiesta atomica a `decks.sync-cards`.
   - **Leader e base fanno parte del form**: sono righe di `deck_cards` come le altre e `sync()` stacca ciò che non riceve. Vanno mostrati nel form (con `quantity` 1, cambiabili con la ricerca carte filtrata per tipo `Leader`/`Base`) e inviati sempre in `cards[]`; così leader e base restano modificabili dopo la creazione del mazzo.
   - Componente `<x-deck-card-row>` per la riga-carta (riutilizzabile anche in `decks/gap.blade.php`).
-  - Errori e avvisi di formato: li mostra già `<x-decks.layout>` (`session('deck-errors')`, alert non bloccante), nessun markup da duplicare nella vista.
+  - Errori e avvisi di formato in riquadro di alert non bloccante (`session('deck-errors')`).
   - Pulsante secondario separato per `toggle-assembled` (`PATCH decks.toggle-assembled`).
   - Pulsante secondario **"Crea nuova versione"** che invia una `POST` a `route('decks.create-version', [$deck->user->name, $deck->name])`.
   - Le rotte atomiche singole (`decks.add-card` e `decks.remove-card`) restano implementate nel backend per interoperabilità e fallback, ma la UI è progettata attorno al salvataggio batch.
+
+Scheletro (il form principale contiene tutte le righe, leader e base compresi; i due pulsanti secondari stanno in form **separati** fuori dal principale, perché i form non si annidano):
+```blade
+@php
+    $rows = $deck->cards->map(fn ($c) => [
+        'card_id' => $c->id, 'name' => $c->name, 'type' => $c->type, 'quantity' => (int) $c->pivot->quantity,
+    ])->values();
+@endphp
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+            Modifica {{ $deck->name }} <span class="text-sm text-gray-500 dark:text-gray-400">v{{ $deck->version }}</span>
+        </h2>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+            @if (session('status'))
+                <x-bladewind.alert type="success">{{ session('status') }}</x-bladewind.alert>
+            @endif
+            @if (!empty(session('deck-errors')))
+                <x-bladewind.alert type="warning">
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ((array) session('deck-errors') as $error)<li>{{ $error }}</li>@endforeach
+                    </ul>
+                </x-bladewind.alert>
+            @endif
+
+            <form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}"
+                  x-data="{ rows: @js($rows) }" class="space-y-6">
+                @csrf
+                @method('PUT')
+
+                <div class="flex justify-end"><x-primary-button>Salva modifiche</x-primary-button></div>
+
+                {{-- Ricerca carte (CardSearch, Step 10.1): selezionando un risultato fa
+                     rows.push({ card_id, name, type, quantity: 1 }). Per leader e base filtrare per tipo. --}}
+
+                <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {{-- Riga-carta: da estrarre in <x-deck-card-row> (riusata anche in decks/gap) --}}
+                        <template x-for="(row, i) in rows" :key="row.card_id">
+                            <li class="flex items-center justify-between gap-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+                                <input type="hidden" :name="`cards[${i}][card_id]`" :value="row.card_id">
+                                <input type="hidden" :name="`cards[${i}][quantity]`" :value="row.quantity">
+                                <span x-text="row.name"></span>
+                                <span class="text-gray-500 dark:text-gray-400" x-text="row.type"></span>
+                                <span class="flex items-center gap-2">
+                                    {{-- Leader e base restano a quantità 1: niente +/- --}}
+                                    <template x-if="!['Leader', 'Base'].includes(row.type)">
+                                        <span class="flex items-center gap-2">
+                                            <button type="button" class="px-2" @click="row.quantity = Math.max(1, row.quantity - 1)">−</button>
+                                            <span x-text="row.quantity"></span>
+                                            <button type="button" class="px-2" @click="row.quantity++">+</button>
+                                        </span>
+                                    </template>
+                                    <button type="button" class="text-red-600 dark:text-red-400" @click="rows.splice(i, 1)">Rimuovi</button>
+                                </span>
+                            </li>
+                        </template>
+                    </ul>
+                </x-bladewind.card>
+
+                <div class="flex justify-end"><x-primary-button>Salva modifiche</x-primary-button></div>
+            </form>
+
+            <div class="flex flex-wrap gap-3">
+                <form method="POST" action="{{ route('decks.toggle-assembled', [$deck->user->name, $deck->name]) }}">
+                    @csrf @method('PATCH')
+                    <x-secondary-button type="submit">{{ $deck->assembled ? 'Segna come smontato' : 'Segna come assemblato' }}</x-secondary-button>
+                </form>
+                <form method="POST" action="{{ route('decks.create-version', [$deck->user->name, $deck->name]) }}">
+                    @csrf
+                    <x-secondary-button type="submit">Crea nuova versione</x-secondary-button>
+                </form>
+            </div>
+        </div>
+    </div>
+</x-app-layout>
+```
+Rimuovere una riga la toglie dall'array inviato: `sync()` stacca ciò che non riceve (stesso effetto della quantità a 0).
+
 - `resources/views/decks/versions.blade.php`: elenco cronologico delle versioni con badge della versione (`v1`, `v2`), data di creazione, stato (pubblico/privato, assemblato) e link alla consultazione di quella versione (`route('decks.show', [$deck->user->name, $deck->name, $v->version])`).
+
+Scheletro:
+```blade
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Versioni di {{ $deck->name }}</h2>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="mx-auto max-w-3xl space-y-3 px-4 sm:px-6 lg:px-8">
+            @foreach ($decks as $v)
+                <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-100">v{{ $v->version }}</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ $v->created_at->format('d/m/Y') }}</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ $v->is_public ? 'pubblico' : 'privato' }}{{ $v->assembled ? ' · assemblato' : '' }}
+                            </span>
+                            @if ($v->is($deck))<span class="text-xs text-gray-500 dark:text-gray-400">(questa)</span>@endif
+                        </div>
+                        <a class="text-sm text-gray-800 hover:underline dark:text-gray-100"
+                           href="{{ route('decks.show', [$deck->user->name, $deck->name, $v->version]) }}">Consulta</a>
+                    </div>
+                </x-bladewind.card>
+            @endforeach
+        </div>
+    </div>
+</x-app-layout>
+```
+
 
 #### 7.6.4 — Risoluzione decisioni di architettura mazzi
 
@@ -524,7 +743,7 @@ Route::get('/mazzo/{username}/{deckname}/statistiche', [DeckController::class, '
 ```
 
 #### 7.8.3 — Vista `resources/views/decks/statistics.blade.php`
-Usa `<x-decks.layout>` (Step 7.6.3.0) come ogni altra pagina, titolo nella prop `title`. Unica eccezione al "solo Blade + Alpine": Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`),
+Estende `<x-app-layout>` come ogni altra pagina, titolo nello slot `header`. Unica eccezione al "solo Blade + Alpine": Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`),
 un `<canvas>` per grafico e i dati passati con `@json($costCurve)` dentro lo `<script>` della pagina. Il `<script>` sta nel corpo della vista, non nel layout: è l'unica pagina che ne ha bisogno.
 Nessun bundler e nessun componente Vue/React per questo. Un link "Torna al mazzo" verso `route('decks.show', [$deck->user->name, $deck->name])`.
 
