@@ -77,11 +77,13 @@ Route::get('/carte', [CardController::class, 'index'])->name('cards.index');
 Route::get('/carte/{expansion}/{number}', [CardController::class, 'show'])->name('cards.show');
 Route::get('/nuove-uscite', [CardController::class, 'newReleases'])->name('cards.new-releases');
 
-// Creazione e lista mazzi
-Route::get('/mazzi', [DeckController::class, 'index'])->name('decks.index'); // pubblica: mazzi pubblici + propri se loggato
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/mazzi/crea', [DeckController::class, 'create'])->name('decks.create');
-    Route::post('/mazzi', [DeckController::class, 'store'])->name('decks.store');
+Route::prefix('/mazzi')->group(function () {
+    // Creazione e lista mazzi
+    Route::get('/', [DeckController::class, 'index'])->name('decks.index'); // pubblica: mazzi pubblici + propri se loggato
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/crea', [DeckController::class, 'create'])->name('decks.create');
+        Route::post('/', [DeckController::class, 'store'])->name('decks.store');
+    });
 });
 
 // Modifica mazzo e azioni di deck-building (solo proprietario)
