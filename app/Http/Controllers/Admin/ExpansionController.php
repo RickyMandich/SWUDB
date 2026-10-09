@@ -18,13 +18,18 @@ class ExpansionController extends Controller
     {
         $filter = (bool) $request->input('filter', true);
 
-        if ($filter) {
-            $expansions = Expansion::where('confirmed', false)->orderByDesc('rotation')->orderByDesc('legal_date')->get();
-        } else {
-            $expansions = Expansion::orderByDesc('rotation')->orderByDesc('legal_date')->get();
-        }
+        $query = Expansion::orderByDesc('rotation')
+            ->orderByDesc('legal_date');
 
-        return view('admin.expansions.index', compact('expansions', 'filter'));
+        $expansions = $filter
+            ? (clone $query)->where('confirmed', false)->get()
+            : (clone $query)->get();
+
+        $all_expansions = (clone $query)
+            ->whereColumn('group_main_expansion', 'expansion')
+            ->get();
+
+        return view('admin.expansions.index', compact('expansions', 'filter', 'all_expansions'));
     }
 
     /**
@@ -33,12 +38,15 @@ class ExpansionController extends Controller
      */
     public function update(Request $request, Expansion $expansion): RedirectResponse
     {
+        if ($request['group_main_expansion'] === 'null') {
+            $request['group_main_expansion'] = null;
+        }
         $validated = $request->validate([
             'legal_date' => ['nullable', 'date'],
             'rotation' => ['required', 'string', 'max:1'],
             'group_main_expansion' => ['nullable', 'string', 'exists:expansions,expansion'],
         ]);
-        $validated['confirmed'] = $request->boolean('confirmed'); // una checkbox non spuntata non arriva nel payload
+        $validated['confirmed'] = true;
 
         $expansion->update($validated);
 
