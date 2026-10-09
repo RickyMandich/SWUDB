@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class Expansion extends Model
 {
@@ -53,5 +54,17 @@ class Expansion extends Model
     public function scopeConfirmed($query)
     {
         return $query->where('confirmed', true);
+    }
+
+    public static function validExpansions(): Collection
+    {
+
+        $rotations = Expansion::query()
+            ->distinct()
+            ->orderByDesc('rotation')
+            ->limit(2)
+            ->pluck('rotation');
+
+        return Expansion::confirmed()->whereIn('rotation', $rotations)->pluck('expansion');
     }
 }

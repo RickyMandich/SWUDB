@@ -8,6 +8,7 @@
 - [x] README riallineato al codice e ai piani numerati (stato reale, icone, mail, vista dettaglio errore)
 - [x] README e `todo.md` riallineati al codice dopo la chiusura dello Step 10.1 del piano 05 (2026-10-08)
 - [x] README e `todo.md` riallineati al codice dopo lo Step 10.4 del piano 05 (2026-10-09)
+- [x] README e `todo.md` riallineati al codice dopo gli Step 7.1–7.5 del piano 06 (2026-10-09)
 - [x] Libreria UI Bladewind (`bladewindui/ui`, `bladewindui/table`) in uso, con i componenti pubblicati in `resources/views/components/bladewind` (la vista `cards/show` usa `<x-bladewind.card>` e `<x-bladewind.description-list>`); il README la riporta nello stack
 - [x] Bladewind aggiunto alle convenzioni per le view (indice, sezione "Componenti Bladewind")
 - [x] Icone del sito generate dal `Dockerfile` (stage `icon-builder`) a partire da `public/icon-mine.svg` (`docker/icons/generate-icons.sh`, `layouts/favicons.blade.php`, `/favicon.ico` in nginx)
@@ -126,12 +127,15 @@
   - [ ] 10.4quinquies `CardController::newReleases` ha ancora un `Log::debug(...)` con l'intero paginatore (residuo di debug, come 10.1.2bis); nell'avviso di `cards/new-releases` `$cards->count()` e `$groups->count()` contano solo la pagina corrente, non il totale (`$cards->total()`)
 > 10.2 Statistiche mazzo: **spostato nel piano 07** (Step 7.8, vedi sezione 07). Il numero 10.2 resta vuoto per non rinumerare gli step successivi.
 
-## 06 — Mazzi, dominio (Fase 7a) `implementationPlan-06-ricostruzioneMazziDominio.md`
-- [ ] 7.1 Enum `DeckFormat` + cast su `Deck`
-- [ ] 7.2 Sostituire `Deck::leader()`/`base()` con `leaders()`/`baseCard()` (oggi interrogano `Card` direttamente e con `'leader'` minuscolo)
-- [ ] 7.3 Validator per formato (Premier / Eternal / TwinSuns; allineamento dei leader di Twin Suns in sospeso)
-- [ ] 7.4 `DeckFormatValidatorFactory`
-- [ ] 7.5 `DeckPolicy` (`view` accetta anche gli ospiti)
+## 06 — Mazzi, dominio (Fase 7a) `implementationPlan-06-ricostruzioneMazziDominio.md` (Step 7.1–7.5 applicati il 2026-10-09; restano da scrivere i test dei validator, poi rinominare il piano in `implementationPlan-V-06-...`)
+- [x] 7.1 Enum `DeckFormat` + cast su `Deck`
+- [x] 7.2 `Deck::leader()`/`base()` sostituite da `leaders()`/`baseCard()` (`belongsToMany` su `deck_cards` filtrate per `cards.type`)
+- [x] 7.3 Validator per formato in `app/Services/DeckValidation/` (interfaccia `DeckFormatValidator`). Scostamenti dal piano, tutti voluti: il minimo di carte è controllato sulla somma delle copie escluse leader e base (50 per Premier/Eternal, 80 per Twin Suns; +10 se la base è `JTL24`, Data Vault); `unique_card` non limita le copie nel mazzo (solo quelle in gioco), quindi il limite è `max_copies ?? 3` ovunque tranne Twin Suns (`max_copies ?? 1`); Premier controlla la rotazione con `Expansion::validExpansions()` (ultime due rotazioni distinte, solo espansioni confermate) invece del TODO del piano
+  - [x] 7.3.4 Twin Suns: l'allineamento dei leader non richiede nessuna colonna nuova (il TODO del piano è superato): `Card::secondaryAspect()` restituisce l'aspetto Eroismo/Malvagità e il validator dà errore se i due leader ne hanno due diversi (stesso aspetto, uno solo o nessuno = legale). Il testo dello Step 7.3.4 del piano è da aggiornare
+- [x] 7.4 `DeckFormatValidatorFactory`
+- [x] 7.5 `DeckPolicy` (`view` accetta anche gli ospiti; scoperta in automatico da Laravel)
+  - [ ] 7.5bis Test Pest dei validator (nessun test sui mazzi esiste ancora): carte contate per copie, leader/base mancanti (nessuna eccezione senza base), rotazione di Premier, aspetti secondari di Twin Suns nei quattro casi
+  - [ ] 7.5ter `'JTL24'` (Data Vault) è scritto a mano nei tre validator: valutare una costante o un campo sulla carta
 
 ## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md`
 - [ ] 7.6.1 Rotte mazzi (`/mazzo/{username}/{deckname}`, `/mazzo/modifica/...`)

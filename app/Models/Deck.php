@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DeckFormat;
 use Illuminate\Database\Eloquent\Model;
 
 class Deck extends Model
@@ -14,6 +15,12 @@ class Deck extends Model
         'assembled',
         'version',
         'previous_version_id',
+    ];
+
+    protected $casts = [
+        'format' => DeckFormat::class,
+        'is_public' => 'boolean',
+        'assembled' => 'boolean',
     ];
 
     public function user()
@@ -29,21 +36,28 @@ class Deck extends Model
             ->withTimestamps();
     }
 
-    public function leader()
+    /**
+     * Leader cards of the deck (1 in Premier/Eternal, 2 in Twin Suns); the count is enforced by the format validator
+     * Carte leader del mazzo (1 in Premier/Eternal, 2 in Twin Suns); il conteggio lo controlla il validator del formato
+     */
+    public function leaders()
     {
-        if ($this->format === 'twin_suns') {
-            return $this->hasMany(Card::class)
-                ->where('type', 'leader');
-        }
-
-        return $this->hasOne(Card::class)
-            ->where('type', 'leader');
+        return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'card_id')
+            ->using(DeckCard::class)
+            ->withPivot('quantity')
+            ->where('cards.type', 'Leader');
     }
 
-    public function base()
+    /**
+     * Base card of the deck
+     * Carta base del mazzo
+     */
+    public function baseCard()
     {
-        return $this->hasOne(Card::class)
-            ->where('type', 'base');
+        return $this->belongsToMany(Card::class, 'deck_cards', 'deck_id', 'card_id')
+            ->using(DeckCard::class)
+            ->withPivot('quantity')
+            ->where('cards.type', 'Base');
     }
 
     public function previousVersion()

@@ -100,6 +100,17 @@ class Card extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Secondary aspect of the card (Heroism or Villainy), null if it has none
+     * Aspetto secondario della carta (Eroismo o Malvagità), null se non ne ha
+     */
+    public function secondaryAspect(): ?Aspect
+    {
+        return $this->aspects->first(
+            fn (Aspect $aspect) => in_array($aspect->name, ['Eroismo', 'Malvagità'])
+        );
+    }
+
     public function newEloquentBuilder($query): CardBuilder
     {
         return new CardBuilder($query);

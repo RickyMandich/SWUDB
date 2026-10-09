@@ -32,12 +32,13 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Admin errori: vista di dettaglio `/admin/errori/{id}`, componenti `<x-flash-message>` e `<x-badge>`, lista paginata.
 - Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
 - Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata (24 carte per pagina) di `<x-card>` con l'ordinamento di default di `CardBuilder` (Leader, Base, poi aspetti, tipo, costo, nome, `legal_date` dell'espansione e numero). Il componente `<x-cards-filter>` usa `<x-multi-datalist>` (suggerimenti testuali con chip rimovibili per espansioni e tratti) e `<x-range-slider>` (slider a doppio input con limiti dal database per costo, salute, potenza). `CardSearch` implementa la logica reale dei filtri via parametri GET (multi-valore in AND per aspetti e tratti, e `whereIn` per espansioni e tipi). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register) e ha la voce "Carte". Pagina di dettaglio `/carte/{expansion}/{number}` (`cards/show.blade.php`, con componenti Bladewind): immagine fronte (con pulsante "Gira la carta" e flip 3D verso il retro, per le carte che ne hanno uno), aspetti, tratti, tipo, rarità, costo, vita, potenza, arena, artista, abilità e abilità "Da schierato". Pagina "Ultime uscite" `/nuove-uscite` (`cards/new-releases.blade.php`): un datepicker Bladewind (formato `gg/mm/aaaa`, limiti tra la prima e l'ultima data di rilascio) sceglie la data `since` (default: la data di rilascio più recente); le carte con `release_date` da quel giorno in poi sono paginate (24 per pagina), con l'ordinamento di default (`CardBuilder::withDefaultOrder()`), e raggruppate per data di rilascio all'interno della pagina.
+- Dominio dei mazzi (piano 06; non ancora raggiungibile dal sito, mancano rotte e pagine): enum `DeckFormat` con cast su `Deck`, relazioni `Deck::leaders()` e `Deck::baseCard()`, un validator per formato in `app/Services/DeckValidation/` (scelto con `DeckFormatValidatorFactory::make($deck->format)`) e `DeckPolicy`. Regole implementate: Premier = 1 leader, 1 base, almeno 50 carte escluse leader e base (60 con la base `JTL24`, Data Vault), al massimo `max_copies` copie per carta (default 3) e solo espansioni delle ultime due rotazioni (`Expansion::validExpansions()`, solo espansioni confermate); Eternal = come Premier senza il controllo di rotazione; Twin Suns = 2 leader con al massimo un aspetto secondario (Eroismo/Malvagità, `Card::secondaryAspect()`) tra i due, 1 base, almeno 80 carte (90 con `JTL24`) e una copia per carta salvo `max_copies`.
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
 - Test del job di import: riscritti, da lanciare con `php artisan test` (`todo.md`, 5.5.6).
-- Mazzi: esistono solo tabelle e modelli (`Deck`, `DeckCard`); **nessuna rotta, pagina, policy, enum di formato o
-  validatore**. `Deck::leader()` e `Deck::base()` sono da sostituire con `leaders()`/`baseCard()` (piano 06, Step 7.2); `Deck::cards()` è già corretta.
+- Mazzi: il sito non li gestisce ancora (piano 07); esistono tabelle, modelli e il dominio descritto sopra, ma **nessuna rotta, pagina, controller, vista o
+  test dei validator**.
 - Collezione, API pubblica: non iniziati. Statistiche mazzo: pianificate nel piano 07 (Step 7.8), dopo le pagine dei mazzi.
 - Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; nel menu responsive i link "Carte" e "Ultime uscite" non sono visibili agli ospiti; in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
@@ -63,6 +64,8 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 ```
 app/
   Console/Commands/ScanCards.php      comando `cards:scan` (mette in coda l'import)
+  Enums/DeckFormat.php                formato del mazzo (premier, eternal, twin_suns)
+  Policies/DeckPolicy.php             view/update/delete dei mazzi
   Http/Controllers/CardController.php catalogo pubblico (`index` con filtri, `show` con la vista di dettaglio e `newReleases` per le ultime uscite)
   Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
   Http/Controllers/Auth/              controller Breeze
@@ -70,7 +73,7 @@ app/
   Mail/                               NewCardsEmail, AdminScanReportEmail
   Models/                             Aspect, Card, CardTrait, Deck, DeckCard, Expansion, SystemError, User
   Models/Builders/CardBuilder.php     builder Eloquent di `Card` con ordinamento di default (usato da `/carte`; si applica solo se la query non ha già un `orderBy`)
-  Services/                           CardImageDownloader (immagini carta in storage), CardSearch (filtri catalogo), TelegramService + TelegramActionResult (Telegram)
+  Services/                           CardImageDownloader (immagini carta in storage), CardSearch (filtri catalogo), TelegramService + TelegramActionResult (Telegram), DeckValidation/ (validator per formato del mazzo e factory)
 bash/                                 script di commit/versionamento/FTP (vedi "Versionamento")
 database/migrations, seeders          schema e PermissionSeeder
 docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, supervisor/worker.conf, icons/generate-icons.sh
@@ -175,7 +178,7 @@ Registrazione/login con Breeze, email da verificare. Permessi definiti in `Permi
 `bot.notifications.receive`, `mails.test`, `system.manage-errors`, `log.viewer`, `expansions.manage`. Il ruolo `admin` li ha tutti.
 
 Oggi le rotte ne usano quattro (`users.manage`, `system.manage-errors`, `mails.test`, `expansions.manage`); `log.viewer` abilita il link al
-Log viewer nel menu utente; gli altri sono definiti in vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middleware `role`/`permission`/
+Log viewer nel menu utente; `decks.manage-any` è usato da `DeckPolicy` (nessuna rotta la applica ancora); gli altri sono definiti in vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middleware `role`/`permission`/
 `role_or_permission` sono registrati a mano in `bootstrap/app.php`.
 
 ## Rotte (`routes/web.php`)
