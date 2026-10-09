@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ExpansionController;
 use App\Http\Controllers\Admin\SystemErrorController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CardController;
+use App\Http\Controllers\DeckController;
 use App\Http\Controllers\ProfileController;
 use App\Mail\AdminScanReportEmail;
 use App\Mail\NewCardsEmail;
@@ -75,3 +76,25 @@ Route::middleware(['auth', 'verified', 'permission:expansions.manage'])
 Route::get('/carte', [CardController::class, 'index'])->name('cards.index');
 Route::get('/carte/{expansion}/{number}', [CardController::class, 'show'])->name('cards.show');
 Route::get('/nuove-uscite', [CardController::class, 'newReleases'])->name('cards.new-releases');
+
+// Creazione e lista mazzi
+Route::get('/mazzi', [DeckController::class, 'index'])->name('decks.index'); // pubblica: mazzi pubblici + propri se loggato
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/mazzi/crea', [DeckController::class, 'create'])->name('decks.create');
+    Route::post('/mazzi', [DeckController::class, 'store'])->name('decks.store');
+});
+
+// Modifica mazzo e azioni di deck-building (solo proprietario)
+Route::middleware(['auth', 'verified'])->prefix('mazzo/modifica/{username}/{deckname}')->group(function () {
+    Route::get('/', [DeckController::class, 'edit'])->name('decks.edit');
+    Route::put('/carte', [DeckController::class, 'syncCards'])->name('decks.sync-cards'); // Flusso principale batch: aggiunge, aggiorna e rimuove in un'unica operazione
+    Route::post('/carte', [DeckController::class, 'addCard'])->name('decks.add-card'); // Singola aggiunta (fallback)
+    Route::delete('/carte/{card}', [DeckController::class, 'removeCard'])->name('decks.remove-card'); // Singola rimozione (fallback)
+    Route::patch('/assembla', [DeckController::class, 'toggleAssembled'])->name('decks.toggle-assembled');
+    Route::post('/versione', [DeckController::class, 'createVersion'])->name('decks.create-version');
+});
+
+// Visualizzazione mazzo (pubblica se is_public, oppure proprietario).
+// Registrata DOPO il gruppo `mazzo/modifica/...` e con `{version?}` numerico: così `/mazzo/modifica/alice/2` (mazzo "2" di alice) non viene scambiato per il mazzo "alice" dell'utente "modifica".
+Route::get('/mazzo/{username}/{deckname}/versioni', [DeckController::class, 'versions'])->name('decks.versions');
+Route::get('/mazzo/{username}/{deckname}/{version?}', [DeckController::class, 'show'])->whereNumber('version')->name('decks.show');

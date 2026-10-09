@@ -4,7 +4,7 @@
 > **Prerequisito**: [`implementationPlan-V-06-ricostruzioneMazziDominio.md`](implementationPlan-V-06-ricostruzioneMazziDominio.md) (enum, relazioni `leaders()`/`baseCard()`, validator, policy) e, per le pagine con la ricerca carte,
 > [`implementationPlan-05-V-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-V-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
 >
-> Stato del codice (2026-10-09): `DeckController` scritto con lo snippet originale dello Step 7.6.2; le correzioni di questa versione del piano (`Gate::authorize`, versione nell'URL, leader e base nel form, `addCard` che somma, unique su `user_id`+`name`+`version`) vanno applicate sopra. Le viste seguono le "Convenzioni per le view" dell'indice.
+> Stato del codice (2026-10-09): `DeckController` scritto con lo snippet originale dello Step 7.6.2; le correzioni di questa versione del piano (`Gate::authorize`, versione nell'URL, leader e base nel form, `addCard` che somma, unique su `user_id`+`name`+`version`) vanno applicate sopra. Le viste seguono le "Convenzioni per le view" dell'indice e la base di layout dello Step 7.6.3.0.
 
 ## Fase 7 — Gestione mazzi multi-formato (pagine)
 
@@ -303,14 +303,94 @@ public function versions(string $username, string $deckname): View
 La validazione del formato è **informativa, non bloccante**: permette di visualizzare gli errori e le incongruenze senza impedire il salvataggio incrementale della lista.
 
 #### 7.6.3 — Viste
-Tutte estendono `<x-app-layout>`, con titolo nello slot `header`.
-- `resources/views/decks/index.blade.php`: lista (tabella + paginazione), anteprima di leader e base grazie all'eager load; link a `/mazzo/{username}/{deckname}`.
+
+##### 7.6.3.0 — Base di layout (da creare prima delle viste)
+
+Tutte le viste dei mazzi (Step 7.6.3, 7.8.3 e le eventuali pagine dello Step 7.7) passano da una **base di layout comune** costruita con Tailwind e Bladewind UI. La base **non tocca** `layouts/app.blade.php` (condiviso con admin, profilo e catalogo): è un componente Blade anonimo che lo incapsula.
+
+**Regola sui componenti Bladewind: solo classi pubblicate in locale.** I componenti Bladewind sono già pubblicati in `resources/views/components/bladewind` (README, sezione "Stack"), quindi si usano **sempre con il punto** — `<x-bladewind.card>`, `<x-bladewind.alert>`, `<x-bladewind.table>` — e **mai con il namespace del package** (`<x-bladewind::card>`). Motivi: i file locali stanno in `resources/`, quindi Tailwind 4 li scansiona da solo e le loro classi finiscono in `public/build`; quelli sotto `vendor/` no (nello stage `node-builder` ci sono solo `resources/` e `public/`) e comunque non si possono modificare. Nessun nuovo `@source` e nessuna nuova `COPY` nel `Dockerfile`.
+
+File da creare (tutti sotto `resources/views/components/decks/`, quindi nell'area già scansionata):
+
+1. `layout.blade.php` → `<x-decks.layout title="...">`: pagina completa con header, contenitore e messaggi di sessione.
+
+```blade
+@props(['title'])
+
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                {{ $title }}
+            </h2>
+            @isset($actions)
+                <div class="flex flex-wrap items-center gap-2">{{ $actions }}</div>
+            @endisset
+        </div>
+    </x-slot>
+
+    <div class="py-8">
+        <div {{ $attributes->class(['mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8']) }}>
+            @if (session('status'))
+                <x-bladewind.alert type="success">{{ session('status') }}</x-bladewind.alert>
+            @endif
+
+            @if (!empty(session('deck-errors')))
+                <x-bladewind.alert type="warning">
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ((array) session('deck-errors') as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-bladewind.alert>
+            @endif
+
+            {{ $slot }}
+        </div>
+    </div>
+</x-app-layout>
+```
+   - `status` e `deck-errors` sono le chiavi di sessione impostate dal controller (Step 7.6.2: `syncCards`, `createVersion`): la vista non le ripete.
+   - `deck-errors` è non bloccante (warning, non error). Il cast `(array)` presuppone una lista di stringhe: se `validate()` restituisce un'altra struttura, adattare qui il `foreach` e basta.
+   - Lo slot `actions` è opzionale e ospita i pulsanti principali della pagina (es. "Modifica mazzo").
+   - `<x-app-layout>` funziona anche per gli ospiti (README: navigazione con Login/Register), quindi `index`, `show` e `versions` pubbliche non richiedono nulla in più.
+2. `panel.blade.php` → `<x-decks.panel>`: la superficie "card" riusata da ogni sezione, per non ripetere le classi `dark:` su ogni `<x-bladewind.card>`.
+
+```blade
+<x-bladewind.card {{ $attributes->class(['bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700']) }}>
+    {{ $slot }}
+</x-bladewind.card>
+```
+   Se `<x-bladewind.card>` non propaga gli attributi extra al suo elemento radice, passare le classi con la prop `class="..."` come fa già `cards/show.blade.php`.
+
+**Palette e dark mode** (README, "Convenzioni di sviluppo"): la base usa solo la palette del progetto e ogni colore ha la sua variante `dark:`.
+
+| Uso | Light | Dark |
+|---|---|---|
+| Sfondo pagina | `bg-gray-100` | `dark:bg-gray-900` |
+| Superfici (card, header, nav) | `bg-white` | `dark:bg-gray-800` |
+| Testo principale | `text-gray-800` / `text-gray-900` | `dark:text-gray-100` / `dark:text-gray-200` |
+| Testo secondario | `text-gray-500` | `dark:text-gray-400` |
+| Bordi | `border-gray-200` | `dark:border-gray-700` |
+
+Regole per chi scrive le viste:
+- **Bladewind non segue la palette da solo**: ogni componente Bladewind riceve le classi `dark:` esplicite (per le card si usa `<x-decks.panel>`; per tabelle, input e select si passano `class="..."` espliciti).
+- **Breeze dove c'è, Bladewind dove manca** (README): pulsanti con `<x-primary-button>`, `<x-secondary-button>`, `<x-danger-button>`; campi con `<x-input-label>`, `<x-text-input>`, `<x-input-error>`; badge con `<x-badge>`; Bladewind per `alert`, `table`, `card` e per i widget che Breeze non ha.
+- **Nome a rischio confusione**: `<x-card>` è la carta di gioco del catalogo, `<x-bladewind.card>` è il contenitore UI. Non vanno scambiati.
+- **Colori degli aspetti**: sono fissi e non cambiano col tema (Vigilanza #4073d4, Eroismo #ffffff, Offensiva #d30808, Malvagità #000000, Autorità #0b992d, Astuzia #eb9f1c). Si applicano con `style="background-color: ..."` (mai con classi Tailwind composte a runtime, che Tailwind non vedrebbe) e con un bordo `border border-gray-300 dark:border-gray-600`, altrimenti Eroismo sparisce sul chiaro e Malvagità sullo scuro.
+- **Niente classi dinamiche**: scrivere sempre i nomi di classe completi (`@class([...])` o ternari con classi intere), mai `bg-{{ $colore }}-500`.
+- **Asset Bladewind**: verificare in `layouts/app.blade.php` come vengono già caricati CSS/JS di Bladewind (le pagine `cards/show` e `cards/new-releases` li usano già) e **non aggiungere un secondo include** nella base.
+
+##### 7.6.3.1 — Le viste
+
+Tutte usano `<x-decks.layout title="...">` (che incapsula `<x-app-layout>`): il titolo si passa con la prop `title`, i pulsanti principali dell'header con `<x-slot name="actions">`, le sezioni con `<x-decks.panel>`.
+- `resources/views/decks/index.blade.php`: lista (`<x-bladewind.table>` con thead/tbody scritti a mano, dentro `<x-decks.panel>`, + paginazione), anteprima di leader e base grazie all'eager load; link a `/mazzo/{username}/{deckname}`.
 - `resources/views/decks/create.blade.php`: form nuovo mazzo con `name`, `format` come `<select>` sui `case` di `DeckFormat` e checkbox `is_public`.
 - `resources/views/decks/show.blade.php`: vista di **sola lettura** pubblica (o del proprietario):
   - Mostra leader, base, carte raggruppate per tipologia e costo, statistiche rapide.
   - Link verso "Statistiche" (`route('decks.statistics', [$deck->user->name, $deck->name])`, Step 7.8).
-  - Eventuali warning di formato (`$validationErrors`).
-  - Se `@can('update', $deck)`: mostra pulsante in evidenza "Modifica mazzo" verso `route('decks.edit', [$deck->user->name, $deck->name])`.
+  - Eventuali warning di formato (`$validationErrors`) in un `<x-bladewind.alert type="warning">` (non bloccante, come l'alert di `deck-errors` del layout).
+  - Se `@can('update', $deck)`: mostra pulsante in evidenza "Modifica mazzo" verso `route('decks.edit', [$deck->user->name, $deck->name])`, nello slot `actions` di `<x-decks.layout>`.
   - Link verso "Cronologia versioni" `route('decks.versions', [$deck->user->name, $deck->name])`.
 - `resources/views/decks/edit.blade.php`: pagina di **deck-building interattivo** (riservata al proprietario):
   - **Flusso primario di modifica in batch**: form `<form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}">` con `@method('PUT')`.
@@ -320,7 +400,7 @@ Tutte estendono `<x-app-layout>`, con titolo nello slot `header`.
     - Tasto primario in evidenza **"Salva modifiche"** / **"Conferma modifiche"** (in testa e in coda alla lista) per inviare l'intero stato delle carte in un'unica richiesta atomica a `decks.sync-cards`.
   - **Leader e base fanno parte del form**: sono righe di `deck_cards` come le altre e `sync()` stacca ciò che non riceve. Vanno mostrati nel form (con `quantity` 1, cambiabili con la ricerca carte filtrata per tipo `Leader`/`Base`) e inviati sempre in `cards[]`; così leader e base restano modificabili dopo la creazione del mazzo.
   - Componente `<x-deck-card-row>` per la riga-carta (riutilizzabile anche in `decks/gap.blade.php`).
-  - Errori e avvisi di formato in riquadro di alert non bloccante (`session('deck-errors')`).
+  - Errori e avvisi di formato: li mostra già `<x-decks.layout>` (`session('deck-errors')`, alert non bloccante), nessun markup da duplicare nella vista.
   - Pulsante secondario separato per `toggle-assembled` (`PATCH decks.toggle-assembled`).
   - Pulsante secondario **"Crea nuova versione"** che invia una `POST` a `route('decks.create-version', [$deck->user->name, $deck->name])`.
   - Le rotte atomiche singole (`decks.add-card` e `decks.remove-card`) restano implementate nel backend per interoperabilità e fallback, ma la UI è progettata attorno al salvataggio batch.
@@ -444,7 +524,7 @@ Route::get('/mazzo/{username}/{deckname}/statistiche', [DeckController::class, '
 ```
 
 #### 7.8.3 — Vista `resources/views/decks/statistics.blade.php`
-Estende `<x-app-layout>` come ogni altra pagina, titolo nello slot `header`. Unica eccezione al "solo Blade + Alpine": Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`),
+Usa `<x-decks.layout>` (Step 7.6.3.0) come ogni altra pagina, titolo nella prop `title`. Unica eccezione al "solo Blade + Alpine": Chart.js via CDN (`<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>`),
 un `<canvas>` per grafico e i dati passati con `@json($costCurve)` dentro lo `<script>` della pagina. Il `<script>` sta nel corpo della vista, non nel layout: è l'unica pagina che ne ha bisogno.
 Nessun bundler e nessun componente Vue/React per questo. Un link "Torna al mazzo" verso `route('decks.show', [$deck->user->name, $deck->name])`.
 
