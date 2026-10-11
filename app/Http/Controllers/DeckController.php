@@ -36,8 +36,11 @@ class DeckController extends Controller
     public function index(): View
     {
         $decks = Deck::with('leaders', 'baseCard', 'user') // eager load: anteprima nella lista senza N+1
-            ->where('is_public', true)
-            ->when(auth()->id(), fn ($q, $userId) => $q->orWhere('user_id', $userId))
+            ->whereDoesntHave('nextVersion') // solo l'ultima versione di ogni catena
+            ->where(function ($q) {
+                $q->where('is_public', true)
+                    ->when(auth()->id(), fn ($q, $userId) => $q->orWhere('user_id', $userId));
+            })
             ->latest()
             ->paginate(20);
 
@@ -86,8 +89,9 @@ class DeckController extends Controller
 
         $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
         $validationErrors = DeckFormatValidatorFactory::make($deck->format)->validate($deck);
+        $isLatest = ! $deck->nextVersion()->exists();
 
-        return view('decks.show', compact('deck', 'validationErrors'));
+        return view('decks.show', compact('deck', 'validationErrors', 'isLatest'));
     }
 
     /**
