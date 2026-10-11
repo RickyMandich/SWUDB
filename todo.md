@@ -9,6 +9,7 @@
 - [x] README e `todo.md` riallineati al codice dopo la chiusura dello Step 10.1 del piano 05 (2026-10-08)
 - [x] README e `todo.md` riallineati al codice dopo lo Step 10.4 del piano 05 (2026-10-09)
 - [x] README e `todo.md` riallineati al codice dopo gli Step 7.1–7.5 del piano 06 (2026-10-09)
+- [x] README e `todo.md` riallineati al codice reale del piano 07 (Step 7.6.0–7.6.3 già applicati, bug trovati e step 7.6.5–7.9 aggiunti al piano) (2026-10-11)
 - [x] Libreria UI Bladewind (`bladewindui/ui`, `bladewindui/table`) in uso, con i componenti pubblicati in `resources/views/components/bladewind` (la vista `cards/show` usa `<x-bladewind.card>` e `<x-bladewind.description-list>`); il README la riporta nello stack
 - [x] Bladewind aggiunto alle convenzioni per le view (indice, sezione "Componenti Bladewind")
 - [x] Icone del sito generate dal `Dockerfile` (stage `icon-builder`) a partire da `public/icon-mine.svg` (`docker/icons/generate-icons.sh`, `layouts/favicons.blade.php`, `/favicon.ico` in nginx)
@@ -137,18 +138,36 @@
   - [ ] 7.5bis Test Pest dei validator (nessun test sui mazzi esiste ancora): carte contate per copie, leader/base mancanti (nessuna eccezione senza base), rotazione di Premier, aspetti secondari di Twin Suns nei quattro casi
   - [ ] 7.5ter `'JTL24'` (Data Vault) è scritto a mano nei tre validator: valutare una costante o un campo sulla carta
 
-## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md`
-- [ ] 7.6.0 Migration `add_unique_user_name_version_to_decks_table`: `UNIQUE(user_id, name, version)` (verificare prima che non ci siano duplicati)
-- [ ] 7.6.1 Rotte mazzi (`/mazzo/{username}/{deckname}/{version?}` con `whereNumber('version')`, registrata dopo il gruppo `/mazzo/modifica/...`; `decks.versions` prima di `decks.show`)
-- [ ] 7.6.2 `DeckController` (con risoluzione deck, show pubblica/owner, edit owner, `syncCards` batch e `createVersion`). Scritto con lo snippet originale; da correggere: `Gate::authorize(...)` al posto di `$this->authorize(...)` (la classe base `Controller` di Laravel 12 è vuota, oggi ogni azione lancia `BadMethodCallException`), `resolveDeck`/`show` con `?int $version`, `addCard` che somma la quantità alla presente
-- [ ] 7.6.3 Viste mazzi (index, create, show di sola lettura, edit con deck-building batch e tasto salva, versions)
+## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md` (stato verificato sul codice il 2026-10-11; il piano è completo, restano da applicare gli step aperti. Ordine consigliato: 7.8.1–7.8.2 → 7.6.5 → 7.6.6 → 7.7 → 7.8.3–7.8.4 → 7.9)
+- [x] 7.6.0 Migration `add_unique_user_name_version_to_decks_table` (`2026_10_09_124754`): `UNIQUE(user_id, name, version)`
+- [x] 7.6.1 Rotte mazzi applicate (`decks.index/create/store`, gruppo `mazzo/modifica/...`, `decks.versions`, `decks.show` con `whereNumber('version')`). Mancano solo quelle degli step nuovi: `decks.statistics` (7.8.2), `decks.search-cards` (7.6.6.1), `decks.export` e `decks.import*` (7.7.3)
+- [x] 7.6.2 `DeckController` applicato (risoluzione deck, `Gate::authorize`, versione nell'URL, `syncCards` batch, `addCard` che somma, `createVersion`, `versions`). Da aggiungere: `statistics` (7.8.1), `searchCards` (7.6.6.2), `export` (7.7.3); da correggere `index` e `show` (7.6.5.2, 7.6.5.3)
+- [x] 7.6.3 Viste mazzi create (`decks/index`, `create`, `show`, `edit`, `versions`); correzioni e parti mancanti nei punti seguenti
+  - [x] Fix dell'utente (2026-10-11): placeholder "Nessun leader." e "Nessuna base." in `decks/index` per i mazzi senza leader o base
 - [x] 7.6.4 Decisioni chiuse: rotte contestuali all'utente, show per chi possiede/pubblico, edit per proprietario, versioning snapshot on-demand, salvataggio batch primario
-- [ ] 7.7 Export/Import mazzi (verificare la sintassi dell'export ufficiale SWU)
+- [ ] 7.6.5 Correzioni al codice applicato (bug trovati il 2026-10-11)
+  - [x] 7.6.5.1 (applicato dall'utente il 2026-10-11: `$deck->baseCard->first()` in `decks/index` e `decks/show`; in `show` la base ha ancora `h-12` invece di `h-40` come i leader, da allineare) Storico: `Deck::baseCard()` è una collection: in `decks/index` e `decks/show` usare `$deck->baseCard->first()`. Il fix dei placeholder non basta: `$deck->baseCard?->front_art_path` lancia `Property [front_art_path] does not exist on this collection instance` anche per un mazzo senza base (la collection non è `null`, è vuota), quindi la lista `/mazzi` e ogni pagina `show` danno errore
+  - [ ] 7.6.5.2 `index` mostra ogni versione come mazzo a sé: solo l'ultima (`whereDoesntHave('nextVersion')`, `orWhere` raggruppato)
+  - [ ] 7.6.5.3 `show`: `$isLatest`, avviso di sola lettura sulle versioni precedenti, "Modifica mazzo" solo sull'ultima, link "Statistiche" con la versione, pulsanti di export
+  - [ ] 7.6.5.4 Pulsante "Importa mazzo" in `decks/index`
+  - [x] 7.6.5.5 Decisioni: `<x-deck-card-row>` rimandato al piano 08 (Step 8.3.4), riga inline in `edit`; validazione di formato sempre informativa
+- [ ] 7.6.7 Lista mazzi: copertina con leader e base sovrapposti (richiesta del 2026-10-11): componente `resources/views/components/deck-cover.blade.php` (leader davanti, base dietro spostata del 25% in alto e a destra; Twin Suns = metà sinistra dei due leader affiancate), `decks/index` con una sola colonna "Leader / Base" (`colspan` 5). Nella lista sostituisce la cella base di 7.6.5.1; `show` usa ancora `->first()`
+  - [ ] 7.6.7.1 Componente `<x-deck-cover>` (Twin Suns riconosciuto da `leaders->count() >= 2`, placeholder "Nessun leader."/"Nessuna base.")
+  - [ ] 7.6.7.2 `decks/index.blade.php`: intestazione e riga con `<x-deck-cover :deck="$deck" />`
+  - [ ] 7.6.7.4 Verifica a mano su `/mazzi` (Premier/Eternal, Twin Suns, senza base, senza leader, tema scuro, mobile)
+- [ ] 7.6.6 Ricerca carte nella pagina di modifica (oggi `decks/edit` non permette di aggiungere nessuna carta: c'è solo un commento): rotta `decks.search-cards`, `DeckController::searchCards` (JSON, `CardSearch`, max 20 risultati, solo tipi da mazzo), `edit.blade.php` completo con componente Alpine `deckEditor` (leader e base sostituiti al cambio) e avviso `import-warnings`
+- [ ] 7.7 Export/Import mazzi (formati ripresi dalla vecchia SWUDB: JSON ufficiale `{ESP}_{numero}`, TXT a sezioni, link swudb.com)
+  - [ ] 7.7.1 `DeckExporter` (`toText`, `toJson`)
+  - [ ] 7.7.2 `DeckImporter` (`fromContent` JSON/TXT, `fromUrl`; fail-soft con `notFound`, sideboard ignorata, solo https e host pubblici, nessun redirect; i tre casi limite dell'URL: host non raggiungibile, redirect, content-type inatteso)
+  - [ ] 7.7.3 `DeckController::export` + rotta `decks.export`; `DeckImportController` + rotte `decks.import`/`decks.import.store` + vista `decks/import`
+  - [ ] 7.7.0bis Da verificare su un export reale: chiave `secondleader` (Twin Suns) e `secondLeader` nel JSON nativo di swudb.com; id con o senza zeri iniziali
+  - Limite noto: i nomi in DB sono in italiano, quindi l'import TXT per nome funziona solo con file esportati da questo sito; per file con nomi inglesi si usa il JSON (id)
 - [ ] 7.8 Statistiche mazzo (ex Step 10.2 del piano 05: curva costi, tipi, tratti, medie, Chart.js via CDN)
-  - [ ] 7.8.1 `DeckController::statistics($username, $deckname)` con `resolveDeck()` e tipo unità `'Unità'`; decidere se pesare per `quantity` anche tratti e medie e come trattare le Basi nella curva dei costi
-  - [ ] 7.8.2 Rotta `/mazzo/{username}/{deckname}/statistiche` (`decks.statistics`)
+  - [ ] 7.8.1 `DeckController::statistics($username, $deckname, ?int $version)` con `resolveDeck()` e tipo unità `'Unità'`. Decisioni chiuse: tutto pesato per `quantity` (tratti e medie compresi), leader e base esclusi da curva, tipi, tratti e medie
+  - [ ] 7.8.2 Rotta `/mazzo/{username}/{deckname}/statistiche/{version?}` (`decks.statistics`), prima di `decks.show`. **Da applicare per prima**: senza, `decks/show` dà `RouteNotFoundException` per ogni mazzo
   - [ ] 7.8.3 Vista `decks/statistics`
-  - [ ] 7.8.4 Link "Statistiche" da `decks/show`
+  - [ ] 7.8.4 Link "Statistiche" da `decks/show` (c'è già, senza versione: aggiungerla)
+- [ ] 7.9 Test Pest dei mazzi: helper `makeCard`/`makeDeck` in `tests/Pest.php`, `DeckExporterTest`, `DeckImporterTest` (con i tre casi limite dell'URL), `DeckPagesTest` (lista, show, edit, ricerca, versioni, export, import, regressioni di 7.6.5), `DeckStatisticsTest` (medie pesate per copie)
 
 ## 08 — Collezione (Fase 8) `implementationPlan-08-ricostruzioneCollezione.md`
 - [ ] 8.1 Migration, modello `CollectionCard`, `Card::collectionCards()`

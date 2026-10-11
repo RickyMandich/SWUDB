@@ -32,13 +32,19 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Admin errori: vista di dettaglio `/admin/errori/{id}`, componenti `<x-flash-message>` e `<x-badge>`, lista paginata.
 - Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
 - Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata (24 carte per pagina) di `<x-card>` con l'ordinamento di default di `CardBuilder` (Leader, Base, poi aspetti, tipo, costo, nome, `legal_date` dell'espansione e numero). Il componente `<x-cards-filter>` usa `<x-multi-datalist>` (suggerimenti testuali con chip rimovibili per espansioni e tratti) e `<x-range-slider>` (slider a doppio input con limiti dal database per costo, salute, potenza). `CardSearch` implementa la logica reale dei filtri via parametri GET (multi-valore in AND per aspetti e tratti, e `whereIn` per espansioni e tipi). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register) e ha la voce "Carte". Pagina di dettaglio `/carte/{expansion}/{number}` (`cards/show.blade.php`, con componenti Bladewind): immagine fronte (con pulsante "Gira la carta" e flip 3D verso il retro, per le carte che ne hanno uno), aspetti, tratti, tipo, rarità, costo, vita, potenza, arena, artista, abilità e abilità "Da schierato". Pagina "Ultime uscite" `/nuove-uscite` (`cards/new-releases.blade.php`): un datepicker Bladewind (formato `gg/mm/aaaa`, limiti tra la prima e l'ultima data di rilascio) sceglie la data `since` (default: la data di rilascio più recente); le carte con `release_date` da quel giorno in poi sono paginate (24 per pagina), con l'ordinamento di default (`CardBuilder::withDefaultOrder()`), e raggruppate per data di rilascio all'interno della pagina.
-- Dominio dei mazzi (piano 06; non ancora raggiungibile dal sito, mancano rotte e pagine): enum `DeckFormat` con cast su `Deck`, relazioni `Deck::leaders()` e `Deck::baseCard()`, un validator per formato in `app/Services/DeckValidation/` (scelto con `DeckFormatValidatorFactory::make($deck->format)`) e `DeckPolicy`. Regole implementate: Premier = 1 leader, 1 base, almeno 50 carte escluse leader e base (60 con la base `JTL24`, Data Vault), al massimo `max_copies` copie per carta (default 3) e solo espansioni delle ultime due rotazioni (`Expansion::validExpansions()`, solo espansioni confermate); Eternal = come Premier senza il controllo di rotazione; Twin Suns = 2 leader con al massimo un aspetto secondario (Eroismo/Malvagità, `Card::secondaryAspect()`) tra i due, 1 base, almeno 80 carte (90 con `JTL24`) e una copia per carta salvo `max_copies`.
+- Mazzi, pagine (piano 07, Step 7.6.0–7.6.3 applicati; **con i difetti elencati in "Non ancora implementato"**): lista `/mazzi`, creazione `/mazzi/crea`, vista di sola lettura `/mazzo/{utente}/{mazzo}/{versione?}` e cronologia `/mazzo/{utente}/{mazzo}/versioni`, pagina di deck-building `/mazzo/modifica/{utente}/{mazzo}` con salvataggio batch delle carte (`PUT /carte`; leader e base viaggiano nello stesso form), aggiunta singola che somma la quantità, rimozione singola, "assembla" e "Crea nuova versione" (snapshot on-demand: `version` + 1 e `previous_version_id`). Un solo `DeckController`; l'accesso lo decide `DeckPolicy` via `Gate::authorize`. Unicità `user_id`+`name`+`version` a livello di database.
+- Dominio dei mazzi (piano 06): enum `DeckFormat` con cast su `Deck`, relazioni `Deck::leaders()` e `Deck::baseCard()`, un validator per formato in `app/Services/DeckValidation/` (scelto con `DeckFormatValidatorFactory::make($deck->format)`) e `DeckPolicy`. Regole implementate: Premier = 1 leader, 1 base, almeno 50 carte escluse leader e base (60 con la base `JTL24`, Data Vault), al massimo `max_copies` copie per carta (default 3) e solo espansioni delle ultime due rotazioni (`Expansion::validExpansions()`, solo espansioni confermate); Eternal = come Premier senza il controllo di rotazione; Twin Suns = 2 leader con al massimo un aspetto secondario (Eroismo/Malvagità, `Card::secondaryAspect()`) tra i due, 1 base, almeno 80 carte (90 con `JTL24`) e una copia per carta salvo `max_copies`.
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
 - Test del job di import: riscritti, da lanciare con `php artisan test` (`todo.md`, 5.5.6).
-- Mazzi: il sito non li gestisce ancora (piano 07); esistono tabelle, modelli e il dominio descritto sopra, ma **nessuna rotta, pagina, controller, vista o
-  test dei validator**.
+- Mazzi (piano 07, aperti; correzioni e step in `implementationPlan-07-ricostruzioneMazziPagine.md`, Step 7.6.5–7.9, e in `todo.md`):
+  - **la pagina `/mazzo/{utente}/{mazzo}` dà errore**: la vista chiama la rotta `decks.statistics`, non ancora registrata (`RouteNotFoundException`);
+  - `/mazzi` e la pagina del mazzo usano `$deck->baseCard->first()` (`Deck::baseCard()` è una collection) e mostrano "Nessun leader." / "Nessuna base." per i mazzi che ne sono privi; nella pagina del mazzo la base ha ancora l'altezza della lista (`h-12`) invece di quella dei leader (`h-40`);
+  - la lista `/mazzi` ha ancora due colonne separate per leader e base: la copertina con i due sovrapposti (`<x-deck-cover>`, piano 07 Step 7.6.7) non esiste ancora;
+  - `/mazzi` mostra ogni versione di un mazzo come riga a sé, e la pagina di una versione precedente non dice che è di sola lettura;
+  - la pagina di modifica non ha ancora la ricerca carte (c'è solo un commento): non si possono aggiungere carte a un mazzo;
+  - export/import dei mazzi (TXT, JSON, link swudb.com), statistiche e test dei mazzi e dei validator non esistono.
 - Collezione, API pubblica: non iniziati. Statistiche mazzo: pianificate nel piano 07 (Step 7.8), dopo le pagine dei mazzi.
 - Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; nel menu responsive i link "Carte" e "Ultime uscite" non sono visibili agli ospiti; in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
@@ -67,6 +73,7 @@ app/
   Enums/DeckFormat.php                formato del mazzo (premier, eternal, twin_suns)
   Policies/DeckPolicy.php             view/update/delete dei mazzi
   Http/Controllers/CardController.php catalogo pubblico (`index` con filtri, `show` con la vista di dettaglio e `newReleases` per le ultime uscite)
+  Http/Controllers/DeckController.php mazzi: lista, creazione, vista di sola lettura, deck-building (batch e singolo), snapshot di versione, cronologia
   Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
   Http/Controllers/Auth/              controller Breeze
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
@@ -165,7 +172,7 @@ Migrazioni in `database/migrations`. Tabelle:
   `front_art_path`/`back_art_path` sono path relativi nel disk `public`. `type` e `rarity` sono enum SQL con i valori **in italiano** dell'API (`Unità`, `Evento`, `Miglioria`, `Leader`, `Base`, ...); `deploy_text` è il testo dell'abilità "Da schierato".
 - `aspects` + `card_aspect`; `traits` (PK `name`) + `card_trait`: aspetti e tratti normalizzati. Le pivot hanno la colonna `card_id` (PK composta `card_id`+`aspect_id` / `card_id`+`trait_name`); `card_aspect` ha anche `position` (ordine degli aspetti sulla carta, scritto dal job di import).
 - `decks` (`user_id`, `name`, `format` premier/eternal/twin_suns, `is_public`, `assembled`, `version`,
-  `previous_version_id`) e `deck_cards` (PK `deck_id`+`card_id`, `quantity`). Il ruolo Leader/Base non è una colonna:
+  `previous_version_id`; `UNIQUE(user_id, name, version)`) e `deck_cards` (PK `deck_id`+`card_id`, `quantity`). Il ruolo Leader/Base non è una colonna:
   si deduce da `cards.type`. Vedi "Non ancora implementato" per lo stato della funzionalità.
 - `system_errors`: `source`, `message`, `stack_trace`, `context` (json), `status` (`open`/`ignored`/`resolved`),
   `resolved_at` (valorizzato solo quando lo stato è `resolved`).
@@ -178,7 +185,7 @@ Registrazione/login con Breeze, email da verificare. Permessi definiti in `Permi
 `bot.notifications.receive`, `mails.test`, `system.manage-errors`, `log.viewer`, `expansions.manage`. Il ruolo `admin` li ha tutti.
 
 Oggi le rotte ne usano quattro (`users.manage`, `system.manage-errors`, `mails.test`, `expansions.manage`); `log.viewer` abilita il link al
-Log viewer nel menu utente; `decks.manage-any` è usato da `DeckPolicy` (nessuna rotta la applica ancora); gli altri sono definiti in vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middleware `role`/`permission`/
+Log viewer nel menu utente; `decks.manage-any` è usato da `DeckPolicy` (tramite `Gate::authorize` nel `DeckController`); gli altri sono definiti in vista delle funzionalità future. Con Laravel 12 + spatie 6.x gli alias middleware `role`/`permission`/
 `role_or_permission` sono registrati a mano in `bootstrap/app.php`.
 
 ## Rotte (`routes/web.php`)
@@ -189,6 +196,10 @@ Log viewer nel menu utente; `decks.manage-any` è usato da `DeckPolicy` (nessuna
 | `GET /carte` | pubblica | catalogo carte paginato, filtri GET (`CardSearch`) |
 | `GET /carte/{expansion}/{number}` | pubblica | dettaglio carta (vista `cards.show`) |
 | `GET /nuove-uscite` | pubblica | carte rilasciate dalla data `since` (`gg/mm/aaaa`), raggruppate per data (vista `cards.new-releases`) |
+| `GET /mazzi` | pubblica | lista dei mazzi pubblici più i propri (`decks.index`) |
+| `GET /mazzi/crea`, `POST /mazzi` | login + email verificata | creazione di un mazzo |
+| `GET /mazzo/{utente}/{mazzo}/{versione?}`, `GET /mazzo/{utente}/{mazzo}/versioni` | pubblica se il mazzo è pubblico, altrimenti proprietario (policy `view`) | vista di sola lettura e cronologia versioni (oggi la vista di sola lettura dà errore, vedi "Non ancora implementato") |
+| `/mazzo/modifica/{utente}/{mazzo}`: `GET /`, `PUT /carte`, `POST /carte`, `DELETE /carte/{card}`, `PATCH /assembla`, `POST /versione` | login + email verificata, proprietario o `decks.manage-any` (policy `update`) | deck-building e azioni sul mazzo |
 | `GET /dashboard` | login + email verificata | dashboard |
 | `/profile` (GET, PATCH, DELETE) | login | profilo utente (Breeze) |
 | rotte di `routes/auth.php` | — | login, registrazione, reset password, verifica email (Breeze) |
@@ -237,7 +248,7 @@ Su Windows, se si redirige l'output in un file non usare `:` nel nome (`> test_2
 alternate data stream NTFS e il file principale resta vuoto.
 
 Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`, `tests/Feature/Services/CardSearchTest.php` (filtri del catalogo)
-e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import. Ultima esecuzione (2026-10-04): 29 test
+e `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import. Nessun test copre ancora mazzi e validator (piano 07, Step 7.9; piano 06, Step 7.5bis). Ultima esecuzione (2026-10-04): 29 test
 passati e 5 falliti (4 del job e l'`ExampleTest` di Breeze, che si aspetta 200 su `/` mentre ora c'è un redirect); le
 cause sono in `todo.md`, 5.5.6 e 5.5.8.
 
