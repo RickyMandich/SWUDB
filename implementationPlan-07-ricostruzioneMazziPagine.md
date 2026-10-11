@@ -4,7 +4,12 @@
 > **Prerequisito**: [`implementationPlan-V-06-ricostruzioneMazziDominio.md`](implementationPlan-V-06-ricostruzioneMazziDominio.md) (enum, relazioni `leaders()`/`baseCard()`, validator, policy) e, per le pagine con la ricerca carte,
 > [`implementationPlan-05-V-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-V-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
 >
-> Stato del codice (2026-10-09): `DeckController` scritto con lo snippet originale dello Step 7.6.2; le correzioni di questa versione del piano (`Gate::authorize`, versione nell'URL, leader e base nel form, `addCard` che somma, unique su `user_id`+`name`+`version`) vanno applicate sopra. Le viste seguono le "Convenzioni per le view" dell'indice.
+> **Stato del codice (2026-10-11, verificato sui file)**
+> - **Già applicato**: Step 7.6.0 (migration `2026_10_09_124754_add_unique_user_name_version_to_decks_table`), 7.6.1 (rotte `decks.*` in `routes/web.php`, tranne quelle indicate sotto), 7.6.2 (`DeckController` con `Gate::authorize`, versione nell'URL, `addCard` che somma) e le viste di 7.6.3 (`decks/index`, `create`, `show`, `edit`, `versions`). Le viste seguono le "Convenzioni per le view" dell'indice.
+> - **Bug nel codice già applicato** (si correggono nello Step 7.6.5): `decks/show.blade.php` chiama `route('decks.statistics', ...)`, che non è registrata, quindi **ogni pagina di un mazzo dà `RouteNotFoundException`** finché non c'è la rotta dello Step 7.8.2; `Deck::baseCard()` è una `belongsToMany` (restituisce una collection) ma `index` e `show` la trattano come modello singolo (`$deck->baseCard?->front_art_path` lancia un'eccezione); `DeckController::index` elenca ogni versione di ogni mazzo come riga a sé; `show` non segnala che una versione precedente è di sola lettura e propone comunque "Modifica mazzo" (che modifica l'ultima).
+> - **Mancante**: ricerca carte nella pagina di modifica (`edit.blade.php` ha solo un commento al posto della ricerca, quindi oggi non si può aggiungere nessuna carta: Step 7.6.6), export/import (Step 7.7, c'erano solo gli stub), statistiche (Step 7.8, rotta, metodo e vista) e test (Step 7.9).
+> - **Ordine di applicazione consigliato**: 7.8.1–7.8.2 (rotta e metodo `statistics`, per sbloccare subito `show`) → 7.6.5 → 7.6.6 → 7.7 → 7.8.3–7.8.4 → 7.9.
+> - **Verifiche in locale chiuse** (le "Da verificare" dell'elenco sotto): `<x-bladewind.table>` accetta `<x-slot name="header">` e le righe `<tr>` a mano nello slot (ramo `is_null($data)` del componente); `<x-bladewind.card>` propaga gli attributi extra e unisce `class` a quelle di default (`bg-white dark:bg-dark-800/25`): le classi `dark:bg-gray-800` dello scheletro vincono solo perché `app.css` viene caricato dopo il CSS di Bladewind, da controllare a occhio nel tema scuro; `Deck::baseCard()` è una **collection** (vedi 7.6.5.1); `DeckFormat` **non ha** `label()` (si usa `->value`); `layouts/app.blade.php` non ha `@stack('scripts')`, quindi gli script di pagina stanno inline nel corpo della vista.
 
 ## Fase 7 — Gestione mazzi multi-formato (pagine)
 
@@ -649,7 +654,360 @@ Scheletro:
 - **Unicità**: `UNIQUE(user_id, name, version)` a livello di database (Step 7.6.0).
 
 
+### Step 7.6.5 — Correzioni al codice già applicato (2026-10-11)
+
+Corregge i bug elencati nello stato in testa al piano. Si applica dopo 7.8.2 (la rotta `decks.statistics` deve esistere, altrimenti `show` continua a fallire).
+
+#### 7.6.5.1 — `baseCard` è una collection
+`Deck::baseCard()` è una `belongsToMany` filtrata per tipo (Step 7.2 del piano 06): `$deck->baseCard` è una `Collection`, anche se contiene una sola base, e `->front_art_path` su una collection lancia `Property [front_art_path] does not exist on this collection instance`. **Non cambiare la relazione** (il piano 06 e i validator la usano così): nelle viste si prende la prima.
+
+In `resources/views/decks/index.blade.php`, subito dopo `@forelse ($decks as $deck)`:
+```blade
+@php $base = $deck->baseCard->first(); @endphp
+```
+e la cella della base diventa:
+```blade
+<td>
+    @if ($base?->front_art_path)
+        <img class="h-12 rounded" src="{{ asset('storage/' . $base->front_art_path) }}" alt="{{ $base->name }}">
+    @endif
+</td>
+```
+In `resources/views/decks/show.blade.php`, nel `@php` in cima aggiungere `$base = $deck->baseCard->first();` e usare `$base` al posto di `$deck->baseCard` nel blocco delle immagini:
+```blade
+@if ($base?->front_art_path)
+    <img class="h-40 rounded-lg" src="{{ asset('storage/' . $base->front_art_path) }}" alt="{{ $base->name }}">
+@endif
+```
+
+#### 7.6.5.2 — `index` mostra solo l'ultima versione di ogni mazzo
+Ogni versione è una riga di `decks`, quindi la lista di oggi mostra `Sabine Aggro v1`, `v2`, `v3` come tre mazzi. Mostrare solo le versioni senza successore (le altre stanno in `decks.versions`). Il `orWhere` va raggruppato, altrimenti scavalca il filtro sull'ultima versione. In `DeckController::index`:
+```php
+public function index(): View
+{
+    $decks = Deck::with('leaders', 'baseCard', 'user') // eager load: anteprima nella lista senza N+1
+        ->whereDoesntHave('nextVersion') // solo l'ultima versione di ogni catena
+        ->where(function ($q) {
+            $q->where('is_public', true)
+                ->when(auth()->id(), fn ($q, $userId) => $q->orWhere('user_id', $userId));
+        })
+        ->latest()
+        ->paginate(20);
+
+    return view('decks.index', compact('decks'));
+}
+```
+Se si vuole indicare nella lista che esistono versioni precedenti, `previous_version_id` non nullo è già sufficiente (`@if ($deck->previous_version_id) ... @endif`); non serve altro.
+
+#### 7.6.5.3 — `show`: versione precedente in sola lettura, link con versione, export
+In `DeckController::show`, calcolare se è l'ultima versione e passarlo alla vista:
+```php
+$isLatest = ! $deck->nextVersion()->exists();
+
+return view('decks.show', compact('deck', 'validationErrors', 'isLatest'));
+```
+In `resources/views/decks/show.blade.php`:
+- il pulsante "Modifica mazzo" compare solo sull'ultima versione (la modifica agisce sempre sull'ultima, le precedenti sono snapshot):
+```blade
+@if ($isLatest)
+    @can('update', $deck)
+        <a href="{{ route('decks.edit', [$deck->user->name, $deck->name]) }}"><x-primary-button type="button">Modifica mazzo</x-primary-button></a>
+    @endcan
+@endif
+```
+- il link "Statistiche" porta alla versione che si sta guardando (la rotta ha la versione opzionale, Step 7.8.2):
+```blade
+<a href="{{ route('decks.statistics', [$deck->user->name, $deck->name, $deck->version]) }}"><x-secondary-button type="button">Statistiche</x-secondary-button></a>
+```
+- avviso di sola lettura in cima al contenuto, prima degli avvisi di formato:
+```blade
+@unless ($isLatest)
+    <x-bladewind.alert type="info">
+        Stai consultando la versione v{{ $deck->version }}, in sola lettura.
+        <a class="underline" href="{{ route('decks.show', [$deck->user->name, $deck->name]) }}">Vai all'ultima versione</a>
+    </x-bladewind.alert>
+@endunless
+```
+- pulsanti di export (Step 7.7.3), accanto a "Statistiche":
+```blade
+<a href="{{ route('decks.export', [$deck->user->name, $deck->name, 'txt', $deck->version]) }}"><x-secondary-button type="button">Esporta TXT</x-secondary-button></a>
+<a href="{{ route('decks.export', [$deck->user->name, $deck->name, 'json', $deck->version]) }}"><x-secondary-button type="button">Esporta JSON</x-secondary-button></a>
+```
+
+#### 7.6.5.4 — Lista: pulsante "Importa mazzo"
+In `decks/index.blade.php`, nello slot `header`, accanto a "Nuovo mazzo" (dentro `@auth`):
+```blade
+<a href="{{ route('decks.import') }}"><x-secondary-button type="button">Importa mazzo</x-secondary-button></a>
+```
+
+#### 7.6.5.5 — Decisioni
+- `<x-deck-card-row>` (citato in 7.6.3) **non si estrae nel piano 07**: la riga resta inline in `edit.blade.php`; si estrae nel piano 08 (Step 8.3.4) quando serve davvero anche in `decks/gap`.
+- La validazione del formato resta informativa (non blocca il salvataggio), come deciso in 7.6.2.
+- `createVersion` e `versions` non cambiano: `versions` fa un paio di query per anello della catena, che a poche versioni per mazzo è accettabile.
+
+
+### Step 7.6.6 — Ricerca carte nella pagina di modifica
+
+Oggi `decks/edit.blade.php` ha solo un commento al posto della ricerca, quindi non c'è modo di aggiungere carte a un mazzo. La ricerca è un endpoint JSON che riusa `CardSearch` (piano 05, Step 10.1) e un piccolo componente Alpine nella vista.
+
+#### 7.6.6.1 — Rotta
+In `routes/web.php`, nel gruppo `mazzo/modifica/{username}/{deckname}`, accanto alle altre rotte di deck-building:
+```php
+Route::get('/cerca-carte', [DeckController::class, 'searchCards'])->middleware('throttle:60,1')->name('decks.search-cards');
+```
+
+#### 7.6.6.2 — Metodo del controller
+In `DeckController` (aggiungere `use App\Services\CardSearch;` e `use Illuminate\Http\JsonResponse;`):
+```php
+/**
+ * Card types that can be part of a deck (tokens are excluded)
+ * Tipi di carta che possono stare in un mazzo (i segnalini sono esclusi)
+ */
+protected const DECK_CARD_TYPES = ['Base', 'Evento', 'Leader', 'Miglioria', 'Unità'];
+
+/**
+ * Searches cards to add to the deck, JSON for the deck-building page (owner only)
+ * Cerca carte da aggiungere al mazzo, JSON per la pagina di deck-building (solo proprietario)
+ */
+public function searchCards(Request $request, string $username, string $deckname, CardSearch $search): JsonResponse
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    Gate::authorize('update', $deck);
+
+    $validated = $request->validate([
+        'nome' => ['required', 'string', 'min:2', 'max:100'],
+        'tipi' => ['nullable', 'array'],
+        'tipi.*' => ['string', Rule::in(self::DECK_CARD_TYPES)],
+    ]);
+
+    $cards = $search->apply(Card::query(), [
+        'nome' => $validated['nome'],
+        'tipi' => $validated['tipi'] ?? self::DECK_CARD_TYPES,
+    ])->limit(20)->get();
+
+    return response()->json($cards->map(fn (Card $card) => [
+        'id' => $card->id,
+        'name' => $card->name,
+        'title' => $card->title,
+        'type' => $card->type,
+        'label' => $card->snippet, // "SOR-12 - Nome, TITOLO": l'espansione e il numero distinguono le ristampe
+        'image' => $card->front_art_path ? asset('storage/'.$card->front_art_path) : null,
+    ])->values());
+}
+```
+`CardSearch::apply()` accetta i nomi dei parametri del catalogo (`nome`, `tipi`); `CardBuilder::get()` applica l'ordinamento di default, quindi non serve un `orderBy`. Il tetto di 20 risultati basta perché la ricerca per nome è già stretta; per le ristampe di una stessa carta il numero nell'etichetta le distingue.
+
+#### 7.6.6.3 — `resources/views/decks/edit.blade.php` (versione completa)
+Sostituisce il file: aggiunge il titolo della carta nelle righe, la ricerca con aggiunta alla bozza, l'avviso degli import (`import-warnings`, Step 7.7.3) e il componente Alpine `deckEditor`. Leader e base restano a quantità 1 e, aggiungendone uno nuovo oltre il massimo del formato (1 leader, 2 in Twin Suns; 1 base), **sostituisce il più vecchio**: così il cambio di leader o base è un solo click. Il campo di ricerca non ha `name` (non viene inviato col form) e `Invio` non lo invia.
+```blade
+@php
+    $rows = $deck->cards->map(fn ($c) => [
+        'card_id' => $c->id,
+        'name' => $c->title ? "{$c->name}, {$c->title}" : $c->name,
+        'type' => $c->type,
+        'quantity' => (int) $c->pivot->quantity,
+    ])->values();
+    $editorConfig = [
+        'rows' => $rows,
+        'format' => $deck->format->value,
+        'searchUrl' => route('decks.search-cards', [$deck->user->name, $deck->name]),
+    ];
+@endphp
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+            Modifica {{ $deck->name }} <span class="text-sm text-gray-500 dark:text-gray-400">v{{ $deck->version }}</span>
+        </h2>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+            @if (session('status'))
+                <x-bladewind.alert type="success">{{ session('status') }}</x-bladewind.alert>
+            @endif
+            @if (!empty(session('deck-errors')))
+                <x-bladewind.alert type="warning">
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ((array) session('deck-errors') as $error)<li>{{ $error }}</li>@endforeach
+                    </ul>
+                </x-bladewind.alert>
+            @endif
+            @if (!empty(session('import-warnings')))
+                <x-bladewind.alert type="warning">
+                    Alcune righe dell'import non sono state riconosciute e sono state saltate:
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ((array) session('import-warnings') as $warning)<li>{{ $warning }}</li>@endforeach
+                    </ul>
+                </x-bladewind.alert>
+            @endif
+
+            <form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}"
+                  x-data="deckEditor(@js($editorConfig))" class="space-y-6">
+                @csrf
+                @method('PUT')
+
+                <div class="flex justify-end"><x-primary-button>Salva modifiche</x-primary-button></div>
+
+                <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <x-input-label for="card-search" value="Aggiungi carte" />
+                    <div class="mt-1 flex gap-2">
+                        <input id="card-search" type="search" x-model="query"
+                               @input.debounce.300ms="search()" @keydown.enter.prevent="search()"
+                               placeholder="Nome della carta (almeno 2 lettere)"
+                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                        <select x-model="type" @change="search()"
+                                class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                            <option value="">Tutti i tipi</option>
+                            @foreach (['Leader', 'Base', 'Unità', 'Evento', 'Miglioria'] as $type)
+                                <option value="{{ $type }}">{{ $type }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <p x-show="error" x-text="error" class="mt-2 text-sm text-red-600 dark:text-red-400"></p>
+                    <p x-show="searched && !results.length && !error" class="mt-2 text-sm text-gray-500 dark:text-gray-400">Nessuna carta trovata.</p>
+                    <ul x-show="results.length" class="mt-3 divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="card in results" :key="card.id">
+                            <li class="flex items-center justify-between gap-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+                                <span class="flex items-center gap-3">
+                                    <img x-show="card.image" :src="card.image" :alt="card.name" class="h-10 rounded" loading="lazy">
+                                    <span x-text="card.label"></span>
+                                </span>
+                                <span class="flex items-center gap-3">
+                                    <span class="text-gray-500 dark:text-gray-400" x-text="card.type"></span>
+                                    <button type="button" class="font-medium text-indigo-600 dark:text-indigo-400" @click="add(card)">Aggiungi</button>
+                                </span>
+                            </li>
+                        </template>
+                    </ul>
+                </x-bladewind.card>
+
+                <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <p x-show="!rows.length" class="text-sm text-gray-500 dark:text-gray-400">Il mazzo è vuoto: cerca una carta qui sopra.</p>
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {{-- Riga-carta inline: l'estrazione in <x-deck-card-row> è rimandata al piano 08 (Step 8.3.4) --}}
+                        <template x-for="(row, i) in rows" :key="row.card_id">
+                            <li class="flex items-center justify-between gap-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+                                <input type="hidden" :name="`cards[${i}][card_id]`" :value="row.card_id">
+                                <input type="hidden" :name="`cards[${i}][quantity]`" :value="row.quantity">
+                                <span x-text="row.name"></span>
+                                <span class="text-gray-500 dark:text-gray-400" x-text="row.type"></span>
+                                <span class="flex items-center gap-2">
+                                    {{-- Leader e base restano a quantità 1: niente +/- --}}
+                                    <template x-if="!['Leader', 'Base'].includes(row.type)">
+                                        <span class="flex items-center gap-2">
+                                            <button type="button" class="px-2" @click="row.quantity = Math.max(1, row.quantity - 1)">−</button>
+                                            <span x-text="row.quantity"></span>
+                                            <button type="button" class="px-2" @click="row.quantity++">+</button>
+                                        </span>
+                                    </template>
+                                    <button type="button" class="text-red-600 dark:text-red-400" @click="rows.splice(i, 1)">Rimuovi</button>
+                                </span>
+                            </li>
+                        </template>
+                    </ul>
+                </x-bladewind.card>
+
+                <div class="flex justify-end"><x-primary-button>Salva modifiche</x-primary-button></div>
+            </form>
+
+            {{-- Form separati dal principale: i form non si annidano --}}
+            <div class="flex flex-wrap gap-3">
+                <form method="POST" action="{{ route('decks.toggle-assembled', [$deck->user->name, $deck->name]) }}">
+                    @csrf @method('PATCH')
+                    <x-secondary-button type="submit">{{ $deck->assembled ? 'Segna come smontato' : 'Segna come assemblato' }}</x-secondary-button>
+                </form>
+                <form method="POST" action="{{ route('decks.create-version', [$deck->user->name, $deck->name]) }}">
+                    @csrf
+                    <x-secondary-button type="submit">Crea nuova versione</x-secondary-button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Il layout non ha @stack('scripts'): il componente sta qui. Alpine parte da resources/js/app.js (modulo differito),
+         quindi questo listener `alpine:init` viene registrato prima dell'avvio. --}}
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('deckEditor', (config) => ({
+                rows: config.rows,
+                format: config.format,
+                query: '',
+                type: '',
+                results: [],
+                searched: false,
+                error: '',
+                seq: 0,
+
+                async search() {
+                    this.error = '';
+                    if (this.query.trim().length < 2) {
+                        this.results = [];
+                        this.searched = false;
+                        return;
+                    }
+                    const params = new URLSearchParams({ nome: this.query.trim() });
+                    if (this.type) params.append('tipi[]', this.type);
+                    const current = ++this.seq; // scarta le risposte arrivate fuori ordine
+                    try {
+                        const response = await fetch(`${config.searchUrl}?${params}`, { headers: { Accept: 'application/json' } });
+                        if (!response.ok) throw new Error(response.status);
+                        const data = await response.json();
+                        if (current === this.seq) {
+                            this.results = data;
+                            this.searched = true;
+                        }
+                    } catch (e) {
+                        if (current === this.seq) this.error = 'Ricerca non riuscita, riprova.';
+                    }
+                },
+
+                add(card) {
+                    const single = ['Leader', 'Base'].includes(card.type);
+                    const existing = this.rows.find((r) => r.card_id === card.id);
+                    if (existing) {
+                        if (!single) existing.quantity++;
+                        return;
+                    }
+                    if (single) {
+                        const max = card.type === 'Leader' && this.format === 'twin_suns' ? 2 : 1;
+                        const same = this.rows.filter((r) => r.type === card.type);
+                        if (same.length >= max) {
+                            this.rows.splice(this.rows.indexOf(same[0]), 1); // sostituisce il più vecchio
+                        }
+                    }
+                    this.rows.push({
+                        card_id: card.id,
+                        name: card.title ? `${card.name}, ${card.title}` : card.name,
+                        type: card.type,
+                        quantity: 1,
+                    });
+                },
+            }));
+        });
+    </script>
+</x-app-layout>
+```
+La bozza vive solo nel browser fino a "Salva modifiche": chi chiude la pagina prima perde le modifiche non salvate (accettabile per ora; un avviso `beforeunload` è una rifinitura facoltativa). Nessun limite di copie lato client: lo dice il validator del formato, in modo informativo, dopo il salvataggio.
+
+
 ### Step 7.7 — Export/Import mazzi
+
+#### 7.7.0 — Formati supportati (riferimento: la vecchia SWUDB, `DecksController`)
+La sintassi è quella che la vecchia SWUDB già leggeva e scriveva con i file dell'app ufficiale e di swudb.com; non si inventa un formato.
+
+| Formato | Struttura |
+|---|---|
+| **JSON ufficiale** | `{"metadata": {"name", "author"}, "leader": {"id", "count"}, "secondleader": {...}, "base": {...}, "deck": [{"id", "count"}], "sideboard": [...]}`. L'`id` è `{ESPANSIONE}_{numero}` (es. `SOR_134`): corrisponde a `cards.expansion` + `cards.number`, **non** a `cards.id` (che è `SOR134`, senza underscore). |
+| **TXT** | Sezioni `Leaders`, `Base`, `Deck`, `Sideboard` separate da una riga vuota; ogni carta una riga `{copie} \| {nome}` oppure `{copie} \| {nome} \| {titolo}` (i leader hanno il titolo). |
+| **URL swudb.com** | `https://swudb.com/deck/{id}` si riscrive in `https://swudb.com/api/deck/{id}`, che risponde con un JSON "nativo" (`deckId`, `leader`, `base`, `shuffledDeck[]` con `card.defaultExpansionAbbreviation`, `card.defaultCardNumber`, `count`, `sideboardCount`) da convertire nel JSON ufficiale. |
+
+Decisioni (tutte discendono da come è fatto il nostro database):
+- **I nomi in DB sono in italiano** (l'import carte usa `locale=it`) mentre i file ufficiali del TXT hanno i nomi in inglese: l'**import TXT per nome funziona solo con file esportati da questo sito** (nomi italiani). L'import affidabile è quello **JSON per id**, indipendente dalla lingua; i link swudb.com passano dal JSON. Le righe non riconosciute non fanno fallire l'import: finiscono nell'elenco `notFound` mostrato all'utente (stesso principio fail-soft del job di import carte).
+- **La sideboard non esiste nel nostro schema**: viene ignorata e l'utente ne vede il numero di carte scartate.
+- La vecchia SWUDB esportava il TXT con una colonna in più (`3 | SOR-134 | Nome`) ma lo leggeva con il formato a due colonne: un suo export non si reimportava. Il nuovo importer riconosce anche quella forma (secondo campo `ESP-numero`) e risolve la carta per espansione e numero.
+- `secondleader` (Twin Suns) e il nome della chiave del secondo leader nel JSON nativo di swudb.com (`secondLeader`) **sono da verificare su un export reale** prima di darli per buoni; l'importer li legge in modo tollerante (se mancano, si importa un solo leader e il validator del formato lo segnala).
+- Il numero nell'`id` si esporta senza zeri iniziali (come faceva la vecchia SWUDB); in lettura `SOR_005` e `SOR_5` sono la stessa carta.
+- Il mazzo importato è sempre un **mazzo nuovo alla versione 1**, del proprietario loggato, col nome scelto nel form (l'unicità `user_id`+`name` si controlla come in `store()`); il formato lo sceglie l'utente.
 
 #### 7.7.1 — `app/Services/DeckExporter.php`
 ```bash
@@ -657,24 +1015,86 @@ php artisan make:class Services/DeckExporter
 ```
 Le classi stanno in `app/Services/` (non in un controller) per poterle testare in Pest senza una request HTTP finta.
 ```php
+<?php
+
+namespace App\Services;
+
+use App\Models\Card;
+use App\Models\Deck;
+use Illuminate\Support\Collection;
+
 class DeckExporter
 {
+    /**
+     * Plain-text export: sections Leaders / Base / Deck, one "{copies} | {name}[ | {title}]" line per card
+     * Export in testo: sezioni Leaders / Base / Deck, una riga "{copie} | {nome}[ | {titolo}]" per carta
+     */
     public function toText(Deck $deck): string
     {
-        // Formato ufficiale SWU: verificare la sintassi esatta su un file esportato da swudb.com o dall'app ufficiale
-        // prima di fissarla qui. Indicativamente "Leader: {name}", "Base: {name}", poi "{quantity}x {name}" per il resto.
+        [$leaders, $bases, $main] = $this->split($deck);
+
+        $line = fn (Card $card): string => $card->pivot->quantity.' | '.$card->name.($card->title ? ' | '.$card->title : '');
+
+        $sections = [];
+        foreach (['Leaders' => $leaders, 'Base' => $bases, 'Deck' => $main] as $title => $cards) {
+            if ($cards->isNotEmpty()) {
+                $sections[] = $title."\n".$cards->map($line)->implode("\n");
+            }
+        }
+
+        return implode("\n\n", $sections)."\n";
     }
 
+    /**
+     * JSON export in the official format (ids are "{EXPANSION}_{number}")
+     * Export JSON nel formato ufficiale (gli id sono "{ESPANSIONE}_{numero}")
+     */
     public function toJson(Deck $deck): string
     {
-        return json_encode([
-            'name' => $deck->name,
-            'format' => $deck->format->value,
-            'cards' => $deck->cards->map(fn ($c) => ['cid' => $c->cid, 'quantity' => $c->pivot->quantity])->all(),
-        ]);
+        [$leaders, $bases, $main] = $this->split($deck);
+
+        $entry = fn (Card $card): array => [
+            'id' => "{$card->expansion}_{$card->number}",
+            'count' => (int) $card->pivot->quantity,
+        ];
+
+        $data = ['metadata' => ['name' => $deck->name, 'author' => $deck->user->name]];
+
+        if ($leaders->isNotEmpty()) {
+            $data['leader'] = $entry($leaders[0]);
+        }
+        if ($leaders->count() > 1) {
+            $data['secondleader'] = $entry($leaders[1]); // Twin Suns
+        }
+        if ($bases->isNotEmpty()) {
+            $data['base'] = $entry($bases[0]);
+        }
+        $data['deck'] = $main->map($entry)->all();
+
+        return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Leaders, bases and the rest of the deck, the rest sorted by cost then name
+     * Leader, basi e resto del mazzo, il resto ordinato per costo e poi per nome
+     *
+     * @return array{0: Collection<int, Card>, 1: Collection<int, Card>, 2: Collection<int, Card>}
+     */
+    private function split(Deck $deck): array
+    {
+        $deck->loadMissing('cards', 'user');
+
+        $cards = $deck->cards->sortBy([['cost', 'asc'], ['name', 'asc']]);
+
+        return [
+            $cards->where('type', 'Leader')->values(),
+            $cards->where('type', 'Base')->values(),
+            $cards->reject(fn (Card $card) => in_array($card->type, ['Leader', 'Base']))->values(),
+        ];
     }
 }
 ```
+`$deck->user->name` è lo stesso nome pubblico che sta già nell'URL del mazzo. L'export è autorizzato dalla policy `view` nel controller (7.7.3), non qui.
 
 #### 7.7.2 — `app/Services/DeckImporter.php`
 ```bash
