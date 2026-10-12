@@ -138,7 +138,7 @@
   - [ ] 7.5bis Test Pest dei validator (nessun test sui mazzi esiste ancora): carte contate per copie, leader/base mancanti (nessuna eccezione senza base), rotazione di Premier, aspetti secondari di Twin Suns nei quattro casi
   - [ ] 7.5ter `'JTL24'` (Data Vault) è scritto a mano nei tre validator: valutare una costante o un campo sulla carta
 
-## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md` (stato verificato sul codice il 2026-10-11; il piano è completo, restano da applicare gli step aperti. Ordine consigliato: 7.8.1–7.8.2 → 7.6.5 → 7.6.6 → 7.7 → 7.8.3–7.8.4 → 7.9)
+## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md` (stato verificato sul codice il 2026-10-11; il piano è completo, restano da applicare gli step aperti. Ordine consigliato: 7.8.1–7.8.2 → 7.6.5 → 7.6.6 → 7.6.6bis → 7.7 → 7.8.3–7.8.4 → 7.9)
 - [x] 7.6.0 Migration `add_unique_user_name_version_to_decks_table` (`2026_10_09_124754`): `UNIQUE(user_id, name, version)`
 - [x] 7.6.1 Rotte mazzi applicate (`decks.index/create/store`, gruppo `mazzo/modifica/...`, `decks.versions`, `decks.show` con `whereNumber('version')`). Mancano solo quelle degli step nuovi: `decks.statistics` (7.8.2), `decks.search-cards` (7.6.6.1), `decks.export` e `decks.import*` (7.7.3)
 - [x] 7.6.2 `DeckController` applicato (risoluzione deck, `Gate::authorize`, versione nell'URL, `syncCards` batch, `addCard` che somma, `createVersion`, `versions`). Da aggiungere: `statistics` (7.8.1), `searchCards` (7.6.6.2), `export` (7.7.3); da correggere `index` e `show` (7.6.5.2, 7.6.5.3)
@@ -155,7 +155,14 @@
   - [ ] 7.6.7.1 Componente `<x-deck-cover>` (Twin Suns riconosciuto da `leaders->count() >= 2`, placeholder "Nessun leader."/"Nessuna base.")
   - [ ] 7.6.7.2 `decks/index.blade.php`: intestazione e riga con `<x-deck-cover :deck="$deck" />`
   - [ ] 7.6.7.4 Verifica a mano su `/mazzi` (Premier/Eternal, Twin Suns, senza base, senza leader, tema scuro, mobile)
-- [ ] 7.6.6 Ricerca carte nella pagina di modifica (oggi `decks/edit` non permette di aggiungere nessuna carta: c'è solo un commento): rotta `decks.search-cards`, `DeckController::searchCards` (JSON, `CardSearch`, max 20 risultati, solo tipi da mazzo), `edit.blade.php` completo con componente Alpine `deckEditor` (leader e base sostituiti al cambio) e avviso `import-warnings`
+- [x] 7.6.6 (applicato dall'utente il 2026-10-12) Ricerca carte nella pagina di modifica (oggi `decks/edit` non permette di aggiungere nessuna carta: c'è solo un commento): rotta `decks.search-cards`, `DeckController::searchCards` (JSON, `CardSearch`, max 20 risultati, solo tipi da mazzo), `edit.blade.php` completo con componente Alpine `deckEditor` (leader e base sostituiti al cambio) e avviso `import-warnings`
+- [ ] 7.6.6bis Ricerca carte dell'editor con `<x-cards-filter>`, paginata (30), e avviso di modifiche non salvate (richiesta del 2026-10-12; da applicare nell'ordine 1 → 5)
+  - [ ] 7.6.6bis.1 `CardSearch::FILTER_KEYS` e `CardSearch::filterOptions()` (opzioni e limiti del filtro); `CardController::index` li usa (refactor puro, `/carte` invariata) e perde i `use` di `Aspect`, `CardTrait`, `Expansion`
+  - [ ] 7.6.6bis.2 `cards-filter` incorporabile: prop `embedded` e `open`, `{{ $attributes }}` sul `<form>`, "Azzera" come pulsante con evento `cards-filter-reset` ascoltato da `range-slider` e `multi-datalist`
+  - [ ] 7.6.6bis.3 `DeckController::edit` passa le opzioni del filtro (tipi solo da mazzo); `searchCards` con tutti i filtri di `/carte`, `nome` non più obbligatorio, `paginate(30)`, risposta `{data, current_page, last_page, total}`
+  - [ ] 7.6.6bis.4 `decks/edit`: `x-data` sul `<div>` esterno, card "Aggiungi carte" con `<x-cards-filter>` fuori dal form del mazzo, risultati scorrevoli, "N di TOT carte", "Carica altre carte"; `search(form)` con `FormData` e `criteria`
+  - [ ] 7.6.6bis.5 `beforeunload` in `deckEditor` (`snapshot()`, `dirty`, `init()`, `submitting` da `@submit` sul form di salvataggio) e indicatore "Modifiche non salvate"
+  - [ ] 7.6.6bis.6 Verifica a mano (`/carte` com'era, filtri nell'editor, più di 30 risultati, Azzera, avviso su chiusura/link, nessun avviso dopo il salvataggio)
 - [ ] 7.7 Export/Import mazzi (formati ripresi dalla vecchia SWUDB: JSON ufficiale `{ESP}_{numero}`, TXT a sezioni, link swudb.com)
   - [ ] 7.7.1 `DeckExporter` (`toText`, `toJson`)
   - [ ] 7.7.2 `DeckImporter` (`fromContent` JSON/TXT, `fromUrl`; fail-soft con `notFound`, sideboard ignorata, solo https e host pubblici, nessun redirect; i tre casi limite dell'URL: host non raggiungibile, redirect, content-type inatteso)

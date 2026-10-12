@@ -24,23 +24,15 @@ class PremierFormatValidator implements DeckFormatValidator
             $errors[] = 'Il formato Premier richiede almeno 50 carte (60 per i deck con Data Vault come base).';
         }
 
-        $expansions = collect();
-
+        $validExpansions = Expansion::validExpansions();
         foreach ($deck->cards as $card) {
             $limit = $card->max_copies ?? 3; // 3 è il limite standard SWU, max_copies lo sovrascrive per le eccezioni (es. JTL #256 = 15)
             if ($card->pivot->quantity > $limit) {
-                $errors[] = "Troppe copie di {$card->name} ({$card->pivot->quantity}/{$limit}).";
+                $errors[] = "Troppe copie di {$card->snippet} ({$card->pivot->quantity}/{$limit}).";
             }
-            $expansions->push($card->expansion);
-        }
-
-        $expansions = $expansions->unique();
-
-        $validExpansions = Expansion::validExpansions();
-        $invalidExpansions = $expansions->diff($validExpansions);
-
-        foreach ($invalidExpansions as $expansion) {
-            $errors[] = "L'espansione {$expansion} non è valida per il formato Premier in quanto fuori rotazione.";
+            if (! $validExpansions->contains($card->expansion)) {
+                $errors[] = "{$card->snippet} è fuori rotazione per il formato Premier.";
+            }
         }
 
         return $errors;

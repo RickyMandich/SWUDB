@@ -9,7 +9,7 @@
 > - **Bug nel codice già applicato** (si correggono nello Step 7.6.5): `decks/show.blade.php` chiama `route('decks.statistics', ...)`, che non è registrata, quindi **ogni pagina di un mazzo dà `RouteNotFoundException`** finché non c'è la rotta dello Step 7.8.2; `Deck::baseCard()` è una `belongsToMany` (restituisce una collection) ma `index` e `show` la trattano come modello singolo (`$deck->baseCard?->front_art_path` lancia un'eccezione); `DeckController::index` elenca ogni versione di ogni mazzo come riga a sé; `show` non segnala che una versione precedente è di sola lettura e propone comunque "Modifica mazzo" (che modifica l'ultima).
 > - **Mancante**: ricerca carte nella pagina di modifica (`edit.blade.php` ha solo un commento al posto della ricerca, quindi oggi non si può aggiungere nessuna carta: Step 7.6.6), export/import (Step 7.7, c'erano solo gli stub), statistiche (Step 7.8, rotta, metodo e vista) e test (Step 7.9).
 > - **Aggiornamento (2026-10-11, pomeriggio)**: l'utente ha applicato `->first()` per la base in `index` e `show` (7.6.5.1 fatto; resta la base di `show` a `h-12` invece di `h-40`). Aggiunto lo Step 7.6.7 (copertina leader/base sovrapposti nella lista).
-> - **Ordine di applicazione consigliato**: 7.8.1–7.8.2 (rotta e metodo `statistics`, per sbloccare subito `show`) → 7.6.5 → 7.6.6 → 7.7 → 7.8.3–7.8.4 → 7.9.
+> - **Ordine di applicazione consigliato**: 7.8.1–7.8.2 (rotta e metodo `statistics`, per sbloccare subito `show`) → 7.6.5 → 7.6.6 → 7.6.6bis → 7.7 → 7.8.3–7.8.4 → 7.9.
 > - **Verifiche in locale chiuse** (le "Da verificare" dell'elenco sotto): `<x-bladewind.table>` accetta `<x-slot name="header">` e le righe `<tr>` a mano nello slot (ramo `is_null($data)` del componente); `<x-bladewind.card>` propaga gli attributi extra e unisce `class` a quelle di default (`bg-white dark:bg-dark-800/25`): le classi `dark:bg-gray-800` dello scheletro vincono solo perché `app.css` viene caricato dopo il CSS di Bladewind, da controllare a occhio nel tema scuro; `Deck::baseCard()` è una **collection** (vedi 7.6.5.1); `DeckFormat` **non ha** `label()` (si usa `->value`); `layouts/app.blade.php` non ha `@stack('scripts')`, quindi gli script di pagina stanno inline nel corpo della vista.
 
 ## Fase 7 — Gestione mazzi multi-formato (pagine)
@@ -1315,6 +1315,490 @@ I test automatici di `decks.search-cards` (struttura `data`/`page`/`last_page`/`
 #### 7.6.6bis.6 — Fuori scope
 - Il campo `nome` resta obbligatorio (almeno 2 lettere). Per sfogliare le carte **senza nome** (per esempio solo per tipo) servirebbe renderlo opzionale nella validazione e togliere il controllo `query.trim().length < 2` in `search()`: non fa parte di questo step, da decidere a parte.
 - Nessun salvataggio automatico della bozza.
+
+
+### Step 7.6.6bis — Ricerca carte con `<x-cards-filter>`, paginata, e avviso di modifiche non salvate
+
+Ritocca il 7.6.6 già applicato (7.6.6.2 `searchCards` e 7.6.6.3 `decks/edit.blade.php`) in tre punti:
+- la ricerca usa il componente `<x-cards-filter>` del catalogo (Step 10.1.5ter) al posto del campo nome e del select dei tipi: i criteri sono quelli di `/carte` (nome, espansioni, tratti, tipi, aspetti, costo, vita, potenza, carte uniche) e si applicano con la stessa `CardSearch`. Cade anche il vincolo del nome obbligatorio: chi cerca "una carta che possa starci nel mazzo" può filtrare solo per tipo, aspetto o costo;
+- la ricerca non si ferma più alle prime 20 carte con `limit(20)`: restituisce pagine da 30 e la vista le carica a richiesta;
+- il form di modifica avvisa quando si lascia la pagina con modifiche non salvate (la rifinitura `beforeunload` che il 7.6.6.3 lasciava facoltativa).
+
+Nessuna rotta nuova, nessuna migration. Gli step vanno applicati nell'ordine 1 → 5: il 7.6.6bis **sostituisce** il formato della risposta JSON del 7.6.6.2 (da array a oggetto con `data`) e l'intero blocco "Aggiungi carte" di `decks/edit`, quindi `CardSearch`, `cards-filter`, controller e vista vanno cambiati insieme, altrimenti la lista dei risultati resta vuota.
+
+#### 7.6.6bis.1 — `CardSearch`: opzioni dei filtri e chiavi condivise
+Oggi `CardController::index` calcola da solo le opzioni del filtro (espansioni, tipi, aspetti, tratti, limiti) e ha l'elenco dei parametri accettati; l'editor dei mazzi ha bisogno delle stesse due cose. Si spostano in `CardSearch` (refactor puro: `/carte` deve restare identica).
+
+In `app/Services/CardSearch.php` aggiungere i `use`
+```php
+use App\Models\Aspect;
+use App\Models\CardTrait;
+use App\Models\Expansion;
+```
+e, nella classe (per esempio subito dopo la dichiarazione), la costante e il metodo:
+```php
+/**
+ * GET parameters accepted by apply(): shared by the /carte page and the deck editor search
+ * Parametri GET accettati da apply(): condivisi dalla pagina /carte e dalla ricerca dell'editor mazzi
+ */
+public const FILTER_KEYS = [
+    'nome', 'espansioni', 'tipi', 'aspetti', 'tratti',
+    'costo_min', 'costo_max', 'vita_min', 'vita_max', 'potenza_min', 'potenza_max',
+    'unique_card',
+];
+
+/**
+ * Options for the <x-cards-filter> component (expansions, types, aspects, traits) plus the min/max bounds
+ * Opzioni per il componente <x-cards-filter> (espansioni, tipi, aspetti, tratti) più i limiti min/max
+ */
+public function filterOptions(): array
+{
+    return [
+        'bounds' => $this->getBounds(),
+        'expansions' => Expansion::orderByDesc('legal_date')
+            ->where(function ($q) {
+                $q->whereColumn('group_main_expansion', 'expansion')
+                    ->orWhereNull('group_main_expansion');
+            })
+            ->pluck('expansion'),
+        'types' => Card::query()->distinct()->orderBy('type')->pluck('type'),
+        'aspects' => Aspect::orderBy('order')->get(['id', 'name']),
+        'traits' => CardTrait::orderBy('name')->pluck('name'),
+    ];
+}
+```
+In `app/Http/Controllers/CardController.php`, `index()` diventa:
+```php
+public function index(Request $request, CardSearch $search): View
+{
+    $cards = $search
+        ->apply(Card::query()->with(['aspects', 'traits']), $request->only(CardSearch::FILTER_KEYS))
+        ->paginate(24)
+        ->withQueryString();
+
+    return view('cards.index', [
+        'cards' => $cards,
+        'filters' => $request->all(),
+    ] + $search->filterOptions());
+}
+```
+e si tolgono i `use App\Models\Aspect;`, `use App\Models\CardTrait;` e `use App\Models\Expansion;` che non servono più (`show()` e `newReleases()` non li usano). Il resto del controller non cambia.
+
+#### 7.6.6bis.2 — `cards-filter`: uso incorporato in un'altra pagina
+Il componente nasce per `/carte`: è un `<form method="get">` che ricarica la pagina e ha un link "Azzera" verso `cards.index`. Per usarlo nell'editor serve poter (a) intercettare l'invio, (b) aprirlo subito, (c) azzerarlo senza ricaricare. Tutte le modifiche hanno un valore di default che lascia `/carte` com'è.
+
+**a) `resources/views/components/cards-filter.blade.php`** — due prop nuovi in `@props`, dopo `'action'`:
+```php
+    // Embedded in another page (deck editor): the caller submits the form via attributes and "Azzera" empties it without reloading
+    // Incorporato in un'altra pagina (editor mazzi): il form lo invia chi lo usa tramite attributi e "Azzera" lo svuota senza ricaricare
+    'embedded' => false,
+    // Starting state of the panel: null = open only if a filter is active (behaviour of /carte)
+    // Stato iniziale del pannello: null = aperto solo se c'è un filtro attivo (comportamento di /carte)
+    'open' => null,
+```
+Lo stato iniziale del pannello:
+```blade
+<div x-data="{ open: {{ ($open ?? $hasFilters) ? 'true' : 'false' }} }">
+```
+Il `<form>` accetta gli attributi di chi usa il componente (qui servirà `x-on:submit.prevent`); la classe di griglia diventa il valore di default:
+```blade
+<form action="{{ $action }}" method="get"
+    {{ $attributes->merge(['class' => 'mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3']) }}>
+```
+Il link "Azzera" in fondo resta per `/carte`; incorporato diventa un pulsante che svuota il form e avvisa i sotto-componenti (che tengono lo stato in Alpine, quindi `form.reset()` da solo non basta):
+```blade
+@if ($embedded)
+    <button type="button"
+        x-on:click="$el.closest('form').reset(); window.dispatchEvent(new CustomEvent('cards-filter-reset'))"
+        class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Azzera</button>
+@else
+    <a href="{{ route('cards.index') }}"
+        class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Azzera</a>
+@endif
+```
+
+**b) `resources/views/components/range-slider.blade.php`** — sul `<div>` radice, dopo l'`x-data` esistente (invariato), un ascoltatore dell'evento di reset:
+```blade
+<div x-data="{ ...invariato... }" x-on:cards-filter-reset.window="from = min; to = max">
+```
+
+**c) `resources/views/components/multi-datalist.blade.php`** — stessa cosa sul `<div>` radice:
+```blade
+<div x-data="{ ...invariato... }" x-on:cards-filter-reset.window="selected = []; query = ''">
+```
+Badge dei tipi/aspetti, radio delle carte uniche e campo nome sono input normali: ci pensa `form.reset()`. Su `/carte` l'evento non viene mai emesso (c'è il link), quindi gli ascoltatori restano inerti.
+
+#### 7.6.6bis.3 — `DeckController`: opzioni dei filtri e `searchCards` con filtri e `paginate(30)`
+In `app/Http/Controllers/DeckController.php` (i `use` di `CardSearch`, `JsonResponse`, `Rule` ci sono già).
+
+`edit()` passa alla vista le opzioni del filtro; i tipi sono solo quelli che possono stare in un mazzo:
+```php
+public function edit(string $username, string $deckname, CardSearch $search): View
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    Gate::authorize('update', $deck);
+
+    $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
+
+    $options = $search->filterOptions();
+    $options['types'] = collect(self::DECK_CARD_TYPES); // niente segnalini tra i badge del filtro
+
+    return view('decks.edit', ['deck' => $deck] + $options);
+}
+```
+`searchCards()` accetta gli stessi parametri di `/carte`, non richiede più il nome e restituisce pagine da 30:
+```php
+/**
+ * Searches cards to add to the deck, paginated JSON for the deck-building page (owner only)
+ * Cerca carte da aggiungere al mazzo, JSON paginato per la pagina di deck-building (solo proprietario)
+ */
+public function searchCards(Request $request, string $username, string $deckname, CardSearch $search): JsonResponse
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    Gate::authorize('update', $deck);
+
+    $validated = $request->validate([
+        'nome' => ['nullable', 'string', 'max:100'],
+        'tipi' => ['nullable', 'array'],
+        'tipi.*' => ['string', Rule::in(self::DECK_CARD_TYPES)],
+        'page' => ['nullable', 'integer', 'min:1'],
+    ]);
+
+    $filters = $request->only(CardSearch::FILTER_KEYS);
+    $filters['tipi'] = ($validated['tipi'] ?? []) ?: self::DECK_CARD_TYPES; // senza tipo scelto: tutti i tipi da mazzo, mai i segnalini
+
+    $cards = $search->apply(Card::query(), $filters)->paginate(30); // il numero di pagina lo legge da solo da ?page=
+
+    return response()->json([
+        'data' => $cards->getCollection()->map(fn (Card $card) => [
+            'id' => $card->id,
+            'name' => $card->name,
+            'title' => $card->title,
+            'type' => $card->type,
+            'label' => $card->snippet, // "SOR-12 - Nome, TITOLO": l'espansione e il numero distinguono le ristampe
+            'image' => $card->front_art_path ? asset('storage/'.$card->front_art_path) : null,
+        ])->values(),
+        'current_page' => $cards->currentPage(),
+        'last_page' => $cards->lastPage(),
+        'total' => $cards->total(),
+    ]);
+}
+```
+Punti da tenere:
+- Gli altri parametri (`espansioni`, `aspetti`, `tratti`, `costo_*`, `vita_*`, `potenza_*`, `unique_card`) non si validano, come in `/carte`: finiscono solo in binding della query. `nome` e `tipi` sì, perché `tipi` impedisce di far uscire i segnalini.
+- Con il form vuoto la ricerca elenca tutte le carte da mazzo, 30 per pagina, nell'ordine di default di `CardBuilder` (`paginate()` esegue la query con `get()`, che applica l'ordine; il conteggio del totale non ha l'`ORDER BY`; il tie-breaker su `cards.id` rende stabile il passaggio da una pagina alla successiva).
+- Si restituisce un oggetto con solo i campi che servono alla vista, non il paginatore intero. `page` fuori intervallo non è un errore: `data` esce vuoto con `current_page` oltre `last_page`.
+
+#### 7.6.6bis.4 — `decks/edit.blade.php`: filtro, risultati paginati e componente Alpine
+Il file diventa questo (sostituisce quello del 7.6.6.3). Differenze rispetto a prima:
+- l'`x-data="deckEditor(...)"` passa dal `<form>` a un `<div>` che avvolge tutta la pagina, perché `<x-cards-filter>` contiene un suo `<form>` e **i form non si annidano**: la card "Aggiungi carte" sta fuori dal form di salvataggio ma dentro lo stesso componente Alpine, quindi vede `rows` e `add()`;
+- il campo nome e il select dei tipi sono sostituiti da `<x-cards-filter>`, che al "Cerca" non ricarica la pagina (`x-on:submit.prevent`) ma chiama `search()` con il form;
+- i risultati sono scorrevoli, con conteggio "N di TOT carte" e pulsante "Carica altre carte" che **aggiunge** la pagina successiva in coda;
+- `search()` non guarda più `query` e `type`: prende i criteri da `FormData` del filtro e li tiene in `criteria`, così "Carica altre carte" li riusa identici.
+```blade
+@php
+    $rows = $deck->cards
+        ->map(
+            fn($c) => [
+                'card_id' => $c->id,
+                'name' => $c->title ? "{$c->name}, {$c->title}" : $c->name,
+                'type' => $c->type,
+                'quantity' => (int) $c->pivot->quantity,
+            ],
+        )
+        ->values();
+    $editorConfig = [
+        'rows' => $rows,
+        'format' => $deck->format->value,
+        'searchUrl' => route('decks.search-cards', [$deck->user->name, $deck->name]),
+    ];
+@endphp
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+            Modifica {{ $deck->name }} <span
+                class="text-sm text-gray-500 dark:text-gray-400">v{{ $deck->version }}</span>
+        </h2>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8" x-data="deckEditor(@js($editorConfig))">
+            @if (session('status'))
+                <x-bladewind.alert type="success">{{ session('status') }}</x-bladewind.alert>
+            @endif
+            @if (!empty(session('deck-errors')))
+                <x-bladewind.alert type="warning">
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ((array) session('deck-errors') as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-bladewind.alert>
+            @endif
+            @if (!empty(session('import-warnings')))
+                <x-bladewind.alert type="warning">
+                    Alcune righe dell'import non sono state riconosciute e sono state saltate:
+                    <ul class="list-disc space-y-1 pl-5">
+                        @foreach ((array) session('import-warnings') as $warning)
+                            <li>{{ $warning }}</li>
+                        @endforeach
+                    </ul>
+                </x-bladewind.alert>
+            @endif
+
+            {{-- Ricerca: fuori dal form del mazzo, perché <x-cards-filter> è un suo <form> e i form non si annidano --}}
+            <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">Aggiungi carte</h3>
+
+                <x-cards-filter embedded :open="true" :aspects="$aspects" :traits="$traits" :types="$types"
+                    :expansions="$expansions" :filters="[]" :bounds="$bounds"
+                    :action="route('decks.search-cards', [$deck->user->name, $deck->name])"
+                    x-on:submit.prevent="search($event.target)" />
+
+                <p x-show="error" x-text="error" class="mt-3 text-sm text-red-600 dark:text-red-400"></p>
+                <p x-show="searched && !results.length && !error" class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    Nessuna carta trovata.</p>
+                <ul x-show="results.length"
+                    class="mt-3 max-h-96 divide-y divide-gray-200 overflow-y-auto dark:divide-gray-700">
+                    <template x-for="card in results" :key="card.id">
+                        <li class="flex items-center justify-between gap-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+                            <span class="flex items-center gap-3">
+                                <img x-show="card.image" :src="card.image" :alt="card.name" class="h-10 rounded"
+                                    loading="lazy">
+                                <span x-text="card.label"></span>
+                            </span>
+                            <span class="flex items-center gap-3">
+                                <span class="text-gray-500 dark:text-gray-400" x-text="card.type"></span>
+                                <button type="button" class="font-medium text-indigo-600 dark:text-indigo-400"
+                                    @click="add(card)">Aggiungi</button>
+                            </span>
+                        </li>
+                    </template>
+                </ul>
+                <div x-show="results.length" class="mt-3 flex items-center justify-between gap-3">
+                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="`${results.length} di ${total} carte`"></p>
+                    <x-secondary-button type="button" x-show="page < lastPage" x-bind:disabled="loading"
+                        @click="search()">Carica altre carte</x-secondary-button>
+                </div>
+            </x-bladewind.card>
+
+            <form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}"
+                class="space-y-6">
+                @csrf
+                @method('PUT')
+
+                <div class="flex justify-end"><x-primary-button>Salva modifiche</x-primary-button></div>
+
+                <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <p x-show="!rows.length" class="text-sm text-gray-500 dark:text-gray-400">Il mazzo è vuoto: cerca
+                        una carta qui sopra.</p>
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {{-- Riga-carta inline: l'estrazione in <x-deck-card-row> è rimandata al piano 08 (Step 8.3.4) --}}
+                        <template x-for="(row, i) in rows" :key="row.card_id">
+                            <li
+                                class="flex items-center justify-between gap-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+                                <input type="hidden" :name="`cards[${i}][card_id]`" :value="row.card_id">
+                                <input type="hidden" :name="`cards[${i}][quantity]`" :value="row.quantity">
+                                <span x-text="row.name"></span>
+                                <span class="text-gray-500 dark:text-gray-400" x-text="row.type"></span>
+                                <span class="flex items-center gap-2">
+                                    {{-- Leader e base restano a quantità 1: niente +/- --}}
+                                    <template x-if="!['Leader', 'Base'].includes(row.type)">
+                                        <span class="flex items-center gap-2">
+                                            <button type="button" class="px-2"
+                                                @click="row.quantity = Math.max(1, row.quantity - 1)">−</button>
+                                            <span x-text="row.quantity"></span>
+                                            <button type="button" class="px-2" @click="row.quantity++">+</button>
+                                        </span>
+                                    </template>
+                                    <button type="button" class="text-red-600 dark:text-red-400"
+                                        @click="rows.splice(i, 1)">Rimuovi</button>
+                                </span>
+                            </li>
+                        </template>
+                    </ul>
+                </x-bladewind.card>
+
+                <div class="flex justify-end"><x-primary-button>Salva modifiche</x-primary-button></div>
+            </form>
+
+            {{-- Form separati dal principale: i form non si annidano --}}
+            <div class="flex flex-wrap gap-3">
+                <form method="POST" action="{{ route('decks.toggle-assembled', [$deck->user->name, $deck->name]) }}">
+                    @csrf @method('PATCH')
+                    <x-secondary-button
+                        type="submit">{{ $deck->assembled ? 'Segna come smontato' : 'Segna come assemblato' }}</x-secondary-button>
+                </form>
+                <form method="POST" action="{{ route('decks.create-version', [$deck->user->name, $deck->name]) }}">
+                    @csrf
+                    <x-secondary-button type="submit">Crea nuova versione</x-secondary-button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Il layout non ha @stack('scripts'): il componente sta qui. Alpine parte da resources/js/app.js (modulo differito),
+         quindi questo listener `alpine:init` viene registrato prima dell'avvio. --}}
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('deckEditor', (config) => ({
+                rows: config.rows,
+                format: config.format,
+                criteria: '', // query string dell'ultima ricerca: "Carica altre carte" la riusa con la pagina successiva
+                results: [],
+                searched: false,
+                error: '',
+                seq: 0,
+                page: 1,
+                lastPage: 1,
+                total: 0,
+                loading: false,
+
+                /**
+                 * search(form): nuova ricerca con i criteri del filtro, dalla pagina 1
+                 * search():     pagina successiva della ricerca in corso ("Carica altre carte")
+                 */
+                async search(form = null) {
+                    const append = form === null;
+                    if (append && (this.loading || this.page >= this.lastPage)) return;
+                    if (!append) this.criteria = new URLSearchParams(new FormData(form)).toString();
+
+                    this.error = '';
+                    const params = new URLSearchParams(this.criteria);
+                    params.set('page', append ? this.page + 1 : 1);
+                    const current = ++this.seq; // scarta le risposte arrivate fuori ordine (anche una "Carica altre" ancora in volo)
+                    this.loading = true;
+                    try {
+                        const response = await fetch(`${config.searchUrl}?${params}`, {
+                            headers: { Accept: 'application/json' }
+                        });
+                        if (!response.ok) throw new Error(response.status);
+                        const data = await response.json();
+                        if (current === this.seq) {
+                            this.results = append ? this.results.concat(data.data) : data.data;
+                            this.page = data.current_page;
+                            this.lastPage = data.last_page;
+                            this.total = data.total;
+                            this.searched = true;
+                        }
+                    } catch (e) {
+                        if (current === this.seq) this.error = 'Ricerca non riuscita, riprova.';
+                    } finally {
+                        if (current === this.seq) this.loading = false;
+                    }
+                },
+
+                add(card) {
+                    const single = ['Leader', 'Base'].includes(card.type);
+                    const existing = this.rows.find((r) => r.card_id === card.id);
+                    if (existing) {
+                        if (!single) existing.quantity++;
+                        return;
+                    }
+                    if (single) {
+                        const max = card.type === 'Leader' && this.format === 'twin_suns' ? 2 : 1;
+                        const same = this.rows.filter((r) => r.type === card.type);
+                        if (same.length >= max) {
+                            this.rows.splice(this.rows.indexOf(same[0]), 1); // sostituisce il più vecchio
+                        }
+                    }
+                    this.rows.push({
+                        card_id: card.id,
+                        name: card.title ? `${card.name}, ${card.title}` : card.name,
+                        type: card.type,
+                        quantity: 1,
+                    });
+                },
+            }));
+        });
+    </script>
+</x-app-layout>
+```
+Punti da tenere:
+- `x-on:submit.prevent` arriva al `<form>` del filtro grazie a `{{ $attributes }}` (7.6.6bis.2). Anche Invio nel campo Nome invia il form (c'è un pulsante "Cerca"), quindi parte `search()` e non il salvataggio del mazzo, che è un altro form.
+- Il filtro è un figlio del `<div x-data="deckEditor">`, quindi `search()` si chiama dall'attributo anche se il filtro ha un suo `x-data` (Alpine eredita l'ambito del genitore). I `x-data` di `range-slider` e `multi-datalist` definiscono `min`, `max`, `from`, `to`, `options`, `selected`, `query`: nomi che il componente dell'editor non usa più (`query` e `type` sono spariti).
+- Gli slider inviano sempre min e max, anche quando non si sono toccati: `CardSearch` li applica solo se più stretti dei limiti, come in `/carte`.
+- Con il form vuoto "Cerca" elenca tutte le carte da mazzo. Finché non si preme "Cerca" la lista dei risultati è vuota e senza messaggio.
+- `add(card)` e la gestione di leader e base non cambiano.
+
+#### 7.6.6bis.5 — `beforeunload`: avviso di modifiche non salvate
+La bozza del mazzo vive solo nel browser fino a "Salva modifiche" (7.6.6.3): chiudere la scheda, ricaricare o seguire un link la perde. Si confronta lo stato attuale delle righe con quello iniziale e, se è diverso, si chiede conferma prima di lasciare la pagina.
+
+**a) Componente `deckEditor`**: aggiungere i campi
+```js
+initial: '',
+submitting: false,
+```
+e questi tre membri (ovunque nell'oggetto, per esempio dopo `seq`):
+```js
+/**
+ * Stato delle righe come stringa confrontabile: per ogni carta id e quantità, in ordine di id
+ * (l'ordine delle righe non cambia il mazzo salvato)
+ */
+snapshot() {
+    return JSON.stringify(
+        this.rows
+            .map((r) => [r.card_id, r.quantity])
+            .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    );
+},
+
+get dirty() {
+    return this.snapshot() !== this.initial;
+},
+
+init() {
+    this.initial = this.snapshot();
+    window.addEventListener('beforeunload', (event) => {
+        if (this.dirty && !this.submitting) {
+            event.preventDefault();
+            event.returnValue = ''; // necessario per Chrome; il testo del messaggio lo decide il browser
+        }
+    });
+},
+```
+`init()` lo chiama Alpine da solo quando il componente parte. `dirty` è un getter: Alpine lo ricalcola quando cambiano le righe, quindi si può usare anche in un `x-show` (vedi sotto).
+
+**b) Il salvataggio non deve far scattare l'avviso**: sul `<form>` di salvataggio delle righe (dopo il 7.6.6bis.4 non ha più l'`x-data`: lo stato arriva dal `<div>` che avvolge la pagina) aggiungere `@submit="submitting = true"`:
+```blade
+<form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}"
+    @submit="submitting = true" class="space-y-6">
+```
+Dopo il salvataggio la pagina si ricarica con la bozza ormai salvata, quindi `submitting` riparte da `false` senza bisogno di azzerarlo.
+
+**c) Indicatore visibile (facoltativo, consigliato)**: accanto al pulsante "Salva modifiche" in testa al form, così l'avviso del browser non arriva senza spiegazioni. Il `<div class="flex justify-end">` in testa diventa:
+```blade
+<div class="flex items-center justify-end gap-3">
+    <span x-show="dirty" style="display: none" class="text-sm text-amber-600 dark:text-amber-400">Modifiche non salvate</span>
+    <x-primary-button>Salva modifiche</x-primary-button>
+</div>
+```
+`style="display: none"` evita che il testo compaia per un attimo prima che parta Alpine (il progetto non definisce `x-cloak`).
+
+Comportamento da conoscere:
+- **I due form separati** in fondo alla pagina ("Segna come assemblato" e "Crea nuova versione") e ogni link fanno scattare l'avviso se ci sono modifiche non salvate. Per "Crea nuova versione" è proprio quello che serve: lo snapshot copia le righe **salvate** del mazzo, non la bozza nel browser.
+- I browser mostrano un testo generico (non personalizzabile) e lo mostrano solo dopo che l'utente ha interagito con la pagina.
+- Aggiungere e poi togliere la stessa carta, o rimettere la quantità di prima, riporta lo stato uguale a quello iniziale: l'avviso non scatta.
+
+#### 7.6.6bis.6 — Verifica
+- **`/carte` com'era** (rischio dei punti 1 e 2): filtri, paginazione e il link "Azzera" funzionano come prima; il pannello "Filtri" si apre solo se c'è un filtro attivo.
+- Nell'editor il pannello dei filtri è già aperto e i badge dei tipi sono solo Base, Evento, Leader, Miglioria, Unità (niente segnalini).
+- "Cerca" a form vuoto elenca le carte da mazzo: 30 righe, "30 di N carte" e il pulsante "Carica altre carte"; premendolo il numero sale e, all'ultima pagina, il pulsante sparisce.
+- Combina criteri (per esempio tipo Unità + un aspetto + costo massimo, e anche il solo nome): i risultati sono quelli che darebbe `/carte` con gli stessi filtri.
+- Cambia un filtro e premi "Cerca" dopo aver caricato più pagine: i risultati ripartono dalla prima pagina, nessuna riga della ricerca precedente resta in lista.
+- Invio nel campo Nome fa partire la ricerca, senza ricaricare la pagina e senza salvare il mazzo.
+- "Azzera" svuota i chip di espansioni e tratti, riporta gli slider ai limiti e badge e radio ai valori iniziali; non ripete la ricerca.
+- Aggiungere un leader o una base a un mazzo che ne ha già uno sostituisce il più vecchio, come nel 7.6.6.
+- Aggiungi una carta senza salvare e prova a ricaricare, a chiudere la scheda e a cliccare un link del menu: il browser chiede conferma; compare "Modifiche non salvate".
+- Aggiungi una carta e premi "Salva modifiche": nessuna richiesta di conferma, l'indicatore non c'è più dopo il ricaricamento.
+- Senza modifiche (appena aperta la pagina, o dopo aver rimesso tutto com'era) nessun avviso.
+- Nello Step 7.9, in `DeckPagesTest` (ricerca): la ricerca esclude i segnalini anche senza `tipi`; `tipi` fuori elenco dà 422; con più di 30 carte la prima pagina ha 30 elementi e `last_page` 2, e `?page=2` restituisce le restanti; i filtri (per esempio `aspetti`) restringono i risultati; chi non è il proprietario riceve 403.
+
+#### 7.6.6bis.7 — Fuori scope
+- **Ricerca live con debounce** (il 7.6.6 cercava a ogni tasto): sostituita dal pulsante "Cerca" del filtro, come in `/carte`.
+- "Azzera" nell'editor non ripete la ricerca: svuota solo i criteri.
+- I risultati mostrano ancora solo l'etichetta, il tipo e una miniatura; mostrare costo, aspetti e potenza (per esempio con una versione compatta di `<x-card>`) è una rifinitura a parte.
+- Il tetto "20 risultati" descritto nelle note del 7.6.6.2 e il vincolo del nome obbligatorio (7.6.6.5) sono superati da questo step.
 
 
 ### Step 7.7 — Export/Import mazzi
