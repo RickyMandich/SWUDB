@@ -94,6 +94,7 @@ Route::middleware(['auth', 'verified'])->prefix('mazzo/modifica/{username}/{deck
     Route::delete('/carte/{card}', [DeckController::class, 'removeCard'])->name('decks.remove-card'); // Singola rimozione (fallback)
     Route::patch('/assembla', [DeckController::class, 'toggleAssembled'])->name('decks.toggle-assembled');
     Route::post('/versione', [DeckController::class, 'createVersion'])->name('decks.create-version');
+    Route::get('/cerca-carte', [DeckController::class, 'searchCards'])->middleware('throttle:60,1')->name('decks.search-cards');
 });
 
 // Visualizzazione mazzo (pubblica se is_public, oppure proprietario).

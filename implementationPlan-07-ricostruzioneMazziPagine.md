@@ -880,7 +880,7 @@ public function searchCards(Request $request, string $username, string $deckname
     ])->values());
 }
 ```
-`CardSearch::apply()` accetta i nomi dei parametri del catalogo (`nome`, `tipi`); `CardBuilder::get()` applica l'ordinamento di default, quindi non serve un `orderBy`. Il tetto di 20 risultati basta perché la ricerca per nome è già stretta; per le ristampe di una stessa carta il numero nell'etichetta le distingue.
+`CardSearch::apply()` accetta i nomi dei parametri del catalogo (`nome`, `tipi`); `CardBuilder::get()` applica l'ordinamento di default, quindi non serve un `orderBy`. Per le ristampe di una stessa carta il numero nell'etichetta le distingue. **Il tetto di 20 risultati è superato dallo Step 7.6.6bis** (paginazione a 30 con "Carica altre"): chi cerca una carta che possa stare nel mazzo, e non una carta precisa, può avere liste lunghe.
 
 #### 7.6.6.3 — `resources/views/decks/edit.blade.php` (versione completa)
 Sostituisce il file: aggiunge il titolo della carta nelle righe, la ricerca con aggiunta alla bozza, l'avviso degli import (`import-warnings`, Step 7.7.3) e il componente Alpine `deckEditor`. Leader e base restano a quantità 1 e, aggiungendone uno nuovo oltre il massimo del formato (1 leader, 2 in Twin Suns; 1 base), **sostituisce il più vecchio**: così il cambio di leader o base è un solo click. Il campo di ricerca non ha `name` (non viene inviato col form) e `Invio` non lo invia.
@@ -1072,7 +1072,249 @@ Sostituisce il file: aggiunge il titolo della carta nelle righe, la ricerca con 
     </script>
 </x-app-layout>
 ```
-La bozza vive solo nel browser fino a "Salva modifiche": chi chiude la pagina prima perde le modifiche non salvate (accettabile per ora; un avviso `beforeunload` è una rifinitura facoltativa). Nessun limite di copie lato client: lo dice il validator del formato, in modo informativo, dopo il salvataggio.
+La bozza vive solo nel browser fino a "Salva modifiche": chi chiude la pagina prima perde le modifiche non salvate (l'avviso `beforeunload` si aggiunge nello Step 7.6.6bis). Nessun limite di copie lato client: lo dice il validator del formato, in modo informativo, dopo il salvataggio.
+
+
+### Step 7.6.6bis — Ricerca carte paginata e avviso di modifiche non salvate
+
+Si applica sopra lo Step 7.6.6 già fatto. Due modifiche, in due file: `DeckController::searchCards` (7.6.6bis.1) e `resources/views/decks/edit.blade.php` (7.6.6bis.2 e 7.6.6bis.3). Il 7.6.6bis.1 cambia la forma della risposta JSON, quindi **va applicato insieme al 7.6.6bis.2**: da soli, la vista non funziona più (si aspetta un array, riceve un oggetto).
+
+- **Paginazione**: al posto di `->limit(20)` la ricerca usa `->paginate(30)`. Chi costruisce un mazzo non cerca sempre una carta precisa, spesso cerca "una carta che possa starci", quindi la lista può essere lunga. Nella vista i risultati si accumulano con un pulsante "Carica altre" (non pagine separate): aggiungere una carta alla bozza non fa perdere il punto raggiunto nella lista.
+- **Avviso `beforeunload`**: se ci sono modifiche non salvate alla bozza, il browser chiede conferma prima di chiudere la scheda, ricaricare o seguire un link. Era la rifinitura facoltativa citata alla fine dello Step 7.6.6.3.
+
+#### 7.6.6bis.1 — Backend: `paginate(30)` in `DeckController::searchCards`
+Sostituire il metodo `searchCards` con questa versione (i `use` e la costante `DECK_CARD_TYPES` non cambiano):
+```php
+/**
+ * Searches cards to add to the deck, paginated JSON for the deck-building page (owner only)
+ * Cerca carte da aggiungere al mazzo, JSON paginato per la pagina di deck-building (solo proprietario)
+ */
+public function searchCards(Request $request, string $username, string $deckname, CardSearch $search): JsonResponse
+{
+    $deck = $this->resolveDeck($username, $deckname);
+    Gate::authorize('update', $deck);
+
+    $validated = $request->validate([
+        'nome' => ['required', 'string', 'min:2', 'max:100'],
+        'tipi' => ['nullable', 'array'],
+        'tipi.*' => ['string', Rule::in(self::DECK_CARD_TYPES)],
+        'page' => ['nullable', 'integer', 'min:1'],
+    ]);
+
+    $cards = $search->apply(Card::query(), [
+        'nome' => $validated['nome'],
+        'tipi' => $validated['tipi'] ?? self::DECK_CARD_TYPES,
+    ])->paginate(30); // il numero di pagina lo legge paginate() dal parametro `page` della request
+
+    return response()->json([
+        'data' => $cards->getCollection()->map(fn (Card $card) => [
+            'id' => $card->id,
+            'name' => $card->name,
+            'title' => $card->title,
+            'type' => $card->type,
+            'label' => $card->snippet, // "SOR-12 - Nome, TITOLO": l'espansione e il numero distinguono le ristampe
+            'image' => $card->front_art_path ? asset('storage/'.$card->front_art_path) : null,
+        ])->values(),
+        'page' => $cards->currentPage(),
+        'last_page' => $cards->lastPage(),
+        'total' => $cards->total(),
+    ]);
+}
+```
+Perché è fatto così:
+- `paginate()` esegue prima una `COUNT` (su `toBase()`, quindi senza ordinamento) e poi la query dei dati con `LIMIT`/`OFFSET` passando da `CardBuilder::get()`, che applica l'ordine di default del catalogo. Quell'ordine ha `cards.id` come tie-breaker finale, quindi è stabile: le pagine successive non si sovrappongono e non perdono carte.
+- Non si restituisce il paginator così com'è (`response()->json($cards)`): includerebbe `links` e URL assoluti che il client non usa. Si espongono solo `data`, `page`, `last_page` e `total`.
+- `page` è validato come intero positivo; un valore non valido, se arrivasse comunque a `paginate()`, ricade sulla pagina 1.
+- Il `throttle:60,1` della rotta (7.6.6.1) resta: ogni "Carica altre" è una richiesta in più.
+
+#### 7.6.6bis.2 — Vista: risultati accumulati e pulsante "Carica altre"
+In `resources/views/decks/edit.blade.php`.
+
+**a) Blocco dei risultati** (dentro la card "Aggiungi carte", dopo il paragrafo `Nessuna carta trovata.`). Sostituire il `<ul x-show="results.length" ...>...</ul>` con questo, che aggiunge il contatore e il pulsante e dà alla lista un'altezza massima con scroll (con più pagine accumulate, senza limite spingerebbe la bozza del mazzo fuori dallo schermo):
+```blade
+<p x-show="results.length" class="mt-3 text-xs text-gray-500 dark:text-gray-400"
+    x-text="`${results.length} di ${total} carte`"></p>
+<ul x-show="results.length" class="mt-1 max-h-96 divide-y divide-gray-200 overflow-y-auto dark:divide-gray-700">
+    <template x-for="card in results" :key="card.id">
+        <li class="flex items-center justify-between gap-3 py-2 text-sm text-gray-800 dark:text-gray-100">
+            <span class="flex items-center gap-3">
+                <img x-show="card.image" :src="card.image" :alt="card.name" class="h-10 rounded" loading="lazy">
+                <span x-text="card.label"></span>
+            </span>
+            <span class="flex items-center gap-3">
+                <span class="text-gray-500 dark:text-gray-400" x-text="card.type"></span>
+                <button type="button" class="font-medium text-indigo-600 dark:text-indigo-400"
+                    @click="add(card)">Aggiungi</button>
+            </span>
+        </li>
+    </template>
+</ul>
+<div x-show="page < lastPage" class="mt-3 flex justify-center">
+    {{-- `x-bind:disabled` e non `:disabled`: su un componente Blade i due punti iniziali sarebbero letti come espressione PHP --}}
+    <x-secondary-button type="button" @click="loadMore()" x-bind:disabled="loading">Carica altre</x-secondary-button>
+</div>
+```
+
+**b) Logica**: vedi il blocco `<script>` completo in 7.6.6bis.3, che contiene sia la paginazione sia l'avviso (i campi `page`, `lastPage`, `total`, `loading`, `searchParams` e i metodi `search`, `loadMore`, `fetchPage`).
+
+Comportamento:
+- `search()` riparte sempre dalla pagina 1 e **sostituisce** i risultati; `loadMore()` chiede la pagina successiva e li **accoda**.
+- I parametri della ricerca (`nome` e `tipi[]`) si memorizzano in `searchParams` quando parte la ricerca, e `loadMore()` riusa quelli: se nel frattempo l'utente ha già modificato il campo senza che la ricerca (debounce di 300 ms) sia partita, "Carica altre" continua la ricerca che si vede, non quella che si sta scrivendo.
+- `seq` scarta le risposte arrivate fuori ordine, come prima; ora `search()` lo incrementa anche quando il testo è sotto le 2 lettere (prima una risposta in volo poteva ripopolare una lista appena svuotata).
+- Il pulsante compare solo se `page < lastPage` ed è disabilitato mentre una richiesta è in corso (niente doppi click che chiedono due volte la stessa pagina).
+
+#### 7.6.6bis.3 — Avviso `beforeunload` sulle modifiche non salvate
+La bozza vive solo nel browser (`rows`) fino a "Salva modifiche". Si confronta uno "snapshot" della bozza con quello preso all'apertura della pagina: se differiscono e non si sta salvando, `beforeunload` chiede conferma.
+
+**a) Tag del form principale**: aggiungere `@submit="saving = true"`, così l'invio del form di salvataggio non scatena l'avviso (anche il submit è una navigazione):
+```blade
+<form method="POST" action="{{ route('decks.sync-cards', [$deck->user->name, $deck->name]) }}"
+    x-data="deckEditor(@js($editorConfig))" @submit="saving = true" class="space-y-6">
+```
+
+**b) Blocco `<script>` completo** (sostituisce quello di 7.6.6.3; `add()` è invariato):
+```blade
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('deckEditor', (config) => ({
+            rows: config.rows,
+            format: config.format,
+            query: '',
+            type: '',
+            results: [],
+            searched: false,
+            error: '',
+            seq: 0,
+            page: 1,
+            lastPage: 1,
+            total: 0,
+            loading: false,
+            searchParams: '',
+            initial: '',
+            saving: false,
+
+            init() {
+                this.initial = this.snapshot();
+                window.addEventListener('beforeunload', (event) => {
+                    if (this.dirty && !this.saving) {
+                        event.preventDefault();
+                        event.returnValue = ''; // richiesto da alcuni browser; il testo del messaggio non è personalizzabile
+                    }
+                });
+            },
+
+            /**
+             * Canonical string of the draft: card ids and quantities, order-independent
+             * Stringa canonica della bozza: id e quantità delle carte, senza dipendere dall'ordine
+             */
+            snapshot() {
+                return this.rows.map((r) => `${r.card_id}:${r.quantity}`).sort().join('|');
+            },
+
+            get dirty() {
+                return this.snapshot() !== this.initial;
+            },
+
+            async search() {
+                this.error = '';
+                if (this.query.trim().length < 2) {
+                    this.seq++; // scarta eventuali risposte ancora in volo
+                    this.results = [];
+                    this.searched = false;
+                    this.page = 1;
+                    this.lastPage = 1;
+                    this.total = 0;
+                    this.loading = false;
+                    return;
+                }
+                const params = new URLSearchParams({
+                    nome: this.query.trim()
+                });
+                if (this.type) params.append('tipi[]', this.type);
+                this.searchParams = params.toString();
+                await this.fetchPage(1);
+            },
+
+            async loadMore() {
+                if (this.loading || this.page >= this.lastPage) return;
+                await this.fetchPage(this.page + 1);
+            },
+
+            async fetchPage(page) {
+                const current = ++this.seq; // scarta le risposte arrivate fuori ordine
+                this.loading = true;
+                try {
+                    const response = await fetch(`${config.searchUrl}?${this.searchParams}&page=${page}`, {
+                        headers: {
+                            Accept: 'application/json'
+                        }
+                    });
+                    if (!response.ok) throw new Error(response.status);
+                    const body = await response.json();
+                    if (current !== this.seq) return;
+                    this.results = page === 1 ? body.data : this.results.concat(body.data);
+                    this.page = body.page;
+                    this.lastPage = body.last_page;
+                    this.total = body.total;
+                    this.searched = true;
+                } catch (e) {
+                    if (current === this.seq) this.error = 'Ricerca non riuscita, riprova.';
+                } finally {
+                    if (current === this.seq) this.loading = false;
+                }
+            },
+
+            add(card) {
+                const single = ['Leader', 'Base'].includes(card.type);
+                const existing = this.rows.find((r) => r.card_id === card.id);
+                if (existing) {
+                    if (!single) existing.quantity++;
+                    return;
+                }
+                if (single) {
+                    const max = card.type === 'Leader' && this.format === 'twin_suns' ? 2 : 1;
+                    const same = this.rows.filter((r) => r.type === card.type);
+                    if (same.length >= max) {
+                        this.rows.splice(this.rows.indexOf(same[0]), 1); // sostituisce il più vecchio
+                    }
+                }
+                this.rows.push({
+                    card_id: card.id,
+                    name: card.title ? `${card.name}, ${card.title}` : card.name,
+                    type: card.type,
+                    quantity: 1,
+                });
+            },
+        }));
+    });
+</script>
+```
+Punti da tenere:
+- `init()` è chiamato da Alpine da solo quando il componente parte; lo snapshot iniziale è quello delle righe già salvate.
+- Lo snapshot ignora l'ordine delle righe: aggiungere una carta e poi rimuoverla riporta la bozza identica all'originale e l'avviso non compare.
+- Dopo un salvataggio la pagina si ricarica (redirect a `decks.edit`), quindi `initial` si ricalcola dalle righe nuove: nessun reset da gestire a mano.
+- `saving` non torna mai a `false`: dopo il submit si cambia pagina comunque. Se il server risponde con un errore di validazione la pagina viene ricaricata con `old()` assente e la bozza persa, come già oggi.
+
+#### 7.6.6bis.4 — Effetti da conoscere
+- L'avviso scatta anche sui form **"Crea nuova versione"** e **"Segna come assemblato"** (stanno fuori dal form principale, quindi non impostano `saving`) e sui link del menu. Su "Crea nuova versione" è corretto: lo snapshot copia le carte **salvate**, non la bozza, e senza avviso le modifiche non salvate andrebbero perse.
+- Il testo della finestra lo decide il browser: `event.returnValue` serve solo ad attivarla.
+- Una modifica di sola quantità (`+`/`-`) conta come modifica, come l'aggiunta e la rimozione di una riga.
+
+#### 7.6.6bis.5 — Verifica a mano
+1. Cercare un nome comune (per esempio `ba`) e controllare che compaiano 30 risultati, il contatore "30 di N carte" e il pulsante "Carica altre".
+2. Premere "Carica altre": i risultati diventano 60 (nessun duplicato, l'ordine continua) e il contatore si aggiorna; all'ultima pagina il pulsante sparisce.
+3. Premere "Carica altre" due volte di fila in fretta: parte una sola richiesta (il pulsante è disabilitato durante il caricamento).
+4. Cambiare il tipo nel menu a tendina: la lista riparte dalla pagina 1 con i nuovi risultati.
+5. Cancellare il testo fino a meno di 2 lettere: la lista si svuota e non ricompare con una risposta in ritardo.
+6. Aggiungere una carta alla bozza e provare a chiudere la scheda, ricaricare o cliccare un link: il browser chiede conferma. Premere "Salva modifiche": nessuna richiesta di conferma.
+7. Aggiungere una carta e rimuoverla subito: nessun avviso.
+8. Modifiche non salvate e "Crea nuova versione": il browser avvisa.
+
+I test automatici di `decks.search-cards` (struttura `data`/`page`/`last_page`/`total`, 30 elementi per pagina, `page=2`, accesso negato a chi non è il proprietario) rientrano in `DeckPagesTest` dello Step 7.9. L'avviso `beforeunload` si verifica solo a mano.
+
+#### 7.6.6bis.6 — Fuori scope
+- Il campo `nome` resta obbligatorio (almeno 2 lettere). Per sfogliare le carte **senza nome** (per esempio solo per tipo) servirebbe renderlo opzionale nella validazione e togliere il controllo `query.trim().length < 2` in `search()`: non fa parte di questo step, da decidere a parte.
+- Nessun salvataggio automatico della bozza.
 
 
 ### Step 7.7 — Export/Import mazzi

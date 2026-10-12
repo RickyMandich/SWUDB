@@ -6,7 +6,9 @@ use App\Enums\DeckFormat;
 use App\Models\Card;
 use App\Models\Deck;
 use App\Models\User;
+use App\Services\CardSearch;
 use App\Services\DeckValidation\DeckFormatValidatorFactory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,12 @@ use Illuminate\View\View;
 
 class DeckController extends Controller
 {
+    /**
+     * Card types that can be part of a deck (tokens are excluded)
+     * Tipi di carta che possono stare in un mazzo (i segnalini sono esclusi)
+     */
+    protected const DECK_CARD_TYPES = ['Base', 'Evento', 'Leader', 'Miglioria', 'Unità'];
+
     /**
      * Risolve il mazzo dall'utente e dal nome mazzo: l'ultima versione, oppure quella indicata da $version
      */
@@ -232,5 +240,35 @@ class DeckController extends Controller
         }
 
         return view('decks.versions', ['deck' => $deck, 'decks' => $chain]);
+    }
+
+    /**
+     * Searches cards to add to the deck, JSON for the deck-building page (owner only)
+     * Cerca carte da aggiungere al mazzo, JSON per la pagina di deck-building (solo proprietario)
+     */
+    public function searchCards(Request $request, string $username, string $deckname, CardSearch $search): JsonResponse
+    {
+        $deck = $this->resolveDeck($username, $deckname);
+        Gate::authorize('update', $deck);
+
+        $validated = $request->validate([
+            'nome' => ['required', 'string', 'min:2', 'max:100'],
+            'tipi' => ['nullable', 'array'],
+            'tipi.*' => ['string', Rule::in(self::DECK_CARD_TYPES)],
+        ]);
+
+        $cards = $search->apply(Card::query(), [
+            'nome' => $validated['nome'],
+            'tipi' => $validated['tipi'] ?? self::DECK_CARD_TYPES,
+        ])->limit(20)->get();
+
+        return response()->json($cards->map(fn (Card $card) => [
+            'id' => $card->id,
+            'name' => $card->name,
+            'title' => $card->title,
+            'type' => $card->type,
+            'label' => $card->snippet, // "SOR-12 - Nome, TITOLO": l'espansione e il numero distinguono le ristampe
+            'image' => $card->front_art_path ? asset('storage/'.$card->front_art_path) : null,
+        ])->values());
     }
 }
