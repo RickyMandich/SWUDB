@@ -27,6 +27,7 @@ class ExpansionController extends Controller
 
         $all_expansions = (clone $query)
             ->whereColumn('group_main_expansion', 'expansion')
+            ->orderBy('legal_date')
             ->get();
 
         return view('admin.expansions.index', compact('expansions', 'filter', 'all_expansions'));

@@ -157,11 +157,11 @@
   - [ ] 7.6.7.4 Verifica a mano su `/mazzi` (Premier/Eternal, Twin Suns, senza base, senza leader, tema scuro, mobile)
 - [x] 7.6.6 (applicato dall'utente il 2026-10-12) Ricerca carte nella pagina di modifica (oggi `decks/edit` non permette di aggiungere nessuna carta: c'è solo un commento): rotta `decks.search-cards`, `DeckController::searchCards` (JSON, `CardSearch`, max 20 risultati, solo tipi da mazzo), `edit.blade.php` completo con componente Alpine `deckEditor` (leader e base sostituiti al cambio) e avviso `import-warnings`
 - [ ] 7.6.6bis Ricerca carte dell'editor con `<x-cards-filter>`, paginata (30), e avviso di modifiche non salvate (richiesta del 2026-10-12; da applicare nell'ordine 1 → 5)
-  - [ ] 7.6.6bis.1 `CardSearch::FILTER_KEYS` e `CardSearch::filterOptions()` (opzioni e limiti del filtro); `CardController::index` li usa (refactor puro, `/carte` invariata) e perde i `use` di `Aspect`, `CardTrait`, `Expansion`
-  - [ ] 7.6.6bis.2 `cards-filter` incorporabile: prop `embedded` e `open`, `{{ $attributes }}` sul `<form>`, "Azzera" come pulsante con evento `cards-filter-reset` ascoltato da `range-slider` e `multi-datalist`
-  - [ ] 7.6.6bis.3 `DeckController::edit` passa le opzioni del filtro (tipi solo da mazzo); `searchCards` con tutti i filtri di `/carte`, `nome` non più obbligatorio, `paginate(30)`, risposta `{data, current_page, last_page, total}`
-  - [ ] 7.6.6bis.4 `decks/edit`: `x-data` sul `<div>` esterno, card "Aggiungi carte" con `<x-cards-filter>` fuori dal form del mazzo, risultati scorrevoli, "N di TOT carte", "Carica altre carte"; `search(form)` con `FormData` e `criteria`
-  - [ ] 7.6.6bis.5 `beforeunload` in `deckEditor` (`snapshot()`, `dirty`, `init()`, `submitting` da `@submit` sul form di salvataggio) e indicatore "Modifiche non salvate"
+  - [x] 7.6.6bis.1 `CardSearch::FILTER_KEYS` e `CardSearch::filterOptions()` (opzioni e limiti del filtro); `CardController::index` li usa (refactor puro, `/carte` invariata) e perde i `use` di `Aspect`, `CardTrait`, `Expansion`
+  - [x] 7.6.6bis.2 `cards-filter` incorporabile: prop `embedded` e `open`, `{{ $attributes }}` sul `<form>`, "Azzera" come pulsante con evento `cards-filter-reset` ascoltato da `range-slider` e `multi-datalist`
+  - [x] 7.6.6bis.3 `DeckController::edit` passa le opzioni del filtro (tipi solo da mazzo); `searchCards` con tutti i filtri di `/carte`, `nome` non più obbligatorio, `paginate(30)`, risposta `{data, current_page, last_page, total}`
+  - [x] 7.6.6bis.4 `decks/edit`: `x-data` sul `<div>` esterno, card "Aggiungi carte" con `<x-cards-filter>` fuori dal form del mazzo, risultati scorrevoli, "N di TOT carte", "Carica altre carte"; `search(form)` con `FormData` e `criteria`
+  - [x] 7.6.6bis.5 `beforeunload` in `deckEditor` (`snapshot()`, `dirty`, `init()`, `submitting` da `@submit` sul form di salvataggio) e indicatore "Modifiche non salvate"
   - [ ] 7.6.6bis.6 Verifica a mano (`/carte` com'era, filtri nell'editor, più di 30 risultati, Azzera, avviso su chiusura/link, nessun avviso dopo il salvataggio)
 - [ ] 7.7 Export/Import mazzi (formati ripresi dalla vecchia SWUDB: JSON ufficiale `{ESP}_{numero}`, TXT a sezioni, link swudb.com)
   - [ ] 7.7.1 `DeckExporter` (`toText`, `toJson`)

@@ -105,14 +105,17 @@ class DeckController extends Controller
     /**
      * Pagina di deck-building/modifica (riservata esclusivamente al proprietario)
      */
-    public function edit(string $username, string $deckname): View
+    public function edit(string $username, string $deckname, CardSearch $search): View
     {
         $deck = $this->resolveDeck($username, $deckname);
         Gate::authorize('update', $deck);
 
         $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
 
-        return view('decks.edit', compact('deck'));
+        $options = $search->filterOptions();
+        $options['types'] = collect(self::DECK_CARD_TYPES); // niente segnalini tra i badge del filtro
+
+        return view('decks.edit', ['deck' => $deck] + $options);
     }
 
     /**
@@ -243,8 +246,8 @@ class DeckController extends Controller
     }
 
     /**
-     * Searches cards to add to the deck, JSON for the deck-building page (owner only)
-     * Cerca carte da aggiungere al mazzo, JSON per la pagina di deck-building (solo proprietario)
+     * Searches cards to add to the deck, paginated JSON for the deck-building page (owner only)
+     * Cerca carte da aggiungere al mazzo, JSON paginato per la pagina di deck-building (solo proprietario)
      */
     public function searchCards(Request $request, string $username, string $deckname, CardSearch $search): JsonResponse
     {
@@ -252,23 +255,29 @@ class DeckController extends Controller
         Gate::authorize('update', $deck);
 
         $validated = $request->validate([
-            'nome' => ['required', 'string', 'min:2', 'max:100'],
+            'nome' => ['nullable', 'string', 'max:100'],
             'tipi' => ['nullable', 'array'],
             'tipi.*' => ['string', Rule::in(self::DECK_CARD_TYPES)],
+            'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $cards = $search->apply(Card::query(), [
-            'nome' => $validated['nome'],
-            'tipi' => $validated['tipi'] ?? self::DECK_CARD_TYPES,
-        ])->limit(20)->get();
+        $filters = $request->only(CardSearch::FILTER_KEYS);
+        $filters['tipi'] = ($validated['tipi'] ?? []) ?: self::DECK_CARD_TYPES; // senza tipo scelto: tutti i tipi da mazzo, mai i segnalini
 
-        return response()->json($cards->map(fn (Card $card) => [
-            'id' => $card->id,
-            'name' => $card->name,
-            'title' => $card->title,
-            'type' => $card->type,
-            'label' => $card->snippet, // "SOR-12 - Nome, TITOLO": l'espansione e il numero distinguono le ristampe
-            'image' => $card->front_art_path ? asset('storage/'.$card->front_art_path) : null,
-        ])->values());
+        $cards = $search->apply(Card::query(), $filters)->paginate(30); // il numero di pagina lo legge da solo da ?page=
+
+        return response()->json([
+            'data' => $cards->getCollection()->map(fn (Card $card) => [
+                'id' => $card->id,
+                'name' => $card->name,
+                'title' => $card->title,
+                'type' => $card->type,
+                'label' => $card->snippet, // "SOR-12 - Nome, TITOLO": l'espansione e il numero distinguono le ristampe
+                'image' => $card->front_art_path ? asset('storage/'.$card->front_art_path) : null,
+            ])->values(),
+            'current_page' => $cards->currentPage(),
+            'last_page' => $cards->lastPage(),
+            'total' => $cards->total(),
+        ]);
     }
 }

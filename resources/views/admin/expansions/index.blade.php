@@ -26,12 +26,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($expansions as $expansion)
+                    @forelse ($expansions as $expansion)
                         <tr>
                             <td class="px-3 py-2 border-b dark:border-gray-700">{{ $expansion->expansion }}</td>
                             <td class="px-3 py-2 border-b dark:border-gray-700">
-                                <x-bladewind.datepicker name="legal_date" required="false" fill_from_old="true"
-                                    format="yyyy-mm-dd" week_starts="monday" size="big" class="shadow-sm"
+                                <x-bladewind.datepicker name="legal_date_for_{{ $expansion->expansion }}"
+                                    required="false" fill_from_old="true" format="yyyy-mm-dd" week_starts="monday"
+                                    size="big" class="shadow-sm"
                                     selected_value="{{ $expansion->legal_date->format('Y-m-d') }}" />
                             </td>
                             <td class="px-3 py-2 border-b dark:border-gray-700">
@@ -40,8 +41,7 @@
                             </td>
                             <td class="px-3 py-2 border-b dark:border-gray-700">
                                 <x-select-input name="group_main_expansion" form="exp-{{ $expansion->expansion }}">
-                                    <option value="">—</option>
-                                    <option value="null">Espansione a sé stante</option>
+                                    <option value="null" @selected($expansion->group_main_expansion === null)>Espansione a sé stante</option>
                                     <option value="{{ $expansion->expansion }}" @selected($expansion->group_main_expansion === $expansion->expansion)>
                                         Espansione principale del Gruppo
                                     </option>
@@ -59,7 +59,11 @@
                                 <x-primary-button :target="'_blank'" :href="route('cards.index', ['espansioni[]' => [$expansion->expansion]])">cards</x-primary-button>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center py-4">Nessuna espansione trovata.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
             <x-input-error :messages="$errors->all()" class="mt-2" />

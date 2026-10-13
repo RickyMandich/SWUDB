@@ -13,7 +13,7 @@
         this.query = ''
     },
     remove(value) { this.selected = this.selected.filter(v => v !== value) },
-}">
+}" x-on:cards-filter-reset.window="selected = []; query = ''">
     <x-input-label :for="$name . '-input'" :value="$label" />
 
     <x-text-input id="{{ $name }}-input" type="text" list="{{ $name }}-list" autocomplete="off"

@@ -2,12 +2,45 @@
 
 namespace App\Services;
 
+use App\Models\Aspect;
 use App\Models\Card;
+use App\Models\CardTrait;
+use App\Models\Expansion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
 class CardSearch
 {
+    /**
+     * GET parameters accepted by apply(): shared by the /carte page and the deck editor search
+     * Parametri GET accettati da apply(): condivisi dalla pagina /carte e dalla ricerca dell'editor mazzi
+     */
+    public const FILTER_KEYS = [
+        'nome', 'espansioni', 'tipi', 'aspetti', 'tratti',
+        'costo_min', 'costo_max', 'vita_min', 'vita_max', 'potenza_min', 'potenza_max',
+        'unique_card',
+    ];
+
+    /**
+     * Options for the <x-cards-filter> component (expansions, types, aspects, traits) plus the min/max bounds
+     * Opzioni per il componente <x-cards-filter> (espansioni, tipi, aspetti, tratti) più i limiti min/max
+     */
+    public function filterOptions(): array
+    {
+        return [
+            'bounds' => $this->getBounds(),
+            'expansions' => Expansion::orderByDesc('legal_date')
+                ->where(function ($q) {
+                    $q->whereColumn('group_main_expansion', 'expansion')
+                        ->orWhereNull('group_main_expansion');
+                })
+                ->pluck('expansion'),
+            'types' => Card::query()->distinct()->orderBy('type')->pluck('type'),
+            'aspects' => Aspect::orderBy('order')->get(['id', 'name']),
+            'traits' => CardTrait::orderBy('name')->pluck('name'),
+        ];
+    }
+
     public function getBounds(): array
     {
         return Cache::remember('cards_bounds', 3600, function () {

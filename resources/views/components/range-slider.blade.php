@@ -11,7 +11,7 @@
     get toPct() { return ((this.to - this.min) / this.span) * 100 },
     clampFrom() { if (this.from > this.to) this.from = this.to },
     clampTo() { if (this.to < this.from) this.to = this.from },
-}">
+}" x-on:cards-filter-reset.window="from = min; to = max">
     <div class="flex items-baseline justify-between">
         <x-input-label :value="$label" />
         <span class="text-sm text-gray-600 dark:text-gray-400" x-text="from === to ? from : from + ' - ' + to"></span>

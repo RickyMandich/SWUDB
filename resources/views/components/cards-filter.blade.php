@@ -5,6 +5,12 @@
     'expansions',
     'filters',
     'action',
+    // Embedded in another page (deck editor): the caller submits the form via attributes and "Azzera" empties it without reloading
+    // Incorporato in un'altra pagina (editor mazzi): il form lo invia chi lo usa tramite attributi e "Azzera" lo svuota senza ricaricare
+    'embedded' => false,
+    // Starting state of the panel: null = open only if a filter is active (behaviour of /carte)
+    // Stato iniziale del pannello: null = aperto solo se c'è un filtro attivo (comportamento di /carte)
+    'open' => null,
     // Provisional limits: Part B of implementationPlan-filtroCarteGrafica.md replaces them with the real DB min/max
     // Limiti provvisori: la Parte B di implementationPlan-filtroCarteGrafica.md li sostituisce con i veri min/max del DB
     'bounds' => ['cost' => [0, 10], 'health' => [0, 30], 'power' => [0, 12]],
@@ -23,7 +29,7 @@
         );
 @endphp
 
-<div x-data="{ open: {{ $hasFilters ? 'true' : 'false' }} }">
+<div x-data="{ open: {{ $open ?? $hasFilters ? 'true' : 'false' }} }">
     <button type="button" @click="open = !open"
         class="flex w-full items-center justify-between rounded-md bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-xs hover:bg-gray-50 dark:hover:bg-gray-700">
         <span>Filtri</span>
@@ -34,7 +40,7 @@
     </button>
     <div x-show="open" x-collapse x-cloak>
         <form action="{{ $action }}" method="get"
-            class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {{ $attributes->merge(['class' => 'mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3']) }}>
 
             {{-- Testo e datalist --}}
             <div>
@@ -110,8 +116,14 @@
 
             <div class="flex items-end gap-3 lg:col-span-2">
                 <x-primary-button>Cerca</x-primary-button>
-                <a href="{{ route('cards.index') }}"
-                    class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Azzera</a>
+                @if ($embedded)
+                    <button type="button"
+                        x-on:click="$el.closest('form').reset(); window.dispatchEvent(new CustomEvent('cards-filter-reset'))"
+                        class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Azzera</button>
+                @else
+                    <a href="{{ route('cards.index') }}"
+                        class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Azzera</a>
+                @endif
             </div>
         </form>
     </div>
