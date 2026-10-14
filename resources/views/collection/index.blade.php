@@ -1,0 +1,28 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+            Carte
+        </h2>
+    </x-slot>
+
+    <div class="mx-auto max-w-5xl px-4 py-6">
+        <x-cards-filter :aspects="$aspects" :traits="$traits" :types="$types" :expansions="$expansions" :filters="$filters"
+            :bounds="$bounds" :action="route('collection.index')" />
+    </div>
+
+    <x-flash-message />
+
+    <div class="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 sm:grid-cols-2 lg:grid-cols-3">
+        @foreach ($cards as $card)
+            <x-card :card="$card" />
+        @endforeach
+        @if ($cards->isEmpty())
+            <p class="text-center text-gray-800 dark:text-gray-200 col-span-full">Non ho trovato carte che soddisfino
+                tutti i criteri di ricerca.</p>
+        @endif
+    </div>
+
+    <div class="mx-auto max-w-7xl px-4 py-6">
+        {{ $cards->links() }}
+    </div>
+</x-app-layout>

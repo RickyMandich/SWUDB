@@ -123,4 +123,9 @@ class Card extends Model
             ->map(fn ($a) => str_pad((string) $a->order, 4, '0', STR_PAD_LEFT))
             ->join('');
     }
+
+    public function collectionCards()
+    {
+        return $this->hasMany(CollectionCard::class, 'card_id');
+    }
 }

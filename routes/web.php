@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ExpansionController;
 use App\Http\Controllers\Admin\SystemErrorController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CardController;
+use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
 use App\Http\Controllers\ProfileController;
@@ -107,3 +108,8 @@ Route::get('/mazzo/{username}/{deckname}/esporta/{format}/{version?}', [DeckCont
     ->whereIn('format', ['txt', 'json'])->whereNumber('version')->name('decks.export');
 Route::get('/mazzo/{username}/{deckname}/statistiche/{version?}', [DeckController::class, 'statistics'])->whereNumber('version')->name('decks.statistics');
 Route::get('/mazzo/{username}/{deckname}/{version?}', [DeckController::class, 'show'])->whereNumber('version')->name('decks.show');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/collezione', [CollectionController::class, 'index'])->name('collection.index');
+    Route::patch('/collezione', [CollectionController::class, 'update'])->name('collection.update');
+});
