@@ -122,14 +122,13 @@ class DeckController extends Controller
 
         $byType = $main->groupBy('type')->map(fn ($cards) => $cards->sum($qty));
 
-        // Tratti pesati per copie: 3 copie di un'unità con un tratto contano 3
-        $traits = [];
-        foreach ($main as $card) {
-            foreach ($card->traits as $trait) {
-                $traits[$trait->name] = ($traits[$trait->name] ?? 0) + $qty($card);
-            }
-        }
-        arsort($traits);
+        // Tratti pesati per copie: 3 copie di un'unità con un tratto contano 3.
+        // Si chiama $deckTraits (non $traits) per non collidere con le opzioni del filtro carte, che nella vista edit usano $traits
+        $deckTraits = $main
+            ->flatMap(fn (Card $card) => $card->traits->map(fn ($trait) => ['name' => $trait->name, 'qty' => $qty($card)]))
+            ->groupBy('name')
+            ->map(fn ($rows) => $rows->sum('qty'))
+            ->sortDesc();
 
         // Medie potenza e vita delle unità complessive (per retrocompatibilità test)
         $units = $main->where('type', 'Unità');
@@ -209,7 +208,7 @@ class DeckController extends Controller
             'costCurve',
             'costCurveByType',
             'byType',
-            'traits',
+            'deckTraits',
             'avgPower',
             'avgHealth',
             'powerHealthByCost',

@@ -70,11 +70,11 @@
             </x-bladewind.card>
         </div>
 
-        @if (!empty($traits))
+        @if ($deckTraits->isNotEmpty())
             <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <h4 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">Tratti più presenti</h4>
                 <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @foreach (array_slice($traits, 0, 10, true) as $name => $count)
+                    @foreach ($deckTraits->take(10) as $name => $count)
                         <li class="flex items-center justify-between py-2 text-sm text-gray-800 dark:text-gray-100">
                             <span>{{ $name }}</span>
                             <span class="text-gray-500 dark:text-gray-400 font-medium">×{{ $count }}</span>

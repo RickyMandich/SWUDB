@@ -230,6 +230,9 @@
 - [x] 12.3 Componenti e Viste base
 - [x] 12.4 Aggiornamento colori (solo per il dark mode)
 
+## Bug fix 2026-10-14
+- [x] `decks.edit` andava in errore (`array_slice()` su Collection) perché `$traits` del filtro carte sovrascriveva i tratti del mazzo: le statistiche ora espongono `deckTraits` come Collection (controller, partial `statistics`, test di regressione in `DeckStatisticsTest`)
+
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
 - Tag personalizzati per i mazzi (Aggro/Control/Budget/Meta)

@@ -52,10 +52,20 @@ test('the cost curve has no gaps from zero to the maximum cost', function () {
 test('traits are weighted by copies and sorted by count', function () {
     [$user, $deck] = statisticsDeck();
 
-    $traits = $this->get(route('decks.show', [$user->name, $deck->name]))->viewData('traits');
+    $traits = $this->get(route('decks.show', [$user->name, $deck->name]))->viewData('deckTraits');
 
-    expect($traits)->toEqual(['Ribelle' => 4, 'Pilota' => 1])
-        ->and(array_keys($traits))->toBe(['Ribelle', 'Pilota']);
+    expect($traits->all())->toEqual(['Ribelle' => 4, 'Pilota' => 1])
+        ->and($traits->keys()->all())->toBe(['Ribelle', 'Pilota']);
+});
+
+test('the deck editor renders the statistics section next to the card filter options', function () {
+    [$user, $deck] = statisticsDeck();
+
+    // Regressione: $traits del filtro (nomi dei tratti) non deve sovrascrivere i tratti del mazzo (deckTraits)
+    $response = $this->actingAs($user)->get(route('decks.edit', [$user->name, $deck->name]))->assertOk();
+
+    expect($response->viewData('deckTraits')->all())->toEqual(['Ribelle' => 4, 'Pilota' => 1])
+        ->and($response->viewData('traits')->all())->toEqual(['Pilota', 'Ribelle']);
 });
 
 test('a deck without cards besides leader and base still answers 200 with no averages', function () {
