@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Card;
+use App\Models\Deck;
+use App\Models\Expansion;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +51,42 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Creates a card, creating its expansion if needed
+ * Crea una carta, creando l'espansione se serve
+ */
+function makeCard(array $attributes = []): Card
+{
+    static $number = 0;
+    $expansion = $attributes['expansion'] ?? 'SOR';
+    Expansion::firstOrCreate(['expansion' => $expansion], ['legal_date' => '2024-03-08', 'rotation' => '1']);
+
+    $number++;
+
+    return Card::create($attributes + [
+        'expansion' => $expansion,
+        'number' => $number,
+        'cid' => "cid-{$expansion}-{$number}",
+        'name' => "Carta {$number}",
+        'type' => 'Unità',
+        'rarity' => 'Comune',
+        'cost' => 2,
+        'unique_card' => false,
+    ]);
+}
+
+/**
+ * Creates a deck for the user with the given cards as [card => quantity] pairs
+ * Crea un mazzo per l'utente con le carte indicate come coppie [carta => quantità]
+ */
+function makeDeck(User $user, array $cards = [], array $attributes = []): Deck
+{
+    $deck = Deck::create($attributes + ['user_id' => $user->id, 'name' => 'Mazzo di prova', 'format' => 'premier', 'is_public' => true, 'version' => 1]);
+    foreach ($cards as [$card, $quantity]) {
+        $deck->cards()->attach($card->id, ['quantity' => $quantity]);
+    }
+
+    return $deck;
 }

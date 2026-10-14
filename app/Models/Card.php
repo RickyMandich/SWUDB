@@ -115,4 +115,12 @@ class Card extends Model
     {
         return new CardBuilder($query);
     }
+
+    public function getAspectOrderKeyAttribute(): string
+    {
+        return $this->aspects
+            ->sortBy(fn ($a) => $a->pivot->position ?? 0)
+            ->map(fn ($a) => str_pad((string) $a->order, 4, '0', STR_PAD_LEFT))
+            ->join('');
+    }
 }

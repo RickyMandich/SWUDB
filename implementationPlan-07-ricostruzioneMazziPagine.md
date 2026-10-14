@@ -2,9 +2,13 @@
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md).
 > **Prerequisito**: [`implementationPlan-V-06-ricostruzioneMazziDominio.md`](implementationPlan-V-06-ricostruzioneMazziDominio.md) (enum, relazioni `leaders()`/`baseCard()`, validator, policy) e, per le pagine con la ricerca carte,
-> [`implementationPlan-05-V-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-V-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
+> [`implementationPlan-V-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-V-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
 >
-> **Stato del codice (2026-10-11, verificato sui file)**
+> **Stato del codice (2026-10-14, verificato sui file)**
+> - Applicati gli Step 7.6.0–7.6.7, 7.7 (export/import) e 7.8 (statistiche). Restano: i test dello Step 7.9, le correzioni emerse dalla verifica del 2026-10-14 (rotte `decks.import*` dentro il gruppo `auth`+`verified`, pulsanti di export/import da riattivare in `decks/show` e `decks/index`, pulsante "Copia come nuovo mazzo" di `decks/show` che passa un `base_version` ignorato da `edit`) e le verifiche a mano (7.6.6bis.6, 7.6.7.4, 7.7.0bis).
+> - Scelte volute dell'utente, che prevalgono sul testo sotto: nella copertina `<x-deck-cover>` la base sta in alto a sinistra e il leader in basso a destra; `decks.statistics` va registrata prima di `decks.show` come descritto in 7.8.2; `decks/show` usa un `@forelse` sui leader per mostrare "Nessun leader.".
+>
+> **Storico (2026-10-11, superato dal punto sopra)**
 > - **Già applicato**: Step 7.6.0 (migration `2026_10_09_124754_add_unique_user_name_version_to_decks_table`), 7.6.1 (rotte `decks.*` in `routes/web.php`, tranne quelle indicate sotto), 7.6.2 (`DeckController` con `Gate::authorize`, versione nell'URL, `addCard` che somma) e le viste di 7.6.3 (`decks/index`, `create`, `show`, `edit`, `versions`). Le viste seguono le "Convenzioni per le view" dell'indice.
 > - **Bug nel codice già applicato** (si correggono nello Step 7.6.5): `decks/show.blade.php` chiama `route('decks.statistics', ...)`, che non è registrata, quindi **ogni pagina di un mazzo dà `RouteNotFoundException`** finché non c'è la rotta dello Step 7.8.2; `Deck::baseCard()` è una `belongsToMany` (restituisce una collection) ma `index` e `show` la trattano come modello singolo (`$deck->baseCard?->front_art_path` lancia un'eccezione); `DeckController::index` elenca ogni versione di ogni mazzo come riga a sé; `show` non segnala che una versione precedente è di sola lettura e propone comunque "Modifica mazzo" (che modifica l'ultima).
 > - **Mancante**: ricerca carte nella pagina di modifica (`edit.blade.php` ha solo un commento al posto della ricerca, quindi oggi non si può aggiungere nessuna carta: Step 7.6.6), export/import (Step 7.7, c'erano solo gli stub), statistiche (Step 7.8, rotta, metodo e vista) e test (Step 7.9).
@@ -752,7 +756,7 @@ In `decks/index.blade.php`, nello slot `header`, accanto a "Nuovo mazzo" (dentro
 
 ### Step 7.6.7 — Lista mazzi: copertina con leader e base sovrapposti
 
-Nella lista `/mazzi` le colonne "Leader" e "Base" diventano una sola colonna con una "copertina" del mazzo: il leader davanti, la base dietro, spostata in alto e a destra di un quarto della sua dimensione, così si capisce a colpo d'occhio di che base si tratta. Il fronte di un leader è sempre orizzontale (come lo è quello della base), quindi le due immagini hanno lo stesso rapporto 7:5.
+Nella lista `/mazzi` le colonne "Leader" e "Base" diventano una sola colonna con una "copertina" del mazzo: il leader davanti, la base dietro, spostata in alto e a sinistra di un quarto della sua dimensione (il leader sta in basso a destra), così si capisce a colpo d'occhio di che base si tratta. Il fronte di un leader è sempre orizzontale (come lo è quello della base), quindi le due immagini hanno lo stesso rapporto 7:5.
 
 - **Premier / Eternal** (un leader): leader intero davanti, base dietro.
 - **Twin Suns** (due leader): al posto del leader intero davanti c'è un'immagine composta dalla **metà sinistra** del fronte di ciascuno dei due leader, affiancate; base dietro come sopra.
@@ -773,8 +777,8 @@ Nuovo file `resources/views/components/deck-cover.blade.php`. Misure: l'immagine
     $art = fn ($card) => $card?->front_art_path ? asset('storage/' . $card->front_art_path) : null;
 @endphp
 <div {{ $attributes->class('relative h-25 w-35 shrink-0') }}>
-    {{-- Base: dietro, in alto e a destra --}}
-    <div class="absolute right-0 top-0 z-0 aspect-[7/5] w-28 overflow-hidden rounded
+    {{-- Base: dietro, in alto e a sinistra --}}
+    <div class="absolute left-0 top-0 z-0 aspect-[7/5] w-28 overflow-hidden rounded
                 border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700">
         @if ($art($base))
             <img class="h-full w-full object-cover" src="{{ $art($base) }}" alt="{{ $base->name }}" loading="lazy">
@@ -783,8 +787,8 @@ Nuovo file `resources/views/components/deck-cover.blade.php`. Misure: l'immagine
         @endif
     </div>
 
-    {{-- Leader: davanti, in basso a sinistra --}}
-    <div class="absolute bottom-0 left-0 z-10 flex aspect-[7/5] w-28 overflow-hidden rounded
+    {{-- Leader: davanti, in basso a destra --}}
+    <div class="absolute bottom-0 right-0 z-10 flex aspect-[7/5] w-28 overflow-hidden rounded
                 border border-gray-300 bg-gray-100 shadow-md dark:border-gray-600 dark:bg-gray-700">
         @forelse ($leaders as $leader)
             @if ($twinSuns)

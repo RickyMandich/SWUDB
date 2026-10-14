@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\SystemErrorController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\CardController;
 use App\Http\Controllers\DeckController;
+use App\Http\Controllers\DeckImportController;
 use App\Http\Controllers\ProfileController;
 use App\Mail\AdminScanReportEmail;
 use App\Mail\NewCardsEmail;
@@ -83,6 +84,8 @@ Route::prefix('/mazzi')->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/crea', [DeckController::class, 'create'])->name('decks.create');
         Route::post('/', [DeckController::class, 'store'])->name('decks.store');
+        Route::get('/importa', [DeckImportController::class, 'create'])->name('decks.import');
+        Route::post('/importa', [DeckImportController::class, 'store'])->name('decks.import.store');
     });
 });
 
@@ -100,4 +103,7 @@ Route::middleware(['auth', 'verified'])->prefix('mazzo/modifica/{username}/{deck
 // Visualizzazione mazzo (pubblica se is_public, oppure proprietario).
 // Registrata DOPO il gruppo `mazzo/modifica/...` e con `{version?}` numerico: così `/mazzo/modifica/alice/2` (mazzo "2" di alice) non viene scambiato per il mazzo "alice" dell'utente "modifica".
 Route::get('/mazzo/{username}/{deckname}/versioni', [DeckController::class, 'versions'])->name('decks.versions');
+Route::get('/mazzo/{username}/{deckname}/esporta/{format}/{version?}', [DeckController::class, 'export'])
+    ->whereIn('format', ['txt', 'json'])->whereNumber('version')->name('decks.export');
+Route::get('/mazzo/{username}/{deckname}/statistiche/{version?}', [DeckController::class, 'statistics'])->whereNumber('version')->name('decks.statistics');
 Route::get('/mazzo/{username}/{deckname}/{version?}', [DeckController::class, 'show'])->whereNumber('version')->name('decks.show');

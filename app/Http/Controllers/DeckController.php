@@ -7,12 +7,15 @@ use App\Models\Card;
 use App\Models\Deck;
 use App\Models\User;
 use App\Services\CardSearch;
+use App\Services\DeckExporter;
 use App\Services\DeckValidation\DeckFormatValidatorFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -88,6 +91,134 @@ class DeckController extends Controller
     }
 
     /**
+     * Calcola i dati statistici di un mazzo (totale, curva costi per tipo, grafici avanzati, tratti, medie)
+     */
+    protected function getDeckStatisticsData(Deck $deck): array
+    {
+        // Solo il mazzo vero e proprio: leader e base hanno un ruolo a parte e la base non ha costo
+        $main = $deck->cards->reject(fn (Card $card) => in_array($card->type, ['Leader', 'Base']));
+        $qty = fn (Card $card): int => (int) $card->pivot->quantity;
+        $total = $main->sum($qty);
+
+        // Curva dei costi senza buchi: ogni costo da 0 al massimo
+        $curve = $main->groupBy(fn (Card $card) => (int) $card->cost)->map(fn ($cards) => $cards->sum($qty));
+        $maxCost = $curve->keys()->max();
+        $allCosts = $maxCost !== null ? range(0, (int) $maxCost) : [0];
+        $costCurve = collect($allCosts)->mapWithKeys(fn (int $cost) => [$cost => $curve[$cost] ?? 0]);
+
+        // Curve dei costi suddivise per tipo di carta per i toggle interattivi
+        $curveForType = function (string $type) use ($main, $allCosts, $qty) {
+            $cardsOfType = $main->where('type', $type);
+            $typeCurve = $cardsOfType->groupBy(fn (Card $c) => (int) $c->cost)->map(fn ($cards) => $cards->sum($qty));
+
+            return collect($allCosts)->mapWithKeys(fn (int $cost) => [$cost => $typeCurve[$cost] ?? 0])->values()->all();
+        };
+
+        $costCurveByType = [
+            'Unità' => $curveForType('Unità'),
+            'Miglioria' => $curveForType('Miglioria'),
+            'Evento' => $curveForType('Evento'),
+        ];
+
+        $byType = $main->groupBy('type')->map(fn ($cards) => $cards->sum($qty));
+
+        // Tratti pesati per copie: 3 copie di un'unità con un tratto contano 3
+        $traits = [];
+        foreach ($main as $card) {
+            foreach ($card->traits as $trait) {
+                $traits[$trait->name] = ($traits[$trait->name] ?? 0) + $qty($card);
+            }
+        }
+        arsort($traits);
+
+        // Medie potenza e vita delle unità complessive (per retrocompatibilità test)
+        $units = $main->where('type', 'Unità');
+        $unitCount = $units->sum($qty);
+        $avgPower = $unitCount ? $units->sum(fn (Card $card) => (int) $card->power * $qty($card)) / $unitCount : null;
+        $avgHealth = $unitCount ? $units->sum(fn (Card $card) => (int) $card->health * $qty($card)) / $unitCount : null;
+
+        // Potenza e vita medie per costo delle unità (grafico a diffusione / linee)
+        $unitsByCost = $units->groupBy(fn (Card $c) => (int) $c->cost)->sortKeys();
+        $powerHealthByCost = [];
+        foreach ($unitsByCost as $cost => $cards) {
+            $cCount = $cards->sum($qty);
+            if ($cCount > 0) {
+                $powerHealthByCost[] = [
+                    'cost' => (int) $cost,
+                    'power' => round($cards->sum(fn (Card $c) => (int) $c->power * $qty($c)) / $cCount, 2),
+                    'health' => round($cards->sum(fn (Card $c) => (int) $c->health * $qty($c)) / $cCount, 2),
+                ];
+            }
+        }
+
+        // Grafico a torta degli aspetti (con fette zebrate per carte multi-aspetto)
+        $aspectGroups = [];
+        foreach ($main as $card) {
+            $aspects = $card->aspects->sortBy('pivot.position');
+            if ($aspects->isEmpty()) {
+                $key = 'Neutrale';
+                $colors = ['#9ca3af'];
+            } else {
+                $key = $aspects->pluck('name')->join(' / ');
+                $colors = $aspects->map(fn ($a) => $a->color ?: '#9ca3af')->values()->all();
+            }
+
+            if (! isset($aspectGroups[$key])) {
+                $aspectGroups[$key] = [
+                    'label' => $key,
+                    'count' => 0,
+                    'colors' => $colors,
+                ];
+            }
+            $aspectGroups[$key]['count'] += $qty($card);
+        }
+        $aspectStats = array_values($aspectGroups);
+
+        // Grafico a torta delle rarità:
+        // Colori specificati: leggendaria#00c8f3, rara#f1c000, non comune#d1d1d1, comune#964d02, speciale#000000
+        $rarityColorMap = [
+            'leggendaria' => '#00c8f3',
+            'rara' => '#f1c000',
+            'non comune' => '#d1d1d1',
+            'comune' => '#964d02',
+            'speciale' => '#000000',
+        ];
+
+        $rarityGroups = [];
+        foreach ($main as $card) {
+            $rawRarity = trim((string) ($card->rarity ?: 'Comune'));
+            $normRarity = strtolower($rawRarity);
+            $color = $rarityColorMap[$normRarity] ?? '#9ca3af';
+
+            if (! isset($rarityGroups[$rawRarity])) {
+                $rarityGroups[$rawRarity] = [
+                    'label' => $rawRarity,
+                    'count' => 0,
+                    'color' => $color,
+                ];
+            }
+            $rarityGroups[$rawRarity]['count'] += $qty($card);
+        }
+
+        $rarityOrder = ['Speciale' => 1, 'Comune' => 2, 'Non comune' => 3, 'Rara' => 4, 'Leggendaria' => 5];
+        uksort($rarityGroups, fn ($a, $b) => ($rarityOrder[$a] ?? 99) <=> ($rarityOrder[$b] ?? 99));
+        $rarityStats = array_values($rarityGroups);
+
+        return compact(
+            'total',
+            'costCurve',
+            'costCurveByType',
+            'byType',
+            'traits',
+            'avgPower',
+            'avgHealth',
+            'powerHealthByCost',
+            'aspectStats',
+            'rarityStats'
+        );
+    }
+
+    /**
      * Visualizzazione in sola lettura (accessibile se mazzo pubblico o se proprietario)
      */
     public function show(string $username, string $deckname, ?int $version = null): View
@@ -98,8 +229,25 @@ class DeckController extends Controller
         $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
         $validationErrors = DeckFormatValidatorFactory::make($deck->format)->validate($deck);
         $isLatest = ! $deck->nextVersion()->exists();
+        $stats = $this->getDeckStatisticsData($deck);
 
-        return view('decks.show', compact('deck', 'validationErrors', 'isLatest'));
+        return view('decks.show', compact('deck', 'validationErrors', 'isLatest') + $stats);
+    }
+
+    /**
+     * Reindirizza alla sezione statistiche incorporata a fondo pagina nella vista show del mazzo
+     */
+    public function statistics(string $username, string $deckname, ?int $version = null): RedirectResponse
+    {
+        $deck = $this->resolveDeck($username, $deckname, $version);
+        Gate::authorize('view', $deck);
+
+        $params = ['username' => $username, 'deckname' => $deckname];
+        if ($version !== null) {
+            $params['version'] = $version;
+        }
+
+        return redirect()->route('decks.show', $params)->withFragment('statistiche');
     }
 
     /**
@@ -114,8 +262,9 @@ class DeckController extends Controller
 
         $options = $search->filterOptions();
         $options['types'] = collect(self::DECK_CARD_TYPES); // niente segnalini tra i badge del filtro
+        $stats = $this->getDeckStatisticsData($deck);
 
-        return view('decks.edit', ['deck' => $deck] + $options);
+        return view('decks.edit', ['deck' => $deck] + $options + $stats);
     }
 
     /**
@@ -264,7 +413,7 @@ class DeckController extends Controller
         $filters = $request->only(CardSearch::FILTER_KEYS);
         $filters['tipi'] = ($validated['tipi'] ?? []) ?: self::DECK_CARD_TYPES; // senza tipo scelto: tutti i tipi da mazzo, mai i segnalini
 
-        $cards = $search->apply(Card::query(), $filters)->paginate(30); // il numero di pagina lo legge da solo da ?page=
+        $cards = $search->apply(Card::with('aspect'), $filters)->paginate(30); // il numero di pagina lo legge da solo da ?page=
 
         return response()->json([
             'data' => $cards->getCollection()->map(fn (Card $card) => [
@@ -272,12 +421,34 @@ class DeckController extends Controller
                 'name' => $card->name,
                 'title' => $card->title,
                 'type' => $card->type,
-                'label' => $card->snippet, // "SOR-12 - Nome, TITOLO": l'espansione e il numero distinguono le ristampe
+                'cost' => $card->cost,
+                'number' => $card->number,
+                'aspect_order' => $card->aspect_order_key,
+                'label' => $card->snippet,
                 'image' => $card->front_art_path ? asset('storage/'.$card->front_art_path) : null,
+                'url' => route('cards.show', [$card->expansion, $card->number]),
             ])->values(),
             'current_page' => $cards->currentPage(),
             'last_page' => $cards->lastPage(),
             'total' => $cards->total(),
+        ]);
+    }
+
+    /**
+     * Downloads the deck as a TXT or JSON file (public if the deck is public, otherwise owner only)
+     * Scarica il mazzo come file TXT o JSON (pubblico se il mazzo è pubblico, altrimenti solo proprietario)
+     */
+    public function export(DeckExporter $exporter, string $username, string $deckname, string $format, ?int $version = null): Response
+    {
+        $deck = $this->resolveDeck($username, $deckname, $version);
+        Gate::authorize('view', $deck);
+
+        $content = $format === 'json' ? $exporter->toJson($deck) : $exporter->toText($deck);
+        $filename = (Str::slug($deck->name) ?: 'mazzo')."-v{$deck->version}.{$format}";
+
+        return response($content, 200, [
+            'Content-Type' => $format === 'json' ? 'application/json' : 'text/plain; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
 }

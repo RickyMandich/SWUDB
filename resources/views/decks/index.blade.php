@@ -4,8 +4,8 @@
             <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Mazzi</h2>
             @auth
                 <a href="{{ route('decks.create') }}"><x-primary-button type="button">Nuovo mazzo</x-primary-button></a>
-                {{-- <a href="{{ route('decks.import') }}"><x-secondary-button type="button">Importa
-                 mazzo</x-secondary-button></a> --}}
+                <a href="{{ route('decks.import') }}"><x-secondary-button type="button">Importa
+                        mazzo</x-secondary-button></a>
             @endauth
         </div>
     </x-slot>

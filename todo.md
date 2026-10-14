@@ -169,11 +169,15 @@
   - [ ] 7.7.3 `DeckController::export` + rotta `decks.export`; `DeckImportController` + rotte `decks.import`/`decks.import.store` + vista `decks/import`
   - [ ] 7.7.0bis Da verificare su un export reale: chiave `secondleader` (Twin Suns) e `secondLeader` nel JSON nativo di swudb.com; id con o senza zeri iniziali
   - Limite noto: i nomi in DB sono in italiano, quindi l'import TXT per nome funziona solo con file esportati da questo sito; per file con nomi inglesi si usa il JSON (id)
-- [ ] 7.8 Statistiche mazzo (ex Step 10.2 del piano 05: curva costi, tipi, tratti, medie, Chart.js via CDN)
-  - [ ] 7.8.1 `DeckController::statistics($username, $deckname, ?int $version)` con `resolveDeck()` e tipo unità `'Unità'`. Decisioni chiuse: tutto pesato per `quantity` (tratti e medie compresi), leader e base esclusi da curva, tipi, tratti e medie
-  - [ ] 7.8.2 Rotta `/mazzo/{username}/{deckname}/statistiche/{version?}` (`decks.statistics`), prima di `decks.show`. **Da applicare per prima**: senza, `decks/show` dà `RouteNotFoundException` per ogni mazzo
-  - [ ] 7.8.3 Vista `decks/statistics`
-  - [ ] 7.8.4 Link "Statistiche" da `decks/show` (c'è già, senza versione: aggiungerla)
+- [x] 7.8 Statistiche mazzo incorporate e migliorie UI show/edit:
+  - [x] 7.8.1 Calcolo statistiche in `DeckController::getDeckStatisticsData(Deck $deck)` (curva costi per tipo, potenza e vita medie per costo, aspetti con multi-colori, rarità con palette ufficiale, tratti, leader e base esclusi)
+  - [x] 7.8.2 Rotta `decks.statistics` reindirizza a `decks.show` con fragment `#statistiche`
+  - [x] 7.8.3 Statistiche incorporate a fondo pagina sia in `decks/show` sia in `decks/edit` tramite partial `resources/views/decks/partials/statistics.blade.php` (Chart.js via CDN); rimossa la vista autonoma `decks/statistics`
+  - [x] 7.8.4 Pagina `show`: unità raggruppate assieme per preservare l'ordinamento naturale di montaggio del mazzo, con indicatore di arena (`Terrestre` / `Spaziale`) su ciascuna riga
+  - [x] 7.8.5 Pagina `edit`: link alle carte nella lista, tipo carta allineato con colonna fissa (`w-28`), rimosso pulsante salva ridondante in alto (indicatore modifiche non salvate spostato in basso)
+  - [x] 7.8.6 Anteprima carta (desktop hover con overlay fluttuante e mobile touch con popup modal) su entrambe le pagine (`decks/partials/card-preview.blade.php`)
+  - [x] 7.8.7 Grafici avanzati statistiche: rimossa quantità carte, grafico line/diffusione potenza e vita medie per costo (rosso/blu), curva dei costi con 3 toggle a `<x-badge>` (Unità, Miglioria, Evento), grafico a torta degli aspetti con fette zebrate multi-aspetto e grafico a torta delle rarità con colori specificati
+  - [x] 7.8.8 Test `DeckStatisticsTest` aggiornati e passati (8/8)
 - [ ] 7.9 Test Pest dei mazzi: helper `makeCard`/`makeDeck` in `tests/Pest.php`, `DeckExporterTest`, `DeckImporterTest` (con i tre casi limite dell'URL), `DeckPagesTest` (lista, show, edit, ricerca, versioni, export, import, regressioni di 7.6.5), `DeckStatisticsTest` (medie pesate per copie)
 
 ## 08 — Collezione (Fase 8) `implementationPlan-08-ricostruzioneCollezione.md`
