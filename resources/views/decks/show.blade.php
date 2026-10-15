@@ -23,9 +23,7 @@
             </h2>
             <div class="flex items-center gap-2">
                 <a href="{{ route('decks.versions', [$deck->user->name, $deck->name]) }}">
-                    <x-secondary-button type="button">Cronologia versioni</x-secondary-button></a>
-                <a href="#statistiche">
-                    <x-secondary-button type="button">Statistiche</x-secondary-button>
+                    <x-secondary-button type="button">Cronologia versioni</x-secondary-button>
                 </a>
                 <a href="{{ route('decks.export', [$deck->user->name, $deck->name, 'txt', $deck->version]) }}">
                     <x-secondary-button type="button">Esporta TXT</x-secondary-button>
@@ -35,14 +33,21 @@
                 </a>
                 @can('update', $deck)
                     @if ($isLatest)
-                        <a href="{{ route('decks.edit', [$deck->user->name, $deck->name]) }}"><x-primary-button
-                                type="button">Modifica mazzo</x-primary-button></a>
-                    @else
-                        <a
-                            href="{{ route('decks.edit', [$deck->user->name, $deck->name, 'base_version' => $deck->version]) }}"><x-primary-button
-                                type="button">Copia come nuovo mazzo</x-primary-button></a>
+                        <a href="{{ route('decks.edit', [$deck->user->name, $deck->name]) }}">
+                            <x-primary-button type="button">Modifica mazzo</x-primary-button>
+                        </a>
                     @endif
                 @endcan
+
+                @auth
+                    @unless ($isLatest && Auth::user()->can('update', $deck))
+                        <form method="POST"
+                            action="{{ route('decks.copy', [$deck->user->name, $deck->name, $deck->version]) }}">
+                            @csrf
+                            <x-primary-button>Copia come nuovo mazzo</x-primary-button>
+                        </form>
+                    @endunless
+                @endauth
             </div>
         </div>
     </x-slot>
@@ -71,9 +76,9 @@
                     @forelse ($deck->leaders as $leader)
                         @if ($leader->front_art_path)
                             <a href="{{ route('cards.show', [$leader->expansion, $leader->number]) }}"
-                               class="transition-transform hover:scale-105">
-                                <img class="h-40 rounded-lg shadow" src="{{ asset('storage/' . $leader->front_art_path) }}"
-                                    alt="{{ $leader->name }}">
+                                class="transition-transform hover:scale-105">
+                                <img class="h-40 rounded-lg shadow"
+                                    src="{{ asset('storage/' . $leader->front_art_path) }}" alt="{{ $leader->name }}">
                             </a>
                         @endif
                     @empty
@@ -83,7 +88,7 @@
                     @php($base = $deck->baseCard->first())
                     @if ($base?->front_art_path)
                         <a href="{{ route('cards.show', [$base->expansion, $base->number]) }}"
-                           class="transition-transform hover:scale-105">
+                            class="transition-transform hover:scale-105">
                             <img class="h-40 rounded shadow" src="{{ asset('storage/' . $base->front_art_path) }}"
                                 alt="{{ $base->name }}">
                         </a>
@@ -108,15 +113,15 @@
                                 <a class="text-gray-800 hover:underline dark:text-gray-100 font-medium truncate flex-1 min-w-0"
                                     href="{{ $cardUrl }}"
                                     @mouseenter="showHover('{{ $cardImg }}', '{{ addslashes($card->name) }}', $event)"
-                                    @mousemove="moveHover($event)"
-                                    @mouseleave="hideHover()"
+                                    @mousemove="moveHover($event)" @mouseleave="hideHover()"
                                     @click="handleCardClick('{{ $cardImg }}', '{{ addslashes($card->name) }}', '{{ $cardUrl }}', $event)">
                                     {{ $card->name }}
                                 </a>
                                 <div class="flex items-center gap-2.5 shrink-0">
                                     @if ($card->arena)
                                         @php($isSpace = in_array(strtolower($card->arena), ['spaziale', 'space']))
-                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium {{ $isSpace ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60' }}">
+                                        <span
+                                            class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium {{ $isSpace ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60' }}">
                                             {{ $card->arena }}
                                         </span>
                                     @endif

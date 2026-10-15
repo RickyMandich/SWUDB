@@ -300,3 +300,38 @@ test('guests are redirected to the login on both import routes', function () {
     $this->get(route('decks.import'))->assertRedirect(route('login'));
     $this->post(route('decks.import.store'), ['name' => 'X'])->assertRedirect(route('login'));
 });
+
+test('a logged user copies another user deck as a new private deck', function () {
+    $a = makeCard();
+    [$owner, $deck] = ownedDeck('alice', [[$a, 2]], ['is_public' => true]);
+    $bob = User::factory()->create(['name' => 'bob']);
+
+    $this->actingAs($bob)
+        ->post(route('decks.copy', [$owner->name, $deck->name, 1]))
+        ->assertRedirect(route('decks.edit', ['bob', 'copia di sabine-aggro']));
+
+    $copy = Deck::where('user_id', $bob->id)->first();
+    expect($copy->version)->toBe(1)
+        ->and($copy->is_public)->toBeFalse()
+        ->and((int) $copy->cards->first()->pivot->quantity)->toBe(2);
+});
+
+test('copying twice does not clash on the name', function () {
+    [$owner, $deck] = ownedDeck('alice', [], ['is_public' => true]);
+    $bob = User::factory()->create(['name' => 'bob']);
+
+    $this->actingAs($bob)->post(route('decks.copy', [$owner->name, $deck->name]));
+    $this->actingAs($bob)->post(route('decks.copy', [$owner->name, $deck->name]));
+
+    expect(Deck::where('user_id', $bob->id)->pluck('name')->all())
+        ->toBe(['copia di sabine-aggro', 'copia di sabine-aggro (2)']);
+});
+
+test('copying a private deck is forbidden to other users and guests are sent to login', function () {
+    [$owner, $deck] = ownedDeck('alice', [], ['is_public' => false]);
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('decks.copy', [$owner->name, $deck->name]))->assertForbidden();
+    auth()->logout();
+    $this->post(route('decks.copy', [$owner->name, $deck->name]))->assertRedirect(route('login'));
+});

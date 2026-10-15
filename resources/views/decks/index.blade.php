@@ -25,9 +25,11 @@
                         <tr>
                             <td>
                                 <a class="font-medium text-gray-800 hover:underline dark:text-gray-100"
-                                    href="{{ route('decks.show', [$deck->user->name, $deck->name]) }}">{{ $deck->name }}</a>
-                                <span
-                                    class="ml-2 border border-rounded p-1 border-gray-500 dark:border-gray-400 text-xs text-gray-500 dark:text-gray-400">{{ $deck->is_public ? 'pubblico' : 'privato' }}</span>
+                                    href="{{ route('decks.show', [$deck->user->name, $deck->name]) }}">{{ $deck->name }}
+                                </a>
+                                <x-badge :textColor="'#000000'" class="ml-2">
+                                    {{ $deck->is_public ? 'pubblico' : 'privato' }}
+                                </x-badge>
                             </td>
                             <td><x-deck-cover :deck="$deck" /></td>
                             <td class="text-gray-500 dark:text-gray-400">{{ $deck->format->value }}</td>

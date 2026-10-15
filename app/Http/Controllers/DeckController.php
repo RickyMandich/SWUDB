@@ -450,4 +450,41 @@ class DeckController extends Controller
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
+
+    /**
+     * Copia un mazzo visibile (nella versione indicata) come nuovo mazzo privato dell'utente loggato
+     */
+    public function copy(Request $request, string $username, string $deckname, ?int $version = null): RedirectResponse
+    {
+        $source = $this->resolveDeck($username, $deckname, $version);
+        Gate::authorize('view', $source);
+
+        $user = $request->user();
+
+        // "copia di X", poi "copia di X (2)", "(3)"...: (user_id, name, version) è unico
+        $base = Str::limit('copia di '.$source->name, 240, '');
+        $name = $base;
+        for ($n = 2; Deck::where('user_id', $user->id)->where('name', $name)->exists(); $n++) {
+            $name = "{$base} ({$n})";
+        }
+
+        $copy = DB::transaction(function () use ($source, $user, $name) {
+            $copy = Deck::create([
+                'user_id' => $user->id,
+                'name' => $name,
+                'format' => $source->format,
+                'is_public' => false,
+                'version' => 1,
+            ]);
+
+            $copy->cards()->attach(
+                $source->cards->mapWithKeys(fn (Card $card) => [$card->id => ['quantity' => $card->pivot->quantity]])->all()
+            );
+
+            return $copy;
+        });
+
+        return redirect()->route('decks.edit', [$user->name, $copy->name])
+            ->with('status', "Copia creata da {$username}/{$source->name} v{$source->version}.");
+    }
 }

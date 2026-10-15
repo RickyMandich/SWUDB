@@ -1,4 +1,5 @@
-<article class="h-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-xs transition hover:shadow-md">
+<article
+    class="h-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-xs transition hover:shadow-md">
     <a href="{{ route('cards.show', [
         'expansion' => $card->expansion,
         'number' => $card->number,
@@ -30,9 +31,10 @@
 
                 {{-- Aspetti --}}
                 @if ($card->aspects->isNotEmpty())
+                    @php(\Log::debug("debugging aspects in card component for {$card->snippet}", [$card]))
                     <div class="mb-2 flex flex-wrap gap-1">
                         @foreach ($card->aspects as $aspect)
-                            <x-badge :color="$aspect->color" :text-color="$aspect->text_color">
+                            <x-badge :color="$aspect->color" :textColor="$aspect->text_color">
                                 {{ $aspect->name }}
                             </x-badge>
                         @endforeach

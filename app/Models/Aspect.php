@@ -27,7 +27,7 @@ class Aspect extends Model
         $b = hexdec(substr($hex, 4, 2));
         $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
 
-        return $yiq >= 128 ? '#000' : '#fff';
+        return $yiq >= 128 ? '#000000' : '#ffffff';
     }
 
     public function cards()

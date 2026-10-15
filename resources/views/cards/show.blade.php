@@ -52,7 +52,8 @@
                             <x-bladewind.description-list.item label="Aspetti"
                                 class="text-gray-800 dark:text-gray-200 bg-transparent">
                                 @foreach ($card->aspects as $aspect)
-                                    <x-badge :color="$aspect->color" :text-color="$aspect->text_color">
+                                    @php(\Log::debug("debugging aspect for {$card->snippet}", [$aspect, $aspect->color, $aspect->text_color]))
+                                    <x-badge :color="$aspect->color" :textColor="$aspect->text_color">
                                         {{ $aspect->name }}
                                     </x-badge>
                                 @endforeach

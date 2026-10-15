@@ -87,6 +87,8 @@ Route::prefix('/mazzi')->group(function () {
         Route::post('/', [DeckController::class, 'store'])->name('decks.store');
         Route::get('/importa', [DeckImportController::class, 'create'])->name('decks.import');
         Route::post('/importa', [DeckImportController::class, 'store'])->name('decks.import.store');
+        Route::post('/copia/{username}/{deckname}/{version?}', [DeckController::class, 'copy'])
+            ->whereNumber('version')->name('decks.copy');
     });
 });
 

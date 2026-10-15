@@ -57,7 +57,7 @@
             <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <h3 class="mb-3 font-semibold text-gray-800 dark:text-gray-100">Aggiungi carte</h3>
 
-                <x-cards-filter embedded :open="true" :aspects="$aspects" :traits="$traits" :types="$types"
+                <x-cards-filter embedded :open="false" :aspects="$aspects" :traits="$traits" :types="$types"
                     :expansions="$expansions" :filters="[]" :bounds="$bounds" :action="route('decks.search-cards', [$deck->user->name, $deck->name])"
                     x-on:submit.prevent="search($event.target)" />
 
@@ -69,20 +69,20 @@
                     <template x-for="card in results" :key="card.id">
                         <li
                             class="flex items-center justify-between gap-3 py-2 text-sm text-gray-800 dark:text-gray-100">
-                            <a :href="card.url"
-                               target="_blank"
-                               class="flex items-center gap-3 flex-1 min-w-0 hover:underline group"
-                               @mouseenter="showHover(card.image, card.name, $event)"
-                               @mousemove="moveHover($event)"
-                               @mouseleave="hideHover()"
-                               @click="handleCardClick(card.image, card.name, card.url, $event)">
+                            <a :href="card.url" target="_blank"
+                                class="flex items-center gap-3 flex-1 min-w-0 hover:underline group"
+                                @mouseenter="showHover(card.image, card.name, $event)" @mousemove="moveHover($event)"
+                                @mouseleave="hideHover()"
+                                @click="handleCardClick(card.image, card.name, card.url, $event)">
                                 <img x-show="card.image" :src="card.image" :alt="card.name"
                                     class="h-10 rounded shrink-0 shadow-xs" loading="lazy">
                                 <span class="truncate font-medium" x-text="card.label"></span>
                             </a>
                             <span class="flex items-center gap-3 shrink-0">
-                                <span class="text-gray-500 dark:text-gray-400 w-24 text-right" x-text="card.type"></span>
-                                <button type="button" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                                <span class="text-gray-500 dark:text-gray-400 w-24 text-right"
+                                    x-text="card.type"></span>
+                                <button type="button"
+                                    class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
                                     @click="add(card)">Aggiungi</button>
                             </span>
                         </li>
@@ -104,7 +104,8 @@
                 <x-bladewind.card class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <div class="mb-3 flex items-center justify-between">
                         <h3 class="font-semibold text-gray-800 dark:text-gray-100">Carte nel mazzo</h3>
-                        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="`${rows.length} tipi di carte`"></span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400"
+                            x-text="`${rows.length} tipi di carte`"></span>
                     </div>
 
                     <p x-show="!rows.length" class="text-sm text-gray-500 dark:text-gray-400">Il mazzo è vuoto: cerca
@@ -118,33 +119,35 @@
 
                                 {{-- Nome carta come link con anteprima al passaggio / tocco --}}
                                 <div class="flex-1 min-w-0 pr-2">
-                                    <a :href="row.url"
-                                       target="_blank"
-                                       class="text-gray-800 hover:underline dark:text-gray-100 font-medium truncate block"
-                                       @mouseenter="showHover(row.image, row.name, $event)"
-                                       @mousemove="moveHover($event)"
-                                       @mouseleave="hideHover()"
-                                       @click="handleCardClick(row.image, row.name, row.url, $event)"
-                                       x-text="row.name">
+                                    <a :href="row.url" target="_blank"
+                                        class="text-gray-800 hover:underline dark:text-gray-100 font-medium truncate block"
+                                        @mouseenter="showHover(row.image, row.name, $event)"
+                                        @mousemove="moveHover($event)" @mouseleave="hideHover()"
+                                        @click="handleCardClick(row.image, row.name, row.url, $event)"
+                                        x-text="row.name">
                                     </a>
                                 </div>
 
                                 {{-- Tipo carta con larghezza fissa: allineamento verticale coerente indipendentemente dal nome --}}
-                                <div class="w-28 shrink-0 text-left text-gray-500 dark:text-gray-400 text-sm" x-text="row.type"></div>
+                                <div class="w-28 shrink-0 text-left text-gray-500 dark:text-gray-400 text-sm"
+                                    x-text="row.type"></div>
 
                                 {{-- Controlli quantità e rimozione --}}
                                 <div class="flex items-center justify-end gap-2 shrink-0 w-36">
                                     {{-- Leader e base restano a quantità 1: niente +/- --}}
                                     <template x-if="!['Leader', 'Base'].includes(row.type)">
                                         <span class="flex items-center gap-1.5">
-                                            <button type="button" class="w-6 h-6 flex items-center justify-center font-bold text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors"
+                                            <button type="button"
+                                                class="w-6 h-6 flex items-center justify-center font-bold text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors"
                                                 @click="row.quantity = Math.max(1, row.quantity - 1)">−</button>
                                             <span class="w-5 text-center font-semibold" x-text="row.quantity"></span>
-                                            <button type="button" class="w-6 h-6 flex items-center justify-center font-bold text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors"
+                                            <button type="button"
+                                                class="w-6 h-6 flex items-center justify-center font-bold text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 rounded transition-colors"
                                                 @click="row.quantity++">+</button>
                                         </span>
                                     </template>
-                                    <button type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:underline ml-2"
+                                    <button type="button"
+                                        class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:underline ml-2"
                                         @click="rows.splice(i, 1)">Rimuovi</button>
                                 </div>
                             </li>
@@ -171,6 +174,9 @@
                     @csrf
                     <x-secondary-button type="submit">Crea nuova versione</x-secondary-button>
                 </form>
+                <a href="{{ route('decks.show', [$deck->user->name, $deck->name]) }}">
+                    <x-primary-button type="button">Vedi mazzo</x-primary-button>
+                </a>
             </div>
 
             {{-- Statistiche incorporate a fondo pagina --}}
