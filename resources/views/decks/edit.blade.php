@@ -174,6 +174,9 @@
                     @csrf
                     <x-secondary-button type="submit">Crea nuova versione</x-secondary-button>
                 </form>
+                <a href="{{ route('decks.gap', [$deck->user->name, $deck->name, $deck->version]) }}">
+                    <x-secondary-button type="button">Carte mancanti / presenti</x-secondary-button>
+                </a>
                 <a href="{{ route('decks.show', [$deck->user->name, $deck->name]) }}">
                     <x-primary-button type="button">Vedi mazzo</x-primary-button>
                 </a>

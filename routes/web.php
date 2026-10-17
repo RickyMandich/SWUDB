@@ -114,4 +114,6 @@ Route::get('/mazzo/{username}/{deckname}/{version?}', [DeckController::class, 's
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/collezione', [CollectionController::class, 'index'])->name('collection.index');
     Route::patch('/collezione', [CollectionController::class, 'update'])->name('collection.update');
+    Route::get('/mazzo/{username}/{deckname}/delta/{version?}', [DeckController::class, 'gap'])
+        ->whereNumber('version')->name('decks.gap');
 });

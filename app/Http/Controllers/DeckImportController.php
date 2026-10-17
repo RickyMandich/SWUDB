@@ -23,7 +23,6 @@ class DeckImportController extends Controller
      */
     public function store(Request $request, DeckImporter $importer): RedirectResponse
     {
-        \Log::debug('all request', [$request->all()]);
         $validated = $request->validate([
             'name' => [
                 'required',
@@ -36,7 +35,6 @@ class DeckImportController extends Controller
             'file' => ['required_without:url', 'nullable', 'file', 'extensions:txt,json', 'max:2048'], // KB
             'url' => ['required_without:file', 'nullable', 'url:https', 'max:2048'],
         ]);
-        \Log::debug('after validation', [$validated]);
 
         $owner = $request->user();
         $format = DeckFormat::from($validated['format']);

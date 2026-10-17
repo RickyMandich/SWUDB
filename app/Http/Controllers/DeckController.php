@@ -8,6 +8,7 @@ use App\Models\Deck;
 use App\Models\User;
 use App\Services\CardSearch;
 use App\Services\DeckExporter;
+use App\Services\DeckGapCalculator;
 use App\Services\DeckValidation\DeckFormatValidatorFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -486,5 +487,35 @@ class DeckController extends Controller
 
         return redirect()->route('decks.edit', [$user->name, $copy->name])
             ->with('status', "Copia creata da {$username}/{$source->name} v{$source->version}.");
+    }
+
+    /**
+     * Carte mancanti / presenti del mazzo rispetto alla collezione di chi guarda (non del proprietario)
+     */
+    public function gap(Request $request, DeckGapCalculator $calculator, string $username, string $deckname, ?int $version = null): View
+    {
+        $deck = $this->resolveDeck($username, $deckname, $version);
+        Gate::authorize('view', $deck);
+
+        $mode = $request->query('mostra') === 'presenti' ? 'presenti' : 'mancanti'; // default: mancanti; qualunque altro valore vale "mancanti"
+        $gap = $calculator->forDeck($deck, $request->user());
+
+        // totali in copie, sempre mostrati sopra le liste qualunque sia la modalità
+        $summary = [
+            'needed' => (int) $deck->cards->sum('pivot.quantity'),
+            'present' => array_sum($gap['present']),
+            'reserved' => array_sum($gap['reservedElsewhere']),
+            'missing' => array_sum($gap['missing']),
+        ];
+
+        $quantities = $mode === 'presenti'
+            ? ['present' => $gap['present']]
+            : ['missing' => $gap['missing'], 'reserved' => $gap['reservedElsewhere']];
+
+        // una sola query; `get()` applica l'ordinamento di default di CardBuilder (Leader, Base, aspetti, tipo, costo...) e `keyBy` lo conserva
+        $cards = Card::whereIn('id', collect($quantities)->flatMap(fn ($q) => array_keys($q))->unique()->values())
+            ->get()->keyBy('id');
+
+        return view('decks.gap', compact('deck', 'mode', 'quantities', 'cards', 'summary'));
     }
 }

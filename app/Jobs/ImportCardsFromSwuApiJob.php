@@ -35,7 +35,9 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
     {
         $adminChatId = config('services.telegram.admin_chat_id');
         $progress = $telegram->sendMessage($adminChatId, 'Scan avviato...');
-        Log::debug('message status', ['progress' => $progress]);
+        if ($progress->successful) {
+            Log::debug('message status', ['progress' => $progress]);
+        }
 
         $newCards = collect();
         $errors = collect();
@@ -75,7 +77,9 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
             if ($response->failed()) {
                 $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Pagina {$page}: richiesta API fallita ({$response->status()})");
-                Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                if ($deltaProgress->successful) {
+                    Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                }
                 Log::warning("Pagina {$page}: richiesta API fallita ({$response->status()})");
                 break;
             }
@@ -87,14 +91,18 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             Log::info("trovate pagine totali: {$lastPage}", ['lastPage' => $lastPage, $payload]);
             if ($firstRun) {
                 $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
-                Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                if ($deltaProgress->successful) {
+                    Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                }
                 $firstRun = false;
             }
             $currentCardOnPage = 1;
             foreach ($payload['data'] ?? [] as $cardEntry) {
                 try {
                     // $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
-                    Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                    if ($deltaProgress->successful) {
+                        Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+                    }
                     Log::info("Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
 
                     $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $existingCards, $errors);
@@ -108,7 +116,9 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                 }
             }
             $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan completato: pagina {$page}/{$lastPage}...");
-            Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+            if ($deltaProgress->successful) {
+                Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+            }
             Log::info("Scan completato: pagina {$page}/{$lastPage}...");
             $page++;
         } while (is_int($lastPage) && $page <= $lastPage);
@@ -117,13 +127,17 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
         // delete the message so at the end the user receive a notification, otherwise he have to check once in a while if the process is finished
         $deltaProgress = $telegram->deleteMessage($adminChatId, $progress->messageId);
-        Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+        if ($deltaProgress->successful) {
+            Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+        }
 
         $deltaProgress = $telegram->sendMessage(
             $adminChatId,
             "Scan completato: {$newCards->count()} nuove carte, {$existingCards->count()} carte già presenti, {$errors->count()} problemi."
         );
-        Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+        if ($deltaProgress->successful) {
+            Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+        }
         Log::info("Scan completato: {$newCards->count()} nuove carte, {$existingCards->count()} carte già presenti, {$errors->count()} problemi.");
     }
 
@@ -273,12 +287,12 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         if ($frontUrl) {
             $sides['front'] = $frontUrl;
         } else {
-            Log::debug("Immagine davanti non trovata per {$card->id} {{$card->name} {$card->title}}");
+            Log::info("Immagine davanti non trovata per {$card->id} {{$card->name} {$card->title}}");
         }
         if ($backUrl) {
             $sides['back'] = $backUrl;
         } else {
-            Log::debug("Immagine retro non trovata per {$card->id} {{$card->name} {$card->title}}");
+            Log::info("Immagine retro non trovata per {$card->id} {{$card->name} {$card->title}}");
         }
 
         foreach ($sides as $side => $url) {

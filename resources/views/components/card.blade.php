@@ -31,7 +31,6 @@
 
                 {{-- Aspetti --}}
                 @if ($card->aspects->isNotEmpty())
-                    @php(\Log::debug("debugging aspects in card component for {$card->snippet}", [$card]))
                     <div class="mb-2 flex flex-wrap gap-1">
                         @foreach ($card->aspects as $aspect)
                             <x-badge :color="$aspect->color" :textColor="$aspect->text_color">

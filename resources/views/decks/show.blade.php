@@ -25,6 +25,11 @@
                 <a href="{{ route('decks.versions', [$deck->user->name, $deck->name]) }}">
                     <x-secondary-button type="button">Cronologia versioni</x-secondary-button>
                 </a>
+                @auth
+                    <a href="{{ route('decks.gap', [$deck->user->name, $deck->name, $deck->version]) }}">
+                        <x-secondary-button type="button">Carte mancanti</x-secondary-button>
+                    </a>
+                @endauth
                 <a href="{{ route('decks.export', [$deck->user->name, $deck->name, 'txt', $deck->version]) }}">
                     <x-secondary-button type="button">Esporta TXT</x-secondary-button>
                 </a>

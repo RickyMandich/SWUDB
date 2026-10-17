@@ -1,6 +1,3 @@
-@php
-    \Log::debug('', [$expansions, $filter, $all_expansions]);
-@endphp
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Gestione espansioni</h2>

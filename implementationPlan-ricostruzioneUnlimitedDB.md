@@ -22,7 +22,7 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | 05 | [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) | Fase 10: ricerca carte, dettaglio, nuove uscite, navigazione per ospiti (Step 10.2 statistiche mazzo spostato nel piano 07, come Step 7.8) | **in corso**: fatti 10.3 e 10.1 (con rifiniture aperte); mancano 10.4 e 10.5 (dettaglio nel `todo.md`) |
 | 06 | [`implementationPlan-06-ricostruzioneMazziDominio.md`](implementationPlan-06-ricostruzioneMazziDominio.md) | Fase 7a: enum, relazioni, validator, policy dei mazzi | da fare |
 | 07 | [`implementationPlan-07-ricostruzioneMazziPagine.md`](implementationPlan-07-ricostruzioneMazziPagine.md) | Fase 7b: pagine mazzi, export/import, statistiche mazzo (Step 7.8, ex 10.2 del piano 05) | da fare |
-| 08 | [`implementationPlan-08-ricostruzioneCollezione.md`](implementationPlan-08-ricostruzioneCollezione.md) | Fase 8: collezione, carte mancanti/presenti | da fare |
+| 08 | [`implementationPlan-V-08-ricostruzioneCollezione.md`](implementationPlan-V-08-ricostruzioneCollezione.md) | Fase 8: collezione, carte mancanti/presenti | ✅ completato (2026-10-17; resta il `\Log::debug` di `<x-badge>`, 8.3.4bis nel `todo.md`) |
 | 09 | [`implementationPlan-09-ricostruzioneBotTelegramWebhook.md`](implementationPlan-09-ricostruzioneBotTelegramWebhook.md) | Fase 9b: webhook, comandi, `NotifyAdminJob` | da fare |
 | 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | da fare |
 | 11 | [`implementationPlan-11-ricostruzioneDeploy.md`](implementationPlan-11-ricostruzioneDeploy.md) | Fase 12: verifica post-deploy e redeploy pulito | da fare |
@@ -114,7 +114,7 @@ Niente `leader_card_id`/`base_card_id`: la cardinalità dipende dal formato (Ete
 `deck_id` (FK `decks.id`), `card_id` (FK `cards.id`), `quantity` (unsigned tinyint), timestamps. PK composta `(deck_id, card_id)`. Niente colonna `role`: `cards.type` distingue già `Leader`/`Base`.
 Cardinalità e allineamento dei leader li verifica il validator del formato (piano 06), non lo schema.
 
-### `collection_cards` (da creare, piano 08)
+### `collection_cards` (piano 08, creata)
 `user_id` (FK), `card_id` (FK), `variant` (enum `normal`, `foil`, `hyper`, `prestige`, `hyper_foil`, default `normal`), `quantity` (unsigned smallint), `UNIQUE(user_id, card_id, variant)`. Le varianti di stampa vivono **solo qui**, non nei mazzi.
 
 ### `system_errors`
