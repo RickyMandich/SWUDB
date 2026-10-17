@@ -6,8 +6,8 @@
 > [`implementationPlan-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`).
 >
 > Stato del codice (verificato il 2026-10-17): i file degli Step 8.1, 8.2 e 8.3.1 esistono (`CollectionCard`, `CollectionController`, `collection/index.blade.php`, `DeckGapCalculator`, `Card::collectionCards()`),
-> e sono già registrate le rotte `collection.*` e `decks.gap`. Aggiornamento del 2026-10-17: la rotta `decks.gap` (Step 8.3.2) è stata corretta e verificata sul codice; nel metodo `gap` (Step 8.3.3) è stato corretto solo `Gate::authorize`, il resto dello step è ancora da applicare.
-> `resources/views/decks/gap.blade.php` esiste ma è **vuoto**, e il componente `<x-deck-card-row>` non esiste: li crea lo Step 8.3.4.
+> e sono già registrate le rotte `collection.*` e `decks.gap`. Aggiornamento del 2026-10-17 (riletto il codice): Step 8.1, 8.3.1, 8.3.2, 8.3.3 e 8.3.4 applicati e coerenti con il piano (rotta, metodo `gap` con `resolveDeck` e `$summary`, componente `<x-deck-card-row>`, vista `decks/gap`, link in `edit` e `show`); manca la verifica a mano 8.3.4.4. **Lo Step 8.2 non è finito**: la vista `collection/index` è ancora la copia di `cards/index` e il controller non passa le opzioni del filtro (vedi 8.2.2 e 8.2.3). Per questo il piano non è ancora rinominato `V-`.
+> Lo Step 8.3.4 ha creato `decks/gap.blade.php` e il componente `<x-deck-card-row>` (prima il file era vuoto e il componente non esisteva).
 > Il toggle "carte mancanti / carte presenti" richiesto per la pagina di deck-building non era descritto da nessuna parte nel vecchio piano (rimandava a una "decisione più sopra" che non esisteva): è lo Step 8.3.4.
 
 ## Fase 8 — Gestione collezione
@@ -84,11 +84,16 @@ class CollectionController extends Controller
 {
     public function index(Request $request, CardSearch $search): View
     {
-        $cards = $search->apply(Card::query(), $request->only(['nome', 'espansione', 'tipo']))
+        // stessi filtri e stesse opzioni di /carte (CardController::index): il form <x-cards-filter> li vuole tutti
+        $cards = $search
+            ->apply(Card::query()->with(['aspects', 'traits']), $request->only(CardSearch::FILTER_KEYS))
             ->with(['collectionCards' => fn ($q) => $q->where('user_id', $request->user()->id)])
             ->paginate(24)->withQueryString();
 
-        return view('collection.index', compact('cards'));
+        return view('collection.index', [
+            'cards' => $cards,
+            'filters' => $request->all(),
+        ] + $search->filterOptions());
     }
 
     public function update(Request $request): JsonResponse
@@ -96,12 +101,12 @@ class CollectionController extends Controller
         $validated = $request->validate([
             'card_id' => ['required', 'exists:cards,id'],
             'variant' => ['required', 'in:normal,foil,hyper,prestige,hyper_foil'],
-            'quantity' => ['required', 'integer', 'min:0'],
+            'quantity' => ['required', 'integer', 'min:0', 'max:65535'], // la colonna è unsignedSmallInteger
         ]);
 
         $key = ['user_id' => $request->user()->id, 'card_id' => $validated['card_id'], 'variant' => $validated['variant']];
 
-        if ($validated['quantity'] === 0) {
+        if ((int) $validated['quantity'] === 0) {
             CollectionCard::where($key)->delete(); // niente righe a zero: la somma per card_id resta corretta senza filtrarle ovunque
         } else {
             CollectionCard::updateOrCreate($key, ['quantity' => $validated['quantity']]);
@@ -113,9 +118,92 @@ class CollectionController extends Controller
 ```
 
 #### 8.2.3 — Vista `resources/views/collection/index.blade.php`
-Titolo nello slot `header`. Stessa griglia di `cards/index.blade.php` (Step 10.1, riusa `CardSearch`), con un controllo quantità per variante su ogni carta.
+> **Stato (2026-10-17): da completare.** Il codice applicato ha la vista copiata da `cards/index` (titolo "Carte", nessun controllo quantità, nessuno script) e il controller passa solo `$cards`,
+> mentre la vista usa `$aspects`, `$traits`, `$types`, `$expansions`, `$filters`, `$bounds`: la pagina dà `Undefined variable`. In più il controller filtrava con le vecchie chiavi `nome/espansione/tipo`, non più quelle di `CardSearch::FILTER_KEYS`.
+> Il controller qui sopra è già corretto; resta la vista.
+
+Titolo nello slot `header` ("La mia collezione"). Stessa griglia di `cards/index.blade.php` (Step 10.1, riusa `CardSearch`), con sotto ogni carta un controllo quantità per variante (`normal`, `foil`, `hyper`, `prestige`, `hyper_foil`), precompilato da `$card->collectionCards->pluck('quantity', 'variant')`.
 L'aggiornamento senza reload è l'unico punto del progetto con JS oltre ad Alpine e Chart.js: uno `<script>` inline che intercetta il cambio di un `<input type="number">` e chiama
 `fetch("{{ route('collection.update') }}", {method: 'PATCH', ...})` con header `X-CSRF-TOKEN` (il meta `csrf-token` è già nel layout) e `Accept: application/json`. Niente bundler.
+```blade
+@php
+    $variants = [
+        'normal' => 'Normale',
+        'foil' => 'Foil',
+        'hyper' => 'Hyperspace',
+        'hyper_foil' => 'Hyperspace foil',
+        'prestige' => 'Prestige',
+    ];
+@endphp
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">La mia collezione</h2>
+    </x-slot>
+
+    <div class="mx-auto max-w-5xl px-4 py-6">
+        <x-cards-filter :aspects="$aspects" :traits="$traits" :types="$types" :expansions="$expansions"
+            :filters="$filters" :bounds="$bounds" :action="route('collection.index')" />
+    </div>
+
+    <x-flash-message />
+
+    <div class="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 sm:grid-cols-2 lg:grid-cols-3">
+        @foreach ($cards as $card)
+            @php($owned = $card->collectionCards->pluck('quantity', 'variant'))
+            <div class="space-y-2">
+                <x-card :card="$card" />
+                <div class="grid grid-cols-5 gap-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                    @foreach ($variants as $key => $label)
+                        <label class="text-center text-xs text-gray-500 dark:text-gray-400">
+                            {{ $label }}
+                            <input type="number" min="0" max="65535" value="{{ $owned[$key] ?? 0 }}"
+                                data-collection data-card="{{ $card->id }}" data-variant="{{ $key }}"
+                                class="mt-1 w-full rounded border-gray-300 text-center text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100">
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
+        @if ($cards->isEmpty())
+            <p class="col-span-full text-center text-gray-800 dark:text-gray-200">Non ho trovato carte che soddisfino
+                tutti i criteri di ricerca.</p>
+        @endif
+    </div>
+
+    <div class="mx-auto max-w-7xl px-4 py-6">
+        {{ $cards->links() }}
+    </div>
+
+    <script>
+        document.addEventListener('change', async (event) => {
+            const input = event.target.closest('input[data-collection]');
+            if (!input) return;
+            const quantity = Math.max(0, parseInt(input.value, 10) || 0);
+            input.value = quantity;
+            input.classList.remove('border-red-500');
+            try {
+                const response = await fetch("{{ route('collection.update') }}", {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        card_id: input.dataset.card,
+                        variant: input.dataset.variant,
+                        quantity,
+                    }),
+                });
+                if (!response.ok) throw new Error(response.status);
+            } catch (e) {
+                input.classList.add('border-red-500'); // salvataggio non riuscito: il valore a schermo non è quello nel database
+            }
+        });
+    </script>
+</x-app-layout>
+```
+Verifica: `/collezione` si apre senza errori e con i filtri; cambiare una quantità e ricaricare la pagina la conserva; portarla a 0 elimina la riga in `collection_cards`; un valore non valido (negativo, > 65535) non rompe nulla; il confronto in `/mazzo/.../delta` cambia di conseguenza.
 
 ### Step 8.3 — "Carte mancanti per un mazzo"
 Tre informazioni per ogni carta del mazzo: mancante del tutto, posseduta ma impegnata in un altro mazzo assemblato, disponibile.
@@ -201,8 +289,8 @@ La pagina serve a chiunque possa **vedere** il mazzo (anche pubblico di un altro
    Nessun conflitto con `decks.show` (`/mazzo/{username}/{deckname}/{version?}`, `whereNumber`): `.../delta` non è numerico, quindi `show` non lo prende; con la versione (`.../delta/2`) i segmenti sono di più di quelli di `show`.
 3. Verifica: `php artisan route:list --name=decks.gap` mostra una sola rotta, `mazzo/{username}/{deckname}/delta/{version?}`.
 
-#### 8.3.3 — Metodo `gap` del controller (parziale: `Gate::authorize` applicato, resto da applicare)
-> **Bug nel codice già applicato** (il punto (1) è già risolto, il (2) e il `$summary` no): (1) `$this->authorize('view', $deck)` non esiste, `Controller` di Laravel 12 non ha il trait `AuthorizesRequests` (gli altri metodi usano `Gate::authorize`): la pagina darebbe `BadMethodCallException`;
+#### 8.3.3 — Metodo `gap` del controller (✅ applicato il 2026-10-17)
+> **Storico, bug risolti**: (1) `$this->authorize('view', $deck)` non esiste, `Controller` di Laravel 12 non ha il trait `AuthorizesRequests` (gli altri metodi usano `Gate::authorize`): la pagina darebbe `BadMethodCallException`;
 > (2) il mazzo arriva dal route model binding per id: va risolto con `resolveDeck($username, $deckname, $version)` come negli altri metodi. In più il metodo ora passa alla vista un riepilogo (`$summary`) con i totali delle copie.
 
 Sostituire il metodo `gap` di `app/Http/Controllers/DeckController.php` (gli `use` di `Card`, `Deck`, `DeckGapCalculator`, `Gate`, `Request`, `View` ci sono già):
@@ -238,9 +326,9 @@ public function gap(Request $request, DeckGapCalculator $calculator, string $use
 }
 ```
 
-#### 8.3.4 — Vista con toggle (`resources/views/decks/gap.blade.php`)
+#### 8.3.4 — Vista con toggle (`resources/views/decks/gap.blade.php`) (✅ applicato il 2026-10-17, verifica a mano 8.3.4.4 da fare)
 
-Il file esiste già ma è vuoto: va sovrascritto. Questo step crea anche il componente della riga-carta e i link di accesso alla pagina.
+Questo step ha sovrascritto il file vuoto e creato anche il componente della riga-carta e i link di accesso alla pagina.
 Scostamento rispetto alla prima versione dello step: il "componente estratto per `decks/edit.blade.php`" non esiste (la riga di `edit` è inline e pilotata da Alpine, con quantità modificabili), quindi `<x-deck-card-row>` è un componente **nuovo e di sola lettura**; `edit` non si tocca (decisione 7.6.5.5 del `todo.md`).
 
 Cosa fa la pagina:
