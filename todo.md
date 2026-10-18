@@ -180,20 +180,20 @@
   - [x] 7.8.8 Test `DeckStatisticsTest` aggiornati e passati (8/8)
 - [ ] 7.9 Test Pest dei mazzi: helper `makeCard`/`makeDeck` in `tests/Pest.php`, `DeckExporterTest`, `DeckImporterTest` (con i tre casi limite dell'URL), `DeckPagesTest` (lista, show, edit, ricerca, versioni, export, import, regressioni di 7.6.5), `DeckStatisticsTest` (medie pesate per copie)
 
-## 08 — Collezione (Fase 8) ✅ `implementationPlan-V-08-ricostruzioneCollezione.md` (completato il 2026-10-17; resta 8.3.4bis)
+## 08 — Collezione (Fase 8) ✅ `implementationPlan-V-08-ricostruzioneCollezione.md` (completato il 2026-10-17, verifiche a mano comprese)
 - [x] 8.1 Migration (`2026_10_14_132738_create_collection_cards_table`), modello `CollectionCard`, `Card::collectionCards()` (riletti sul codice il 2026-10-17)
-- [x] 8.2 Pagina `/collezione` (corretta dall'utente il 2026-10-17 e riletta sul codice; storico: la prima versione dava `Undefined variable $aspects`)
+- [x] 8.2 Pagina `/collezione` (corretta dall'utente il 2026-10-17 e riletta sul codice; storico: la prima versione dava `Undefined variable $aspects`); verifica a mano fatta dall'utente (checklist in fondo allo Step 8.2.3 del piano)
   - [x] 8.2.2 `CollectionController::index`: filtrare con `CardSearch::FILTER_KEYS` (non più `nome/espansione/tipo`), passare `filters` + `$search->filterOptions()` e fare `with(['aspects','traits'])`; in `update` aggiungere `max:65535` e `(int)` sul confronto con 0
   - [x] 8.2.3 `collection/index.blade.php` era la copia di `cards/index` (titolo "Carte", niente quantità per variante, niente script): dà `Undefined variable $aspects`. Vista completa nel piano
 - [x] 8.3.1–8.3.3 `DeckGapCalculator` (per l'utente che guarda) e metodo `gap` (riletti sul codice il 2026-10-17; 8.3.2 e 8.3.3 avevano due bug, ora risolti):
   - [x] 8.3.2 (corretta dall'utente il 2026-10-17, verificata sul codice) Storico: rotta `decks.gap` messa per errore dentro il gruppo `mazzo/modifica/{username}/{deckname}` (URL reale `/mazzo/modifica/.../mazzi/{deck}/delta`): toglierla di lì e registrarla come `/mazzo/{username}/{deckname}/delta/{version?}` nel gruppo `auth` + `verified` in fondo a `routes/web.php`
   - [x] 8.3.3 `DeckController::gap` (applicato, con `$summary`). Storico: `Gate::authorize`, mazzo da risolvere con `resolveDeck($username, $deckname, $version)` invece del binding per id, aggiunto `$summary` (totali in copie)
-- [x] 8.3.4 Vista `decks/gap` con toggle carte mancanti / carte presenti (applicata e riletta sul codice il 2026-10-17; manca solo la verifica a mano 8.3.4.4)
+- [x] 8.3.4 Vista `decks/gap` con toggle carte mancanti / carte presenti (applicata, riletta sul codice e verificata a mano il 2026-10-17)
   - [x] 8.3.4.1 Componente `<x-deck-card-row>` di sola lettura (`resources/views/components/deck-card-row.blade.php`; la riga di `decks/edit` resta inline, il componente "estratto" del vecchio piano non esisteva)
   - [x] 8.3.4.2 Vista `decks/gap.blade.php`: riepilogo in copie, toggle `?mostra=mancanti|presenti`, sezioni con `<x-badge>` (rosso mancanti, ambra impegnate altrove, verde presenti)
   - [x] 8.3.4.3 Link "Carte mancanti / presenti" in `decks/edit` e "Carte mancanti" (solo `@auth`) in `decks/show`
   - [x] 8.3.4.4 Verifica a mano (checklist nel piano), fatta dall'utente il 2026-10-17
-  - [ ] 8.3.4bis `<x-badge>` ha un `\Log::debug` a ogni render (`components/badge.blade.php`): da togliere, con la pagina gap scrive una riga di log per carta
+  - [x] 8.3.4bis `\Log::debug` tolto da `components/badge.blade.php` dall'utente (2026-10-17, verificato sul codice); storico: scriveva una riga di log per ogni badge renderizzato
 
 ## 09 — Bot Telegram, webhook (Fase 9b) `implementationPlan-09-ricostruzioneBotTelegramWebhook.md`
 - [ ] 9.3 Controller, rotta, esenzione CSRF in `bootstrap/app.php`, registrazione webhook via curl

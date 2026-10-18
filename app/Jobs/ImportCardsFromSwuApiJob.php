@@ -54,7 +54,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             Log::info("Scan in corso: pagina {$page}/{$lastPage}...");
             $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
                 'locale' => 'it',
-                // 'filters[variantOf][id][$null]' => 'true',
+                'filters[variantOf][id][$null]' => 'true',
                 'fields' => [
                     'cardUid',
                     'cardNumber',

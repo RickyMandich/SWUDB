@@ -43,7 +43,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Mazzi (piano 07, rifiniture aperte; dettaglio in `todo.md`):
   - la lista `/mazzi` ha ancora due colonne separate per leader e base: la copertina con i due sovrapposti (`<x-deck-cover>`, piano 07 Step 7.6.7) non esiste ancora;
   - export/import dei mazzi (TXT, JSON) e integrazioni avanzate da completare con i relativi test.
-- Collezione, rifiniture: nessun test Pest su `CollectionController` e `DeckGapCalculator`; `<x-badge>` scrive un `\Log::debug` a ogni render (con la pagina carte mancanti, una riga di log per carta; `todo.md` 8.3.4bis).
+- Collezione, rifiniture: nessun test Pest su `CollectionController` e `DeckGapCalculator`.
 - API pubblica: non iniziata.
 - Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; nel menu responsive i link "Carte" e "Ultime uscite" non sono visibili agli ospiti; in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
