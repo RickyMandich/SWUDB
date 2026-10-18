@@ -195,9 +195,10 @@
   - [x] 8.3.4.4 Verifica a mano (checklist nel piano), fatta dall'utente il 2026-10-17
   - [x] 8.3.4bis `\Log::debug` tolto da `components/badge.blade.php` dall'utente (2026-10-17, verificato sul codice); storico: scriveva una riga di log per ogni badge renderizzato
 
-## 09 — Bot Telegram, webhook (Fase 9b) `implementationPlan-09-ricostruzioneBotTelegramWebhook.md`
-- [ ] 9.3 Controller, rotta, esenzione CSRF in `bootstrap/app.php`, registrazione webhook via curl
-- [ ] 9.6 `NotifyAdminJob`
+## 09 — Bot Telegram, webhook (Fase 9b) ✅ `implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md`
+- [x] 9.3 Controller, rotta, esenzione CSRF in `bootstrap/app.php`, registrazione webhook via curl (applicato e verificato sul codice il 2026-10-18; `setWebhook` ha risposto ok). Nota: `routes/web.php` richiede `use App\Http\Controllers\TelegramController;`, che lo snippet del piano non riportava (aggiunto dall'utente)
+- [x] 9.6 `NotifyAdminJob` (creato; nessun codice lo mette ancora in coda)
+- [ ] 9.7 Test Pest di `TelegramController` (secret errato/assente → 403, `/scan` da chat non admin, `/search` senza risultati e con fallback sul link) con `Http::fake`: non previsto dal piano, opzionale
 
 ## 10 — API pubblica (Fase 11) `implementationPlan-10-ricostruzioneApiPubblica.md`
 - [ ] 11.1 Sanctum (`install:api`)
@@ -211,7 +212,7 @@
 - [x] `docker-compose.yml` (produzione): stesso schema, immagine unica `unlimiteddb:prod` condivisa da `app` (con `build: .`) e `worker` (solo `image:`); lo Step 3 di `implementationPlan-githubActionBuildGhcr.md` la sostituirà con `ghcr.io/rickymandich/swudb:new` (da riverificare sulla VM al prossimo `up -d --build`)
 - [x] 12.0.1 Fix produzione: `supervisor` installato nell'immagine (`apk add ... supervisor` nel `Dockerfile`); il container `unlimiteddb_worker` andava in loop con `supervisord: not found` (da riverificare sulla VM dopo il prossimo build)
 - [x] 12.0.2 Fix produzione: nel servizio `nginx` di `docker-compose.yml` `build_assets` è montato su `/var/www/html/public/build:ro` (era `public_build`) → CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`) (da riverificare sulla VM)
-- [ ] 12.1 Verifica post-deploy: webhook Telegram, `failed_jobs` vuota, scan schedulato (serve anche `schedule:run`), immagini carta su `/storage/...`, icone su `/favicon.ico`, container `_worker` `Up`
+- [ ] 12.1 Verifica post-deploy: webhook Telegram (registrato; resta da provare `/scan` e `/search` da Telegram sul sito deployato), `failed_jobs` vuota, scan schedulato (serve anche `schedule:run`), immagini carta su `/storage/...`, icone su `/favicon.ico`, container `_worker` `Up`
 - [ ] 12.2.0 Verificare che il redeploy non sovrascriva le personalizzazioni di `Dockerfile`, `entrypoint.sh`, `nginx/default.conf`, `docker-compose.yml`
 - [ ] 12.2 Redeploy pulito a fine sviluppo (non ora): stop container → branch nuovo come default → commenta Action del vecchio sito → verifica `.env` → cancella `~/sites/SWUDB` → rilancia `new-site.sh`
 

@@ -29,6 +29,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Icone del sito (favicon, apple-touch-icon, manifest) generate dal `Dockerfile` da `public/icon-mine.svg` (vedi "Icone del sito").
 - Worker delle code (servizio `worker` nel compose di sviluppo; `app` e `worker` condividono la stessa immagine `unlimiteddb:dev`).
 - `TelegramService` (facade `Http`, nessun SDK) con `TelegramActionResult`: invio, modifica e cancellazione di messaggi, invio foto; senza `TELEGRAM_BOT_TOKEN` o `chat_id` non parte nessuna richiesta HTTP.
+- Bot Telegram (piano 09): webhook `POST /telegram/webhook` gestito da `TelegramController` (fuori da qualunque gruppo `auth`, esente da CSRF in `bootstrap/app.php`). Il controller accetta la richiesta solo se l'header `X-Telegram-Bot-Api-Secret-Token` coincide con `TELEGRAM_WEBHOOK_SECRET` (con il secret non configurato risponde sempre 403). Comandi: `/scan` (solo dalla chat `TELEGRAM_ADMIN_CHAT_ID`: mette in coda `ImportCardsFromSwuApiJob`) e `/search <nome carta>` (invia la foto della carta, o il link a `cards.show` se Telegram non riesce a scaricare l'immagine, ad esempio in locale); qualunque altro testo riceve l'elenco dei comandi. `NotifyAdminJob` (in coda) invia un messaggio alla chat admin; per ora nessun codice lo mette in coda. Il webhook va registrato una volta con `setWebhook` (vedi "Bot Telegram").
 - Admin errori: vista di dettaglio `/admin/errori/{id}`, componenti `<x-flash-message>` e `<x-badge>`, lista paginata.
 - Pannello Log viewer (`opcodesio/log-viewer`), linkato dal menu utente a chi ha il permesso `log.viewer`.
 - Catalogo carte pubblico `/carte` (anche per gli ospiti): griglia paginata (24 carte per pagina) di `<x-card>` con l'ordinamento di default di `CardBuilder` (Leader, Base, poi aspetti, tipo, costo, nome, `legal_date` dell'espansione e numero). Il componente `<x-cards-filter>` usa `<x-multi-datalist>` (suggerimenti testuali con chip rimovibili per espansioni e tratti) e `<x-range-slider>` (slider a doppio input con limiti dal database per costo, salute, potenza). `CardSearch` implementa la logica reale dei filtri via parametri GET (multi-valore in AND per aspetti e tratti, e `whereIn` per espansioni e tipi). La navigazione (`layouts/navigation.blade.php`) funziona anche per gli ospiti (link Login/Register) e ha la voce "Carte". Pagina di dettaglio `/carte/{expansion}/{number}` (`cards/show.blade.php`, con componenti Bladewind): immagine fronte (con pulsante "Gira la carta" e flip 3D verso il retro, per le carte che ne hanno uno), aspetti, tratti, tipo, rarità, costo, vita, potenza, arena, artista, abilità e abilità "Da schierato". Pagina "Ultime uscite" `/nuove-uscite` (`cards/new-releases.blade.php`): un datepicker Bladewind (formato `gg/mm/aaaa`, limiti tra la prima e l'ultima data di rilascio) sceglie la data `since` (default: la data di rilascio più recente); le carte con `release_date` da quel giorno in poi sono paginate (24 per pagina), con l'ordinamento di default (`CardBuilder::withDefaultOrder()`), e raggruppate per data di rilascio all'interno della pagina.
@@ -38,7 +39,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Dominio dei mazzi (piano 06): enum `DeckFormat` con cast su `Deck`, relazioni `Deck::leaders()` e `Deck::baseCard()`, un validator per formato in `app/Services/DeckValidation/` (scelto con `DeckFormatValidatorFactory::make($deck->format)`) e `DeckPolicy`. Regole implementate: Premier = 1 leader, 1 base, almeno 50 carte escluse leader e base (60 con la base `JTL24`, Data Vault), al massimo `max_copies` copie per carta (default 3) e solo espansioni delle ultime due rotazioni (`Expansion::validExpansions()`, solo espansioni confermate); Eternal = come Premier senza il controllo di rotazione; Twin Suns = 2 leader con al massimo un aspetto secondario (Eroismo/Malvagità, `Card::secondaryAspect()`) tra i due, 1 base, almeno 80 carte (90 con `JTL24`) e una copia per carta salvo `max_copies`.
 
 **Non ancora implementato / non funzionante**
-- Bot Telegram: esiste solo il `TelegramService` (notifiche di avanzamento dello scan). Webhook, comandi (`/scan`, `/search`), ricerca carte e `NotifyAdminJob` non esistono (piano 09). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
+- Bot Telegram: nessun codice mette ancora in coda `NotifyAdminJob`, e il funzionamento del webhook in produzione non è stato verificato con un update reale (`todo.md`, 12.1). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
 - Test del job di import: riscritti, da lanciare con `php artisan test` (`todo.md`, 5.5.6).
 - Mazzi (piano 07, rifiniture aperte; dettaglio in `todo.md`):
   - la lista `/mazzi` ha ancora due colonne separate per leader e base: la copertina con i due sovrapposti (`<x-deck-cover>`, piano 07 Step 7.6.7) non esiste ancora;
@@ -75,7 +76,9 @@ app/
   Http/Controllers/DeckController.php mazzi: lista, creazione, vista di sola lettura, deck-building (batch e singolo), snapshot di versione, cronologia
   Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
   Http/Controllers/Auth/              controller Breeze
+  Http/Controllers/TelegramController.php webhook del bot Telegram (`/scan`, `/search`)
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
+  Jobs/NotifyAdminJob.php             messaggio Telegram alla chat admin (in coda)
   Mail/                               NewCardsEmail, AdminScanReportEmail
   Models/                             Aspect, Card, CardTrait, Deck, DeckCard, Expansion, SystemError, User
   Models/Builders/CardBuilder.php     builder Eloquent di `Card` con ordinamento di default (usato da `/carte`; si applica solo se la query non ha già un `orderBy`)
@@ -151,7 +154,7 @@ sensibili). `bootstrap/app.php` carica `.env-overrides` **prima** del `.env`, qu
 | `QUEUE_CONNECTION=database` | le code girano nel worker (default di `.env.example`) |
 | `MAIL_MAILER`, `RESEND_API_KEY` | `.env.example` imposta `MAIL_MAILER=log`; per inviare email vere serve `resend` + la chiave (dominio `mandich.dev` verificato su Resend) |
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | mittente delle email |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_MESSAGE_PREFIX` | lette da `config/services.php`; il job di scan usa `TELEGRAM_ADMIN_CHAT_ID`; il prefisso (es. `dev: `) è anteposto a ogni messaggio ed è vuoto di default (le prime tre sono in `.env.example`, il prefisso no) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_MESSAGE_PREFIX` | lette da `config/services.php`; il job di scan e `/scan` usano `TELEGRAM_ADMIN_CHAT_ID`; `TELEGRAM_WEBHOOK_SECRET` è il `secret_token` registrato con `setWebhook` (solo `A-Z a-z 0-9 _ -`) e deve essere impostato, altrimenti il webhook risponde 403; il prefisso (es. `dev: `) è anteposto a ogni messaggio ed è vuoto di default (le prime tre sono in `.env.example`, il prefisso no) |
 | `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | credenziali dell'utente admin creato da `db:seed`, lette tramite `config/seed.php` (non sono in `.env.example`: vanno aggiunte al proprio `.env`) |
 | `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `FTP_PORT` | solo per gli script FTP in `bash/` |
 | `APP_VERSION_*` (in `.env-overrides`) | versione dell'app, gestita da `bash/all.sh` |
@@ -208,6 +211,17 @@ Log viewer nel menu utente; `decks.manage-any` è usato da `DeckPolicy` (tramite
 | `PATCH /admin/errori/{systemError}`, `PATCH /admin/errori/bulk` | `system.manage-errors` | cambio stato singolo / bulk |
 | `GET /admin/espansioni`, `PUT /admin/espansioni/{expansion}` | `expansions.manage` | lista espansioni e modifica dei campi curati a mano |
 | `GET /render-mail/{type}` | `mails.test` | anteprima email (`new-cards`, `admin-scan-report`) |
+| `POST /telegram/webhook` | pubblica, protetta dall'header `X-Telegram-Bot-Api-Secret-Token`; esente da CSRF | webhook del bot Telegram (`TelegramController@handle`, rotta `telegram.webhook`) |
+
+## Bot Telegram
+
+Il bot riceve gli update dal webhook `POST /telegram/webhook`. Registrazione una tantum (da terminale, sostituendo token e secret con `TELEGRAM_BOT_TOKEN` e `TELEGRAM_WEBHOOK_SECRET`):
+
+```bash
+curl -F "url=https://unlimiteddb-test.mandich.dev/telegram/webhook" -F "secret_token=IL_TUO_SECRET" https://api.telegram.org/bot<TOKEN>/setWebhook
+```
+
+Se cambia l'host del sito il webhook va riregistrato. Comandi: `/scan` (solo chat admin) e `/search <nome carta>`.
 
 ## Scansione carte
 

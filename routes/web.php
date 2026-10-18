@@ -8,6 +8,7 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DeckImportController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TelegramController;
 use App\Mail\AdminScanReportEmail;
 use App\Mail\NewCardsEmail;
 use App\Models\SystemError;
@@ -117,3 +118,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/mazzo/{username}/{deckname}/delta/{version?}', [DeckController::class, 'gap'])
         ->whereNumber('version')->name('decks.gap');
 });
+
+Route::post('/telegram/webhook', [TelegramController::class, 'handle'])->name('telegram.webhook');
