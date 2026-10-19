@@ -3,7 +3,7 @@
         'normal' => 'Normale',
         'foil' => 'Foil',
         'hyper' => 'Hyperspace',
-        'hyper_foil' => 'Hyperspace foil',
+        'hyper_foil' => 'Hyperfoil',
         'prestige' => 'Prestige',
     ];
 @endphp
@@ -49,13 +49,29 @@
     </div>
 
     <script>
+        // Classi scritte per esteso (niente concatenazioni), così Tailwind le rileva leggendo il sorgente
+        const BORDER_DEFAULT = ['border-gray-300', 'dark:border-gray-600'];
+        const BORDER_WARNING = ['border-yellow-500', 'dark:border-yellow-500'];
+        const BORDER_ERROR = ['border-red-500', 'dark:border-red-500'];
+
+        // Toglie le classi di bordo correnti e applica quelle richieste (default se omesse)
+        const setBorder = (input, classes = BORDER_DEFAULT) => {
+            input.classList.remove(...BORDER_DEFAULT, ...BORDER_WARNING, ...BORDER_ERROR);
+            input.classList.add(...classes);
+        };
+
         document.addEventListener('change', async (event) => {
             const input = event.target.closest('input[data-collection]');
-            input.classList.remove('border-red-500');
             if (!input) return;
+            setBorder(input);
             const quantity = Math.max(0, parseInt(input.value, 10) || 0);
             if (quantity != input.value) {
-                input.classList.add('border-yellow-500');
+                console.log("valore valido e valore inserito diversi, rispettivamente " + quantity + " e " +
+                    input.value);
+                setBorder(input, BORDER_WARNING);
+            } else {
+                console.log("valore valido e valore inserito uguali, rispettivamente " + quantity + " e " +
+                    input.value);
             }
             input.value = quantity;
             try {
@@ -75,7 +91,7 @@
                 if (!response.ok) throw new Error(response.status);
             } catch (e) {
                 // salvataggio non riuscito: il valore a schermo non è quello nel database
-                input.classList.add('border-red-500');
+                setBorder(input, BORDER_ERROR);
             }
         });
     </script>

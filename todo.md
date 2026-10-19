@@ -10,6 +10,8 @@
 - [x] README e `todo.md` riallineati al codice dopo lo Step 10.4 del piano 05 (2026-10-09)
 - [x] README e `todo.md` riallineati al codice dopo gli Step 7.1–7.5 del piano 06 (2026-10-09)
 - [x] README e `todo.md` riallineati al codice reale del piano 07 (Step 7.6.0–7.6.3 già applicati, bug trovati e step 7.6.5–7.9 aggiunti al piano) (2026-10-11)
+- [x] README, `todo.md` e indice dei piani (`implementationPlan-ricostruzioneUnlimitedDB.md`) riallineati al codice dopo la chiusura dei piani fino al 09 (riletti routes, controller, viste, servizi e test il 2026-10-19). Il README ora descrive export/import dei mazzi, copertina `<x-deck-cover>`, copia di un mazzo, rotte e test reali
+- [ ] Da rilanciare `composer test` (da host) e annotare l'esito nel README (sezione Test): dopo i piani 05–09 la suite è cresciuta e l'ultimo esito registrato è del 2026-10-04
 - [x] Libreria UI Bladewind (`bladewindui/ui`, `bladewindui/table`) in uso, con i componenti pubblicati in `resources/views/components/bladewind` (la vista `cards/show` usa `<x-bladewind.card>` e `<x-bladewind.description-list>`); il README la riporta nello stack
 - [x] Bladewind aggiunto alle convenzioni per le view (indice, sezione "Componenti Bladewind")
 - [x] Icone del sito generate dal `Dockerfile` (stage `icon-builder`) a partire da `public/icon-mine.svg` (`docker/icons/generate-icons.sh`, `layouts/favicons.blade.php`, `/favicon.ico` in nginx)
@@ -75,9 +77,9 @@
 - [X] 5.5.3 Decisione chiusa: Opzione (a) — carte già presenti non salvate come SystemError, ma contate a parte (`$existingCards` passata a `processCard()`, conteggio nel messaggio Telegram finale)
 - [X] 5.5.4 Test del rendering di `AdminScanReportEmail`
 - [X] 5.5.5 Mail admin con `SystemError` invece di `Throwable`: `$errors` passata a `processCard()` e `downloadImages()` e popolata con i `SystemError`; un lato assente nell'API è solo loggato (`Log::debug`), un `SystemError` nasce solo se l'URL c'è e il download fallisce
-- [ ] 5.5.6 Suite del 2026-10-04 (da host): 29 passati, 5 falliti. I tre test del job 'crea', 'pagina', 'dati malformati' cadono per `RoleDoesNotExist` (admin) e 'carta già presente' per la mail accodata (tutti per le cause in 5.5.8); `ExampleTest` di Breeze si aspetta 200 su `/`, che ora fa redirect a `/dashboard`: riscriverlo con `assertRedirect('/dashboard')`
-- [ ] 5.5.7 Doppio `SystemError` sul download immagine fallito (lo crea `CardImageDownloader::download()` e poi `downloadImages()`; solo il secondo finisce nel report admin): togliere quello del downloader (lasciare un `Log::warning`) e arricchire il `context` di quello del job con `source_url` e `side`
-- [ ] 5.5.8 Cause dei test del job falliti: (1) il fixture `api-example-result.json` non ha `publishedAt` al primo livello di `attributes` mentre il job lo chiede nei `fields` → `Undefined array key "publishedAt"` su ogni carta (riga ~174): aggiungerlo in `fakeCardEntry()` e rendere il job tollerante, `release_date` è nullable; (2) `sendNotifications()` usa `User::role('admin')`, che lancia `RoleDoesNotExist` se il ruolo non c'è: usare `User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))`; (3) il `Log::warning` in `handle()` scrive l'intero payload e lo stack trace, già nel `SystemError`: loggare solo `cardUid` e messaggio
+- [ ] 5.5.6 Suite del 2026-10-04 (da host): 29 passati, 5 falliti. I tre test del job 'crea', 'pagina', 'dati malformati' cadono per `RoleDoesNotExist` (admin) e 'carta già presente' per la mail accodata (tutti per le cause in 5.5.8); `ExampleTest` di Breeze si aspettava 200 su `/` (che fa redirect a `/dashboard`): già riscritto con `assertRedirect('/dashboard')` (verificato sul codice il 2026-10-19). Resta da rilanciare la suite e annotare l'esito
+- [ ] 5.5.7 Doppio `SystemError` sul download immagine fallito (lo crea `CardImageDownloader::download()` e poi `downloadImages()`; solo il secondo finisce nel report admin): metà fatta (verificato il 2026-10-19): il downloader ora fa solo `Log::warning`; resta da arricchire il `context` del `SystemError` creato da `downloadImages()` con `source_url` e `side` (oggi ha solo `error_message`)
+- [ ] 5.5.8 Cause dei test del job falliti (riletto sul codice il 2026-10-19: (1), (2) e (3) risultano ancora tutte presenti nel job; `sendNotifications()` usa ancora `User::role('admin')`, `Carbon::parse($cardData['publishedAt'])` non è tollerante, il `Log::warning` in `handle()` scrive ancora `raw` e l'eccezione): (1) il fixture `api-example-result.json` non ha `publishedAt` al primo livello di `attributes` mentre il job lo chiede nei `fields` → `Undefined array key "publishedAt"` su ogni carta (riga ~174): aggiungerlo in `fakeCardEntry()` e rendere il job tollerante, `release_date` è nullable; (2) `sendNotifications()` usa `User::role('admin')`, che lancia `RoleDoesNotExist` se il ruolo non c'è: usare `User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))`; (3) il `Log::warning` in `handle()` scrive l'intero payload e lo stack trace, già nel `SystemError`: loggare solo `cardUid` e messaggio
 - [ ] I test si lanciano da host (`composer test`), non nel container: l'immagine usa `composer install --no-dev`; su Windows non usare `:` nel nome del file di log (crea un alternate data stream e il file resta vuoto): rinominare/eliminare `test_2026-10-04_09` nella radice
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-V-04-ricostruzioneAdminEspansioni.md`
@@ -89,9 +91,9 @@
 - [x] 6.3 Voce di navigazione (desktop e responsive; nel blocco responsive sta dopo "Log viewer" e non subito dopo "Gestione errori", solo estetico)
 - [ ] 6.4 Verifica manuale con utente admin (cambio `rotation` con flash verde "Espansione XXX aggiornata."; gruppo inesistente → errore di validazione ora visibile sotto la tabella). Piano già rinominato in `V-`
 
-## 05 — Catalogo pubblico e UI (Fase 10) `implementationPlan-05-V-ricostruzioneCatalogoPubblico.md` (piano completo; restano solo rifiniture tracciate qui sotto. Il file è `implementationPlan-05-V-...`, non `implementationPlan-V-05-...` come gli altri piani: da rinominare)
+## 05 — Catalogo pubblico e UI (Fase 10) ✅ `implementationPlan-V-05-ricostruzioneCatalogoPubblico.md` (piano completo, file già rinominato come gli altri; restano solo rifiniture tracciate qui sotto)
 - [x] 10.3 `layouts/navigation.blade.php` utilizzabile dagli ospiti (`@if (Auth::check()) ... @else` con link Login/Register, desktop e responsive). Differenza dal piano: il logo punta ancora a `route('dashboard')` (per un ospite porta al login) invece di `url('/')`, da decidere
-  - [ ] 10.3bis Nel menu desktop il link "Dashboard" è visibile anche agli ospiti (il piano lo voleva dentro `@auth`; per un ospite porta al login), come il logo
+  - [x] 10.3bis (risolto, verificato sul codice il 2026-10-19: "Dashboard" sta dentro `@auth` sia nel menu desktop sia nel responsive; resta solo il logo, che punta ancora a `route('dashboard')`) Storico: nel menu desktop il link "Dashboard" è visibile anche agli ospiti (il piano lo voleva dentro `@auth`; per un ospite porta al login), come il logo
 - [x] 10.1.1 `CardSearch`
 - [x] 10.1.2 `CardController::index` (differenze dal piano: `with(['aspects','traits'])`, nessun `orderBy` nel controller: l'ordine è il default di `CardBuilder`). `show` ora restituisce la vista `cards.show` (10.1.6)
 - [x] 10.1.2bis `CardController::index`: il residuo di debug `->paginate(3)// 24)` è stato sostituito con `->paginate(24)` (2026-10-08)
@@ -115,7 +117,7 @@
   - [x] 10.1.6ter Pulsante "Gira la carta" (compare se `back_art_path` c'è): Alpine (`x-data` sul contenitore, fronte e retro come due `<img>` sovrapposte in una griglia) con flip CSS 3D (`transform-3d`, `backface-hidden`); nei Leader il fronte è orizzontale e il retro verticale
   - [x] 10.1.6quater Flip diagonale (asse a 45°) invece che sull'asse verticale, perché fronte e retro dei Leader hanno orientamenti diversi: classe `.flip-diagonal` in `resources/css/app.css` con `rotate3d(1, 1, 0, 180deg)`
 - [x] 10.1.7 Voce "Carte" nel menu (desktop e responsive)
-  - [ ] 10.1.7bis Scostamenti dal piano: nel blocco responsive i link "Carte" e "Ultime uscite" stanno dentro `@if (Auth::check())`, quindi **gli ospiti da telefono non li vedono** (il piano li voleva visibili a tutti, in entrambi i blocchi); `:active` usa `routeIs('cards.index')` invece di `cards.*`, quindi sul dettaglio carta la voce non si evidenzia
+  - [ ] 10.1.7bis Scostamenti dal piano (stato 2026-10-19: il primo punto è risolto, nel blocco responsive "Carte" e "Ultime uscite" sono ora visibili anche agli ospiti; resta aperto solo `:active`): nel blocco responsive i link "Carte" e "Ultime uscite" stanno dentro `@if (Auth::check())`, quindi **gli ospiti da telefono non li vedono** (il piano li voleva visibili a tutti, in entrambi i blocchi); `:active` usa `routeIs('cards.index')` invece di `cards.*`, quindi sul dettaglio carta la voce non si evidenzia
 - [x] Modifica fuori piano (2026-10-07): ordinamento di default delle carte con `App\Models\Builders\CardBuilder` (override di `get()`, agganciato da `Card::newEloquentBuilder`) e colonna `position` su `card_aspect` (migration `2026_10_07_062654_add_position_to_card_aspect_table`, popolata da `syncAspectsAndTraits` nel job di import; `Card::aspects()` ordina per `position`)
   - [x] Il default si applica ora a `/carte`: tolti gli `orderBy` da `CardController::index` (2026-10-08)
   - [x] Passo "tipo specifico" di `CardBuilder` corretto con i nomi italiani (`Unità`, `Miglioria`, `Evento`) (2026-10-08)
@@ -138,22 +140,22 @@
   - [ ] 7.5bis Test Pest dei validator (nessun test sui mazzi esiste ancora): carte contate per copie, leader/base mancanti (nessuna eccezione senza base), rotazione di Premier, aspetti secondari di Twin Suns nei quattro casi
   - [ ] 7.5ter `'JTL24'` (Data Vault) è scritto a mano nei tre validator: valutare una costante o un campo sulla carta
 
-## 07 — Mazzi, pagine (Fase 7b) `implementationPlan-07-ricostruzioneMazziPagine.md` (stato verificato sul codice il 2026-10-11; il piano è completo, restano da applicare gli step aperti. Ordine consigliato: 7.8.1–7.8.2 → 7.6.5 → 7.6.6 → 7.6.6bis → 7.7 → 7.8.3–7.8.4 → 7.9)
+## 07 — Mazzi, pagine (Fase 7b) ✅ `implementationPlan-V-07-ricostruzioneMazziPagine.md` (applicato; stato riletto sul codice il 2026-10-19: restano solo le verifiche a mano e i punti segnati sotto)
 - [x] 7.6.0 Migration `add_unique_user_name_version_to_decks_table` (`2026_10_09_124754`): `UNIQUE(user_id, name, version)`
-- [x] 7.6.1 Rotte mazzi applicate (`decks.index/create/store`, gruppo `mazzo/modifica/...`, `decks.versions`, `decks.show` con `whereNumber('version')`). Mancano solo quelle degli step nuovi: `decks.statistics` (7.8.2), `decks.search-cards` (7.6.6.1), `decks.export` e `decks.import*` (7.7.3)
-- [x] 7.6.2 `DeckController` applicato (risoluzione deck, `Gate::authorize`, versione nell'URL, `syncCards` batch, `addCard` che somma, `createVersion`, `versions`). Da aggiungere: `statistics` (7.8.1), `searchCards` (7.6.6.2), `export` (7.7.3); da correggere `index` e `show` (7.6.5.2, 7.6.5.3)
+- [x] 7.6.1 Rotte mazzi applicate (`decks.index/create/store`, gruppo `mazzo/modifica/...`, `decks.versions`, `decks.show` con `whereNumber('version')`). Le rotte degli step successivi ci sono tutte (riletto il 2026-10-19): `decks.statistics`, `decks.search-cards`, `decks.export`, `decks.import`/`decks.import.store`, più `decks.copy` e `decks.gap`
+- [x] 7.6.2 `DeckController` applicato (risoluzione deck, `Gate::authorize`, versione nell'URL, `syncCards` batch, `addCard` che somma, `createVersion`, `versions`). Aggiunti e corretti in seguito (riletto il 2026-10-19): `statistics`, `searchCards`, `export`, `copy`, `gap`; `index` e `show` corretti (7.6.5.2, 7.6.5.3)
 - [x] 7.6.3 Viste mazzi create (`decks/index`, `create`, `show`, `edit`, `versions`); correzioni e parti mancanti nei punti seguenti
   - [x] Fix dell'utente (2026-10-11): placeholder "Nessun leader." e "Nessuna base." in `decks/index` per i mazzi senza leader o base
 - [x] 7.6.4 Decisioni chiuse: rotte contestuali all'utente, show per chi possiede/pubblico, edit per proprietario, versioning snapshot on-demand, salvataggio batch primario
-- [ ] 7.6.5 Correzioni al codice applicato (bug trovati il 2026-10-11)
-  - [x] 7.6.5.1 (applicato dall'utente il 2026-10-11: `$deck->baseCard->first()` in `decks/index` e `decks/show`; in `show` la base ha ancora `h-12` invece di `h-40` come i leader, da allineare) Storico: `Deck::baseCard()` è una collection: in `decks/index` e `decks/show` usare `$deck->baseCard->first()`. Il fix dei placeholder non basta: `$deck->baseCard?->front_art_path` lancia `Property [front_art_path] does not exist on this collection instance` anche per un mazzo senza base (la collection non è `null`, è vuota), quindi la lista `/mazzi` e ogni pagina `show` danno errore
-  - [ ] 7.6.5.2 `index` mostra ogni versione come mazzo a sé: solo l'ultima (`whereDoesntHave('nextVersion')`, `orWhere` raggruppato)
-  - [ ] 7.6.5.3 `show`: `$isLatest`, avviso di sola lettura sulle versioni precedenti, "Modifica mazzo" solo sull'ultima, link "Statistiche" con la versione, pulsanti di export
-  - [ ] 7.6.5.4 Pulsante "Importa mazzo" in `decks/index`
+- [x] 7.6.5 Correzioni al codice applicato (bug trovati il 2026-10-11; tutte applicate e riverificate sul codice il 2026-10-19)
+  - [x] 7.6.5.1 (applicato dall'utente il 2026-10-11: `$deck->baseCard->first()` in `decks/index` e `decks/show`; in `show` la base ora ha `h-40` come i leader, verificato il 2026-10-19) Storico: `Deck::baseCard()` è una collection: in `decks/index` e `decks/show` usare `$deck->baseCard->first()`. Il fix dei placeholder non basta: `$deck->baseCard?->front_art_path` lancia `Property [front_art_path] does not exist on this collection instance` anche per un mazzo senza base (la collection non è `null`, è vuota), quindi la lista `/mazzi` e ogni pagina `show` danno errore
+  - [x] 7.6.5.2 (applicato: `whereDoesntHave('nextVersion')` con `where` raggruppato; coperto da `DeckPagesTest`) `index` mostra ogni versione come mazzo a sé: solo l'ultima (`whereDoesntHave('nextVersion')`, `orWhere` raggruppato)
+  - [x] 7.6.5.3 (applicato: `$isLatest`, avviso di sola lettura, "Modifica mazzo" solo sull'ultima versione, pulsanti "Esporta TXT"/"Esporta JSON"; il link "Statistiche" non serve più: le statistiche sono incorporate a fondo pagina e la rotta `decks.statistics` rimanda a `#statistiche`) `show`: `$isLatest`, avviso di sola lettura sulle versioni precedenti, "Modifica mazzo" solo sull'ultima, link "Statistiche" con la versione, pulsanti di export
+  - [x] 7.6.5.4 (applicato: nell'header di `decks/index`, accanto a "Nuovo mazzo") Pulsante "Importa mazzo" in `decks/index`
   - [x] 7.6.5.5 Decisioni: `<x-deck-card-row>` rimandato al piano 08 (Step 8.3.4), riga inline in `edit`; validazione di formato sempre informativa
-- [ ] 7.6.7 Lista mazzi: copertina con leader e base sovrapposti (richiesta del 2026-10-11): componente `resources/views/components/deck-cover.blade.php` (leader davanti, base dietro spostata del 25% in alto e a destra; Twin Suns = metà sinistra dei due leader affiancate), `decks/index` con una sola colonna "Leader / Base" (`colspan` 5). Nella lista sostituisce la cella base di 7.6.5.1; `show` usa ancora `->first()`
-  - [ ] 7.6.7.1 Componente `<x-deck-cover>` (Twin Suns riconosciuto da `leaders->count() >= 2`, placeholder "Nessun leader."/"Nessuna base.")
-  - [ ] 7.6.7.2 `decks/index.blade.php`: intestazione e riga con `<x-deck-cover :deck="$deck" />`
+- [ ] 7.6.7 (applicato, manca solo la verifica a mano 7.6.7.4) Lista mazzi: copertina con leader e base sovrapposti (richiesta del 2026-10-11): componente `resources/views/components/deck-cover.blade.php` (leader davanti, base dietro spostata del 25% in alto e a destra; Twin Suns = metà sinistra dei due leader affiancate), `decks/index` con una sola colonna "Leader / Base" (`colspan` 5). Nella lista sostituisce la cella base di 7.6.5.1; `show` usa ancora `->first()`
+  - [x] 7.6.7.1 Componente `<x-deck-cover>` (fatto; scostamento dal piano: la base sta dietro in alto a sinistra e il leader davanti in basso a destra; Twin Suns riconosciuto da `leaders->count() >= 2`, placeholder "Nessun leader."/"Nessuna base.")
+  - [x] 7.6.7.2 `decks/index.blade.php`: intestazione e riga con `<x-deck-cover :deck="$deck" />`
   - [ ] 7.6.7.4 Verifica a mano su `/mazzi` (Premier/Eternal, Twin Suns, senza base, senza leader, tema scuro, mobile)
 - [x] 7.6.6 (applicato dall'utente il 2026-10-12) Ricerca carte nella pagina di modifica (oggi `decks/edit` non permette di aggiungere nessuna carta: c'è solo un commento): rotta `decks.search-cards`, `DeckController::searchCards` (JSON, `CardSearch`, max 20 risultati, solo tipi da mazzo), `edit.blade.php` completo con componente Alpine `deckEditor` (leader e base sostituiti al cambio) e avviso `import-warnings`
 - [ ] 7.6.6bis Ricerca carte dell'editor con `<x-cards-filter>`, paginata (30), e avviso di modifiche non salvate (richiesta del 2026-10-12; da applicare nell'ordine 1 → 5)
@@ -163,12 +165,14 @@
   - [x] 7.6.6bis.4 `decks/edit`: `x-data` sul `<div>` esterno, card "Aggiungi carte" con `<x-cards-filter>` fuori dal form del mazzo, risultati scorrevoli, "N di TOT carte", "Carica altre carte"; `search(form)` con `FormData` e `criteria`
   - [x] 7.6.6bis.5 `beforeunload` in `deckEditor` (`snapshot()`, `dirty`, `init()`, `submitting` da `@submit` sul form di salvataggio) e indicatore "Modifiche non salvate"
   - [ ] 7.6.6bis.6 Verifica a mano (`/carte` com'era, filtri nell'editor, più di 30 risultati, Azzera, avviso su chiusura/link, nessun avviso dopo il salvataggio)
-- [ ] 7.7 Export/Import mazzi (formati ripresi dalla vecchia SWUDB: JSON ufficiale `{ESP}_{numero}`, TXT a sezioni, link swudb.com)
-  - [ ] 7.7.1 `DeckExporter` (`toText`, `toJson`)
-  - [ ] 7.7.2 `DeckImporter` (`fromContent` JSON/TXT, `fromUrl`; fail-soft con `notFound`, sideboard ignorata, solo https e host pubblici, nessun redirect; i tre casi limite dell'URL: host non raggiungibile, redirect, content-type inatteso)
-  - [ ] 7.7.3 `DeckController::export` + rotta `decks.export`; `DeckImportController` + rotte `decks.import`/`decks.import.store` + vista `decks/import`
+- [ ] 7.6.6ter Bug da verificare (rilevato rileggendo il codice il 2026-10-19): `DeckController::searchCards` usa `Card::with('aspect')`, ma `Card` ha solo la relazione `aspects()`; con almeno un risultato l'eager load dovrebbe lanciare un'eccezione (relazione inesistente) e i test 'card search paginates by 30...' e 'card search applies the catalogue filters' di `DeckPagesTest` dovrebbero fallire. Correzione: `Card::with('aspects')` (serve anche per `aspect_order_key`). Da confermare lanciando la suite
+- [ ] 7.7 (applicato, resta solo 7.7.0bis) Export/Import mazzi (formati ripresi dalla vecchia SWUDB: JSON ufficiale `{ESP}_{numero}`, TXT a sezioni, link swudb.com)
+  - [x] 7.7.1 `DeckExporter` (`toText`, `toJson`)
+  - [x] 7.7.2 `DeckImporter` (`fromContent` JSON/TXT, `fromUrl`; fail-soft con `notFound`, sideboard ignorata, solo https e host pubblici, nessun redirect; i tre casi limite dell'URL: host non raggiungibile, redirect, content-type inatteso)
+  - [x] 7.7.3 (rotte `decks.export` `/mazzo/{utente}/{mazzo}/esporta/{txt|json}/{versione?}`, `decks.import` e `decks.import.store` su `/mazzi/importa`; vista `decks/import` con tab file/URL) `DeckController::export` + rotta `decks.export`; `DeckImportController` + rotte `decks.import`/`decks.import.store` + vista `decks/import`
   - [ ] 7.7.0bis Da verificare su un export reale: chiave `secondleader` (Twin Suns) e `secondLeader` nel JSON nativo di swudb.com; id con o senza zeri iniziali
   - Limite noto: i nomi in DB sono in italiano, quindi l'import TXT per nome funziona solo con file esportati da questo sito; per file con nomi inglesi si usa il JSON (id)
+- [x] Modifica fuori piano (rilevata il 2026-10-19): copia di un mazzo visibile come nuovo mazzo privato dell'utente loggato (`POST /mazzi/copia/{utente}/{mazzo}/{versione?}`, `decks.copy`, `DeckController::copy`; nome `copia di <nome>` con suffisso `(2)`, `(3)`... se esiste già, versione 1); pulsante "Copia come nuovo mazzo" in `decks/show` per chi non può modificare il mazzo o guarda una versione vecchia; coperta da `DeckPagesTest`
 - [x] 7.8 Statistiche mazzo incorporate e migliorie UI show/edit:
   - [x] 7.8.1 Calcolo statistiche in `DeckController::getDeckStatisticsData(Deck $deck)` (curva costi per tipo, potenza e vita medie per costo, aspetti con multi-colori, rarità con palette ufficiale, tratti, leader e base esclusi)
   - [x] 7.8.2 Rotta `decks.statistics` reindirizza a `decks.show` con fragment `#statistiche`
@@ -178,7 +182,7 @@
   - [x] 7.8.6 Anteprima carta (desktop hover con overlay fluttuante e mobile touch con popup modal) su entrambe le pagine (`decks/partials/card-preview.blade.php`)
   - [x] 7.8.7 Grafici avanzati statistiche: rimossa quantità carte, grafico line/diffusione potenza e vita medie per costo (rosso/blu), curva dei costi con 3 toggle a `<x-badge>` (Unità, Miglioria, Evento), grafico a torta degli aspetti con fette zebrate multi-aspetto e grafico a torta delle rarità con colori specificati
   - [x] 7.8.8 Test `DeckStatisticsTest` aggiornati e passati (8/8)
-- [ ] 7.9 Test Pest dei mazzi: helper `makeCard`/`makeDeck` in `tests/Pest.php`, `DeckExporterTest`, `DeckImporterTest` (con i tre casi limite dell'URL), `DeckPagesTest` (lista, show, edit, ricerca, versioni, export, import, regressioni di 7.6.5), `DeckStatisticsTest` (medie pesate per copie)
+- [x] 7.9 (applicato, riletto il 2026-10-19: `tests/Feature/Decks/DeckPagesTest.php`, `DeckStatisticsTest.php`, `tests/Feature/Services/DeckExporterTest.php`, `DeckImporterTest.php` e gli helper in `tests/Pest.php`; restano fuori i test dei validator, 7.5bis) Test Pest dei mazzi: helper `makeCard`/`makeDeck` in `tests/Pest.php`, `DeckExporterTest`, `DeckImporterTest` (con i tre casi limite dell'URL), `DeckPagesTest` (lista, show, edit, ricerca, versioni, export, import, regressioni di 7.6.5), `DeckStatisticsTest` (medie pesate per copie)
 
 ## 08 — Collezione (Fase 8) ✅ `implementationPlan-V-08-ricostruzioneCollezione.md` (completato il 2026-10-17, verifiche a mano comprese)
 - [x] 8.1 Migration (`2026_10_14_132738_create_collection_cards_table`), modello `CollectionCard`, `Card::collectionCards()` (riletti sul codice il 2026-10-17)
@@ -194,6 +198,8 @@
   - [x] 8.3.4.3 Link "Carte mancanti / presenti" in `decks/edit` e "Carte mancanti" (solo `@auth`) in `decks/show`
   - [x] 8.3.4.4 Verifica a mano (checklist nel piano), fatta dall'utente il 2026-10-17
   - [x] 8.3.4bis `\Log::debug` tolto da `components/badge.blade.php` dall'utente (2026-10-17, verificato sul codice); storico: scriveva una riga di log per ogni badge renderizzato
+
+- [ ] Test Pest di `CollectionController` e `DeckGapCalculator` (non previsti dal piano; nessun file di test esiste, verificato il 2026-10-19)
 
 ## 09 — Bot Telegram, webhook (Fase 9b) ✅ `implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md`
 - [x] 9.3 Controller, rotta, esenzione CSRF in `bootstrap/app.php`, registrazione webhook via curl (applicato e verificato sul codice il 2026-10-18; `setWebhook` ha risposto ok). Nota: `routes/web.php` richiede `use App\Http\Controllers\TelegramController;`, che lo snippet del piano non riportava (aggiunto dall'utente)
@@ -245,6 +251,7 @@
 
 ## Fix visivo collezione 2026-10-19
 - [x] `collection.index`: i campi delle copie possedute erano coperti dalle carte successive (slot del componente `card` dentro la griglia a 2 colonne e dentro il link); ora `components/card.blade.php` rende lo slot sotto il link, a tutta larghezza (`article` flex-col), solo se non vuoto
+- [x] `collection.index`: il bordo giallo (valore negativo/non valido corretto a 0) e rosso (salvataggio fallito) ora sono impostati con `style.borderColor` inline, perché le classi `dark:border-gray-*` dell'input coprivano le utility `border-yellow-500`/`border-red-500`
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
