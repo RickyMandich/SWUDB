@@ -51,10 +51,13 @@
     <script>
         document.addEventListener('change', async (event) => {
             const input = event.target.closest('input[data-collection]');
+            input.classList.remove('border-red-500');
             if (!input) return;
             const quantity = Math.max(0, parseInt(input.value, 10) || 0);
+            if (quantity != input.value) {
+                input.classList.add('border-yellow-500');
+            }
             input.value = quantity;
-            input.classList.remove('border-red-500');
             try {
                 const response = await fetch("{{ route('collection.update') }}", {
                     method: 'PATCH',
@@ -71,9 +74,8 @@
                 });
                 if (!response.ok) throw new Error(response.status);
             } catch (e) {
-                input.classList.add(
-                    'border-red-500'
-                ); // salvataggio non riuscito: il valore a schermo non è quello nel database
+                // salvataggio non riuscito: il valore a schermo non è quello nel database
+                input.classList.add('border-red-500');
             }
         });
     </script>
