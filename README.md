@@ -39,6 +39,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Carte mancanti/presenti di un mazzo (piano 08, Step 8.3): `/mazzo/{utente}/{mazzo}/delta/{versione?}` (solo loggati, visibile se il mazzo è visibile) confronta il mazzo con la collezione **di chi guarda** tramite `DeckGapCalculator`. Riepilogo in copie, toggle `?mostra=mancanti` / `?mostra=presenti`; in modalità "mancanti" distingue le copie mancanti del tutto da quelle impegnate in altri mazzi assemblati dell'utente. Linkata da `decks/show` (solo loggati) e `decks/edit`.
 - Collezione (piano 08): tabella `collection_cards` (una riga per utente, carta e variante di stampa: normale, foil, hyperspace, hyperspace foil, prestige), pagina `/collezione` (solo loggati) con gli stessi filtri di `/carte` e una quantità per variante su ogni carta, salvata senza reload con `PATCH /collezione` (quantità 0 = riga eliminata).
 - Dominio dei mazzi (piano 06): enum `DeckFormat` con cast su `Deck`, relazioni `Deck::leaders()` e `Deck::baseCard()`, un validator per formato in `app/Services/DeckValidation/` (scelto con `DeckFormatValidatorFactory::make($deck->format)`) e `DeckPolicy`. Regole implementate: Premier = 1 leader, 1 base, almeno 50 carte escluse leader e base (60 con la base `JTL24`, Data Vault), al massimo `max_copies` copie per carta (default 3) e solo espansioni delle ultime due rotazioni (`Expansion::validExpansions()`, solo espansioni confermate); Eternal = come Premier senza il controllo di rotazione; Twin Suns = 2 leader con al massimo un aspetto secondario (Eroismo/Malvagità, `Card::secondaryAspect()`) tra i due, 1 base, almeno 80 carte (90 con `JTL24`) e una copia per carta salvo `max_copies`.
+- API REST pubblica di sola lettura (piano 10, `routes/api.php`, prefisso `/api`): ricerca carte, dettaglio carta e dettaglio mazzo pubblico in JSON, con `CardResource` e `DeckResource` (vedi "API pubblica"). Sanctum è installato ma non ancora usato.
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: nessun codice mette ancora in coda `NotifyAdminJob`, e il funzionamento del webhook in produzione non è stato verificato con un update reale (`todo.md`, 12.1). Nessun test Pest su `TelegramController` (`todo.md`, 9.7). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
@@ -49,7 +50,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
   - import TXT: i nomi nel database sono in italiano, quindi per nome funziona solo con file esportati da questo sito (per nomi inglesi si usa il JSON, che identifica la carta dall'id); le chiavi `secondleader`/`secondLeader` dell'export reale di swudb.com sono da verificare (`todo.md`, 7.7.0bis);
   - verifiche a mano ancora da fare: copertina in `/mazzi` (7.6.7.4) e ricerca carte nell'editor (7.6.6bis.6).
 - Collezione, rifiniture: nessun test Pest su `CollectionController` e `DeckGapCalculator`.
-- API pubblica: non iniziata.
+- API pubblica, rifiniture (piano 10, `todo.md` 11.5 e 11.3): nessun test Pest sugli endpoint; gli endpoint autenticati con token Sanctum non esistono (`User` non ha `HasApiTokens`).
 - Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; la voce "Carte" del menu non si evidenzia sul dettaglio carta (`:active` usa `cards.index`); in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
@@ -62,6 +63,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 | Backend | PHP 8.2, Laravel 12 |
 | Autenticazione | Laravel Breeze (Blade) con verifica email |
 | Permessi | `spatie/laravel-permission` 6.x |
+| API | Laravel Sanctum 4.x (installato, token non ancora usati) e API Resources |
 | Database | MariaDB 11 |
 | Code / cache / sessioni | driver `database` |
 | Email | Resend (`resend/resend-php`) |
@@ -81,8 +83,10 @@ app/
   Http/Controllers/DeckController.php mazzi: lista, creazione, vista di sola lettura, deck-building (batch e singolo), ricerca carte (JSON), snapshot di versione, cronologia, export, copia, carte mancanti
   Http/Controllers/DeckImportController.php import di un mazzo da file TXT/JSON o da URL https
   Http/Controllers/Admin/             ExpansionController, SystemErrorController, UserManagementController
+  Http/Controllers/Api/               CardController (ricerca e dettaglio carta) e DeckController (dettaglio mazzo pubblico) dell'API JSON
   Http/Controllers/Auth/              controller Breeze
   Http/Controllers/TelegramController.php webhook del bot Telegram (`/scan`, `/search`)
+  Http/Resources/                     CardResource e DeckResource (forma dei JSON dell'API)
   Jobs/ImportCardsFromSwuApiJob.php   import carte dall'API ufficiale SWU
   Jobs/NotifyAdminJob.php             messaggio Telegram alla chat admin (in coda)
   Mail/                               NewCardsEmail, AdminScanReportEmail
@@ -93,7 +97,7 @@ bash/                                 script di commit/versionamento/FTP (vedi "
 database/migrations, seeders          schema e PermissionSeeder
 docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, supervisor/worker.conf, icons/generate-icons.sh
 resources/views/                      viste Blade (admin/users, admin/errors, admin/expansions, auth, profile, ...)
-routes/web.php, routes/console.php    rotte web e schedulazione
+routes/web.php, routes/api.php, routes/console.php  rotte web, API e schedulazione
 tests/                                test Pest (Feature/Auth, Feature/Decks, Feature/Jobs, Feature/Services, ProfileTest, ...; helper `makeCard()`/`makeDeck()` in Pest.php)
 .agent/rules/*.md                     regole specifiche del progetto (da rispettare sempre)
 .env-overrides                        variabili NON sensibili tracciate in Git (versione app)
@@ -186,6 +190,7 @@ Migrazioni in `database/migrations`. Tabelle:
 - `system_errors`: `source`, `message`, `stack_trace`, `context` (json), `status` (`open`/`ignored`/`resolved`),
   `resolved_at` (valorizzato solo quando lo stato è `resolved`).
 - `jobs`, `failed_jobs`, `cache`, `sessions`: infrastruttura Laravel.
+- `personal_access_tokens`: tabella di Sanctum (migration `2026_10_19_093052`), oggi non usata da nessun endpoint.
 
 ## Autenticazione e permessi
 
@@ -224,6 +229,22 @@ Log viewer nel menu utente; `decks.manage-any` è usato da `DeckPolicy` (tramite
 | `GET /admin/espansioni`, `PUT /admin/espansioni/{expansion}` | `expansions.manage` | lista espansioni e modifica dei campi curati a mano |
 | `GET /render-mail/{type}` | `mails.test` | anteprima email (`new-cards`, `admin-scan-report`) |
 | `POST /telegram/webhook` | pubblica, protetta dall'header `X-Telegram-Bot-Api-Secret-Token`; esente da CSRF | webhook del bot Telegram (`TelegramController@handle`, rotta `telegram.webhook`) |
+
+## API pubblica (`routes/api.php`)
+
+API JSON di sola lettura, senza autenticazione, sotto il prefisso `/api`. Tutte le rotte hanno `throttle:60,1` (60 richieste al minuto per IP, poi 429).
+
+| Rotta | Descrizione |
+|---|---|
+| `GET /api/cards/search` | ricerca carte, 24 per pagina (risposta con `data`, `links`, `meta`; i filtri restano nei link di paginazione) |
+| `GET /api/cards/{expansion}/{number}` | dettaglio di una carta (404 se non esiste) |
+| `GET /api/decks/{userName}/{deckName}` | ultima versione di un mazzo **pubblico** (404 se il mazzo non esiste o è privato) |
+
+I filtri di `/api/cards/search` sono gli stessi di `/carte` (`CardSearch::FILTER_KEYS`): `nome`, `espansioni[]`, `tipi[]`, `aspetti[]` (id degli aspetti), `tratti[]` (nomi), `costo_min`/`costo_max`, `vita_min`/`vita_max`, `potenza_min`/`potenza_max`, `unique_card` (vuoto, `1` o `0`). Un parametro con un nome diverso viene ignorato senza errore.
+
+`CardResource` espone `cid` (chiave pubblica stabile; l'`id` interno `{espansione}{numero}` è escluso), `name`, `title`, `type`, `rarity`, `cost`, `power`, `health`, `text`, `expansion`, `number`, `aspects`, `traits`, `front_image` e `back_image` (URL assoluti, `null` se manca l'immagine). `type`, `rarity` e `text` sono nella lingua dell'API ufficiale (italiano; `text` può contenere HTML). `DeckResource` espone `name`, `format`, `is_public`, `version` e `cards` (le carte come sopra più `quantity`).
+
+**Non ancora implementato**: endpoint autenticati con token Sanctum (piano 10, Step 11.3) e test Pest degli endpoint (Step 11.5).
 
 ## Bot Telegram
 
@@ -273,7 +294,7 @@ Su Windows, se si redirige l'output in un file non usare `:` nel nome (`> test_2
 alternate data stream NTFS e il file principale resta vuoto.
 
 Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`, `tests/Feature/Services/CardSearchTest.php` (filtri del catalogo)
-`tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import e, per i mazzi, `tests/Feature/Decks/DeckPagesTest.php`, `tests/Feature/Decks/DeckStatisticsTest.php`, `tests/Feature/Services/DeckExporterTest.php` e `tests/Feature/Services/DeckImporterTest.php` (helper `makeCard()` e `makeDeck()` in `tests/Pest.php`). Non hanno ancora test i validator di formato (piano 06, Step 7.5bis), `CollectionController`, `DeckGapCalculator` e `TelegramController`. L'`ExampleTest` di Breeze ora si aspetta il redirect a `/dashboard`. Ultima esecuzione annotata (2026-10-04): 29 test
+`tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import e, per i mazzi, `tests/Feature/Decks/DeckPagesTest.php`, `tests/Feature/Decks/DeckStatisticsTest.php`, `tests/Feature/Services/DeckExporterTest.php` e `tests/Feature/Services/DeckImporterTest.php` (helper `makeCard()` e `makeDeck()` in `tests/Pest.php`). Non hanno ancora test i validator di formato (piano 06, Step 7.5bis), `CollectionController`, `DeckGapCalculator`, `TelegramController` e l'API pubblica (piano 10, Step 11.5). L'`ExampleTest` di Breeze ora si aspetta il redirect a `/dashboard`. Ultima esecuzione annotata (2026-10-04): 29 test
 passati e 5 falliti (4 del job e l'`ExampleTest`, poi riscritto); da allora la suite non è stata rilanciata con un esito annotato: eseguire `composer test` e aggiornare qui il risultato. Le
 cause dei fallimenti del job sono in `todo.md`, 5.5.6 e 5.5.8.
 

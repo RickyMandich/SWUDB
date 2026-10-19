@@ -413,7 +413,7 @@ class DeckController extends Controller
         $filters = $request->only(CardSearch::FILTER_KEYS);
         $filters['tipi'] = ($validated['tipi'] ?? []) ?: self::DECK_CARD_TYPES; // senza tipo scelto: tutti i tipi da mazzo, mai i segnalini
 
-        $cards = $search->apply(Card::with('aspect'), $filters)->paginate(30); // il numero di pagina lo legge da solo da ?page=
+        $cards = $search->apply(Card::with('aspects'), $filters)->paginate(30); // il numero di pagina lo legge da solo da ?page=
 
         return response()->json([
             'data' => $cards->getCollection()->map(fn (Card $card) => [

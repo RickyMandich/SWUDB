@@ -24,7 +24,7 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | 07 | [`implementationPlan-V-07-ricostruzioneMazziPagine.md`](implementationPlan-V-07-ricostruzioneMazziPagine.md) | Fase 7b: pagine mazzi, export/import, statistiche mazzo (Step 7.8, ex 10.2 del piano 05) | ✅ completato (restano le verifiche a mano 7.6.6bis.6 e 7.6.7.4, 7.7.0bis e il bug 7.6.6ter, dettaglio nel `todo.md`) |
 | 08 | [`implementationPlan-V-08-ricostruzioneCollezione.md`](implementationPlan-V-08-ricostruzioneCollezione.md) | Fase 8: collezione, carte mancanti/presenti | ✅ completato (2026-10-17, verifiche a mano comprese) |
 | 09 | [`implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md`](implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md) | Fase 9b: webhook, comandi, `NotifyAdminJob` | ✅ completato (resta il test opzionale 9.7) |
-| 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | da fare |
+| 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | codice applicato (Step 11.1, 11.2, 11.4); restano i test Pest (Step 11.5) per chiuderlo e rinominarlo `V-`; lo Step 11.3 (token) è rimandato |
 | 11 | [`implementationPlan-11-ricostruzioneDeploy.md`](implementationPlan-11-ricostruzioneDeploy.md) | Fase 12: verifica post-deploy e redeploy pulito | da fare |
 
 ### Piani trasversali (non numerati)

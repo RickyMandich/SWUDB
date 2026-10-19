@@ -14,6 +14,7 @@
         "bladewindui/ui": "^5.1",
         "laravel/breeze": "^2.4",
         "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "opcodesio/log-viewer": "^3.24",
         "resend/resend-php": "^1.15",

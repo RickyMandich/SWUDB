@@ -11,6 +11,7 @@
 - [x] README e `todo.md` riallineati al codice dopo gli Step 7.1–7.5 del piano 06 (2026-10-09)
 - [x] README e `todo.md` riallineati al codice reale del piano 07 (Step 7.6.0–7.6.3 già applicati, bug trovati e step 7.6.5–7.9 aggiunti al piano) (2026-10-11)
 - [x] README, `todo.md` e indice dei piani (`implementationPlan-ricostruzioneUnlimitedDB.md`) riallineati al codice dopo la chiusura dei piani fino al 09 (riletti routes, controller, viste, servizi e test il 2026-10-19). Il README ora descrive export/import dei mazzi, copertina `<x-deck-cover>`, copia di un mazzo, rotte e test reali
+- [x] README e `todo.md` riallineati al codice dopo l'applicazione del piano 10 (API pubblica, riletti `routes/api.php`, controller `Api/*` e Resource il 2026-10-19): sezione "API pubblica" nel README, Sanctum nello stack, `personal_access_tokens` nel database
 - [ ] Da rilanciare `composer test` (da host) e annotare l'esito nel README (sezione Test): dopo i piani 05–09 la suite è cresciuta e l'ultimo esito registrato è del 2026-10-04
 - [x] Libreria UI Bladewind (`bladewindui/ui`, `bladewindui/table`) in uso, con i componenti pubblicati in `resources/views/components/bladewind` (la vista `cards/show` usa `<x-bladewind.card>` e `<x-bladewind.description-list>`); il README la riporta nello stack
 - [x] Bladewind aggiunto alle convenzioni per le view (indice, sezione "Componenti Bladewind")
@@ -207,9 +208,12 @@
 - [ ] 9.7 Test Pest di `TelegramController` (secret errato/assente → 403, `/scan` da chat non admin, `/search` senza risultati e con fallback sul link) con `Http::fake`: non previsto dal piano, opzionale
 
 ## 10 — API pubblica (Fase 11) `implementationPlan-10-ricostruzioneApiPubblica.md`
-- [ ] 11.1 Sanctum (`install:api`)
-- [ ] 11.2 Endpoint pubblici `/api/cards`, `/api/decks` (nome mazzo non univoco: decidere l'URL stabile)
-- [ ] 11.4 API Resources (`CardResource`, `DeckResource`)
+- [x] 11.1 Sanctum (`install:api`): `laravel/sanctum` in `composer.json`, `config/sanctum.php`, `routes/api.php` registrato in `bootstrap/app.php`, migration `2026_10_19_093052_create_personal_access_tokens_table` (verificato sul codice il 2026-10-19; l'esecuzione di `migrate` non è verificata)
+- [x] 11.2 Endpoint pubblici `/api/cards/search`, `/api/cards/{expansion}/{number}`, `/api/decks/{userName}/{deckName}` (verificati sul codice il 2026-10-19). Scostamenti dal piano originale, tutti voluti: `throttle:60,1` sull'intero gruppo di rotte (non solo sulla ricerca); `search()` usa `CardSearch::FILTER_KEYS` e `->withQueryString()`; il mazzo restituito è l'ultima versione pubblica (`whereDoesntHave('nextVersion')`). URL stabile dei mazzi risolto: `{userName}/{deckName}` (Step 11.2.4)
+  - [x] Bug trovati e corretti dall'utente il 2026-10-19: mancavano gli `use` di `CardResource` e `DeckResource` nei due controller (errore 500 su ogni endpoint), `search()` usava i vecchi nomi dei filtri (ignorati in silenzio), `show` dei mazzi non sceglieva la versione
+- [x] 11.4 API Resources (`CardResource`, `DeckResource`; quest'ultima espone anche `version`)
+- [ ] 11.5 Test Pest dell'API (`tests/Feature/Api/PublicApiTest.php`): nessun test esiste ancora; il piano (Step 11.5.1–11.5.6) contiene il codice completo, 14 test tra dettaglio carta, ricerca, mazzi e rate limit; 11.5.7 (errori sempre in JSON sotto `/api`) è opzionale. Il piano resta senza `V-` finché non sono scritti e verdi
+- [ ] 11.3 Endpoint autenticati con token Sanctum: rimandato (non necessario al day 1). `User` non ha ancora il trait `HasApiTokens`
 
 ## 11 — Deploy (Fase 12) `implementationPlan-11-ricostruzioneDeploy.md`
 - [x] Deploy automatizzato del branch `laravel` (vecchia SWUDB): merge → la pipeline fa il resto. Per il branch `new` nel repo non c'è nessun `.github/workflows`: vedi sezione "Pipeline di build su GitHub Actions"
