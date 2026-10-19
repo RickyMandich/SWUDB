@@ -243,6 +243,9 @@
 ## Bug fix 2026-10-14
 - [x] `decks.edit` andava in errore (`array_slice()` su Collection) perché `$traits` del filtro carte sovrascriveva i tratti del mazzo: le statistiche ora espongono `deckTraits` come Collection (controller, partial `statistics`, test di regressione in `DeckStatisticsTest`)
 
+## Fix visivo collezione 2026-10-19
+- [x] `collection.index`: i campi delle copie possedute erano coperti dalle carte successive (slot del componente `card` dentro la griglia a 2 colonne e dentro il link); ora `components/card.blade.php` rende lo slot sotto il link, a tutta larghezza (`article` flex-col), solo se non vuoto
+
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
 - Tag personalizzati per i mazzi (Aggro/Control/Budget/Meta)

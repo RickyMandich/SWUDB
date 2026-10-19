@@ -22,19 +22,20 @@
     <div class="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 sm:grid-cols-2 lg:grid-cols-3">
         @foreach ($cards as $card)
             @php($owned = $card->collectionCards->pluck('quantity', 'variant'))
-            <div class="space-y-2">
-                <x-card :card="$card" />
-                <div
-                    class="grid grid-cols-5 gap-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
-                    @foreach ($variants as $key => $label)
-                        <label class="text-center text-xs text-gray-500 dark:text-gray-400">
-                            {{ $label }}
-                            <input type="number" min="0" max="65535" value="{{ $owned[$key] ?? 0 }}"
-                                data-collection data-card="{{ $card->id }}" data-variant="{{ $key }}"
-                                class="mt-1 w-full rounded border-gray-300 text-center text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100">
-                        </label>
-                    @endforeach
-                </div>
+            <div class="h-full">
+                <x-card :card="$card">
+                    <div
+                        class="grid grid-cols-5 gap-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                        @foreach ($variants as $key => $label)
+                            <label class="text-center text-xs text-gray-500 dark:text-gray-400">
+                                {{ $label }}
+                                <input type="number" min="0" max="65535" value="{{ $owned[$key] ?? 0 }}"
+                                    data-collection data-card="{{ $card->id }}" data-variant="{{ $key }}"
+                                    class="mt-1 w-full rounded border-gray-300 text-center text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100">
+                            </label>
+                        @endforeach
+                    </div>
+                </x-card>
             </div>
         @endforeach
         @if ($cards->isEmpty())
@@ -71,7 +72,8 @@
                 if (!response.ok) throw new Error(response.status);
             } catch (e) {
                 input.classList.add(
-                'border-red-500'); // salvataggio non riuscito: il valore a schermo non è quello nel database
+                    'border-red-500'
+                ); // salvataggio non riuscito: il valore a schermo non è quello nel database
             }
         });
     </script>

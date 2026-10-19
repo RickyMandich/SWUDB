@@ -1,10 +1,10 @@
 <article
-    class="h-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-xs transition hover:shadow-md">
+    class="flex h-full flex-col rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 shadow-xs transition hover:shadow-md">
     <a href="{{ route('cards.show', [
         'expansion' => $card->expansion,
         'number' => $card->number,
     ]) }}"
-        class="block h-full">
+        class="block flex-1">
         <div class="grid grid-cols-2 gap-4">
             {{-- Immagine --}}
             <div>
@@ -82,4 +82,11 @@
             </div>
         </div>
     </a>
+
+    {{-- Contenuto extra opzionale (es. pulsanti collezione): fuori dal link e a tutta larghezza, così non si sovrappone alle altre carte né fa navigare al click --}}
+    @if ($slot->isNotEmpty())
+        <div class="mt-3">
+            {{ $slot }}
+        </div>
+    @endif
 </article>
