@@ -32,5 +32,5 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['telegram/webhook']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->shouldRenderJsonWhen(fn ($request, Throwable $e) => $request->is('api/*') || $request->expectsJson());
     })->create();
