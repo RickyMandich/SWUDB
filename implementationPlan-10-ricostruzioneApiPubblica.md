@@ -5,7 +5,7 @@
 > [`implementationPlan-V-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-V-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`, condiviso con la pagina `/carte`) e
 > [`implementationPlan-V-06-ricostruzioneMazziDominio.md`](implementationPlan-V-06-ricostruzioneMazziDominio.md) (enum e relazioni dei mazzi).
 >
-> Stato del codice (riletto il 2026-10-19): Step 11.1, 11.2 e 11.4 applicati (Sanctum, `routes/api.php` registrato in `bootstrap/app.php`, controller `Api/*`, `CardResource` e `DeckResource`); lo Step 11.3 è rimandato; restano da scrivere i test (Step 11.5). Gli snippet sotto sono allineati al codice applicato.
+> Stato del codice (riletto il 2026-10-19 alle 14:45): Step 11.1, 11.2 e 11.4 applicati (Sanctum, `routes/api.php` registrato in `bootstrap/app.php`, controller `Api/*`, `CardResource` e `DeckResource`); lo Step 11.3 è rimandato; i test dello Step 11.5 sono **scritti** (`tests/Feature/Api/PublicApiTest.php`, 14 test, identici agli snippet) ma **7 falliscono**: l'ordinamento di default di `CardBuilder` usa SQL solo MariaDB e su SQLite (i test) dà errore. Il piano **non è chiuso**: manca lo Step 11.5.8. Gli snippet sotto sono allineati al codice applicato.
 
 ## Fase 11 — API REST pubblica
 
@@ -138,7 +138,7 @@ Espone `name`, `format` (`$this->format->value`), `is_public`, `version` e `card
 
 ### Step 11.5 — Test Pest dell'API
 
-Un unico file di test, `tests/Feature/Api/PublicApiTest.php`, che copre i tre endpoint di `routes/api.php` e il rate limit. Nessun test esiste ancora per l'API.
+Un unico file di test, `tests/Feature/Api/PublicApiTest.php`, che copre i tre endpoint di `routes/api.php` e il rate limit. File scritto il 2026-10-19 (Step 11.5.1–11.5.5 applicati); l'ultima esecuzione (log delle 12:47) dà 7 falliti e 7 passati, per la causa dello Step 11.5.8.
 
 Punti di partenza, verificati sul codice:
 - `tests/Pest.php` applica già `RefreshDatabase` ai test `Feature`: non serve `uses()` nel file.
@@ -354,7 +354,7 @@ php artisan test tests/Feature/Api/PublicApiTest.php
 composer test
 ```
 Se un test fallisce per un dettaglio dei dati (es. un tipo `int` contro `string` nei confronti di `assertJsonPath`), correggere il test, non l'API. Se invece fallisce per un comportamento reale (es. 500), annotarlo nel `todo.md` come bug dell'API.
-Dopo i test verdi: annotare l'esito di `composer test` nel README (sezione Test, che oggi riporta solo quello del 2026-10-04), togliere "API pubblica" dall'elenco di cosa non ha test, spuntare 11.5 nel `todo.md` e rinominare il piano in `implementationPlan-V-10-ricostruzioneApiPubblica.md`.
+Con l'esecuzione attuale 7 test su 14 falliscono per un bug **del codice**, non dei test: vedi lo Step 11.5.8, da applicare prima di chiudere. Dopo i test verdi: annotare l'esito di `composer test` nel README (sezione Test, che oggi riporta solo quello del 2026-10-04), togliere "API pubblica" dall'elenco di cosa non ha test, spuntare 11.5 nel `todo.md` e rinominare il piano in `implementationPlan-V-10-ricostruzioneApiPubblica.md`.
 
 #### 11.5.7 — Opzionale: errori sempre in JSON sotto `/api`
 Da verificare prima: una richiesta a `/api/...` **senza** header `Accept: application/json` (es. `curl -i http://localhost:66/api/cards/SOR/9999`) potrebbe ricevere la pagina HTML di errore invece di JSON. In quel caso, in `bootstrap/app.php`:
@@ -364,3 +364,59 @@ Da verificare prima: una richiesta a `/api/...` **senza** header `Accept: applic
 })
 ```
 e un test che fa `$this->get('/api/cards/SOR/9999')` (senza `getJson`) e controlla `assertNotFound()->assertJsonStructure(['message'])`. Non fa parte del piano base.
+
+#### 11.5.8 — Bug: `CardBuilder` usa SQL solo MariaDB, i test su SQLite vanno in errore
+Sintomo (esecuzione del 2026-10-19, 12:47, `php artisan test tests/Feature/Api/PublicApiTest.php`): `Tests: 7 failed, 7 passed`. Nel log: `SQLSTATE[HY000]: General error: 1 near "ORDER": syntax error (Connection: sqlite, Database: :memory:...)`, con la query che contiene `GROUP_CONCAT(LPAD(...) ORDER BY ... SEPARATOR '')`.
+
+Causa: `App\Models\Builders\CardBuilder::get()` aggiunge l'ordinamento di default a ogni query su `Card` che non ha un `orderBy`. Il criterio sugli aspetti (`applyDefaultOrder()`, punto 2) è scritto per MariaDB: `GROUP_CONCAT(... ORDER BY ... SEPARATOR '')` e `LPAD` non esistono in SQLite, che è il database di `phpunit.xml`. Su MariaDB funziona; nei test no. L'errore si presenta appena la query ha almeno una carta da leggere (con `paginate()` su tabella vuota il `select` non parte), quindi i sette test che cadono sono i due del dettaglio carta (`firstOrFail()` → `first()` → `get()`) e i cinque della ricerca; i sei test dei mazzi e il rate limit non passano da `CardBuilder` e restano verdi. Anche altri test che fanno `Card::query()...->get()` (es. `CardSearchTest`, `DeckPagesTest`) possono essere colpiti: lo dirà la suite intera.
+
+Il bug non è dell'API: è in un file del codice che si applica a mano. Non si risolve cambiando i test (non si aggira con `orderBy` espliciti nei controller: `/carte` e le altre pagine perderebbero l'ordine di default).
+
+Correzione in `app/Models/Builders/CardBuilder.php`: scegliere l'espressione degli aspetti in base al driver. Sostituire, in `applyDefaultOrder()`, il blocco `$aspects = "(SELECT GROUP_CONCAT(...)";` con una chiamata a un nuovo metodo, e aggiungere il metodo:
+```php
+// in applyDefaultOrder(), al posto di $aspects = "(...)";
+$aspects = $this->aspectOrderKey();
+
+$this->orderByRaw("($aspects) IS NULL")
+    ->orderByRaw($aspects);
+```
+```php
+/**
+ * SQL expression that builds the aspects sort key of a card (zero-padded `order`s, NULL if none).
+ * Espressione SQL della chiave di ordinamento degli aspetti: MariaDB per l'app, SQLite per i test.
+ *
+ * @return string Raw SQL, a correlated scalar subquery on `cards.id`
+ */
+protected function aspectOrderKey(): string
+{
+    if ($this->query->getConnection()->getDriverName() === 'sqlite') {
+        // SQLite non ha LPAD e non accetta ORDER BY/SEPARATOR dentro GROUP_CONCAT: printf al posto di LPAD,
+        // nessun ordine interno garantito (basta per i test, che non verificano l'ordine dei multi-aspetto).
+        return <<<'SQL'
+            (SELECT GROUP_CONCAT(printf('%04d', a."order"), '')
+                FROM card_aspect ca
+                JOIN aspects a ON a.id = ca.aspect_id
+                WHERE ca.card_id = cards.id)
+            SQL;
+    }
+
+    return <<<'SQL'
+        (SELECT GROUP_CONCAT(
+                LPAD(a.`order`, 4, '0')
+                ORDER BY ca.position, ca.created_at, a.`order`
+                SEPARATOR ''
+            )
+            FROM card_aspect ca
+            JOIN aspects a ON a.id = ca.aspect_id
+            WHERE ca.card_id = cards.id)
+        SQL;
+}
+```
+Il ramo MariaDB è identico a quello attuale: in produzione e in locale (compose) l'ordinamento non cambia. Il resto di `applyDefaultOrder()` (tipo generico, tipo specifico, costo, nome, `legal_date`, numero, `id`) è SQL standard e non si tocca.
+
+Verifica:
+```
+php artisan test tests/Feature/Api/PublicApiTest.php
+composer test
+```
+Atteso: 14 test su 14 verdi per l'API. Se la suite intera mostra altri fallimenti, controllare nel log se hanno la stessa causa (stesso errore `near "ORDER"`) prima di indagare altrove, e annotare nel `todo.md` quelli con causa diversa. Poi chiudere come da Step 11.5.6 (README sezione Test con l'esito di `composer test`, `todo.md`, rinomina in `V-10`).
