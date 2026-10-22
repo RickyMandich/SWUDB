@@ -24,7 +24,7 @@
 
 # Custom
 
-implementationPlan-V-*.md
+# implementationPlan-V-*.md
 implementationPlan-*.pdf
 
 *.sql

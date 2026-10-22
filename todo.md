@@ -12,6 +12,7 @@
 - [x] README e `todo.md` riallineati al codice reale del piano 07 (Step 7.6.0–7.6.3 già applicati, bug trovati e step 7.6.5–7.9 aggiunti al piano) (2026-10-11)
 - [x] README, `todo.md` e indice dei piani (`implementationPlan-ricostruzioneUnlimitedDB.md`) riallineati al codice dopo la chiusura dei piani fino al 09 (riletti routes, controller, viste, servizi e test il 2026-10-19). Il README ora descrive export/import dei mazzi, copertina `<x-deck-cover>`, copia di un mazzo, rotte e test reali
 - [x] README e `todo.md` riallineati al codice dopo l'applicazione del piano 10 (API pubblica, riletti `routes/api.php`, controller `Api/*` e Resource il 2026-10-19): sezione "API pubblica" nel README, Sanctum nello stack, `personal_access_tokens` nel database
+- [x] Piani 11 (build GitHub Actions, script di deploy generico) e 12 (messa in produzione per scambio degli ambienti) riscritti e numerati; indice, README e `todo.md` riallineati (2026-10-21; riletto anche lo stato del piano 10: non chiuso, manca 11.5.8)
 - [ ] Da rilanciare `composer test` (da host) e annotare l'esito nel README (sezione Test): dopo i piani 05–09 la suite è cresciuta e l'ultimo esito registrato è del 2026-10-04
 - [x] Libreria UI Bladewind (`bladewindui/ui`, `bladewindui/table`) in uso, con i componenti pubblicati in `resources/views/components/bladewind` (la vista `cards/show` usa `<x-bladewind.card>` e `<x-bladewind.description-list>`); il README la riporta nello stack
 - [x] Bladewind aggiunto alle convenzioni per le view (indice, sezione "Componenti Bladewind")
@@ -80,7 +81,7 @@
 - [X] 5.5.5 Mail admin con `SystemError` invece di `Throwable`: `$errors` passata a `processCard()` e `downloadImages()` e popolata con i `SystemError`; un lato assente nell'API è solo loggato (`Log::debug`), un `SystemError` nasce solo se l'URL c'è e il download fallisce
 - [ ] 5.5.6 Suite del 2026-10-04 (da host): 29 passati, 5 falliti. I tre test del job 'crea', 'pagina', 'dati malformati' cadono per `RoleDoesNotExist` (admin) e 'carta già presente' per la mail accodata (tutti per le cause in 5.5.8); `ExampleTest` di Breeze si aspettava 200 su `/` (che fa redirect a `/dashboard`): già riscritto con `assertRedirect('/dashboard')` (verificato sul codice il 2026-10-19). Resta da rilanciare la suite e annotare l'esito
 - [ ] 5.5.7 Doppio `SystemError` sul download immagine fallito (lo crea `CardImageDownloader::download()` e poi `downloadImages()`; solo il secondo finisce nel report admin): metà fatta (verificato il 2026-10-19): il downloader ora fa solo `Log::warning`; resta da arricchire il `context` del `SystemError` creato da `downloadImages()` con `source_url` e `side` (oggi ha solo `error_message`)
-- [ ] 5.5.8 Cause dei test del job falliti (riletto sul codice il 2026-10-19: (1), (2) e (3) risultano ancora tutte presenti nel job; `sendNotifications()` usa ancora `User::role('admin')`, `Carbon::parse($cardData['publishedAt'])` non è tollerante, il `Log::warning` in `handle()` scrive ancora `raw` e l'eccezione): (1) il fixture `api-example-result.json` non ha `publishedAt` al primo livello di `attributes` mentre il job lo chiede nei `fields` → `Undefined array key "publishedAt"` su ogni carta (riga ~174): aggiungerlo in `fakeCardEntry()` e rendere il job tollerante, `release_date` è nullable; (2) `sendNotifications()` usa `User::role('admin')`, che lancia `RoleDoesNotExist` se il ruolo non c'è: usare `User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))`; (3) il `Log::warning` in `handle()` scrive l'intero payload e lo stack trace, già nel `SystemError`: loggare solo `cardUid` e messaggio
+- [ ] 5.5.8 (assorbito da `implementationPlan-importCartePerPagina.md`, Step 3 e 6.1) Cause dei test del job falliti (riletto sul codice il 2026-10-19: (1), (2) e (3) risultano ancora tutte presenti nel job; `sendNotifications()` usa ancora `User::role('admin')`, `Carbon::parse($cardData['publishedAt'])` non è tollerante, il `Log::warning` in `handle()` scrive ancora `raw` e l'eccezione): (1) il fixture `api-example-result.json` non ha `publishedAt` al primo livello di `attributes` mentre il job lo chiede nei `fields` → `Undefined array key "publishedAt"` su ogni carta (riga ~174): aggiungerlo in `fakeCardEntry()` e rendere il job tollerante, `release_date` è nullable; (2) `sendNotifications()` usa `User::role('admin')`, che lancia `RoleDoesNotExist` se il ruolo non c'è: usare `User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))`; (3) il `Log::warning` in `handle()` scrive l'intero payload e lo stack trace, già nel `SystemError`: loggare solo `cardUid` e messaggio
 - [ ] I test si lanciano da host (`composer test`), non nel container: l'immagine usa `composer install --no-dev`; su Windows non usare `:` nel nome del file di log (crea un alternate data stream e il file resta vuoto): rinominare/eliminare `test_2026-10-04_09` nella radice
 
 ## 04 — Admin espansioni (Fase 6) `implementationPlan-V-04-ricostruzioneAdminEspansioni.md`
@@ -212,30 +213,50 @@
 - [x] 11.2 Endpoint pubblici `/api/cards/search`, `/api/cards/{expansion}/{number}`, `/api/decks/{userName}/{deckName}` (verificati sul codice il 2026-10-19). Scostamenti dal piano originale, tutti voluti: `throttle:60,1` sull'intero gruppo di rotte (non solo sulla ricerca); `search()` usa `CardSearch::FILTER_KEYS` e `->withQueryString()`; il mazzo restituito è l'ultima versione pubblica (`whereDoesntHave('nextVersion')`). URL stabile dei mazzi risolto: `{userName}/{deckName}` (Step 11.2.4)
   - [x] Bug trovati e corretti dall'utente il 2026-10-19: mancavano gli `use` di `CardResource` e `DeckResource` nei due controller (errore 500 su ogni endpoint), `search()` usava i vecchi nomi dei filtri (ignorati in silenzio), `show` dei mazzi non sceglieva la versione
 - [x] 11.4 API Resources (`CardResource`, `DeckResource`; quest'ultima espone anche `version`)
-- [ ] 11.5 Test Pest dell'API (`tests/Feature/Api/PublicApiTest.php`): nessun test esiste ancora; il piano (Step 11.5.1–11.5.6) contiene il codice completo, 14 test tra dettaglio carta, ricerca, mazzi e rate limit; 11.5.7 (errori sempre in JSON sotto `/api`) è opzionale. Il piano resta senza `V-` finché non sono scritti e verdi
+- [ ] 11.5 Test Pest dell'API (`tests/Feature/Api/PublicApiTest.php`): file scritto (14 test, Step 11.5.1–11.5.5); ultima esecuzione (2026-10-19, 12:47) 7 falliti e 7 passati per il bug di 11.5.8; 11.5.6 (esito di `composer test` nel README, rinomina in `V-`) da fare dopo i test verdi; 11.5.7 (errori sempre in JSON sotto `/api`) è opzionale
+  - [ ] 11.5.8 Bug `CardBuilder::applyDefaultOrder()`: SQL solo MariaDB (`GROUP_CONCAT ... ORDER BY ... SEPARATOR`, `LPAD`) che SQLite dei test non capisce; correzione nel piano 10 (metodo `aspectOrderKey()` con ramo per driver). Da applicare nel codice, poi rilanciare la suite intera (altri test che leggono carte possono avere la stessa causa)
 - [ ] 11.3 Endpoint autenticati con token Sanctum: rimandato (non necessario al day 1). `User` non ha ancora il trait `HasApiTokens`
 
-## 11 — Deploy (Fase 12) `implementationPlan-11-ricostruzioneDeploy.md`
-- [x] Deploy automatizzato del branch `laravel` (vecchia SWUDB): merge → la pipeline fa il resto. Per il branch `new` nel repo non c'è nessun `.github/workflows`: vedi sezione "Pipeline di build su GitHub Actions"
+## Import carte per pagina (piano trasversale, prerequisito di 13.4) `implementationPlan-importCartePerPagina.md`
+- [ ] Step 0 (opzionale) conferma della diagnosi dal log del 2026-10-18 (`Allowed memory size`, "attempted too many times" ~90 s dopo l'avvio)
+- [ ] Step 1 `NewCardsEmail` e `AdminScanReportEmail` con `$total` opzionale, template con "…e altre N"
+- [ ] Step 2 `cards:scan --page=N`
+- [ ] Step 3 `ImportCardsFromSwuApiJob` riscritto: un job per pagina, stato in cache, carte nuove ed errori ricavati dal DB (`created_at`), lock, `failed()`, `publishedAt` tollerante, `whereHas` al posto di `User::role('admin')`, `SystemError` del download con `source_url` e `side`
+- [ ] Step 4 `CardImageDownloader` con timeout e retry
+- [ ] Step 5 `worker.conf` (`--memory=100 --timeout=240`), `DB_QUEUE_RETRY_AFTER=300` (`.env.example`, `.env` locale e della VM), `LOG_LEVEL=info` per l'import
+- [ ] Step 6 test Pest (fixture con `publishedAt`, 7 test nuovi)
+- [ ] Step 7 verifica con un import completo in locale (`memoria_picco_mb` piatto, una sola mail con elenco di 100 carte)
+- [ ] Step 8 README, `todo.md`, indice, rinomina in `V-`; chiude 5.5.6–5.5.8 del piano 03
+
+## 11 — Build su GitHub Actions (Fase 12) `implementationPlan-11-githubActionBuildGhcr.md` (comprende le fix di produzione al compose già applicate)
+- [x] Deploy automatizzato del branch `laravel` (vecchia SWUDB): merge → la pipeline fa il resto. Per il branch `new` nel repo non c'è nessun `.github/workflows`: lo aggiunge questo piano
 - [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker`
 - [x] `docker-compose.dev.yml`: immagine unica `unlimiteddb:dev` condivisa da `app` (con `build: .`) e `worker` (solo `image:`), così in locale si costruisce una volta sola
-- [x] `docker-compose.yml` (produzione): stesso schema, immagine unica `unlimiteddb:prod` condivisa da `app` (con `build: .`) e `worker` (solo `image:`); lo Step 3 di `implementationPlan-githubActionBuildGhcr.md` la sostituirà con `ghcr.io/rickymandich/swudb:new` (da riverificare sulla VM al prossimo `up -d --build`)
-- [x] 12.0.1 Fix produzione: `supervisor` installato nell'immagine (`apk add ... supervisor` nel `Dockerfile`); il container `unlimiteddb_worker` andava in loop con `supervisord: not found` (da riverificare sulla VM dopo il prossimo build)
-- [x] 12.0.2 Fix produzione: nel servizio `nginx` di `docker-compose.yml` `build_assets` è montato su `/var/www/html/public/build:ro` (era `public_build`) → CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`) (da riverificare sulla VM)
-- [ ] 12.1 Verifica post-deploy: webhook Telegram (registrato; resta da provare `/scan` e `/search` da Telegram sul sito deployato), `failed_jobs` vuota, scan schedulato (serve anche `schedule:run`), immagini carta su `/storage/...`, icone su `/favicon.ico`, container `_worker` `Up`
-- [ ] 12.2.0 Verificare che il redeploy non sovrascriva le personalizzazioni di `Dockerfile`, `entrypoint.sh`, `nginx/default.conf`, `docker-compose.yml`
-- [ ] 12.2 Redeploy pulito a fine sviluppo (non ora): stop container → branch nuovo come default → commenta Action del vecchio sito → verifica `.env` → cancella `~/sites/SWUDB` → rilancia `new-site.sh`
+- [x] `docker-compose.yml` (produzione): stesso schema, immagine unica `unlimiteddb:prod` condivisa da `app` (con `build: .`) e `worker` (solo `image:`); lo Step 12.4 di `implementationPlan-11-githubActionBuildGhcr.md` la sostituirà con `ghcr.io/rickymandich/swudb:new` (da riverificare sulla VM al prossimo `up -d --build`)
+- [x] Fix produzione (ex 12.0.1): `supervisor` installato nell'immagine (`apk add ... supervisor` nel `Dockerfile`); il container `unlimiteddb_worker` andava in loop con `supervisord: not found` (da riverificare sulla VM dopo il prossimo build)
+- [x] Fix produzione (ex 12.0.2): nel servizio `nginx` di `docker-compose.yml` `build_assets` è montato su `/var/www/html/public/build:ro` (era `public_build`) → CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`) (da riverificare sulla VM)
+- [ ] 12.0 Pulizia sulla VM (build appese, `docker system df`)
+- [ ] 12.1 `~/scripts/deploy-image.sh` generico sulla VM (nessun codice di un sito specifico; argomenti `<sito> [branch]`)
+- [ ] 12.2 Hook del sito nella repo: `deploy/pre-deploy.sh` e `deploy/post-deploy.sh` (`migrate --force`, `queue:restart`, reload di nginx)
+- [ ] 12.3 Chiave SSH dedicata (forced command su `deploy-image.sh unlimiteddb new`) e secret `SSH_PRIVATE_KEY_UNLIMITEDDB`
+- [ ] 12.4 `docker-compose.yml`: `image: ghcr.io/rickymandich/swudb:new` su `app` e `worker` (il `worker` senza `build`)
+- [ ] 12.5 Workflow `.github/workflows/deploy-unlimiteddb.yml`
+- [ ] 12.6 Commit e push su `new`
+- [ ] 12.7 Primo run e accesso a ghcr.io dalla VM
+- [ ] 12.8 Verifica post-deploy e `docker builder prune`
+- [ ] 12.9 Rollback provato (tag `sha-<commit>`)
+- [ ] 12.10 README (sezione Deploy), `todo.md` e rinomina del piano in `implementationPlan-V-11-githubActionBuildGhcr.md`
 
-## Pipeline di build su GitHub Actions (piano trasversale) `implementationPlan-githubActionBuildGhcr.md`
-- [ ] Step 0 Pulizia sulla VM (build appese, `docker system df`)
-- [ ] Step 1 `~/scripts/deploy-image.sh` sulla VM
-- [ ] Step 2 Chiave SSH dedicata e secret `SSH_PRIVATE_KEY_UNLIMITEDDB`
-- [ ] Step 3 `docker-compose.yml`: `image: ghcr.io/rickymandich/swudb:new` su `app` e `worker` (il `worker` senza `build`)
-- [ ] Step 4 Workflow `.github/workflows/deploy-unlimiteddb.yml`
-- [ ] Step 5 Commit e push su `new`
-- [ ] Step 6 Primo run e accesso a ghcr.io dalla VM
-- [ ] Step 7 Verifica post-deploy e `docker builder prune`
-- [ ] Step 9 README (sezione Deploy) e rinomina del piano in `implementationPlan-V-...`
+## 12 — Messa in produzione, scambio degli ambienti (Fase 13) `implementationPlan-12-ricostruzioneDeploy.md`
+- [ ] 13.1 Host parametrico: `SITE_HOST` nel `.env` della VM e nel compose, `server_name _;` in nginx, `.env.example`
+- [ ] 13.2 Rilevamento sulla VM (conferma dei nomi letti dalla repo `PROJECT/SWUDB`: router `SWUDB`, subnet 172.23.0.0/24, DB `my_swudb`, nessun worker; cron sul vecchio sito; `TELEGRAM_MESSAGE_PREFIX` diverso nei due `.env`; DNS di `unlimiteddb-old`)
+- [ ] 13.3 Backup (dump dei due database, `.env`, storage del vecchio sito)
+- [ ] 13.4 Reset pulito del nuovo sito (deciso il 2026-10-21): `migrate:fresh --seed --force`, immagini cancellate, reimport completo con `cards:scan`, verifiche e **espansioni da confermare a mano** da `/admin/espansioni` (senza `confirmed` nessun mazzo Premier è valido); prerequisiti: `SEED_ADMIN_*` nel `.env` della VM e `implementationPlan-importCartePerPagina.md` applicato e provato (memoria esaurita dopo ~180 pagine, 2026-10-18). Utenti e mazzi del vecchio sito **non** migrati (eventuali utenti a mano in futuro)
+- [ ] 13.5 Cutover: Action vecchia off → vecchio su `unlimiteddb-old` → nuovo su `unlimiteddb` → webhook Telegram
+- [ ] 13.6 Verifica post-cutover (webhook, coda, scan schedulato, immagini, icone, mail, vecchio sito)
+- [ ] 13.7 Rollback (solo routing, database invariati)
+- [ ] 13.8 Dismissione del vecchio sito (dopo qualche settimana)
+- [ ] 13.9 README, `todo.md`, indice e rinomina del piano in `implementationPlan-V-12-ricostruzioneDeploy.md`
 
 ## Debito tecnico trovato il 2026-10-03 (confronto codice/piani, senza piano dedicato)
 - [X] `TelegramService`: il prefisso dei messaggi è configurabile (`TELEGRAM_MESSAGE_PREFIX`, default vuoto); impostare `"dev: "` solo negli `.env` di sviluppo/test
@@ -244,7 +265,7 @@
 - [X] Scheduler in produzione: `schedule:work` come programma di `docker/supervisor/worker.conf` nel container `worker` (da verificare dopo il deploy; in dev volutamente assente, lo scan si lancia a mano)
 - [X] `docker-compose.dev.yml`: `DB_PASSWORD=${DB_PASSWORD}` ora in entrambi i servizi `app` e `worker`
 
-## 12 — Dark Mode UI (Fase 12) `implementationPlan-V-12-darkModeUi.md`
+## Dark Mode UI (piano trasversale già completato; il "12" nel nome del file è storico) `implementationPlan-V-12-darkModeUi.md`
 - [x] 12.1 Layouts
 - [x] 12.2 Navigazione
 - [x] 12.3 Componenti e Viste base
@@ -256,6 +277,13 @@
 ## Fix visivo collezione 2026-10-19
 - [x] `collection.index`: i campi delle copie possedute erano coperti dalle carte successive (slot del componente `card` dentro la griglia a 2 colonne e dentro il link); ora `components/card.blade.php` rende lo slot sotto il link, a tutta larghezza (`article` flex-col), solo se non vuoto
 - [x] `collection.index`: il bordo giallo (valore negativo/non valido corretto a 0) e rosso (salvataggio fallito) ora sono impostati con `style.borderColor` inline, perché le classi `dark:border-gray-*` dell'input coprivano le utility `border-yellow-500`/`border-red-500`
+
+## Fix logo e navbar mobile (2026-10-22) `implementationPlan-fixLogoENavbarMobile.md`
+- [ ] Step 0 Diagnosi della navbar su mobile con DevTools (overflow dell'hamburger, CSS Bladewind non a layer, `display` del blocco responsive)
+- [ ] Step 1 `<x-application-logo>` usa `build/icons/android-chrome-512x512.png` invece di `icon-mine.svg` (nginx non serve la radice di `public/`: 404)
+- [ ] Step 2 `layouts/navigation.blade.php`: contenitore sinistro con `min-w-0`, nome troncato, hamburger `shrink-0`, menu responsive con `x-show`/`x-collapse`, regola `[x-cloak]` in `resources/css/app.css`; 2.5 (layer per Bladewind) solo se la diagnosi lo conferma
+- [ ] Step 3 Build (`up -d --build`) e verifica a mano (rete, mobile verticale/orizzontale, guest, tema scuro)
+- [ ] Step 4 README riallineato, piano rinominato in `implementationPlan-V-fixLogoENavbarMobile.md`
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi

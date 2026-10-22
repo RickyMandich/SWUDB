@@ -43,18 +43,19 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: nessun codice mette ancora in coda `NotifyAdminJob`, e il funzionamento del webhook in produzione non è stato verificato con un update reale (`todo.md`, 12.1). Nessun test Pest su `TelegramController` (`todo.md`, 9.7). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
-- Job di import, rifiniture aperte (`todo.md`, 5.5.6–5.5.8): `sendNotifications()` usa ancora `User::role('admin')` (lancia `RoleDoesNotExist` se il ruolo non esiste), `release_date` non tollera un `publishedAt` mancante, il `Log::warning` in `handle()` scrive ancora il payload intero e il `SystemError` del download immagine non riporta `source_url` e `side` nel `context`. La suite è da rilanciare con `composer test` (sezione Test).
+- **Job di import, problema noto**: `ImportCardsFromSwuApiJob` elabora tutto lo scan in un solo job e tiene in memoria le carte nuove, quelle già presenti e gli errori: con la lista completa (~7200 carte, ~180 pagine) esaurisce i 128 MB di PHP (2026-10-18); inoltre `retry_after` della coda (90 s) è più corto dello scan e un 502 dell'API interrompe lo scan senza ritentare. Il fix (un job per pagina, `cards:scan --page=N`, lock, mail con tetto) è nel piano `implementationPlan-importCartePerPagina.md`, non ancora applicato.
+- Job di import, rifiniture aperte (`todo.md`, 5.5.6–5.5.8, assorbite dallo stesso piano): `sendNotifications()` usa ancora `User::role('admin')` (lancia `RoleDoesNotExist` se il ruolo non esiste), `release_date` non tollera un `publishedAt` mancante, il `Log::warning` in `handle()` scrive ancora il payload intero e il `SystemError` del download immagine non riporta `source_url` e `side` nel `context`. La suite è da rilanciare con `composer test` (sezione Test).
 - Mazzi (piani 06 e 07, rifiniture aperte; dettaglio in `todo.md`):
   - nessun test Pest sui validator di formato (piano 06, Step 7.5bis) e `'JTL24'` (Data Vault) scritto a mano nei tre validator;
   - `DeckController::searchCards` carica `Card::with('aspect')`, ma `Card` ha solo `aspects()`: probabile bug da confermare con la suite (`todo.md`, 7.6.6ter);
   - import TXT: i nomi nel database sono in italiano, quindi per nome funziona solo con file esportati da questo sito (per nomi inglesi si usa il JSON, che identifica la carta dall'id); le chiavi `secondleader`/`secondLeader` dell'export reale di swudb.com sono da verificare (`todo.md`, 7.7.0bis);
   - verifiche a mano ancora da fare: copertina in `/mazzi` (7.6.7.4) e ricerca carte nell'editor (7.6.6bis.6).
 - Collezione, rifiniture: nessun test Pest su `CollectionController` e `DeckGapCalculator`.
-- API pubblica, rifiniture (piano 10, `todo.md` 11.5 e 11.3): nessun test Pest sugli endpoint; gli endpoint autenticati con token Sanctum non esistono (`User` non ha `HasApiTokens`).
+- API pubblica, rifiniture (piano 10, `todo.md` 11.5 e 11.3): i test sono in `tests/Feature/Api/PublicApiTest.php` (14) ma nell'ultima esecuzione (2026-10-19) 7 falliscono: `CardBuilder::applyDefaultOrder()` usa SQL solo MariaDB (`GROUP_CONCAT ... ORDER BY ... SEPARATOR`, `LPAD`) e i test girano su SQLite (correzione: Step 11.5.8 del piano 10, da applicare nel codice; può colpire anche altri test che leggono carte); gli endpoint autenticati con token Sanctum non esistono (`User` non ha `HasApiTokens`).
 - Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; la voce "Carte" del menu non si evidenzia sul dettaglio carta (`:active` usa `cards.index`); in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
-- Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano `implementationPlan-githubActionBuildGhcr.md`.
+- Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano 11 (`implementationPlan-11-githubActionBuildGhcr.md`); la messa in produzione per scambio degli ambienti è il piano 12 (`implementationPlan-12-ricostruzioneDeploy.md`).
 
 ## Stack
 
@@ -244,7 +245,7 @@ I filtri di `/api/cards/search` sono gli stessi di `/carte` (`CardSearch::FILTER
 
 `CardResource` espone `cid` (chiave pubblica stabile; l'`id` interno `{espansione}{numero}` è escluso), `name`, `title`, `type`, `rarity`, `cost`, `power`, `health`, `text`, `expansion`, `number`, `aspects`, `traits`, `front_image` e `back_image` (URL assoluti, `null` se manca l'immagine). `type`, `rarity` e `text` sono nella lingua dell'API ufficiale (italiano; `text` può contenere HTML). `DeckResource` espone `name`, `format`, `is_public`, `version` e `cards` (le carte come sopra più `quantity`).
 
-**Non ancora implementato**: endpoint autenticati con token Sanctum (piano 10, Step 11.3) e test Pest degli endpoint (Step 11.5).
+**Non ancora implementato**: endpoint autenticati con token Sanctum (piano 10, Step 11.3); i test Pest degli endpoint esistono ma non sono ancora verdi (Step 11.5.8).
 
 ## Bot Telegram
 
@@ -294,7 +295,7 @@ Su Windows, se si redirige l'output in un file non usare `:` nel nome (`> test_2
 alternate data stream NTFS e il file principale resta vuoto.
 
 Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`, `tests/Feature/Services/CardSearchTest.php` (filtri del catalogo)
-`tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import e, per i mazzi, `tests/Feature/Decks/DeckPagesTest.php`, `tests/Feature/Decks/DeckStatisticsTest.php`, `tests/Feature/Services/DeckExporterTest.php` e `tests/Feature/Services/DeckImporterTest.php` (helper `makeCard()` e `makeDeck()` in `tests/Pest.php`). Non hanno ancora test i validator di formato (piano 06, Step 7.5bis), `CollectionController`, `DeckGapCalculator`, `TelegramController` e l'API pubblica (piano 10, Step 11.5). L'`ExampleTest` di Breeze ora si aspetta il redirect a `/dashboard`. Ultima esecuzione annotata (2026-10-04): 29 test
+`tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import e, per i mazzi, `tests/Feature/Decks/DeckPagesTest.php`, `tests/Feature/Decks/DeckStatisticsTest.php`, `tests/Feature/Services/DeckExporterTest.php` e `tests/Feature/Services/DeckImporterTest.php` (helper `makeCard()` e `makeDeck()` in `tests/Pest.php`). Non hanno ancora test i validator di formato (piano 06, Step 7.5bis), `CollectionController`, `DeckGapCalculator` e `TelegramController`. L'API pubblica ha `tests/Feature/Api/PublicApiTest.php` (14 test; ultima esecuzione, 2026-10-19: 7 passati e 7 falliti per il bug di `CardBuilder` su SQLite, piano 10 Step 11.5.8). L'`ExampleTest` di Breeze ora si aspetta il redirect a `/dashboard`. Ultima esecuzione annotata (2026-10-04): 29 test
 passati e 5 falliti (4 del job e l'`ExampleTest`, poi riscritto); da allora la suite non è stata rilanciata con un esito annotato: eseguire `composer test` e aggiornare qui il risultato. Le
 cause dei fallimenti del job sono in `todo.md`, 5.5.6 e 5.5.8.
 
@@ -302,8 +303,8 @@ cause dei fallimenti del job sono in `todo.md`, 5.5.6 e 5.5.8.
 
 Il branch `new` gira sulla VM Oracle (infrastruttura Docker + Traefik dei siti `*.mandich.dev`, host
 `unlimiteddb-test.mandich.dev`) e nel repo **non ha ancora una pipeline** (nessuna cartella `.github/workflows`):
-il piano `implementationPlan-githubActionBuildGhcr.md` prevede build su GitHub Actions, immagine su `ghcr.io` e
-pull sulla VM. La pipeline "merge sul branch `laravel`" riguarda la vecchia SWUDB. In produzione c'è anche il
+il piano 11 (`implementationPlan-11-githubActionBuildGhcr.md`) prevede build su GitHub Actions, immagine su `ghcr.io` e
+pull sulla VM. La pipeline "merge sul branch `laravel`" riguarda la vecchia SWUDB. Il piano 12 porterà il sito in produzione scambiando gli ambienti: la vecchia SWUDB si sposta su `unlimiteddb-old.mandich.dev` e questo sito (oggi `unlimiteddb-test`) diventa `unlimiteddb.mandich.dev`; fino ad allora gli host in questo README sono quelli di test. In produzione c'è anche il
 servizio `worker`; l'utente MySQL deve essere autorizzato sulla subnet dei container (`laravel@172.22.0.%`, vedi
 `docker/mysql/init.sql`), non su un IP singolo.
 Da verificare post-deploy (aperto in `todo.md`): worker `Up`, `failed_jobs` vuota, scan schedulato, immagini

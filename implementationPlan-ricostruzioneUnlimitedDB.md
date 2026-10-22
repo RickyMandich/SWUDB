@@ -24,13 +24,15 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | 07 | [`implementationPlan-V-07-ricostruzioneMazziPagine.md`](implementationPlan-V-07-ricostruzioneMazziPagine.md) | Fase 7b: pagine mazzi, export/import, statistiche mazzo (Step 7.8, ex 10.2 del piano 05) | ✅ completato (restano le verifiche a mano 7.6.6bis.6 e 7.6.7.4, 7.7.0bis e il bug 7.6.6ter, dettaglio nel `todo.md`) |
 | 08 | [`implementationPlan-V-08-ricostruzioneCollezione.md`](implementationPlan-V-08-ricostruzioneCollezione.md) | Fase 8: collezione, carte mancanti/presenti | ✅ completato (2026-10-17, verifiche a mano comprese) |
 | 09 | [`implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md`](implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md) | Fase 9b: webhook, comandi, `NotifyAdminJob` | ✅ completato (resta il test opzionale 9.7) |
-| 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | codice applicato (Step 11.1, 11.2, 11.4); restano i test Pest (Step 11.5) per chiuderlo e rinominarlo `V-`; lo Step 11.3 (token) è rimandato |
-| 11 | [`implementationPlan-11-ricostruzioneDeploy.md`](implementationPlan-11-ricostruzioneDeploy.md) | Fase 12: verifica post-deploy e redeploy pulito | da fare |
+| 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | codice applicato (Step 11.1, 11.2, 11.4); test Pest scritti (Step 11.5, 14 test) ma 7 falliscono per un bug di `CardBuilder` su SQLite: per chiuderlo e rinominarlo `V-` manca lo Step 11.5.8; lo Step 11.3 (token) è rimandato |
+| 11 | [`implementationPlan-11-githubActionBuildGhcr.md`](implementationPlan-11-githubActionBuildGhcr.md) | Fase 12: build dell'immagine su GitHub Actions (ghcr.io), script `deploy-image.sh` generico sulla VM (la parte specifica del sito sta negli hook `deploy/` della repo), deploy con pull | da fare (dopo il piano 10) |
+| 12 | [`implementationPlan-12-ricostruzioneDeploy.md`](implementationPlan-12-ricostruzioneDeploy.md) | Fase 13: messa in produzione per scambio degli ambienti (vecchia produzione su `unlimiteddb-old`, il sito di test diventa `unlimiteddb.mandich.dev`), verifica post-cutover, rollback | da fare (dopo i piani 10 e 11) |
 
 ### Piani trasversali (non numerati)
 | File | Contenuto | Stato |
 |---|---|---|
-| [`implementationPlan-githubActionBuildGhcr.md`](implementationPlan-githubActionBuildGhcr.md) | Build dell'immagine su GitHub Actions (ghcr.io) e deploy con pull sulla VM, branch `new` | da fare |
+| [`implementationPlan-importCartePerPagina.md`](implementationPlan-importCartePerPagina.md) | Import carte: un job per pagina invece di uno solo (fix della memoria esaurita a ~180 pagine, `retry_after`, lock, mail con tetto, ripresa con `cards:scan --page=N`); assorbe 5.5.6–5.5.8 del piano 03. **Prerequisito dello Step 13.4 del piano 12** | da fare |
+| `implementationPlan-V-12-darkModeUi.md`, `implementationPlan-V-completamentoDarkMode.md` (il "12" è un numero storico: non è il piano 12 del deploy) | dark mode della UI | ✅ completati |
 | `implementationPlan-V-autoRebuildAssetsOnDockerBuild.md`, `implementationPlan-V-fixCardAspectMigration.md`, `implementationPlan-V-updateFakeCardEntryFromJson.md`, `implementationPlan-V-updateLogoComponent.md` | modifiche puntuali già applicate | ✅ completati |
 
 ### Struttura dei file (per l'indice dell'editor Markdown)
@@ -183,7 +185,7 @@ Unica eccezione al "solo Blade + Alpine": Chart.js via CDN nella pagina statisti
 - **`decks.assembled`**: serve a calcolare non solo cosa manca ma anche cosa si possiede ed è impegnato in un altro mazzo montato.
 - **Immagini scaricate in locale**: il sito non dipende dal CDN ufficiale a runtime.
 - **Icone generate dall'immagine Docker** a partire da `public/icon-mine.svg`: modificare l'SVG e ricostruire basta, niente rigenerazione manuale.
-- **Un'immagine Docker sola per `app` e `worker`**: stesso codice, comando diverso (`php-fpm` / `queue:work`); in dev `image: unlimiteddb:dev` (build solo su `app`), in produzione `ghcr.io/rickymandich/swudb:new` (piano `githubActionBuildGhcr`).
+- **Un'immagine Docker sola per `app` e `worker`**: stesso codice, comando diverso (`php-fpm` / `queue:work`); in dev `image: unlimiteddb:dev` (build solo su `app`), in produzione `ghcr.io/rickymandich/swudb:new` (piano 11, `githubActionBuildGhcr`).
 - **Log viewer** (`opcodesio/log-viewer`): pannello dei log dietro il permesso `log.viewer`, linkato dal menu utente.
 - Il file `implementationPlan-ricostruzioneUnlimitedDB.pdf` è una vecchia esportazione del piano unico e non è più aggiornato (è in `.gitignore`): da rigenerare da questo indice se serve.
 

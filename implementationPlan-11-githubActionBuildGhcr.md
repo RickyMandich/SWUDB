@@ -175,6 +175,8 @@ set -euo pipefail
 docker compose exec -T app php artisan migrate --force
 # fa ricaricare il codice ai processi queue:work del worker (supervisord li rilancia)
 docker compose exec -T app php artisan queue:restart
+# docker/nginx/default.conf è montato dal checkout: il git pull lo cambia ma nginx non lo rilegge da solo
+docker compose exec -T nginx nginx -s reload
 ```
 
 Se non vuoi le migrazioni automatiche, togli la prima riga di comando di `post-deploy.sh`: lo script generico non cambia.
@@ -350,7 +352,7 @@ cd ~/sites/unlimiteddb
 docker compose ps                                   # app, nginx, db, worker: tutti Up
 docker compose exec -T worker sh -c "ps | grep '[q]ueue:work'"   # tanti processi quanti ne ha numprocs
 curl -sI https://unlimiteddb-test.mandich.dev | head -1          # 200
-curl -sI https://unlimiteddb-test.mandich.dev/favicon.ico | head -1   # 200 (icone, Step 13.1.5 del piano 12)
+curl -sI https://unlimiteddb-test.mandich.dev/favicon.ico | head -1   # 200 (icone, Step 13.6.5 del piano 12)
 ```
 
 (Dopo il piano 12 l'host è `unlimiteddb.mandich.dev`.) Controlla anche un file di `/build/assets/...` dal browser (CSS/JS devono rispondere 200, non 404). Se compare un 504 su un sito appena creato, è il noto problema del provider Docker di Traefik: `docker restart traefik`.
@@ -393,4 +395,4 @@ Quando gli step 12.0–12.9 sono fatti:
 
 ## Rapporto con il piano 12 (messa in produzione)
 
-Il piano 12 non rigenera più il sito con `new-site.sh`: porta in produzione **questo stesso sito** (cartella `~/sites/unlimiteddb`, container `unlimiteddb_*`, database e immagini già presenti) cambiandone il dominio. Il compose, il workflow e gli hook di questo piano restano quindi validi senza modifiche, tranne la regola `Host(...)` di Traefik, che il piano 12 cambia da `unlimiteddb-test.mandich.dev` a `unlimiteddb.mandich.dev`. I template di `new-site.sh` non vanno aggiornati.
+Il piano 12 non rigenera più il sito con `new-site.sh`: porta in produzione **questo stesso sito** (cartella `~/sites/unlimiteddb`, container `unlimiteddb_*`, database e immagini già presenti) cambiandone il dominio. Il compose, il workflow e gli hook di questo piano restano quindi validi senza modifiche, tranne la regola `Host(...)` di Traefik, che il piano 12 (Step 13.1) rende parametrica con `SITE_HOST` letto dal `.env` sulla VM: il cambio da `unlimiteddb-test.mandich.dev` a `unlimiteddb.mandich.dev` è poi una modifica del `.env`, senza nuovo deploy. Il piano 12 sposta la vecchia produzione su `unlimiteddb-old.mandich.dev`. I template di `new-site.sh` non vanno aggiornati.
