@@ -158,7 +158,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
     public const EMAIL_ERRORS_LIMIT = 50;
 
     // Una pagina (40 carte, fino a 80 immagini) impiega una o due minuti: 240 s di timeout,
-    // e retry_after (DB_QUEUE_RETRY_AFTER, Step 6) maggiore del timeout.
+    // e retry_after (DB_QUEUE_RETRY_AFTER, Step 5) maggiore del timeout.
     public $tries = 3;
 
     public $backoff = [60, 180];
@@ -646,7 +646,7 @@ it('una seconda scansione non segnala come nuove le carte già importate', funct
     fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
             'data' => [fakeCardEntry()],
-            'meta' => ['paginatio' => ['pageCount' => 1]],
+            'meta' => ['pagination' => ['pageCount' => 1]],
         ]),
     ]);
     Mail::fake();
@@ -673,14 +673,14 @@ it('mostra nel report admin quanti errori ci sono oltre a quelli elencati', func
 php artisan test tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php
 composer test
 ```
-Atteso: i test del job verdi (sihiudono anche le cause 1 e 2 di 5.5.8: `publishedAt` e `RoleDoesNotExist`). Se la suite intera mostra ancora fallimenti con `near "ORDER"`, sono la causa dello Step 11.5.8 del piano 10 (nuova query su `Card` con ordinamento di default su SQLite), non di questo piano.
+Atteso: i test del job verdi (si chiudono anche le cause 1 e 2 di 5.5.8: `publishedAt` e `RoleDoesNotExist`). Se la suite intera mostra ancora fallimenti con `near "ORDER"`, sono la causa dello Step 11.5.8 del piano 10 (nuova query su `Card` con ordinamento di default su SQLite), non di questo piano.
 
 ## Step 7 — Verifica in locale (compose di sviluppo)
 
 Con `DB_QUEUE_RETRY_AFTER=300` nel `.env` e il worker riavviato (Step 5):
 ```bash
 docker compose -f docker-compose.dev.yml exec app php artisan migrate:fresh --seed
-docker compos-f docker-compose.dev.yml exec app php artisan cards:scan
+docker compose -f docker-compose.dev.yml exec app php artisan cards:scan
 ```
 Un import completo in locale è lungo (come sulla VM) ma sul tuo PC la memoria si vede subito:
 ```bash
@@ -692,8 +692,8 @@ Prova anche la ripresa: ferma il worker a metà (`docker compose -f docker-compo
 
 ## Step 8 — Documentazione
 
-1. **README.md**: sezione "Scansione carte" (punti 3 e 4: il job lavora ne, riparte con `cards:scan --page=N`, lock, mail con tetto) e "Non ancora implementato" (togliere le rifiniture del job di import). Aggiungi `DB_QUEUE_RETRY_AFTER` alla tabella delle variabili.
+1. **README.md**: sezione "Scansione carte" (punti 3 e 4: il job lavora a pagine, riparte con `cards:scan --page=N`, lock, mail con tetto) e "Non ancora implementato" (togliere il problema noto e le rifiniture del job di import). Aggiungi `DB_QUEUE_RETRY_AFTER` alla tabella delle variabili.
 2. **todo.md**: spunta la sezione "Import carte per pagina" e le voci 5.5.6–5.5.8 che questo piano chiude (5.5.6 dopo aver rilanciato la suite).
 3. **Indice dei piani**: stato di questo piano a completato.
 4. Rinomina questo file in `implementationPlan-V-importCartePerPagina.md`.
-5. Riprendi lo Step 13.4 d piano 12: il prerequisito "import completo funzionante" è soddisfatto quando lo Step 7 qui sopra riesce.
+5. Riprendi lo Step 13.4 del piano 12: il prerequisito "import completo funzionante" è soddisfatto quando lo Step 7 qui sopra riesce.
