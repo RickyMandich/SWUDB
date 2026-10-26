@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    image: unlimiteddb:prod
+    image: ghcr.io/rickymandich/swudb:new
     container_name: unlimiteddb_app
     restart: unless-stopped
     volumes:
@@ -62,7 +62,7 @@ services:
       start_period: 10s
 
   worker:
-    image: unlimiteddb:prod
+    image: ghcr.io/rickymandich/swudb:new
     container_name: unlimiteddb_worker
     restart: unless-stopped
     command: supervisord -c /etc/supervisor/worker.conf
