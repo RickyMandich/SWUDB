@@ -39,6 +39,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Carte mancanti/presenti di un mazzo (piano 08, Step 8.3): `/mazzo/{utente}/{mazzo}/delta/{versione?}` (solo loggati, visibile se il mazzo è visibile) confronta il mazzo con la collezione **di chi guarda** tramite `DeckGapCalculator`. Riepilogo in copie, toggle `?mostra=mancanti` / `?mostra=presenti`; in modalità "mancanti" distingue le copie mancanti del tutto da quelle impegnate in altri mazzi assemblati dell'utente. Linkata da `decks/show` (solo loggati) e `decks/edit`.
 - Collezione (piano 08): tabella `collection_cards` (una riga per utente, carta e variante di stampa: normale, foil, hyperspace, hyperspace foil, prestige), pagina `/collezione` (solo loggati) con gli stessi filtri di `/carte` e una quantità per variante su ogni carta, salvata senza reload con `PATCH /collezione` (quantità 0 = riga eliminata).
 - Dominio dei mazzi (piano 06): enum `DeckFormat` con cast su `Deck`, relazioni `Deck::leaders()` e `Deck::baseCard()`, un validator per formato in `app/Services/DeckValidation/` (scelto con `DeckFormatValidatorFactory::make($deck->format)`) e `DeckPolicy`. Regole implementate: Premier = 1 leader, 1 base, almeno 50 carte escluse leader e base (60 con la base `JTL24`, Data Vault), al massimo `max_copies` copie per carta (default 3) e solo espansioni delle ultime due rotazioni (`Expansion::validExpansions()`, solo espansioni confermate); Eternal = come Premier senza il controllo di rotazione; Twin Suns = 2 leader con al massimo un aspetto secondario (Eroismo/Malvagità, `Card::secondaryAspect()`) tra i due, 1 base, almeno 80 carte (90 con `JTL24`) e una copia per carta salvo `max_copies`.
+- Deploy automatico del branch `new` (piano 11): un push su `new` costruisce l'immagine su GitHub Actions, la pubblica su `ghcr.io/rickymandich/swudb` e la fa tirare alla VM (vedi "Deploy").
 - API REST pubblica di sola lettura (piano 10, `routes/api.php`, prefisso `/api`): ricerca carte, dettaglio carta e dettaglio mazzo pubblico in JSON, con `CardResource` e `DeckResource` (vedi "API pubblica"). Sanctum è installato ma non ancora usato.
 
 **Non ancora implementato / non funzionante**
@@ -54,7 +55,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; la voce "Carte" del menu non si evidenzia sul dettaglio carta (`:active` usa `cards.index`); in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
-- Nessuna pipeline di deploy per il branch `new` nel repo (nessuna cartella `.github/workflows`): piano 11 (`implementationPlan-11-githubActionBuildGhcr.md`); la messa in produzione per scambio degli ambienti è il piano 12 (`implementationPlan-12-ricostruzioneDeploy.md`).
+- Messa in produzione per scambio degli ambienti: piano 12 (`implementationPlan-12-ricostruzioneDeploy.md`). La pipeline di deploy del piano 11 è completa.
 
 ## Stack
 
@@ -94,6 +95,8 @@ app/
   Models/Builders/CardBuilder.php     builder Eloquent di `Card` con ordinamento di default (usato da `/carte`; si applica solo se la query non ha già un `orderBy`)
   Services/                           CardImageDownloader (immagini carta in storage), CardSearch (filtri catalogo), TelegramService + TelegramActionResult (Telegram), DeckValidation/ (validator per formato del mazzo e factory), DeckExporter e DeckImporter (export/import dei mazzi), DeckGapCalculator (carte mancanti/presenti rispetto alla collezione)
 bash/                                 script di commit/versionamento/FTP (vedi "Versionamento")
+deploy/                               hook di deploy del sito, eseguiti dalla VM: `pre-deploy.sh` (crea `public/build`) e `post-deploy.sh` (`migrate --force`, `queue:restart`, reload di nginx)
+.github/workflows/deploy-unlimiteddb.yml  workflow: build dell'immagine su ghcr.io e deploy via SSH al push su `new`
 database/migrations, seeders          schema e PermissionSeeder
 docker/                               entrypoint.sh, nginx/default.conf, mysql/init.sql e init.dev.sql, supervisor/worker.conf, icons/generate-icons.sh
 resources/views/                      viste Blade (admin/users, admin/errors, admin/expansions, auth, profile, ...)
@@ -126,7 +129,7 @@ Il sito risponde su <http://localhost:66>. Servizi del compose di sviluppo: `app
 per ricostruirla `docker compose -f docker-compose.dev.yml build app` oppure `up -d --build`.
 
 `docker-compose.dev.yml` è il compose di **sviluppo**; `docker-compose.yml` è quello di **produzione** (Traefik, rete
-esterna `proxy`, host `unlimiteddb-test.mandich.dev`, worker con `supervisord -c /etc/supervisor/worker.conf`). Anche qui `app` e `worker` condividono un'unica immagine (`unlimiteddb:prod`, costruita dal servizio `app`).
+esterna `proxy`, host `unlimiteddb-test.mandich.dev`, worker con `supervisord -c /etc/supervisor/worker.conf`). Anche qui `app` e `worker` condividono un'unica immagine, `ghcr.io/rickymandich/swudb:new`, costruita da GitHub Actions (il servizio `app` mantiene `build: .` solo per build manuali: `docker compose build app`); la VM non compila mai.
 
 `migrate --seed` crea permessi e ruolo `admin` (`PermissionSeeder`) e, se `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` sono
 impostate nel `.env`, un utente admin con email già verificata (`DatabaseSeeder`, tramite `config/seed.php`).
@@ -303,9 +306,19 @@ Storico: il 2026-10-23 erano 30 falliti e 85 passati, 26 dei quali per `CardBuil
 ## Deploy
 
 Il branch `new` gira sulla VM Oracle (infrastruttura Docker + Traefik dei siti `*.mandich.dev`, host
-`unlimiteddb-test.mandich.dev`) e nel repo **non ha ancora una pipeline** (nessuna cartella `.github/workflows`):
-il piano 11 (`implementationPlan-11-githubActionBuildGhcr.md`) prevede build su GitHub Actions, immagine su `ghcr.io` e
-pull sulla VM. La pipeline "merge sul branch `laravel`" riguarda la vecchia SWUDB. Il piano 12 porterà il sito in produzione scambiando gli ambienti: la vecchia SWUDB si sposta su `unlimiteddb-old.mandich.dev` e questo sito (oggi `unlimiteddb-test`) diventa `unlimiteddb.mandich.dev`; fino ad allora gli host in questo README sono quelli di test. In produzione c'è anche il
+`unlimiteddb-test.mandich.dev`, cartella `~/sites/unlimiteddb`) e si deploya da solo: un push su `new` avvia
+`.github/workflows/deploy-unlimiteddb.yml` (un solo deploy alla volta), che ha due job:
+
+1. `build`: costruisce l'immagine su GitHub (linux/amd64, con cache) e la pubblica su `ghcr.io/rickymandich/swudb` con i tag `new` e `sha-<commit>`;
+2. `deploy`: via SSH lancia sulla VM lo script generico `~/scripts/deploy-image.sh unlimiteddb new`. La chiave SSH ha un *forced command* in `~/.ssh/authorized_keys`: può lanciare solo quel comando.
+
+`deploy-image.sh` (fuori dalla repo, in `~/scripts/`, uguale per tutti i siti della VM e senza nulla di specifico di un sito) fa `git pull --ff-only`, esegue `deploy/pre-deploy.sh`, scarica con `docker pull` le sole immagini `ghcr.io/*` del compose (non `nginx` né `mariadb`), `docker compose up -d --no-build --wait`, esegue `deploy/post-deploy.sh` e libera le immagini inutilizzate. Si ferma se il checkout sulla VM ha modifiche locali ai file tracciati. Le parti specifiche del sito stanno nella repo, negli hook `deploy/`: `post-deploy.sh` lancia `migrate --force`, `queue:restart` e il reload di nginx (il `git pull` cambia `docker/nginx/default.conf` ma nginx non lo rilegge da solo).
+
+Secret GitHub richiesti: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY_UNLIMITEDDB` (la chiave della vecchia action, `SSH_PRIVATE_KEY`, non va toccata). Se il pacchetto ghcr è privato la VM deve aver fatto una volta `docker login ghcr.io` con un token `read:packages`. La pipeline "merge sul branch `laravel`" riguarda la vecchia SWUDB e resta separata.
+
+Rollback (provato): sulla VM `docker pull ghcr.io/rickymandich/swudb:sha-<COMMIT>`, `docker tag` di quell'immagine come `:new`, `docker compose up -d --no-build`; le migrazioni già eseguite non si annullano da sole. Il prossimo push su `new` ripristina `:new` all'ultima build.
+
+Il piano 12 (`implementationPlan-12-ricostruzioneDeploy.md`) porterà il sito in produzione scambiando gli ambienti: la vecchia SWUDB si sposta su `unlimiteddb-old.mandich.dev` e questo sito (oggi `unlimiteddb-test`) diventa `unlimiteddb.mandich.dev`; fino ad allora gli host in questo README sono quelli di test. In produzione c'è anche il
 servizio `worker`; l'utente MySQL deve essere autorizzato sulla subnet dei container (`laravel@172.22.0.%`, vedi
 `docker/mysql/init.sql`), non su un IP singolo.
 Da verificare post-deploy (aperto in `todo.md`): worker `Up`, `failed_jobs` vuota, scan schedulato, immagini

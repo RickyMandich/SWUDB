@@ -228,24 +228,25 @@
 - [ ] Step 7 verifica con un import completo in locale (`memoria_picco_mb` piatto, una sola mail con elenco di 100 carte)
 - [ ] Step 8 README, `todo.md`, indice, rinomina in `V-`; chiude 5.5.6–5.5.8 del piano 03
 
-## 11 — Build su GitHub Actions (Fase 12) `implementationPlan-11-githubActionBuildGhcr.md` (comprende le fix di produzione al compose già applicate)
-- [x] Deploy automatizzato del branch `laravel` (vecchia SWUDB): merge → la pipeline fa il resto. Per il branch `new` nel repo non c'è nessun `.github/workflows`: lo aggiunge questo piano
+## 11 — Build su GitHub Actions (Fase 12) ✅ `implementationPlan-V-11-githubActionBuildGhcr.md` (completato il 2026-10-26; comprende le fix di produzione al compose già applicate)
+- [x] Deploy automatizzato del branch `laravel` (vecchia SWUDB): merge → la pipeline fa il resto. Per il branch `new` la pipeline è `.github/workflows/deploy-unlimiteddb.yml`, aggiunta da questo piano (2026-10-26)
 - [x] `new-site.sh` sul server aggiornato per generare anche il servizio `worker`
 - [x] `docker-compose.dev.yml`: immagine unica `unlimiteddb:dev` condivisa da `app` (con `build: .`) e `worker` (solo `image:`), così in locale si costruisce una volta sola
-- [x] `docker-compose.yml` (produzione): stesso schema, immagine unica `unlimiteddb:prod` condivisa da `app` (con `build: .`) e `worker` (solo `image:`); lo Step 12.4 di `implementationPlan-11-githubActionBuildGhcr.md` la sostituirà con `ghcr.io/rickymandich/swudb:new` (da riverificare sulla VM al prossimo `up -d --build`)
+- [x] `docker-compose.yml` (produzione): stesso schema, immagine unica condivisa da `app` (con `build: .`) e `worker` (solo `image:`); lo Step 12.4 di `implementationPlan-V-11-githubActionBuildGhcr.md` l'ha sostituita con `ghcr.io/rickymandich/swudb:new` (verificato sulla VM il 2026-10-26: `app` e `worker` partiti da quell'immagine)
 - [x] Fix produzione (ex 12.0.1): `supervisor` installato nell'immagine (`apk add ... supervisor` nel `Dockerfile`); il container `unlimiteddb_worker` andava in loop con `supervisord: not found` (da riverificare sulla VM dopo il prossimo build)
 - [x] Fix produzione (ex 12.0.2): nel servizio `nginx` di `docker-compose.yml` `build_assets` è montato su `/var/www/html/public/build:ro` (era `public_build`) → CSS/JS (`/build/assets/*`) e `site.webmanifest` (`/build/icons/*`) (da riverificare sulla VM)
-- [ ] 12.0 Pulizia sulla VM (build appese, `docker system df`)
-- [ ] 12.1 `~/scripts/deploy-image.sh` generico sulla VM (nessun codice di un sito specifico; argomenti `<sito> [branch]`)
-- [ ] 12.2 Hook del sito nella repo: `deploy/pre-deploy.sh` e `deploy/post-deploy.sh` (`migrate --force`, `queue:restart`, reload di nginx)
-- [ ] 12.3 Chiave SSH dedicata (forced command su `deploy-image.sh unlimiteddb new`) e secret `SSH_PRIVATE_KEY_UNLIMITEDDB`
-- [ ] 12.4 `docker-compose.yml`: `image: ghcr.io/rickymandich/swudb:new` su `app` e `worker` (il `worker` senza `build`)
-- [ ] 12.5 Workflow `.github/workflows/deploy-unlimiteddb.yml`
-- [ ] 12.6 Commit e push su `new`
-- [ ] 12.7 Primo run e accesso a ghcr.io dalla VM
-- [ ] 12.8 Verifica post-deploy e `docker builder prune`
-- [ ] 12.9 Rollback provato (tag `sha-<commit>`)
-- [ ] 12.10 README (sezione Deploy), `todo.md` e rinomina del piano in `implementationPlan-V-11-githubActionBuildGhcr.md`
+- [x] 12.0 Pulizia sulla VM (build appese, `docker system df`) (2026-10-26: nessuna build in corso; cache di build 14,5 GB, 12,7 GB recuperabili)
+- [x] 12.1 `~/scripts/deploy-image.sh` generico sulla VM (nessun codice di un sito specifico; argomenti `<sito> [branch]`) (2026-10-26: `bash -n` senza errori)
+- [x] 12.2 Hook del sito nella repo: `deploy/pre-deploy.sh` e `deploy/post-deploy.sh` (`migrate --force`, `queue:restart`, reload di nginx)
+- [x] 12.3 Chiave SSH dedicata (forced command su `deploy-image.sh unlimiteddb new`) e secret `SSH_PRIVATE_KEY_UNLIMITEDDB`
+  - [x] 12.3bis La chiave privata è stata stampata nel terminale (e incollata in una chat): rigenerarla (`rm ~/.ssh/deploy_unlimiteddb{,.pub}`, rifare il blocco dello Step 12.3 senza `cat` a schermo) e aggiornare il secret su GitHub
+- [x] 12.4 `docker-compose.yml`: `image: ghcr.io/rickymandich/swudb:new` su `app` e `worker` (il `worker` senza `build`)
+- [x] 12.5 Workflow `.github/workflows/deploy-unlimiteddb.yml`
+- [x] 12.6 Commit e push su `new` (fatti dalla VM con `cmt`, commit `8c526107`)
+- [x] 12.7 Primo run e accesso a ghcr.io dalla VM (2026-10-26: `app` e `worker` ricreati con `ghcr.io/rickymandich/swudb:new`, nessun errore di pull)
+- [x] 12.8 Verifica post-deploy e `docker builder prune` (2026-10-26: `docker compose ps` tutti Up, 2 processi `queue:work`, `/` risponde 302 verso `/dashboard` e `/favicon.ico` 200; hook, asset e prune controllati dall'utente)
+- [x] 12.9 Rollback provato (tag `sha-<commit>`)
+- [x] 12.10 README (sezione Deploy), `todo.md` e rinomina del piano in `implementationPlan-V-11-githubActionBuildGhcr.md` (README, `todo.md` e indice dei piani aggiornati il 2026-10-26; piano rinominato dall'utente)
 
 ## 12 — Messa in produzione, scambio degli ambienti (Fase 13) `implementationPlan-12-ricostruzioneDeploy.md`
 - [ ] 13.1 Host parametrico: `SITE_HOST` nel `.env` della VM e nel compose, `server_name _;` in nginx, `.env.example`

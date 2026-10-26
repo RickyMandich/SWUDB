@@ -25,8 +25,8 @@ Eseguire i piani in ordine di numero. Ogni piano elenca in testa i propri prereq
 | 08 | [`implementationPlan-V-08-ricostruzioneCollezione.md`](implementationPlan-V-08-ricostruzioneCollezione.md) | Fase 8: collezione, carte mancanti/presenti | ✅ completato (2026-10-17, verifiche a mano comprese) |
 | 09 | [`implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md`](implementationPlan-V-09-ricostruzioneBotTelegramWebhook.md) | Fase 9b: webhook, comandi, `NotifyAdminJob` | ✅ completato (resta il test opzionale 9.7) |
 | 10 | [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) | Fase 11: Sanctum, API pubblica, Resources | ✅ applicato (Step 11.1, 11.2, 11.4, 11.5 con 14 test verdi, 11.5.8 `CardBuilder` compatibile con SQLite, suite del 2026-10-26: 111 passati, 4 falliti non dell'API); resta solo la rinomina in `implementationPlan-V-10-...md`; lo Step 11.3 (token) è rimandato |
-| 11 | [`implementationPlan-11-githubActionBuildGhcr.md`](implementationPlan-11-githubActionBuildGhcr.md) | Fase 12: build dell'immagine su GitHub Actions (ghcr.io), script `deploy-image.sh` generico sulla VM (la parte specifica del sito sta negli hook `deploy/` della repo), deploy con pull | da fare |
-| 12 | [`implementationPlan-12-ricostruzioneDeploy.md`](implementationPlan-12-ricostruzioneDeploy.md) | Fase 13: messa in produzione per scambio degli ambienti (vecchia produzione su `unlimiteddb-old`, il sito di test diventa `unlimiteddb.mandich.dev`), verifica post-cutover, rollback | da fare (dopo i piani 10 e 11) |
+| 11 | [`implementationPlan-V-11-githubActionBuildGhcr.md`](implementationPlan-V-11-githubActionBuildGhcr.md) | Fase 12: build dell'immagine su GitHub Actions (ghcr.io), script `deploy-image.sh` generico sulla VM (la parte specifica del sito sta negli hook `deploy/` della repo), deploy con pull | ✅ completato (2026-10-26, rollback compreso) |
+| 12 | [`implementationPlan-12-ricostruzioneDeploy.md`](implementationPlan-12-ricostruzioneDeploy.md) | Fase 13: messa in produzione per scambio degli ambienti (vecchia produzione su `unlimiteddb-old`, il sito di test diventa `unlimiteddb.mandich.dev`), verifica post-cutover, rollback | da fare (dopo il piano 10 e il piano trasversale `importCartePerPagina`; il piano 11 è completato) |
 
 ### Piani trasversali (non numerati)
 | File | Contenuto | Stato |
@@ -185,7 +185,7 @@ Unica eccezione al "solo Blade + Alpine": Chart.js via CDN nella pagina statisti
 - **`decks.assembled`**: serve a calcolare non solo cosa manca ma anche cosa si possiede ed è impegnato in un altro mazzo montato.
 - **Immagini scaricate in locale**: il sito non dipende dal CDN ufficiale a runtime.
 - **Icone generate dall'immagine Docker** a partire da `public/icon-mine.svg`: modificare l'SVG e ricostruire basta, niente rigenerazione manuale.
-- **Un'immagine Docker sola per `app` e `worker`**: stesso codice, comando diverso (`php-fpm` / `queue:work`); in dev `image: unlimiteddb:dev` (build solo su `app`), in produzione `ghcr.io/rickymandich/swudb:new` (piano 11, `githubActionBuildGhcr`).
+- **Un'immagine Docker sola per `app` e `worker`**: stesso codice, comando diverso (`php-fpm` / `queue:work`); in dev `image: unlimiteddb:dev` (build solo su `app`), in produzione `ghcr.io/rickymandich/swudb:new` (piano 11, `githubActionBuildGhcr`, completato).
 - **Log viewer** (`opcodesio/log-viewer`): pannello dei log dietro il permesso `log.viewer`, linkato dal menu utente.
 - Il file `implementationPlan-ricostruzioneUnlimitedDB.pdf` è una vecchia esportazione del piano unico e non è più aggiornato (è in `.gitignore`): da rigenerare da questo indice se serve.
 
