@@ -27,14 +27,10 @@ class CardBuilder extends Builder
         // 2. Aspetti: stringa degli `order` (zero-padded) nella sequenza in cui compaiono
         //    sulla carta (position, poi created_at e order come tie-breaker per i dati vecchi).
         //    Le carte senza aspetti (NULL) vanno dopo quelle che ne hanno.
-        $aspects = "(SELECT GROUP_CONCAT(
-                        LPAD(a.`order`, 4, '0')
-                        ORDER BY ca.position, ca.created_at, a.`order`
-                        SEPARATOR ''
-                    )
-                    FROM card_aspect ca
-                    JOIN aspects a ON a.id = ca.aspect_id
-                    WHERE ca.card_id = cards.id)";
+        $aspects = $this->aspectOrderKey();
+
+        $this->orderByRaw("($aspects) IS NULL")
+            ->orderByRaw($aspects);
 
         $this->orderByRaw("($aspects) IS NULL")
             ->orderByRaw($aspects);
@@ -56,6 +52,37 @@ class CardBuilder extends Builder
 
         // Tie-breaker finale per rendere stabile la paginazione
         $this->orderBy('cards.id');
+    }
+
+    /**
+     * SQL expression that builds the aspects sort key of a card (zero-padded `order`s, NULL if none).
+     * Espressione SQL della chiave di ordinamento degli aspetti: MariaDB per l'app, SQLite per i test.
+     *
+     * @return string Raw SQL, a correlated scalar subquery on `cards.id`
+     */
+    protected function aspectOrderKey(): string
+    {
+        if ($this->query->getConnection()->getDriverName() === 'sqlite') {
+            // SQLite non ha LPAD e non accetta ORDER BY/SEPARATOR dentro GROUP_CONCAT: printf al posto di LPAD,
+            // nessun ordine interno garantito (basta per i test, che non verificano l'ordine dei multi-aspetto).
+            return <<<'SQL'
+            (SELECT GROUP_CONCAT(printf('%04d', a."order"), '')
+                FROM card_aspect ca
+                JOIN aspects a ON a.id = ca.aspect_id
+                WHERE ca.card_id = cards.id)
+            SQL;
+        }
+
+        return <<<'SQL'
+        (SELECT GROUP_CONCAT(
+                LPAD(a.`order`, 4, '0')
+                ORDER BY ca.position, ca.created_at, a.`order`
+                SEPARATOR ''
+            )
+            FROM card_aspect ca
+            JOIN aspects a ON a.id = ca.aspect_id
+            WHERE ca.card_id = cards.id)
+        SQL;
     }
 
     public function withDefaultOrder(): static
