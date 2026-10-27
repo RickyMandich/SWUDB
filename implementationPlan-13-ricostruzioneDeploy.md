@@ -1,7 +1,7 @@
 # Implementation plan 13 — Ricostruzione UnlimitedDB · Fase 13: messa in produzione (scambio degli ambienti)
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). **Ultimo piano da eseguire.**
-> **Prerequisiti**: [`implementationPlan-V-10-ricostruzioneApiPubblica.md`](implementationPlan-V-10-ricostruzioneApiPubblica.md) chiuso (completato il 2026-10-26, Step 11.5.8 compreso), [`implementationPlan-12-importCartePerPagina.md`](implementationPlan-12-importCartePerPagina.md) applicato (import completo che non esaurisce la memoria, serve allo Step 13.4) e
+> **Prerequisiti**: [`implementationPlan-V-10-ricostruzioneApiPubblica.md`](implementationPlan-V-10-ricostruzioneApiPubblica.md) chiuso (completato il 2026-10-26, Step 11.5.8 compreso), [`implementationPlan-V-12-importCartePerPagina.md`](implementationPlan-V-12-importCartePerPagina.md) applicato (completato il 2026-10-27: import completo di 3135 carte, 0 problemi, picco 80 MB; serve allo Step 13.4) e
 > [`implementationPlan-V-11-githubActionBuildGhcr.md`](implementationPlan-V-11-githubActionBuildGhcr.md) applicato (pipeline `new` → ghcr.io → VM funzionante sul sito di test: **completato il 2026-10-26**, rollback compreso).
 > Regola del progetto (`.agent/rules/main.md`): questo piano è l'unico output, il codice (compose, nginx, `.env.example`) lo applichi tu a mano.
 > **Sostituisce il vecchio Step 12.2** ("redeploy pulito" con `new-site.sh`: stop di `~/sites/SWUDB`, cambio del branch di default, ricreazione della cartella): non serve più.

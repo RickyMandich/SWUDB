@@ -60,7 +60,7 @@ services:
     image: unlimiteddb:dev
     container_name: unlimiteddb_worker_dev
     restart: unless-stopped
-    command: php artisan queue:work --max-time=3600
+    command: php artisan queue:work --max-time=3600 --memory=100 --timeout=240
     volumes:
       - ./storage:/var/www/html/storage
       - ./.env:/var/www/html/.env:ro

@@ -60,7 +60,7 @@
     <div class="py-8" x-data="deckCardPreview()">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
             @unless ($isLatest)
-                <x-bladewind.alert type="info">
+                <x-bladewind.alert type="info" showIcon="false" showCloseIcon="false">
                     Stai consultando la versione v{{ $deck->version }}, in sola lettura.
                     <a class="underline" href="{{ route('decks.show', [$deck->user->name, $deck->name]) }}">Vai all'ultima
                         versione</a>

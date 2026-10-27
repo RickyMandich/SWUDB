@@ -25,7 +25,7 @@ class CardImageDownloader
         $response = null;
         // 1. Http::get($sourceUrl) -> se fallisce, ritorna null (il chiamante logga il SystemError)
         try {
-            $response = Http::get($sourceUrl);
+            $response = Http::timeout(20)->retry(2, 500, throw: false)->get($sourceUrl);
             if (! $response->successful()) {
                 // throw an error so i do not repeat the logic of returning null
                 throw new ConnectionException("Failed to download image from {$sourceUrl}");
@@ -33,7 +33,9 @@ class CardImageDownloader
         } catch (ConnectionException $e) {
             Log::warning("Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title}), returned code {{$response?->status()}}", [
                 'source_url' => $sourceUrl,
-                'card' => $card,
+                'cid' => $card->cid,
+                'snippet' => $card->snippet,
+                'id' => $card->id,
                 'side' => $side,
             ]);
 

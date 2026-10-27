@@ -37,7 +37,7 @@ class CardController extends Controller
         return view('cards.show', compact('card'));
     }
 
-    public function newReleases(Request $request): View
+    public function newReleases(Request $request)// : View
     {
         $request->validate(['since' => ['nullable', 'date_format:d/m/Y']]);
 

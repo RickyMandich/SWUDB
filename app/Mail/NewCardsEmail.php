@@ -21,7 +21,7 @@ class NewCardsEmail extends Mailable implements ShouldQueue
      *
      * @param  Collection<Card>  $newCards
      */
-    public function __construct(public readonly Collection $newCards) {}
+    public function __construct(public readonly Collection $newCards, public readonly ?int $total = null) {}
 
     /**
      * Get the message envelope.
@@ -42,6 +42,7 @@ class NewCardsEmail extends Mailable implements ShouldQueue
             markdown: 'emails.md-new-cards',
             with: [
                 'cards' => $this->newCards,
+                'total' => $this->total ?? $this->newCards->count(),
             ],
         );
     }

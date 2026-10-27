@@ -12,7 +12,7 @@ class ScanCards extends Command
      *
      * @var string
      */
-    protected $signature = 'cards:scan';
+    protected $signature = 'cards:scan {--page=1 : Pagina da cui far partire la scansione}';
 
     /**
      * The console command description.
@@ -26,7 +26,8 @@ class ScanCards extends Command
      */
     public function handle()
     {
-        ImportCardsFromSwuApiJob::dispatch();
-        $this->info('Cards scan queued.');
+        $page = max(1, (int) $this->option('page'));
+        ImportCardsFromSwuApiJob::dispatch($page);
+        $this->info("Cards scan queued from page {$page}.");
     }
 }

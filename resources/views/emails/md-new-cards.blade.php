@@ -13,4 +13,9 @@ Le carte inserite sono:
 @foreach ($cards as $card)
 - [{{ $card->name }} ({{ $card->expansion }}-{{ $card->number }})]({{ route('cards.show', ['expansion' => $card->expansion, 'number' => $card->number]) }})
 @endforeach
+
+@if ($total > $cards->count())
+
+…e altre {{ $total - $cards->count() }} carte: le trovi nella pagina delle nuove uscite.
+@endif
 </x-mail::message>

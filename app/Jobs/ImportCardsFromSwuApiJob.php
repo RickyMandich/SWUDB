@@ -13,160 +13,189 @@ use App\Models\User;
 use App\Services\CardImageDownloader;
 use App\Services\TelegramService;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
+/**
+ * Imports ONE page of the official card list, then queues itself for the next page
+ * (the last page also sends the final notifications). Memory stays flat: no job holds more than PAGE_SIZE (100) cards.
+ * Importa UNA pagina dell'elenco carte ufficiale e poi accoda sé stesso per la successiva
+ * (l'ultima pagina manda anche le notifiche finali). La memoria resta piatta: nessun job tiene più di PAGE_SIZE (100) carte.
+ */
 class ImportCardsFromSwuApiJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 1;
+    public const API_URL = 'https://admin.starwarsunlimited.com/api/card-list';
 
-    public $backoff = 180;
+    public const PAGE_SIZE = 100;
+
+    /** Chiave del lock: contiene il runId dello scan in corso. */
+    public const LOCK_KEY = 'cards-import:running';
+
+    /** Il lock scade da solo se uno scan muore senza liberarlo. */
+    public const LOCK_SECONDS = 10800;
+
+    public const EMAIL_CARDS_LIMIT = 100;
+
+    public const EMAIL_ERRORS_LIMIT = 50;
+
+    // Una pagina (100 carte, fino a 200 immagini) deve stare nei 240 s di timeout,
+    // e retry_after (DB_QUEUE_RETRY_AFTER, Step 5) maggiore del timeout.
+    public $tries = 3;
+
+    public $backoff = [60, 180];
+
+    public $timeout = 240;
+
+    /** Identifica lo scan: resta uguale su tutte le pagine e su ogni tentativo. */
+    public string $runId;
+
+    /** True solo per il job che avvia lo scan (manda il messaggio "Scan avviato..."). */
+    public bool $startsRun;
+
+    public function __construct(public int $page = 1, ?string $runId = null)
+    {
+        $this->startsRun = $runId === null;
+        $this->runId = $runId ?? (string) Str::uuid();
+    }
 
     public function handle(TelegramService $telegram, CardImageDownloader $imageDownloader): void
     {
-        $adminChatId = config('services.telegram.admin_chat_id');
-        $progress = $telegram->sendMessage($adminChatId, 'Scan avviato...');
-        if ($progress->successful) {
-            Log::debug('message status', ['progress' => $progress]);
+        $chatId = config('services.telegram.admin_chat_id');
+
+        if (! $this->acquireLock()) {
+            Log::warning("Scan {$this->runId}: un altro scan è già in corso, pagina {$this->page} non elaborata");
+            if ($this->startsRun) {
+                $telegram->sendMessage($chatId, 'Scan già in corso: non ne avvio un altro.');
+            }
+
+            return;
         }
 
-        $newCards = collect();
-        $errors = collect();
-        $existingCards = collect();
-        $page = 1;
-        $lastPage = 'not yet readed';
-        $cardPerPage = 40;
-        $deltaProgress = $progress;
-        $firstRun = true;
-        Log::info('start cicle');
-        do {
-            $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
-            Log::info('message status', ['deltaProgress' => $deltaProgress]);
-            Log::info("Scan in corso: pagina {$page}/{$lastPage}...");
-            $response = Http::get('https://admin.starwarsunlimited.com/api/card-list', [
-                'locale' => 'it',
-                'filters[variantOf][id][$null]' => 'true',
-                'fields' => [
-                    'cardUid',
-                    'cardNumber',
-                    'title',
-                    'subtitle',
-                    'unique',
-                    'cost',
-                    'hp',
-                    'power',
-                    'textStyled',
-                    'deployBoxStyled',
-                    'artist',
-                    'publishedAt',
-                ],
-                'pagination[page]' => $page,
-                'pagination[pageSize]' => $cardPerPage,
-            ]);
-
-            Log::info("finish api call of page {$page}/{$lastPage}");
-
-            if ($response->failed()) {
-                $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Pagina {$page}: richiesta API fallita ({$response->status()})");
-                if ($deltaProgress->successful) {
-                    Log::debug('message status', ['deltaProgress' => $deltaProgress]);
-                }
-                Log::warning("Pagina {$page}: richiesta API fallita ({$response->status()})", ['response' => $response, 'response_object' => $response->object()]);
-                break;
+        $state = Cache::get($this->stateKey());
+        if ($state === null) {
+            $progress = $this->startsRun ? $telegram->sendMessage($chatId, 'Scan avviato...') : null;
+            $state = [
+                'started_at' => now()->startOfSecond()->toIso8601String(),
+                'message_id' => $progress?->messageId,
+                'processed' => 0,
+            ];
+            Cache::put($this->stateKey(), $state, now()->addDay());
+            if (! $this->startsRun) {
+                Log::warning("Scan {$this->runId}: stato perso (cache svuotata?), le carte nuove delle pagine precedenti non saranno contate");
             }
-
-            $payload = $response->json();
-            $lastPage = $payload['meta']['pagination']['pageCount'] ?? $page;
-            $latestRotation = Expansion::max('rotation') ?? '0';
-
-            Log::info("trovate pagine totali: {$lastPage}", ['lastPage' => $lastPage, $payload]);
-            if ($firstRun) {
-                $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: pagina {$page}/{$lastPage}...");
-                if ($deltaProgress->successful) {
-                    Log::debug('message status', ['deltaProgress' => $deltaProgress]);
-                }
-                $firstRun = false;
-            }
-            $currentCardOnPage = 1;
-            foreach ($payload['data'] ?? [] as $cardEntry) {
-                try {
-                    // $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
-                    if ($deltaProgress->successful) {
-                        Log::debug('message status', ['deltaProgress' => $deltaProgress]);
-                    }
-                    Log::info("Scan in corso: carta {$currentCardOnPage}/{$cardPerPage} della pagina {$page}/{$lastPage}");
-
-                    $this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader, $newCards, $existingCards, $errors);
-                } catch (\Throwable $th) {
-                    Log::warning("errore nell'elaborazione della carta", ['raw' => $cardEntry, 'error' => $th]);
-                    // niente $errors->push($th): il SystemError è già stato messo in $errors da processCard()
-
-                    continue;
-                } finally {
-                    $currentCardOnPage++;
-                }
-            }
-            $deltaProgress = $telegram->editMessage($adminChatId, $progress->messageId, "Scan completato: pagina {$page}/{$lastPage}...");
-            if ($deltaProgress->successful) {
-                Log::debug('message status', ['deltaProgress' => $deltaProgress]);
-            }
-            Log::info("Scan completato: pagina {$page}/{$lastPage}...");
-            $page++;
-        } while (is_int($lastPage) && $page <= $lastPage);
-
-        $this->sendNotifications($newCards, $errors);
-
-        // delete the message so at the end the user receive a notification, otherwise he have to check once in a while if the process is finished
-        $deltaProgress = $telegram->deleteMessage($adminChatId, $progress->messageId);
-        if ($deltaProgress->successful) {
-            Log::debug('message status', ['deltaProgress' => $deltaProgress]);
         }
 
-        $deltaProgress = $telegram->sendMessage(
-            $adminChatId,
-            "Scan completato: {$newCards->count()} nuove carte, {$existingCards->count()} carte già presenti, {$errors->count()} problemi."
-        );
-        if ($deltaProgress->successful) {
-            Log::debug('message status', ['deltaProgress' => $deltaProgress]);
+        $response = Http::timeout(30)->retry(3, 2000, throw: false)->get(self::API_URL, [
+            'locale' => 'it',
+            'filters[variantOf][id][$null]' => 'true',
+            'fields' => [
+                'cardUid',
+                'cardNumber',
+                'title',
+                'subtitle',
+                'unique',
+                'cost',
+                'hp',
+                'power',
+                'textStyled',
+                'deployBoxStyled',
+                'artist',
+                'publishedAt',
+            ],
+            'pagination[page]' => $this->page,
+            'pagination[pageSize]' => self::PAGE_SIZE,
+        ]);
+
+        if ($response->failed()) {
+            // Lancia l'eccezione invece di fare "break": la coda ritenta la pagina e, se non basta, failed() lo segnala
+            throw new \RuntimeException("Pagina {$this->page}: richiesta API fallita ({$response->status()})");
         }
-        Log::info("Scan completato: {$newCards->count()} nuove carte, {$existingCards->count()} carte già presenti, {$errors->count()} problemi.");
+
+        $payload = $response->json();
+        $lastPage = (int) ($payload['meta']['pagination']['pageCount'] ?? $this->page);
+        $latestRotation = Expansion::max('rotation') ?? '0';
+
+        $telegram->editMessage($chatId, $state['message_id'], "Scan in corso: pagina {$this->page}/{$lastPage}...");
+
+        $processed = 0;
+        foreach ($payload['data'] ?? [] as $cardEntry) {
+            if ($this->processCard($cardEntry['attributes'] ?? [], $latestRotation, $imageDownloader)) {
+                $processed++;
+            }
+        }
+
+        Log::info("Scan {$this->runId}: pagina {$this->page}/{$lastPage} elaborata", [
+            'carte' => $processed,
+            'memoria_picco_mb' => round(memory_get_peak_usage(true) / 1048576, 1),
+        ]);
+
+        $state['processed'] += $processed;
+        Cache::put($this->stateKey(), $state, now()->addDay());
+
+        if ($this->page < $lastPage) {
+            self::dispatch($this->page + 1, $this->runId);
+
+            return;
+        }
+
+        $this->finish($telegram, $state, $chatId);
     }
 
-    private function processCard(
-        array $cardData,
-        string $lastestRotation,
-        CardImageDownloader $imageDownloader,
-        Collection $newCards,
-        Collection $existingCards,
-        Collection $errors
-    ): void {
+    /**
+     * Called by the queue when the page has failed all its attempts
+     * Chiamato dalla coda quando la pagina ha esaurito i tentativi
+     */
+    public function failed(\Throwable $e): void
+    {
+        SystemError::create([
+            'source' => self::class,
+            'message' => "Scan interrotto alla pagina {$this->page}",
+            'stack_trace' => $e->getTraceAsString(),
+            'context' => [
+                'error_message' => $e->getMessage(),
+                'page' => $this->page,
+                'run_id' => $this->runId,
+            ],
+        ]);
+
+        app(TelegramService::class)->sendMessage(
+            config('services.telegram.admin_chat_id'),
+            "Scan interrotto alla pagina {$this->page}: {$e->getMessage()}. Per riprendere: php artisan cards:scan --page={$this->page}"
+        );
+
+        $this->releaseLock();
+    }
+
+    /**
+     * Imports a single card. Returns false (after saving a SystemError) if the card could not be processed.
+     * Importa una carta. Ritorna false (dopo aver salvato un SystemError) se la carta non si è potuta elaborare.
+     */
+    private function processCard(array $cardData, string $latestRotation, CardImageDownloader $imageDownloader): bool
+    {
         $cid = $cardData['cardUid'] ?? null;
+        $card = null;
 
         try {
             if (! $cid) {
-                Log::warning('cardUid mancante nel payload', ['raw' => $cardData]);
                 throw new \RuntimeException('cardUid mancante nel payload');
             }
 
-            Log::info("Processo carta {$cid}");
-
-            $existed = Card::where('cid', $cid)->exists();
-
-            if (str_contains($cardData['type']['data']['attributes']['name'] ?? null, 'Segnalino')) {
+            if (str_contains($cardData['type']['data']['attributes']['name'] ?? '', 'Segnalino')) {
                 $cardData['expansion']['data']['attributes']['code'] =
                     "T{$cardData['expansion']['data']['attributes']['code']}";
             }
 
-            $this->createExpansionIfMissing($cardData, $lastestRotation);
+            $this->createExpansionIfMissing($cardData, $latestRotation);
 
             $card = Card::updateOrCreate(
                 ['cid' => $cid],
@@ -185,28 +214,21 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'deploy_text' => $cardData['deployBoxStyled'] ?? null,
                     'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                     'artist' => $cardData['artist'] ?? null,
-                    'release_date' => Carbon::parse($cardData['publishedAt'])->toDateString() ?? null,
-                    'max_copies' => $cardData['cardNumber'] == 256 && $cardData['expansion']['data']['attributes']['code'] == 'JTL' ? 15 : null,
+                    'release_date' => isset($cardData['publishedAt']) ? Carbon::parse($cardData['publishedAt'])->toDateString() : null,
+                    'max_copies' => $cardData['cardNumber'] == 256 && ($cardData['expansion']['data']['attributes']['code'] ?? null) == 'JTL' ? 15 : null,
                 ]
             );
-            $card->save();
-            Log::info("Dati della carta {$cid} ('{$card->expansion}-{$card->number}') recuperati dall'api e record inserito/aggiornato, sincronizzazione altri dati in corso", ['card' => $card, 'cid' => $cid]);
-
-            if (! $existed) {
-                $newCards->push($card);
-            } else {
-                $existingCards->push($card);
-            }
 
             $this->syncAspectsAndTraits($card, $cardData);
-            $this->downloadImages($card, $cardData, $imageDownloader, $errors);
+            $this->downloadImages($card, $cardData, $imageDownloader);
 
+            Log::debug("Carta {$cid} ({$card->id}) elaborata");
+
+            return true;
         } catch (\Throwable $e) {
-            $espansione = $card->expansion ?? 'Espansione Mancante';
-            $numero = $card->number ?? 'Numero Mancante';
-            $err = SystemError::create([
+            SystemError::create([
                 'source' => self::class,
-                'message' => "Errore su carta {$cid} ({$espansione}-{$numero})",
+                'message' => 'Errore su carta '.($cid ?? '(senza cardUid)').' ('.($card?->expansion ?? 'Espansione Mancante').'-'.($card?->number ?? 'Numero Mancante').')',
                 'stack_trace' => $e->getTraceAsString(),
                 'context' => [
                     'error_message' => $e->getMessage(),
@@ -216,29 +238,25 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'raw' => $cardData,
                 ],
             ]);
-            $errors->push($err);
-            throw $e;
+            Log::warning("Errore nell'elaborazione della carta {$cid}: {$e->getMessage()}");
+
+            return false;
         }
-        Log::info("Fine elaborazione carta {$cid}", ['card' => $card, 'cid' => $cid]);
     }
 
-    private function createExpansionIfMissing(array $cardData, string $lastestRotation): void
+    private function createExpansionIfMissing(array $cardData, string $latestRotation): void
     {
-        Log::info("inizio processo di creazione dell'espansione se manca");
         $expansionData = $cardData['expansion']['data']['attributes'] ?? null;
         $expansionCode = $expansionData['code'] ?? null;
 
         if ($expansionCode && ! Expansion::where('expansion', $expansionCode)->exists()) {
-            Log::info("l'espansione non era presente: creazione dell'espansione {$expansionCode}", ['code' => $expansionCode]);
-            Expansion::create(
-                [
-                    'expansion' => $expansionCode,
-                    'legal_date' => Carbon::parse($expansionData['publishedAt'])->toDateString(),
-                    'rotation' => $lastestRotation,
-                ]
-            );
+            Log::info("Creazione dell'espansione {$expansionCode}");
+            Expansion::create([
+                'expansion' => $expansionCode,
+                'legal_date' => isset($expansionData['publishedAt']) ? Carbon::parse($expansionData['publishedAt'])->toDateString() : null,
+                'rotation' => $latestRotation,
+            ]);
         }
-        Log::info("fine processo di creazione dell'espansione se manca");
     }
 
     private function syncAspectsAndTraits(Card $card, array $cardData): void
@@ -269,36 +287,26 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             ->unique()
             ->values();
 
-        $traitNames->each(
-            fn ($name) => CardTrait::firstOrCreate(['name' => $name])
-        );
+        $traitNames->each(fn ($name) => CardTrait::firstOrCreate(['name' => $name]));
 
         $card->traits()->sync($traitNames);
     }
 
-    private function downloadImages(Card $card, array $cardData, CardImageDownloader $imageDownloader, Collection $errors): void
+    private function downloadImages(Card $card, array $cardData, CardImageDownloader $imageDownloader): void
     {
         $frontUrl = $cardData['artFront']['data']['attributes']['url']
             ?? $cardData['artFront']['data']['attributes']['formats']['card']['url']
             ?? null;
         $backAttrs = $cardData['artBack']['data']['attributes'] ?? null;
         $backUrl = $backAttrs['url'] ?? $backAttrs['formats']['card']['url'] ?? null;
-        $sides = [];
-        if ($frontUrl) {
-            $sides['front'] = $frontUrl;
-        } else {
-            Log::info("Immagine davanti non trovata per {$card->id} {{$card->name} {$card->title}}");
-        }
-        if ($backUrl) {
-            $sides['back'] = $backUrl;
-        } else {
-            Log::info("Immagine retro non trovata per {$card->id} {{$card->name} {$card->title}}");
-        }
+
+        // un lato assente nell'API non è un errore: si salta (e si logga solo a livello debug)
+        $sides = array_filter(['front' => $frontUrl, 'back' => $backUrl]);
 
         foreach ($sides as $side => $url) {
             $column = "{$side}_art_path";
 
-            if (! $url || $card->{$column}) {
+            if ($card->{$column}) {
                 continue;
             }
 
@@ -307,28 +315,99 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             if ($path) {
                 $card->update([$column => $path]);
             } else {
-                $errors->push(SystemError::create([
+                SystemError::create([
                     'source' => CardImageDownloader::class,
-                    'message' => "Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
-                    'context' => ['error_message' => "Il download di {$url} non ha restituito un path"],
-                ]));
+                    'message' => "Download immagine {$side} fallito per {$card->cid} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title})",
+                    'context' => [
+                        'error_message' => "Il download di {$url} non ha restituito un path",
+                        'source_url' => $url,
+                        'side' => $side,
+                    ],
+                ]);
             }
         }
     }
 
-    private function sendNotifications(Collection $newCards, Collection $errors): void
+    /**
+     * Last page: counts new cards and errors from the database, sends the notifications and the final message
+     * Ultima pagina: ricava carte nuove ed errori dal database, manda le notifiche e il messaggio finale
+     */
+    private function finish(TelegramService $telegram, array $state, int|string|null $chatId): void
     {
-        if ($newCards->isNotEmpty()) {
-            foreach (User::all() as $user) {
-                Mail::to($user)->queue(new NewCardsEmail($newCards));
-            }
+        $since = Carbon::parse($state['started_at']);
+        $newCount = Card::where('created_at', '>=', $since)->count();
+        $errorCount = $this->runErrors($since)->count();
+
+        $this->sendNotifications($since, $newCount, $errorCount);
+
+        // si cancella il messaggio di avanzamento così il messaggio finale arriva come notifica
+        $telegram->deleteMessage($chatId, $state['message_id']);
+        $summary = "Scan completato: {$state['processed']} carte elaborate, {$newCount} nuove, {$errorCount} problemi.";
+        $telegram->sendMessage($chatId, $summary);
+        Log::info("Scan {$this->runId}: {$summary}");
+
+        Cache::forget($this->stateKey());
+        $this->releaseLock();
+    }
+
+    private function sendNotifications(Carbon $since, int $newCount, int $errorCount): void
+    {
+        if ($newCount > 0) {
+            // L'elenco è limitato: al primo import (migliaia di carte) una mail con tutte le carte
+            // sarebbe enorme e il job che la prepara rischierebbe lo stesso errore di memoria.
+            // orderBy esplicito: niente ordinamento di default di CardBuilder.
+            $cards = Card::where('created_at', '>=', $since)
+                ->orderBy('release_date')->orderBy('id')
+                ->limit(self::EMAIL_CARDS_LIMIT)
+                ->get();
+
+            User::query()->chunkById(100, function ($users) use ($cards, $newCount) {
+                foreach ($users as $user) {
+                    Mail::to($user)->queue(new NewCardsEmail($cards, $newCount));
+                }
+            });
         }
 
-        if ($errors->isNotEmpty()) {
-            $admins = User::role('admin')->get();
-            foreach ($admins as $admin) {
-                Mail::to($admin)->queue(new AdminScanReportEmail($errors));
-            }
+        if ($errorCount > 0) {
+            $errors = $this->runErrors($since)->latest('id')->limit(self::EMAIL_ERRORS_LIMIT)->get();
+
+            // whereHas e non User::role('admin'): quest'ultimo lancia RoleDoesNotExist se il ruolo non esiste
+            User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))
+                ->each(fn ($admin) => Mail::to($admin)->queue(new AdminScanReportEmail($errors, $errorCount)));
+        }
+    }
+
+    /** @return Builder<SystemError> */
+    private function runErrors(Carbon $since): Builder
+    {
+        return SystemError::where('created_at', '>=', $since)
+            ->whereIn('source', [self::class, CardImageDownloader::class]);
+    }
+
+    private function stateKey(): string
+    {
+        return "cards-import:{$this->runId}";
+    }
+
+    private function acquireLock(): bool
+    {
+        if (Cache::add(self::LOCK_KEY, $this->runId, self::LOCK_SECONDS)) {
+            return true;
+        }
+
+        if (Cache::get(self::LOCK_KEY) !== $this->runId) {
+            return false;
+        }
+
+        Cache::put(self::LOCK_KEY, $this->runId, self::LOCK_SECONDS); // stesso scan: rinnova la scadenza
+
+        return true;
+    }
+
+    private function releaseLock(): void
+    {
+        if (Cache::get(self::LOCK_KEY) === $this->runId) {
+            Cache::forget(self::LOCK_KEY);
         }
     }
 }

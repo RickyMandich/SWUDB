@@ -127,6 +127,13 @@
                                 </x-bladewind.description-list.item>
                             @endif
 
+                            @if ($card->release_date)
+                                <x-bladewind.description-list.item label="Data di Uscita"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->release_date->format('d/m/Y') }}
+                                </x-bladewind.description-list.item>
+                            @endif
+
                         </x-bladewind.description-list>
                     </x-bladewind.card>
 

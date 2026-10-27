@@ -23,8 +23,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Pagina admin utenti (`/admin/utenti`).
 - Pagina admin errori di sistema (`/admin/errori`): lista con filtro per stato, cambio stato singolo e bulk.
 - Pagina admin espansioni (`/admin/espansioni`, permesso `expansions.manage`): una riga con form inline per espansione per correggere `legal_date`, `rotation`, `group_main_expansion` e `confirmed`.
-- Comando `cards:scan` + `ImportCardsFromSwuApiJob` (import carte, espansioni, aspetti, tratti e download immagini),
-  schedulato ogni lunedì 00:00 (vedi "Scansione carte").
+- Comando `cards:scan [--page=N]` + `ImportCardsFromSwuApiJob` (import carte, espansioni, aspetti, tratti e download immagini; un job per pagina dell'API, con lock, ripresa da una pagina e mail con tetto), schedulato ogni lunedì 00:00 (vedi "Scansione carte").
 - Email `NewCardsEmail` e `AdminScanReportEmail`, con anteprima su `/render-mail/{type}`. Il template `emails/md-new-cards.blade.php` linka `cards.new-releases` (con `since` in formato `gg/mm/aaaa`) e `cards.show`, e regge anche una collezione vuota.
 - Icone del sito (favicon, apple-touch-icon, manifest) generate dal `Dockerfile` da `public/icon-mine.svg` (vedi "Icone del sito").
 - Worker delle code (servizio `worker` nel compose di sviluppo; `app` e `worker` condividono la stessa immagine `unlimiteddb:dev`).
@@ -44,8 +43,8 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 
 **Non ancora implementato / non funzionante**
 - Bot Telegram: nessun codice mette ancora in coda `NotifyAdminJob`, e il funzionamento del webhook in produzione non è stato verificato con un update reale (`todo.md`, 12.1). Nessun test Pest su `TelegramController` (`todo.md`, 9.7). Il prefisso dei messaggi (es. `dev: `) è configurabile con `TELEGRAM_MESSAGE_PREFIX`.
-- **Job di import, problema noto**: `ImportCardsFromSwuApiJob` elabora tutto lo scan in un solo job e tiene in memoria le carte nuove, quelle già presenti e gli errori: con la lista completa (~7200 carte, ~180 pagine) esaurisce i 128 MB di PHP (2026-10-18); inoltre `retry_after` della coda (90 s) è più corto dello scan e un 502 dell'API interrompe lo scan senza ritentare. Il fix (un job per pagina, `cards:scan --page=N`, lock, mail con tetto) è nel piano `implementationPlan-12-importCartePerPagina.md`, non ancora applicato.
-- Job di import, rifiniture aperte (`todo.md`, 5.5.6–5.5.8, assorbite dallo stesso piano): `sendNotifications()` usa ancora `User::role('admin')` (lancia `RoleDoesNotExist` se il ruolo non esiste), `release_date` non tollera un `publishedAt` mancante, il `Log::warning` in `handle()` scrive ancora il payload intero e il `SystemError` del download immagine non riporta `source_url` e `side` nel `context`. Nella suite del 2026-10-26 i 4 test del job sono ancora rossi per queste cause (sezione Test).
+- Import carte (piano 12 completato il 2026-10-27): l'import completo in locale ha elaborato 32 pagine e 3135 carte con 0 problemi e picco di memoria 80 MB; provati anche l'invio di una sola mail con le carte nuove e la ripresa con `cards:scan --page=N`.
+- Import carte, lock appeso: il lock di `cards:scan` può restare appeso fino a 3 ore se un worker muore senza che la coda chiami `failed()`; per liberarlo `php artisan cache:forget cards-import:running` (nel container `app`).
 - Mazzi (piani 06 e 07, rifiniture aperte; dettaglio in `todo.md`):
   - nessun test Pest sui validator di formato (piano 06, Step 7.5bis) e `'JTL24'` (Data Vault) scritto a mano nei tre validator;
   - import TXT: i nomi nel database sono in italiano, quindi per nome funziona solo con file esportati da questo sito (per nomi inglesi si usa il JSON, che identifica la carta dall'id); le chiavi `secondleader`/`secondLeader` dell'export reale di swudb.com sono da verificare (`todo.md`, 7.7.0bis);
@@ -55,7 +54,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 - Catalogo carte, rifiniture aperte (piano 05, dettaglio nel `todo.md`): con `front_art_path` nullo l'immagine è rotta, sia nel dettaglio carta sia in `<x-card>`; la voce "Carte" del menu non si evidenzia sul dettaglio carta (`:active` usa `cards.index`); in `CardController::newReleases` resta un `Log::debug` che scrive l'intero paginatore nel log, e l'avviso di `/nuove-uscite` conta le carte e le date della pagina corrente, non il totale.
 - `/` non è una pagina pubblica: fa redirect a `/dashboard` (richiede login e email verificata). Il logo nel menu punta ancora alla dashboard anche per gli ospiti.
 - Nessuno scheduler nel compose di sviluppo (voluto: `cards:scan` si lancia a mano). In produzione `schedule:work` gira come programma di `docker/supervisor/worker.conf` nel container `worker`; da verificare dopo il deploy (Fase 12 del `todo.md`).
-- Messa in produzione per scambio degli ambienti: piano 13 (`implementationPlan-13-ricostruzioneDeploy.md`), da eseguire dopo il piano 12 (`implementationPlan-12-importCartePerPagina.md`). La pipeline di deploy del piano 11 è completa.
+- Messa in produzione per scambio degli ambienti: piano 13 (`implementationPlan-13-ricostruzioneDeploy.md`), da eseguire dopo il piano 12 (`implementationPlan-V-12-importCartePerPagina.md`, completato). La pipeline di deploy del piano 11 è completa.
 
 ## Stack
 
@@ -76,7 +75,7 @@ Sito: <https://unlimiteddb-test.mandich.dev> (host configurato oggi in `docker-c
 
 ```
 app/
-  Console/Commands/ScanCards.php      comando `cards:scan` (mette in coda l'import)
+  Console/Commands/ScanCards.php      comando `cards:scan [--page=N]` (mette in coda l'import, da una pagina a scelta)
   Enums/DeckFormat.php                formato del mazzo (premier, eternal, twin_suns)
   Policies/DeckPolicy.php             view/update/delete dei mazzi
   Http/Controllers/CardController.php catalogo pubblico (`index` con filtri, `show` con la vista di dettaglio e `newReleases` per le ultime uscite)
@@ -165,6 +164,7 @@ sensibili). `bootstrap/app.php` carica `.env-overrides` **prima** del `.env`, qu
 |---|---|
 | `DB_*` | connessione MariaDB (in Docker `DB_HOST`, `DB_DATABASE`, `DB_USERNAME` sono impostate dal compose) |
 | `QUEUE_CONNECTION=database` | le code girano nel worker (default di `.env.example`) |
+| `DB_QUEUE_RETRY_AFTER` | secondi dopo i quali la coda `database` riassegna un job non finito (`config/queue.php`, default 90). Deve essere **maggiore** del `$timeout` di `ImportCardsFromSwuApiJob` (240 s): 300 in `.env.example`, nel `.env` locale e in quello della VM |
 | `MAIL_MAILER`, `RESEND_API_KEY` | `.env.example` imposta `MAIL_MAILER=log`; per inviare email vere serve `resend` + la chiave (dominio `mandich.dev` verificato su Resend) |
 | `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | mittente delle email |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_MESSAGE_PREFIX` | lette da `config/services.php`; il job di scan e `/scan` usano `TELEGRAM_ADMIN_CHAT_ID`; `TELEGRAM_WEBHOOK_SECRET` è il `secret_token` registrato con `setWebhook` (solo `A-Z a-z 0-9 _ -`) e deve essere impostato, altrimenti il webhook risponde 403; il prefisso (es. `dev: `) è anteposto a ogni messaggio ed è vuoto di default (le prime tre sono in `.env.example`, il prefisso no) |
@@ -247,7 +247,7 @@ I filtri di `/api/cards/search` sono gli stessi di `/carte` (`CardSearch::FILTER
 
 `CardResource` espone `cid` (chiave pubblica stabile; l'`id` interno `{espansione}{numero}` è escluso), `name`, `title`, `type`, `rarity`, `cost`, `power`, `health`, `text`, `expansion`, `number`, `aspects`, `traits`, `front_image` e `back_image` (URL assoluti, `null` se manca l'immagine). `type`, `rarity` e `text` sono nella lingua dell'API ufficiale (italiano; `text` può contenere HTML). `DeckResource` espone `name`, `format`, `is_public`, `version` e `cards` (le carte come sopra più `quantity`).
 
-**Non ancora implementato**: endpoint autenticati con token Sanctum (piano 10, Step 11.3); i test Pest degli endpoint esistono ma non sono ancora verdi (Step 11.5.8).
+**Non ancora implementato**: endpoint autenticati con token Sanctum (piano 10, Step 11.3); i test Pest degli endpoint (14) sono verdi.
 
 ## Bot Telegram
 
@@ -263,15 +263,13 @@ Se cambia l'host del sito il webhook va riregistrato. Comandi: `/scan` (solo cha
 
 1. `routes/console.php` schedula `cards:scan` ogni **lunedì alle 00:00** (serve uno scheduler che giri).
 2. `cards:scan` mette in coda `ImportCardsFromSwuApiJob`.
-3. Il **worker** (`php artisan queue:work`) esegue il job: invia un messaggio di avanzamento alla chat admin
-   Telegram (tramite `TelegramService`, prefisso opzionale `TELEGRAM_MESSAGE_PREFIX`), interroga
-   `https://admin.starwarsunlimited.com/api/card-list` (locale `it`, pagine da 40), fa upsert di espansioni,
-   carte, aspetti e tratti e scarica le immagini con `CardImageDownloader`.
-4. Le eccezioni (es. download immagine fallito) vengono salvate in `system_errors` e conteggiate; le carte già
-   presenti non vanno tra gli `system_errors` (Opzione (a) del piano 03): sono contate a parte e riportate nel
-   messaggio Telegram finale. A fine scan partono le email `NewCardsEmail` (a tutti gli utenti, se ci sono nuove
-   carte) e `AdminScanReportEmail` (agli utenti con ruolo `admin`, se la collection errori, fatta di `SystemError`, non è
-   vuota). Un lato dell'immagine assente nell'API è solo loggato (`Log::debug`); un `SystemError` nasce solo se l'URL
+   `cards:scan --page=N` riparte dalla pagina N (utile dopo un errore: il messaggio Telegram di interruzione riporta il comando esatto); in quel caso il riepilogo finale conta come nuove solo le carte create da quel momento.
+3. Il **worker** (`php artisan queue:work --memory=100 --timeout=240`) esegue **un job per pagina**: `ImportCardsFromSwuApiJob($page, $runId)` interroga
+   `https://admin.starwarsunlimited.com/api/card-list` (locale `it`, pagine da `PAGE_SIZE` = 100 carte), fa upsert di espansioni,
+   carte, aspetti e tratti, scarica le immagini con `CardImageDownloader` e poi accoda sé stesso per la pagina successiva. Il primo job invia il messaggio di avanzamento alla chat admin
+   Telegram (tramite `TelegramService`, prefisso opzionale `TELEGRAM_MESSAGE_PREFIX`) e lo aggiorna a ogni pagina. Un solo scan alla volta (lock in cache `cards-import:running`, scadenza 3 ore); lo stato dello scan (`started_at`, `message_id`, carte elaborate) sta in cache. Ogni pagina ha 3 tentativi (`$backoff` 60 s e 180 s); se li esaurisce, `failed()` salva un `SystemError`, avvisa su Telegram con il comando per riprendere e libera il lock. Un errore dell'API (anche 5xx) è un'eccezione, non un `break`.
+4. Le eccezioni su una carta (es. download immagine fallito) vengono salvate in `system_errors` (con `source_url` e `side` per le immagini) e lo scan va avanti. Le carte nuove e gli errori dello scan non si tengono in memoria: a fine scan (ultima pagina) si ricavano dal database (`created_at` >= avvio dello scan). Il messaggio Telegram finale riporta carte elaborate, nuove e problemi. A fine scan partono le email `NewCardsEmail` (a tutti gli utenti, se ci sono nuove
+   carte; l'elenco è limitato a 100 carte, poi "…e altre N") e `AdminScanReportEmail` (agli utenti con ruolo `admin`, se ci sono errori; al massimo gli ultimi 50, con il totale e il link alla gestione errori). Un lato dell'immagine assente nell'API è solo loggato (`Log::debug`); un `SystemError` nasce solo se l'URL
    c'è ma il download fallisce.
 5. Eccezione hardcoded nel job: la carta JTL #256 ha `max_copies` = 15.
 
@@ -299,9 +297,9 @@ alternate data stream NTFS e il file principale resta vuoto.
 Framework: Pest. Ci sono i test di autenticazione/profilo di Breeze, `tests/Feature/Services/TelegramServiceTest.php`, `tests/Feature/Services/CardSearchTest.php` (filtri del catalogo)
 `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php` per il job di import e, per i mazzi, `tests/Feature/Decks/DeckPagesTest.php`, `tests/Feature/Decks/DeckStatisticsTest.php`, `tests/Feature/Services/DeckExporterTest.php` e `tests/Feature/Services/DeckImporterTest.php` (helper `makeCard()` e `makeDeck()` in `tests/Pest.php`). Non hanno ancora test i validator di formato (piano 06, Step 7.5bis), `CollectionController`, `DeckGapCalculator` e `TelegramController`. L'API pubblica ha `tests/Feature/Api/PublicApiTest.php` (14 test, tutti verdi). L'`ExampleTest` di Breeze ora si aspetta il redirect a `/dashboard` e passa.
 
-**Ultima esecuzione (2026-10-26, da host, rifatta dopo aver tolto il blocco duplicato di `CardBuilder::applyDefaultOrder()`): 111 passati, 4 falliti (371 asserzioni).** I 4 fallimenti sono tutti in `ImportCardsFromSwuApiJobTest`: `RoleDoesNotExist` per il ruolo `admin` (3) e mail `AdminScanReportEmail` accodata quando non doveva (1). Cause in `todo.md`, 5.5.6 e 5.5.8, assorbite da `implementationPlan-12-importCartePerPagina.md`; applicato quel piano, la suite dovrebbe essere tutta verde.
+**Ultima esecuzione (2026-10-27, da host, output in `test.log`, dopo gli Step 1–4 e 6 del piano 12): 122 passati, nessun fallito (388 asserzioni).** I 4 test di `ImportCardsFromSwuApiJobTest` che erano rossi sono tornati verdi (ruolo `admin` assente, mail admin accodata) e ci sono 7 test nuovi (ripresa con `--page`, lock, errore 5xx, `failed()`, tetto della mail, seconda scansione, report con totale).
 
-Storico: il 2026-10-23 erano 30 falliti e 85 passati, 26 dei quali per `CardBuilder::applyDefaultOrder()` (SQL solo MariaDB, `near "ORDER"` su SQLite), risolti con lo Step 11.5.8 del piano 10. Il 2026-10-04: 29 passati, 5 falliti.
+Storico: il 2026-10-26 erano 111 passati e 4 falliti (371 asserzioni), tutti nel job di import; il 2026-10-23 erano 30 falliti e 85 passati, 26 dei quali per `CardBuilder::applyDefaultOrder()` (SQL solo MariaDB, `near "ORDER"` su SQLite), risolti con lo Step 11.5.8 del piano 10. Il 2026-10-04: 29 passati, 5 falliti.
 
 ## Deploy
 

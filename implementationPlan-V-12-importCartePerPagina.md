@@ -4,6 +4,9 @@
 > Assorbe le voci aperte 5.5.6–5.5.8 del piano 03 (vedi `todo.md`).
 > Regola del progetto (`.agent/rules/main.md`): questo piano è l'unico output, il codice lo applichi tu a mano.
 
+> **Stato di applicazione (verificato sul codice e su `test.log` il 2026-10-27)**: Step 1, 2, 3, 4 e 6 applicati, suite a 122 passati e nessun fallito. Step 5 chiuso il 2026-10-27: `worker.conf` e worker di sviluppo fatti, `DB_QUEUE_RETRY_AFTER=300` aggiunto a `.env.example` e a posto negli `.env` (dichiarato dall'utente). Step 7 eseguito il 2026-10-27 (log: 32 pagine, 3135 carte, 0 problemi, picco 80 MB; mail e ripresa con `--page=N` provate dall'utente). Step 8 fatto il 2026-10-27 (documentazione allineata e piano rinominato in `V-`); lo Step 0 (conferma della diagnosi) non è stato fatto, era opzionale. **Piano completato.**
+> Scostamenti del codice da questo piano: (a) `PAGE_SIZE` è 100 invece di 40, **scelta voluta** (i commenti del job parlano ancora di 40 carte: con 100 carte, fino a 200 immagini, misurare il tempo nello Step 7 rispetto ai 240 s di `$timeout`); (b) il filtro `filters[variantOf][id][$null]` è di nuovo attivo (corretto dall'utente il 2026-10-27); (c) `cards:scan` risponde sempre "Cards scan queued from page N.", anche per la pagina 1; (d) il `Log::debug` per carta scrive `{$card->id}` invece di espansione e numero.
+
 ## Problema
 
 Il 2026-10-18 l'import completo (`cards:scan` → `ImportCardsFromSwuApiJob`) si è fermato dopo circa 180 pagine da 40 carte (~7200 carte) con "Allowed memory size exhausted". In più, nel log di quel giorno comparivano un 502 dell'API alla pagina 126 e "attempted too many times".

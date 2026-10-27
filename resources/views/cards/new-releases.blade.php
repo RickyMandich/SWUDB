@@ -16,7 +16,7 @@
 
     <x-flash-message />
 
-    <x-bladewind.alert>
+    <x-bladewind.alert showIcon="false" showCloseIcon="false">
         {{ $cards->total() }} carte divise in {{ $dates }} date trovate rilasciate dal {{ $since }} a
         oggi
     </x-bladewind.alert>

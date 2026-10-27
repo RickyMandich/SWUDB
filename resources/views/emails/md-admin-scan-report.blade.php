@@ -4,7 +4,7 @@
 {{-- blade-formatter-disable --}}
 <x-mail::message>
 # Report Scan per Admin - UnlimitedDB
-*Ci sono stati {{ $errors->count() }} errori durante lo scan*
+*Ci sono stati {{ $total }} errori durante lo scan*
 
 <x-mail::table>
 |Carta|Errore|apri errore|
@@ -13,4 +13,9 @@
 | {{ $systemError->message }} | {{ $systemError->context['error_message'] ?? 'Errore sconosciuto' }}|[Apri]({{ route('admin.errors.show', $systemError) }})|
 @endforeach
 </x-mail::table>
+
+
+@if ($total > $errors->count())
+Sono mostrati gli ultimi {{ $errors->count() }}: gli altri sono in [Gestione errori]({{ url('/admin/errori') }}).
+@endif
 </x-mail::message>
