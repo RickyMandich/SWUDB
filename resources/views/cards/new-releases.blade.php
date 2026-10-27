@@ -17,7 +17,7 @@
     <x-flash-message />
 
     <x-bladewind.alert>
-        {{ $cards->count() }} carte divise in {{ $groups->count() }} date trovate rilasciate dal {{ $since }} a
+        {{ $cards->total() }} carte divise in {{ $dates }} date trovate rilasciate dal {{ $since }} a
         oggi
     </x-bladewind.alert>
     @foreach ($groups as $date => $group)

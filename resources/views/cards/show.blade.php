@@ -29,8 +29,15 @@
                         <div class="perspective-distant">
                             <div class="grid transform-3d transition-transform duration-500 motion-reduce:transition-none"
                                 :style="{ transform: 'rotate3d(1, 1, 0, ' + angle + 'deg)' }">
-                                <img src="{{ Storage::url($card->front_art_path) }}" alt="{{ $card->name }}"
-                                    class="col-start-1 row-start-1 block h-auto w-full self-center rounded-lg backface-hidden">
+                                @if ($card->front_art_path)
+                                    <img src="{{ Storage::url($card->front_art_path) }}" alt="{{ $card->name }}"
+                                        class="col-start-1 row-start-1 block h-auto w-full self-center rounded-lg backface-hidden">
+                                @else
+                                    <div
+                                        class="flex aspect-[5/7] w-full items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 text-xs text-gray-500 dark:text-gray-400 col-start-1 row-start-1">
+                                        Immagine non disponibile
+                                    </div>
+                                @endif
                                 @if ($card->back_art_path)
                                     <img src="{{ Storage::url($card->back_art_path) }}"
                                         alt="{{ $card->name }} (retro)"
@@ -49,58 +56,76 @@
                         class="bg-white dark:bg-gray-800">
                         <x-bladewind.description-list striped="true" divided="true">
 
-                            <x-bladewind.description-list.item label="Aspetti"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                @foreach ($card->aspects as $aspect)
-                                    <x-badge :color="$aspect->color" :textColor="$aspect->text_color">
-                                        {{ $aspect->name }}
-                                    </x-badge>
-                                @endforeach
-                            </x-bladewind.description-list.item>
+                            @if ($card->aspects->isNotEmpty())
+                                <x-bladewind.description-list.item label="Aspetti"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    @foreach ($card->aspects as $aspect)
+                                        <x-badge :color="$aspect->color" :textColor="$aspect->text_color">
+                                            {{ $aspect->name }}
+                                        </x-badge>
+                                    @endforeach
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Tratti"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                @foreach ($card->traits as $trait)
-                                    <x-badge>
-                                        {{ $trait->name }}
-                                    </x-badge>
-                                @endforeach
-                            </x-bladewind.description-list.item>
+                            @if ($card->traits->isNotEmpty())
+                                <x-bladewind.description-list.item label="Tratti"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    @foreach ($card->traits as $trait)
+                                        <x-badge>
+                                            {{ $trait->name }}
+                                        </x-badge>
+                                    @endforeach
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Tipo"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                {{ $card->type }}
-                            </x-bladewind.description-list.item>
+                            @if ($card->type)
+                                <x-bladewind.description-list.item label="Tipo"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->type }}
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Rarità"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                {{ $card->rarity }}
-                            </x-bladewind.description-list.item>
+                            @if ($card->rarity)
+                                <x-bladewind.description-list.item label="Rarità"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->rarity }}
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Costo"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                {{ $card->cost }}
-                            </x-bladewind.description-list.item>
+                            @if (filled($card->cost))
+                                <x-bladewind.description-list.item label="Costo"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->cost }}
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Vita"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                {{ $card->health }}
-                            </x-bladewind.description-list.item>
+                            @if (filled($card->health))
+                                <x-bladewind.description-list.item label="Vita"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->health }}
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Potenza"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                {{ $card->power }}
-                            </x-bladewind.description-list.item>
+                            @if (filled($card->power))
+                                <x-bladewind.description-list.item label="Potenza"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->power }}
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Arena"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                {{ $card->arena }}
-                            </x-bladewind.description-list.item>
+                            @if ($card->arena)
+                                <x-bladewind.description-list.item label="Arena"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->arena }}
+                                </x-bladewind.description-list.item>
+                            @endif
 
-                            <x-bladewind.description-list.item label="Artista"
-                                class="text-gray-800 dark:text-gray-200 bg-transparent">
-                                {{ $card->artist }}
-                            </x-bladewind.description-list.item>
+                            @if ($card->artist)
+                                <x-bladewind.description-list.item label="Artista"
+                                    class="text-gray-800 dark:text-gray-200 bg-transparent">
+                                    {{ $card->artist }}
+                                </x-bladewind.description-list.item>
+                            @endif
 
                         </x-bladewind.description-list>
                     </x-bladewind.card>

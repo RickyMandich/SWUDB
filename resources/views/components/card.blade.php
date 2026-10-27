@@ -8,8 +8,15 @@
         <div class="grid grid-cols-2 gap-4">
             {{-- Immagine --}}
             <div>
-                <img src="{{ Storage::url($card->front_art_path) }}" alt="Immagine di {{ $card->snippet }}"
-                    class="w-full rounded-lg">
+                @if ($card->front_art_path)
+                    <img src="{{ Storage::url($card->front_art_path) }}" alt="Immagine di {{ $card->snippet }}"
+                        class="w-full rounded-lg">
+                @else
+                    <div
+                        class="flex aspect-[5/7] w-full items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                        Immagine non disponibile
+                    </div>
+                @endif
             </div>
 
             {{-- Informazioni --}}

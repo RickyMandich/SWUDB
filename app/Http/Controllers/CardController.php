@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Card;
-use App\Models\Expansion;
 use App\Services\CardSearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class CardController extends Controller
@@ -29,7 +27,7 @@ class CardController extends Controller
      * Shows the public detail page for a single card, identified by expansion+number (not cid)
      * Mostra la pagina di dettaglio pubblica di una singola carta, identificata da espansione+numero (non cid)
      */
-    public function show(string $expansion, int $number)
+    public function show(string $expansion, int $number): View
     {
         $card = Card::with(['aspects', 'traits', 'expansionModel'])
             ->where('expansion', $expansion)
@@ -58,16 +56,18 @@ class CardController extends Controller
             ->paginate(24)
             ->withQueryString();
 
-        Log::debug("found {$cards->total()} cards from {$sinceInput}", ['cards' => $cards]);
-
         $groups = $cards->getCollection()
             ->groupBy(fn (Card $card) => $card->release_date?->format('d/m/Y') ?? 'nd');
+
+        $dates = Card::where('release_date', '>=', $since)
+            ->distinct()
+            ->count('release_date');
 
         $firstRelease = Carbon::parse(Card::min('release_date'))->format('d/m/Y');
         $lastRelease = Carbon::parse(Card::max('release_date'))->format('d/m/Y');
 
         $since = $sinceInput;
 
-        return view('cards.new-releases', compact('cards', 'groups', 'since', 'firstRelease', 'lastRelease'));
+        return view('cards.new-releases', compact('cards', 'groups', 'since', 'firstRelease', 'lastRelease', 'dates'));
     }
 }
