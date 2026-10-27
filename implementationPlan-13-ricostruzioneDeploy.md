@@ -1,8 +1,8 @@
-# Implementation plan 12 — Ricostruzione UnlimitedDB · Fase 13: messa in produzione (scambio degli ambienti)
+# Implementation plan 13 — Ricostruzione UnlimitedDB · Fase 13: messa in produzione (scambio degli ambienti)
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). **Ultimo piano da eseguire.**
-> **Prerequisiti**: [`implementationPlan-10-ricostruzioneApiPubblica.md`](implementationPlan-10-ricostruzioneApiPubblica.md) chiuso (suite verde, serve lo Step 11.5.8), [`implementationPlan-importCartePerPagina.md`](implementationPlan-importCartePerPagina.md) applicato (import completo che non esaurisce la memoria, serve allo Step 13.4) e
-> [`implementationPlan-11-githubActionBuildGhcr.md`](implementationPlan-11-githubActionBuildGhcr.md) applicato (pipeline `new` → ghcr.io → VM funzionante sul sito di test).
+> **Prerequisiti**: [`implementationPlan-V-10-ricostruzioneApiPubblica.md`](implementationPlan-V-10-ricostruzioneApiPubblica.md) chiuso (completato il 2026-10-26, Step 11.5.8 compreso), [`implementationPlan-12-importCartePerPagina.md`](implementationPlan-12-importCartePerPagina.md) applicato (import completo che non esaurisce la memoria, serve allo Step 13.4) e
+> [`implementationPlan-V-11-githubActionBuildGhcr.md`](implementationPlan-V-11-githubActionBuildGhcr.md) applicato (pipeline `new` → ghcr.io → VM funzionante sul sito di test: **completato il 2026-10-26**, rollback compreso).
 > Regola del progetto (`.agent/rules/main.md`): questo piano è l'unico output, il codice (compose, nginx, `.env.example`) lo applichi tu a mano.
 > **Sostituisce il vecchio Step 12.2** ("redeploy pulito" con `new-site.sh`: stop di `~/sites/SWUDB`, cambio del branch di default, ricreazione della cartella): non serve più.
 
@@ -41,7 +41,7 @@ Cartelle, container, volumi e database **non si rinominano**: cambiano solo il d
 ## Decisioni e assunzioni (verificale prima di partire)
 
 - **Dati del vecchio sito non migrati**: utenti, mazzi e collezione della vecchia SWUDB restano nel suo database, consultabile su `unlimiteddb-old` finché non si dismette (Step 13.8). Importarli nel nuovo schema è un lavoro a parte (piano dedicato, backlog), non fa parte di questo.
-- **Partenza pulita** (deciso il 2026-10-21): prima del cutover il database del nuovo sito si azzera (`migrate:fresh --seed`) e le carte si reimportano da zero (Step 13.4), niente dati di prova in produzione. **Rischio noto**: il 2026-10-18 l'import completo è andato in errore sulle liste lunghe (memory exhausted dopo ~180 pagine, 502 dell'API alla pagina 126, "attempted too many times"). Il fix è nel piano [`implementationPlan-importCartePerPagina.md`](implementationPlan-importCartePerPagina.md), prerequisito di questo piano. Il cutover non parte finché un import completo non finisce senza errori su questo sito.
+- **Partenza pulita** (deciso il 2026-10-21): prima del cutover il database del nuovo sito si azzera (`migrate:fresh --seed`) e le carte si reimportano da zero (Step 13.4), niente dati di prova in produzione. **Rischio noto**: il 2026-10-18 l'import completo è andato in errore sulle liste lunghe (memory exhausted dopo ~180 pagine, 502 dell'API alla pagina 126, "attempted too many times"). Il fix è nel piano 12 [`implementationPlan-12-importCartePerPagina.md`](implementationPlan-12-importCartePerPagina.md), prerequisito di questo piano. Il cutover non parte finché un import completo non finisce senza errori su questo sito.
 - **Il vecchio sito si congela**: Action disattivata e nessun cron che lo chiami, così non parte più nessuna scansione dal vecchio sito. Non serve spegnere Telegram o le mail del vecchio sito: restano consultabili e, se qualcosa parte, i messaggi sono riconoscibili dal prefisso.
 - **Stesso bot Telegram** per vecchio e nuovo sito, e il prefisso dei messaggi (`TELEGRAM_MESSAGE_PREFIX`) serve a distinguere chi scrive: controlla che nei due `.env` sia **diverso** (di solito vuoto sul sito di produzione e `dev: ` altrove), e che dopo il cutover quello di `unlimiteddb` sia quello che vuoi per la produzione. Un bot ha un solo webhook, e il vecchio sito non ha nessuna route webhook (solo invii in uscita, verificato in `routes/web.php`): `setWebhook` sul nuovo host non toglie nulla al vecchio.
 - **Vecchio sito, dati letti dalla repo locale `PROJECT/SWUDB`** (verifica che coincidano con la VM nello Step 13.2): cartella `~/sites/SWUDB`, host `unlimiteddb.mandich.dev` (label Traefik e `server_name`), branch `laravel`, container `SWUDB_app`/`SWUDB_nginx`/`SWUDB_db`, router e service Traefik `SWUDB` (diversi da `unlimiteddb` del nuovo), subnet `172.23.0.0/24` (il nuovo usa `172.22.0.0/24`), database `my_swudb` con utente `swudb`, **nessun servizio `worker`** (code e `Schedule::command('scan:run')` di `routes/console.php` hanno bisogno di un processo esterno: da cercare nel crontab della VM), nessun mount di `public/storage`.
@@ -148,7 +148,7 @@ Si fa sul sito **ancora sull'host di test**, prima del cutover: la vecchia produ
 - Nel `.env` della VM del nuovo sito ci sono `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` (non sono in `.env.example`: vanno aggiunte a mano): dopo il reset il `DatabaseSeeder` è l'unico modo in cui nasce l'utente admin, con email già verificata.
 - Nel `.env` ci sono `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` e `RESEND_API_KEY` con `MAIL_MAILER=resend`; `TELEGRAM_MESSAGE_PREFIX` è quello che vuoi vedere sui messaggi dell'import (finisce nello stesso bot del vecchio sito).
 - Il disco regge le immagini: `df -h /` (era al 79%) e `du -sh storage/app/public/cards`. Dopo il reset le immagini si riscaricano tutte.
-- Il problema dell'import del 2026-10-18 (memoria esaurita dopo ~180 pagine, 502 dell'API alla pagina 126) è risolto dal piano [`implementationPlan-importCartePerPagina.md`](implementationPlan-importCartePerPagina.md): applicato **e** provato con un import completo in locale (Step 7 di quel piano). Se non lo è, fermati qui e non azzerare niente. Applicato quel piano, anche `DB_QUEUE_RETRY_AFTER=300` e `LOG_LEVEL=info` vanno messi nel `.env` della VM.
+- Il problema dell'import del 2026-10-18 (memoria esaurita dopo ~180 pagine, 502 dell'API alla pagina 126) è risolto dal piano 12 [`implementationPlan-12-importCartePerPagina.md`](implementationPlan-12-importCartePerPagina.md): applicato **e** provato con un import completo in locale (Step 7 di quel piano). Se non lo è, fermati qui e non azzerare niente. Applicato quel piano, anche `DB_QUEUE_RETRY_AFTER=300` e `LOG_LEVEL=info` vanno messi nel `.env` della VM.
 
 #### 13.4.2 — Reset
 ```bash
@@ -298,6 +298,6 @@ Poi: rimettere il cron del vecchio sito se l'avevi tolto (13.5.3) e, solo se il 
 ## Step 13.9 — Documentazione
 
 1. **README.md**: "Sito" → `https://unlimiteddb.mandich.dev`; compose di produzione descritto con `SITE_HOST` (non più host fisso); comando `setWebhook` con il nuovo URL; sezione "Deploy" con il cutover fatto e il vecchio sito su `unlimiteddb-old`.
-2. **todo.md**: spunta la sezione "12 — Messa in produzione".
-3. **Indice** (`implementationPlan-ricostruzioneUnlimitedDB.md`): stato del piano 12 a completato.
-4. Rinomina questo file in `implementationPlan-V-12-ricostruzioneDeploy.md`.
+2. **todo.md**: spunta la sezione "13 — Messa in produzione, scambio degli ambienti".
+3. **Indice** (`implementationPlan-ricostruzioneUnlimitedDB.md`): stato del piano 13 a completato.
+4. Rinomina questo file in `implementationPlan-V-13-ricostruzioneDeploy.md`.

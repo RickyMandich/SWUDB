@@ -32,9 +32,6 @@ class CardBuilder extends Builder
         $this->orderByRaw("($aspects) IS NULL")
             ->orderByRaw($aspects);
 
-        $this->orderByRaw("($aspects) IS NULL")
-            ->orderByRaw($aspects);
-
         // 3. Tipo specifico: Unità, Miglioria, Evento (gli altri in fondo)
         $this->orderByRaw("CASE cards.type WHEN 'Unità' THEN 0 WHEN 'Miglioria' THEN 1 WHEN 'Evento' THEN 2 ELSE 3 END");
 

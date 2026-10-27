@@ -4,6 +4,8 @@
 > Stato (verificato sul codice il 2026-10-04): controller, rotte, permesso, viste admin, componenti `<x-flash-message>` e `<x-badge>`, auto-lockout, Opzione (a) del job e correzioni alle email di scan (5.5.1–5.5.5) sono **già nel codice**.
 > Restano lo Step 5.5.6 (test scritti ma da confermare con `php artisan test`) e lo Step 5.5.7 (doppio `SystemError` sul download fallito, da decidere): per questo il file non è ancora `implementationPlan-V-03-...`.
 > Gli step 5.1–5.4 sotto restano come riferimento di ciò che è stato fatto.
+>
+> **Aggiornamento 2026-10-26**: gli Step 5.5.6–5.5.8 ancora aperti sono stati assorbiti da [`implementationPlan-12-importCartePerPagina.md`](implementationPlan-12-importCartePerPagina.md) (piano 12); si chiudono lì, con la suite verde.
 
 ## Fase 5 — Log errori scan (`system_errors`)
 

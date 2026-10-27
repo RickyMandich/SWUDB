@@ -1,6 +1,6 @@
-# Implementation plan — Import carte: un job per pagina (fix della memoria esaurita)
+# Implementation plan 12 — Import carte: un job per pagina (fix della memoria esaurita)
 
-> Piano trasversale (non numerato), **prerequisito dello Step 13.4 del piano 12** ([`implementationPlan-12-ricostruzioneDeploy.md`](implementationPlan-12-ricostruzioneDeploy.md)): il reset pulito del database richiede un import completo che finisca senza errori.
+> Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). **Prerequisito dello Step 13.4 del piano 13** ([`implementationPlan-13-ricostruzioneDeploy.md`](implementationPlan-13-ricostruzioneDeploy.md)): il reset pulito del database richiede un import completo che finisca senza errori. Va eseguito dopo il piano 11 (pipeline di deploy) e prima del piano 13. Gli step sono numerati da 0 a 8 e non hanno una "Fase" propria: nasce come piano trasversale e lavora sul codice già consegnato dai piani 02, 03 e 09.
 > Assorbe le voci aperte 5.5.6–5.5.8 del piano 03 (vedi `todo.md`).
 > Regola del progetto (`.agent/rules/main.md`): questo piano è l'unico output, il codice lo applichi tu a mano.
 
@@ -58,9 +58,10 @@ e in `content()`:
 Aggiorna il docblock: `$newCards` sono le prime carte (al massimo `ImportCardsFromSwuApiJob::EMAIL_CARDS_LIMIT`), `$total` il numero reale.
 
 #### 1.2 — `resources/views/emails/md-new-cards.blade.php`
-Dopo il `@endforeach`, prima di `</x-mail::message>`, **senza indentazione** (il Markdown di Laravel la leggerebbe come blocco di codice):
+Dopo il `@endforeach`, prima di `</x-mail::message>`, **senza indentazione** (il Markdown di Laravel la leggerebbe come blocco di codice) e **con una riga vuota** prima del testo (senza, il Markdown lo accoda all'ultimo punto dell'elenco invece di farne un paragrafo):
 ```blade
 @if ($total > $cards->count())
+
 …e altre {{ $total - $cards->count() }} carte: le trovi nella pagina delle nuove uscite.
 @endif
 ```
@@ -80,8 +81,9 @@ Dopo il `@endforeach`, prima di `</x-mail::message>`, **senza indentazione** (il
 -*Ci sono stati {{ $errors->count() }} errori durante lo scan*
 +*Ci sono stati {{ $total }} errori durante lo scan*
 ```
-e dopo `</x-mail::table>`:
+e dopo `</x-mail::table>`, **con una riga vuota** tra il tag e l'`@if` (la tabella è un blocco HTML: senza riga vuota il testo che segue resta dentro il blocco e il link in Markdown non viene convertito):
 ```blade
+
 @if ($total > $errors->count())
 Sono mostrati gli ultimi {{ $errors->count() }}: gli altri sono in [Gestione errori]({{ url('/admin/errori') }}).
 @endif
@@ -101,6 +103,10 @@ public function handle()
     $this->info($page === 1 ? 'Cards scan queued.' : "Cards scan queued from page {$page}.");
 }
 ```
+
+Due conseguenze da tenere presenti (non sono bug, ma sorprendono):
+- **Ripresa con `--page=N`**: parte un nuovo scan (nuovo `runId`), quindi il riepilogo finale e la mail contano come "nuove" solo le carte create **da quel momento**; quelle importate dalle pagine precedenti, prima dell'interruzione, non compaiono.
+- **Lock rimasto appeso**: se un worker muore senza che la coda chiami `failed()` (ad esempio `docker kill` o coda svuotata a mano), il lock resta per 3 ore e `cards:scan` risponde "Scan già in corso". Per liberarlo: `php artisan cache:forget cards-import:running` (nel container `app`).
 
 ## Step 3 — Riscrittura di `ImportCardsFromSwuApiJob`
 
@@ -552,6 +558,14 @@ e nel `Log::warning`, al posto del modello intero:
 ```
 `--memory=100`: se il worker supera i 100 MB dopo un job si ferma e supervisor lo rilancia, **prima** di arrivare al limite di 128 MB di PHP. `--timeout=240` è per i job: senza l'estensione `pcntl` (l'immagine non la ha) non viene fatto rispettare dal worker, ma resta coerente con `$timeout` e con `retry_after`.
 
+#### 5.1bis — Worker di sviluppo
+`docker-compose.dev.yml` ha il suo comando (`php artisan queue:work --max-time=3600`, senza supervisor): per lo Step 7 usa le stesse opzioni, altrimenti la prova in locale non è rappresentativa della produzione:
+```diff
+-    command: php artisan queue:work --max-time=3600
++    command: php artisan queue:work --max-time=3600 --memory=100 --timeout=240
+```
+(è "docker infra": se preferisci lo applico io.) Nel compose di sviluppo non c'è `schedule:work`, quindi lo scan si lancia a mano come oggi.
+
 #### 5.2 — `retry_after`
 `DB_QUEUE_RETRY_AFTER` deve essere **maggiore** del timeout (240 s): 300.
 - `.env.example`: aggiungi `DB_QUEUE_RETRY_AFTER=300` sotto `QUEUE_CONNECTION=database`.
@@ -688,12 +702,14 @@ docker stats --no-stream                                   # il container del wo
 findstr "elaborata" storage\logs\laravel.log               # (cmd.exe) una riga per pagina con "memoria_picco_mb"
 ```
 Atteso: `memoria_picco_mb` piatto (poche decine di MB) dalla pagina 1 all'ultima, nessun "Allowed memory size", `failed_jobs` vuota, e alla fine il messaggio Telegram "Scan completato: N carte elaborate, M nuove, K problemi." con **una sola** mail `NewCardsEmail` (elenco di 100 carte più "…e altre N").
-Prova anche la ripresa: ferma il worker a metà (`docker compose -f docker-compose.dev.yml stop worker`), rilancia con `cards:scan --page=<pagina raggiunta>` e riavvia il worker.
+Prova anche la ripresa: ferma il worker a metà (`docker compose -f docker-compose.dev.yml stop worker`), poi o riavvii il worker (il job riservato torna disponibile dopo `retry_after`, 300 s, e la catena riprende da sola) oppure liberi il lock (`php artisan cache:forget cards-import:running`) e rilanci con `cards:scan --page=<pagina raggiunta>`.
+
+Attenzione in produzione: un deploy che ricrea il container `worker` (piano 11) durante uno scan lo interrompe a metà pagina. Non si perde niente (l'import è idempotente e il job riservato viene ripreso dopo `retry_after`, consumando un tentativo), ma conviene non fare deploy mentre lo scan è in corso, e soprattutto non durante il reimport completo dello Step 13.4 del piano 13.
 
 ## Step 8 — Documentazione
 
 1. **README.md**: sezione "Scansione carte" (punti 3 e 4: il job lavora a pagine, riparte con `cards:scan --page=N`, lock, mail con tetto) e "Non ancora implementato" (togliere il problema noto e le rifiniture del job di import). Aggiungi `DB_QUEUE_RETRY_AFTER` alla tabella delle variabili.
 2. **todo.md**: spunta la sezione "Import carte per pagina" e le voci 5.5.6–5.5.8 che questo piano chiude (5.5.6 dopo aver rilanciato la suite).
 3. **Indice dei piani**: stato di questo piano a completato.
-4. Rinomina questo file in `implementationPlan-V-importCartePerPagina.md`.
-5. Riprendi lo Step 13.4 del piano 12: il prerequisito "import completo funzionante" è soddisfatto quando lo Step 7 qui sopra riesce.
+4. Rinomina questo file in `implementationPlan-V-12-importCartePerPagina.md`.
+5. Riprendi lo Step 13.4 del piano 13: il prerequisito "import completo funzionante" è soddisfatto quando lo Step 7 qui sopra riesce.

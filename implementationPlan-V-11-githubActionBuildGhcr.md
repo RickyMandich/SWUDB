@@ -1,7 +1,7 @@
 # Implementation plan 11 — Ricostruzione UnlimitedDB · Fase 12: build dell'immagine su GitHub Actions (ghcr.io) e deploy con pull sulla VM
 
-> Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). Ex piano trasversale `githubActionBuildGhcr`, numerato 11 il 2026-10-19: va eseguito **prima** del piano 12 ([`implementationPlan-12-ricostruzioneDeploy.md`](implementationPlan-12-ricostruzioneDeploy.md)), che porta il sito in produzione usando questa pipeline.
-> Riguarda il branch `new` e il sito di test <https://unlimiteddb-test.mandich.dev> (che con il piano 12 diventa `unlimiteddb.mandich.dev`).
+> Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). Ex piano trasversale `githubActionBuildGhcr`, numerato 11 il 2026-10-19: va eseguito **prima** del piano 13 ([`implementationPlan-13-ricostruzioneDeploy.md`](implementationPlan-13-ricostruzioneDeploy.md)), che porta il sito in produzione usando questa pipeline.
+> Riguarda il branch `new` e il sito di test <https://unlimiteddb-test.mandich.dev> (che con il piano 13 diventa `unlimiteddb.mandich.dev`).
 > Regola del progetto (`.agent/rules/main.md`): questo piano è l'unico output, il codice (workflow, compose, script, hook) lo applichi tu a mano.
 
 ## Perché
@@ -31,7 +31,7 @@ push su `new`
 ## Decisioni e assunzioni (verificale prima di partire)
 
 - **Nome immagine**: `ghcr.io/rickymandich/swudb`. Il remote `origin` è `RickyMandich/SWUDB` e ghcr.io vuole il nome tutto minuscolo. Se il repo cambia nome, va cambiato in tre punti: `env.IMAGE` del workflow, e i due `image:` del compose.
-- **Trigger**: solo `push` sul branch `new`, nessun `workflow_dispatch`. I push su `laravel` restano gestiti dalla vecchia action di SWUDB, che non si tocca (la disattiva il piano 12).
+- **Trigger**: solo `push` sul branch `new`, nessun `workflow_dispatch`. I push su `laravel` restano gestiti dalla vecchia action di SWUDB, che non si tocca (la disattiva il piano 13).
 - **File del workflow**: `.github/workflows/deploy-unlimiteddb.yml`, diverso da `deploy.yml` della vecchia versione, così non c'è collisione nemmeno quando i branch verranno uniti.
 - **Chiave SSH e secret nuovi**: la chiave della vecchia action (`SSH_PRIVATE_KEY`) ha un forced command legato a `deploy.sh SWUDB` e non va toccata. Si crea una chiave nuova, con forced command sullo **script generico** (`deploy-image.sh unlimiteddb new`). Non uso `deploy.sh` perché non l'ho visto e quasi certamente ricostruisce l'immagine sulla VM, cioè il problema da evitare. `SSH_HOST` e `SSH_USER` si riusano.
 - **Migrazioni automatiche**: l'hook `deploy/post-deploy.sh` esegue `php artisan migrate --force` ad ogni deploy. Se non lo vuoi, togli quella riga (Step 12.2).
@@ -352,10 +352,10 @@ cd ~/sites/unlimiteddb
 docker compose ps                                   # app, nginx, db, worker: tutti Up
 docker compose exec -T worker sh -c "ps | grep '[q]ueue:work'"   # tanti processi quanti ne ha numprocs
 curl -sI https://unlimiteddb-test.mandich.dev | head -1          # 200
-curl -sI https://unlimiteddb-test.mandich.dev/favicon.ico | head -1   # 200 (icone, Step 13.6.5 del piano 12)
+curl -sI https://unlimiteddb-test.mandich.dev/favicon.ico | head -1   # 200 (icone, Step 13.6.5 del piano 13)
 ```
 
-(Dopo il piano 12 l'host è `unlimiteddb.mandich.dev`.) Controlla anche un file di `/build/assets/...` dal browser (CSS/JS devono rispondere 200, non 404). Se compare un 504 su un sito appena creato, è il noto problema del provider Docker di Traefik: `docker restart traefik`.
+(Dopo il piano 13 l'host è `unlimiteddb.mandich.dev`.) Controlla anche un file di `/build/assets/...` dal browser (CSS/JS devono rispondere 200, non 404). Se compare un 504 su un sito appena creato, è il noto problema del provider Docker di Traefik: `docker restart traefik`.
 
 Nel log del run su GitHub (job `deploy`) devono comparire le righe `== hook pre-deploy`, il `docker pull` e `== hook post-deploy`; se un hook manca, controlla che `deploy/` sia stata pushata.
 
@@ -393,6 +393,6 @@ Quando gli step 12.0–12.9 sono fatti:
 2. **todo.md**: spunta gli step della sezione "11 — Build su GitHub Actions".
 3. Rinomina questo file in `implementationPlan-V-11-githubActionBuildGhcr.md`.
 
-## Rapporto con il piano 12 (messa in produzione)
+## Rapporto con il piano 13 (messa in produzione)
 
-Il piano 12 non rigenera più il sito con `new-site.sh`: porta in produzione **questo stesso sito** (cartella `~/sites/unlimiteddb`, container `unlimiteddb_*`, database e immagini già presenti) cambiandone il dominio. Il compose, il workflow e gli hook di questo piano restano quindi validi senza modifiche, tranne la regola `Host(...)` di Traefik, che il piano 12 (Step 13.1) rende parametrica con `SITE_HOST` letto dal `.env` sulla VM: il cambio da `unlimiteddb-test.mandich.dev` a `unlimiteddb.mandich.dev` è poi una modifica del `.env`, senza nuovo deploy. Il piano 12 sposta la vecchia produzione su `unlimiteddb-old.mandich.dev`. I template di `new-site.sh` non vanno aggiornati.
+Il piano 13 non rigenera più il sito con `new-site.sh`: porta in produzione **questo stesso sito** (cartella `~/sites/unlimiteddb`, container `unlimiteddb_*`, database e immagini già presenti) cambiandone il dominio. Il compose, il workflow e gli hook di questo piano restano quindi validi senza modifiche, tranne la regola `Host(...)` di Traefik, che il piano 13 (Step 13.1) rende parametrica con `SITE_HOST` letto dal `.env` sulla VM: il cambio da `unlimiteddb-test.mandich.dev` a `unlimiteddb.mandich.dev` è poi una modifica del `.env`, senza nuovo deploy. Il piano 13 sposta la vecchia produzione su `unlimiteddb-old.mandich.dev`. I template di `new-site.sh` non vanno aggiornati.

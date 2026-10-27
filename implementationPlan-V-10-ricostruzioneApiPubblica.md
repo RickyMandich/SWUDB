@@ -5,7 +5,9 @@
 > [`implementationPlan-V-05-ricostruzioneCatalogoPubblico.md`](implementationPlan-V-05-ricostruzioneCatalogoPubblico.md) Step 10.1 (`CardSearch`, condiviso con la pagina `/carte`) e
 > [`implementationPlan-V-06-ricostruzioneMazziDominio.md`](implementationPlan-V-06-ricostruzioneMazziDominio.md) (enum e relazioni dei mazzi).
 >
-> Stato del codice (riletto il 2026-10-19 alle 14:45): Step 11.1, 11.2 e 11.4 applicati (Sanctum, `routes/api.php` registrato in `bootstrap/app.php`, controller `Api/*`, `CardResource` e `DeckResource`); lo Step 11.3 è rimandato; i test dello Step 11.5 sono **scritti** (`tests/Feature/Api/PublicApiTest.php`, 14 test, identici agli snippet) ma **7 falliscono**: l'ordinamento di default di `CardBuilder` usa SQL solo MariaDB e su SQLite (i test) dà errore. Il piano **non è chiuso**: manca lo Step 11.5.8. Gli snippet sotto sono allineati al codice applicato.
+> Stato del codice (riletto il 2026-10-19 alle 14:45): Step 11.1, 11.2 e 11.4 applicati (Sanctum, `routes/api.php` registrato in `bootstrap/app.php`, controller `Api/*`, `CardResource` e `DeckResource`); lo Step 11.3 è rimandato; i test dello Step 11.5 sono **scritti** (`tests/Feature/Api/PublicApiTest.php`, 14 test, identici agli snippet) ma **7 falliscono**: l'ordinamento di default di `CardBuilder` usa SQL solo MariaDB e su SQLite (i test) dà errore. Il piano **non era chiuso**: mancava lo Step 11.5.8. Gli snippet sotto sono allineati al codice applicato.
+>
+> **Aggiornamento 2026-10-26**: Step 11.5.8 applicato (`CardBuilder::aspectOrderKey()` con un ramo per driver, blocco `orderByRaw` duplicato tolto), i 14 test dell'API sono verdi e la suite intera è a 111 passati; piano chiuso e rinominato `V-`. Resta rimandato solo lo Step 11.3 (token Sanctum).
 
 ## Fase 11 — API REST pubblica
 
