@@ -13,8 +13,10 @@ class CardController extends Controller
 {
     public function show(string $expansion, int $number): CardResource
     {
-        $card = Card::with(['aspects', 'traits'])
-            ->where('expansion', $expansion)->where('number', $number)->firstOrFail();
+        $query = Card::with(['aspects', 'traits', 'originalCard', 'variants'])
+            ->where('expansion', $expansion)->where('number', $number);
+
+        $card = (clone $query)->originals()->first() ?? $query->firstOrFail();
 
         return new CardResource($card);
     }

@@ -161,6 +161,33 @@
                     </x-bladewind.card>
                 @endisset
 
+                @if ($card->variants->isNotEmpty())
+                    <x-bladewind.card title="Altre versioni" has_shadow="false" radius="medium"
+                        class="bg-white dark:bg-gray-800 m-4">
+                        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                            @foreach ($card->variants as $variant)
+                                <figure class="text-center text-sm text-gray-800 dark:text-gray-200">
+                                    @if ($variant->front_art_path)
+                                        <img src="{{ Storage::url($variant->front_art_path) }}"
+                                            alt="{{ $variant->name }} ({{ $variant->variant_type }})"
+                                            class="mx-auto block h-auto w-full rounded-lg" loading="lazy">
+                                    @else
+                                        <div
+                                            class="flex aspect-[5/7] w-full items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                            Immagine non disponibile
+                                        </div>
+                                    @endif
+                                    <figcaption class="mt-1">
+                                        <span class="font-medium">{{ $variant->variant_type ?? 'Variante' }}</span><br>
+                                        <span
+                                            class="text-xs text-gray-500 dark:text-gray-400">{{ $variant->expansion }}-{{ $variant->number }}</span>
+                                    </figcaption>
+                                </figure>
+                            @endforeach
+                        </div>
+                    </x-bladewind.card>
+                @endif
+
             </div>
 
         </x-bladewind.card>
