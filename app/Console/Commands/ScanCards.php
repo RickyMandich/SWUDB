@@ -12,7 +12,7 @@ class ScanCards extends Command
      *
      * @var string
      */
-    protected $signature = 'cards:scan {--page=1 : Pagina da cui far partire la scansione}';
+    protected $signature = 'cards:scan {--page=1 : Pagina da cui far partire la scansione} {--phase=originals : originals (completo) oppure variants}';
 
     /**
      * The console command description.

@@ -42,4 +42,8 @@ return [
         'message_prefix' => env('TELEGRAM_MESSAGE_PREFIX', ''),
     ],
 
+    'swu' => [
+        'variant_images' => env('SWU_VARIANT_IMAGES', true),
+    ],
+
 ];

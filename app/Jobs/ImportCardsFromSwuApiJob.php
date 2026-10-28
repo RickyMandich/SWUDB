@@ -36,6 +36,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
     public const API_URL = 'https://admin.starwarsunlimited.com/api/card-list';
 
+    public const PHASE_ORIGINALS = 'originals';
+
+    public const PHASE_VARIANTS = 'variants';
+
     public const PAGE_SIZE = 100;
 
     /** Chiave del lock: contiene il runId dello scan in corso. */
@@ -62,7 +66,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
     /** True solo per il job che avvia lo scan (manda il messaggio "Scan avviato..."). */
     public bool $startsRun;
 
-    public function __construct(public int $page = 1, ?string $runId = null)
+    public function __construct(public int $page = 1, ?string $runId = null, public string $phase = self::PHASE_ORIGINALS)
     {
         $this->startsRun = $runId === null;
         $this->runId = $runId ?? (string) Str::uuid();
@@ -95,9 +99,11 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             }
         }
 
+        $variantFilter = $this->phase === self::PHASE_VARIANTS ? '$notNull' : '$null';
+
         $response = Http::timeout(30)->retry(3, 2000, throw: false)->get(self::API_URL, [
             'locale' => 'it',
-            'filters[variantOf][id][$null]' => 'true',
+            "filters[variantOf][id][{$variantFilter}]" => 'true',
             'fields' => [
                 'cardUid',
                 'cardNumber',
@@ -143,7 +149,14 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         Cache::put($this->stateKey(), $state, now()->addDay());
 
         if ($this->page < $lastPage) {
-            self::dispatch($this->page + 1, $this->runId);
+            self::dispatch($this->page + 1, $this->runId, $this->phase);
+
+            return;
+        }
+
+        if ($this->phase === self::PHASE_ORIGINALS) {
+            // Finiti gli originali: parte la fase varianti dalla pagina 1
+            self::dispatch(1, $this->runId, self::PHASE_VARIANTS);
 
             return;
         }
@@ -190,17 +203,30 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                 throw new \RuntimeException('cardUid mancante nel payload');
             }
 
-            if (str_contains($cardData['type']['data']['attributes']['name'] ?? '', 'Segnalino')) {
-                $cardData['expansion']['data']['attributes']['code'] =
-                    "T{$cardData['expansion']['data']['attributes']['code']}";
-            }
+            $expansionCode = $this->resolveExpansionCode($cardData);
+            $this->createExpansionIfMissing($expansionCode, $cardData['expansion']['data']['attributes'] ?? null, $latestRotation);
 
-            $this->createExpansionIfMissing($cardData, $latestRotation);
+            $variantAttributes = [];
+            if ($this->phase === self::PHASE_VARIANTS) {
+                $vType = $cardData['variantTypes']['data'][0]['attributes']['name'] ?? null;
+                $vCode = $cardData['variantTypes']['data'][0]['attributes']['variantId'] ?? null;
+
+                // Fallback per foil senza variantTypes nominale (es. Mina Bonteri)
+                if (! $vType && ! empty($cardData['hasFoil'])) {
+                    $vType = 'Foil';
+                }
+
+                $variantAttributes = [
+                    'original_card_id' => $this->resolveOriginalCardId($cardData),
+                    'variant_type' => $vType,
+                    'variant_code' => $vCode,
+                ];
+            }
 
             $card = Card::updateOrCreate(
                 ['cid' => $cid],
-                [
-                    'expansion' => $cardData['expansion']['data']['attributes']['code'] ?? null,
+                $variantAttributes + [
+                    'expansion' => $expansionCode,
                     'number' => $cardData['cardNumber'],
                     'unique_card' => $cardData['unique'] ?? false,
                     'name' => $cardData['title'],
@@ -215,14 +241,12 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                     'artist' => $cardData['artist'] ?? null,
                     'release_date' => isset($cardData['publishedAt']) ? Carbon::parse($cardData['publishedAt'])->toDateString() : null,
-                    'max_copies' => $cardData['cardNumber'] == 256 && ($cardData['expansion']['data']['attributes']['code'] ?? null) == 'JTL' ? 15 : null,
+                    'max_copies' => $cardData['cardNumber'] == 256 && $expansionCode == 'JTL' ? 15 : null,
                 ]
             );
 
             $this->syncAspectsAndTraits($card, $cardData);
             $this->downloadImages($card, $cardData, $imageDownloader);
-
-            Log::debug("Carta {$cid} ({$card->id}) elaborata");
 
             return true;
         } catch (\Throwable $e) {
@@ -244,17 +268,21 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         }
     }
 
-    private function createExpansionIfMissing(array $cardData, string $latestRotation): void
+    private function createExpansionIfMissing(string $expansionCode, ?array $rawExpansionData, string $latestRotation): void
     {
-        $expansionData = $cardData['expansion']['data']['attributes'] ?? null;
-        $expansionCode = $expansionData['code'] ?? null;
+        if (! Expansion::where('expansion', $expansionCode)->exists()) {
+            // Se è un child set (es. SOROP, TSOR, JTLP), individua il core set genitore
+            $mainExpansion = null;
+            if (preg_match('/^(T)?(SOR|SHD|TWI|JTL|LOF|SEC|LAW|HMW|ASH)/', $expansionCode, $m)) {
+                $mainExpansion = $m[2];
+            }
 
-        if ($expansionCode && ! Expansion::where('expansion', $expansionCode)->exists()) {
-            Log::info("Creazione dell'espansione {$expansionCode}");
             Expansion::create([
                 'expansion' => $expansionCode,
-                'legal_date' => isset($expansionData['publishedAt']) ? Carbon::parse($expansionData['publishedAt'])->toDateString() : null,
                 'rotation' => $latestRotation,
+                'legal_date' => $rawExpansionData['publishedAt'] ?? now()->toDateString(),
+                'confirmed' => false,
+                'group_main_expansion' => $mainExpansion,
             ]);
         }
     }
@@ -294,6 +322,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
     private function downloadImages(Card $card, array $cardData, CardImageDownloader $imageDownloader): void
     {
+        if ($this->phase === self::PHASE_VARIANTS && ! config('services.swu.variant_images')) {
+            return;
+        }
+
         $frontUrl = $cardData['artFront']['data']['attributes']['url']
             ?? $cardData['artFront']['data']['attributes']['formats']['card']['url']
             ?? null;
@@ -409,5 +441,97 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         if (Cache::get(self::LOCK_KEY) === $this->runId) {
             Cache::forget(self::LOCK_KEY);
         }
+    }
+
+    /**
+     * Resolves the canonical expansion code for a card, separating promo sets like SWUDB
+     * Risolve il codice espansione canonico per una carta, separando i set promo come fa SWUDB
+     */
+    private function resolveExpansionCode(array $cardData): string
+    {
+        $rawExp = $cardData['expansion']['data']['attributes']['code'] ?? null;
+        $vTypeName = $cardData['variantTypes']['data'][0]['attributes']['name'] ?? '';
+        $vId = $cardData['variantTypes']['data'][0]['attributes']['variantId'] ?? '';
+        $serial = $cardData['serialCode'] ?? '';
+        $cardNum = (int) ($cardData['cardNumber'] ?? 0);
+
+        // 1. Segnalini (Tokens): T{EXP}
+        if (str_contains($cardData['type']['data']['attributes']['name'] ?? '', 'Segnalino')) {
+            return 'T'.($rawExp ?: 'SOR');
+        }
+
+        // 2. Set promo già ufficiali o standalone (JTLP, SECP, LOFP, C24, J24, P25, etc.)
+        if ($rawExp && ! in_array($rawExp, ['SOR', 'SHD', 'TWI'], true)) {
+            return $rawExp;
+        }
+
+        // 3. Determinazione del set genitore (fallback se rawExp è null come per Ammiraglio Motti)
+        $parentSet = $rawExp;
+        if (! $parentSet) {
+            $parentSet = match (true) {
+                str_starts_with($serial, '01') => 'SOR',
+                str_starts_with($serial, '02') => 'SHD',
+                str_starts_with($serial, '03') => 'TWI',
+                default => 'SOR',
+            };
+        }
+
+        // 4. Mappatura promozionale stile SWUDB per i primi 3 set (SOR, SHD, TWI):
+
+        // Prerelease (vId 04 o nome Prerelease) -> SORPR, SHDPR, TWIPR
+        if ($vId === '04' || str_contains($vTypeName, 'Prerelease')) {
+            if (str_contains($vTypeName, 'Judge')) {
+                return $parentSet === 'SOR' ? 'J24' : 'J25';
+            }
+
+            return "{$parentSet}PR";
+        }
+
+        // Planetary Qualifier (vId 51, 52, 56 o sigla PQ) -> SHDPQ, TWIPQ
+        if (in_array($vId, ['51', '52', '56'], true) || str_contains($vTypeName, 'PQ') || str_contains($vTypeName, 'Planetary')) {
+            return "{$parentSet}PQ";
+        }
+
+        // Store Showdown (vId 40..45, 63..66 o sigla SS) -> SORSH, SHDSH, TWISH
+        if (in_array($vId, ['40', '41', '42', '43', '44', '45', '63', '64', '65', '66'], true) || str_contains($vTypeName, 'SS') || str_contains($vTypeName, 'Store Showdown')) {
+            return "{$parentSet}SH";
+        }
+
+        // Weekly Play / Organized Play (vId 60, 35) -> SOROP, SHDOP, TWIOP
+        if ($vId === '60' || $vId === '35' || str_contains($vTypeName, 'Weekly Play') || str_contains($vTypeName, 'Organized Play')) {
+            return "{$parentSet}OP";
+        }
+
+        // Hyperspace del 2-Player Starter Set di SOR (numeri 1-11 in Hyperspace) -> assegnati a SOROP come su SWUDB
+        if ($parentSet === 'SOR' && $cardNum <= 11 && $vId === '02') {
+            return 'SOROP';
+        }
+
+        // Event Promos (GenCon 2023, Essen 2024)
+        if (str_contains($serial, 'GC') || str_contains($vTypeName, 'Gen Con')) {
+            return 'GC23';
+        }
+        if (str_contains($serial, 'EE') || str_contains($vTypeName, 'Essen')) {
+            return 'EE24';
+        }
+
+        return $parentSet;
+    }
+
+    private function resolveOriginalCardId(array $cardData): string
+    {
+        $originalCid = $cardData['variantOf']['data']['attributes']['cardUid'] ?? null;
+
+        if (! $originalCid) {
+            throw new \RuntimeException('variantOf senza cardUid nel payload');
+        }
+
+        $originalId = Card::where('cid', $originalCid)->value('id');
+
+        if (! $originalId) {
+            throw new \RuntimeException("Carta originale {$originalCid} non trovata: gli originali sono stati importati?");
+        }
+
+        return $originalId;
     }
 }
