@@ -219,7 +219,12 @@ class DeckImporter
             return null;
         }
 
-        return Card::where('expansion', strtoupper($m[1]))->where('number', (int) $m[2])->first();
+        $exp = strtoupper($m[1]);
+        $num = (int) $m[2];
+
+        // Prima cerca tra gli originali; se è un codice promo (es. SOROP_1 o JTLP_1), trova la variante
+        return Card::originals()->where('expansion', $exp)->where('number', $num)->first()
+            ?? Card::where('expansion', $exp)->where('number', $num)->first();
     }
 
     /**
@@ -229,10 +234,14 @@ class DeckImporter
     private function findByText(string $name, string $title): ?Card
     {
         if (preg_match('/^([A-Za-z0-9]+)-(\d+)$/', $name, $m)) {
-            return Card::where('expansion', strtoupper($m[1]))->where('number', (int) $m[2])->first();
+            $exp = strtoupper($m[1]);
+            $num = (int) $m[2];
+
+            return Card::originals()->where('expansion', $exp)->where('number', $num)->first()
+                ?? Card::where('expansion', $exp)->where('number', $num)->first();
         }
 
-        return Card::query()
+        return Card::originals()
             ->where('name', $name)
             ->when(
                 $title !== '',
@@ -256,7 +265,9 @@ class DeckImporter
             if ($row['card'] === null) {
                 $notFound[] = $row['label'];
             } elseif ($row['count'] > 0) {
-                $quantities[$row['card']->id] = ($quantities[$row['card']->id] ?? 0) + $row['count'];
+                // Se il file conteneva l'id di una variante/promo, si riconduce sempre all'originale
+                $cardId = $row['card']->original_card_id ?? $row['card']->id;
+                $quantities[$cardId] = ($quantities[$cardId] ?? 0) + $row['count'];
             }
         }
 

@@ -1,12 +1,3 @@
-@php
-    $variants = [
-        'normal' => 'Normale',
-        'foil' => 'Foil',
-        'hyper' => 'Hyperspace',
-        'hyper_foil' => 'Hyperfoil',
-        'prestige' => 'Prestige',
-    ];
-@endphp
 <x-app-layout>
     <x-slot name="header">
         <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">La mia collezione</h2>
@@ -21,19 +12,16 @@
 
     <div class="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 sm:grid-cols-2 lg:grid-cols-3">
         @foreach ($cards as $card)
-            @php($owned = $card->collectionCards->pluck('quantity', 'variant'))
+            @php($owned = $card->collectionCards->first()?->quantity ?? 0)
             <div class="h-full">
                 <x-card :card="$card">
-                    <div
-                        class="grid grid-cols-5 gap-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
-                        @foreach ($variants as $key => $label)
-                            <label class="text-center text-xs text-gray-500 dark:text-gray-400">
-                                {{ $label }}
-                                <input type="number" min="0" max="65535" value="{{ $owned[$key] ?? 0 }}"
-                                    data-collection data-card="{{ $card->id }}" data-variant="{{ $key }}"
-                                    class="mt-1 w-full rounded border-gray-300 text-center text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100">
-                            </label>
-                        @endforeach
+                    <div class="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                        <label class="block text-center text-xs text-gray-500 dark:text-gray-400">
+                            {{ $card->variant_type ?? 'Originale' }}: copie possedute
+                            <input type="number" min="0" max="65535" value="{{ $owned }}" +
+                                data-collection data-card="{{ $card->id }}" +
+                                class="mt-1 w-full rounded border-gray-300 text-center text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100">
+                        </label>
                     </div>
                 </x-card>
             </div>
@@ -84,7 +72,6 @@
                     },
                     body: JSON.stringify({
                         card_id: input.dataset.card,
-                        variant: input.dataset.variant,
                         quantity,
                     }),
                 });

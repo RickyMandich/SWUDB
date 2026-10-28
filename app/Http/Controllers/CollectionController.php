@@ -15,7 +15,7 @@ class CollectionController extends Controller
     {
         // stessi filtri e stesse opzioni di /carte (CardController::index): il form <x-cards-filter> li vuole tutti
         $cards = $search
-            ->apply(Card::query()->with(['aspects', 'traits']), $request->only(CardSearch::FILTER_KEYS))
+            ->apply(Card::query()->with(['aspects', 'traits']), $request->only(CardSearch::FILTER_KEYS), includeVariants: true)
             ->with(['collectionCards' => fn ($q) => $q->where('user_id', $request->user()->id)])
             ->paginate(24)->withQueryString();
 
@@ -29,11 +29,10 @@ class CollectionController extends Controller
     {
         $validated = $request->validate([
             'card_id' => ['required', 'exists:cards,id'],
-            'variant' => ['required', 'in:normal,foil,hyper,prestige,hyper_foil'],
             'quantity' => ['required', 'integer', 'min:0', 'max:65535'], // la colonna è unsignedSmallInteger
         ]);
 
-        $key = ['user_id' => $request->user()->id, 'card_id' => $validated['card_id'], 'variant' => $validated['variant']];
+        $key = ['user_id' => $request->user()->id, 'card_id' => $validated['card_id']];
 
         if ((int) $validated['quantity'] === 0) {
             CollectionCard::where($key)->delete(); // niente righe a zero: la somma per card_id resta corretta senza filtrarle ovunque

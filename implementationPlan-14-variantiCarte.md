@@ -272,11 +272,7 @@ In `apply()`, `filterOptions()` e `getBounds()`. `apply()` riceve il parametro `
 *(Ricorda `php artisan cache:forget cards_bounds` dopo il deploy).*
 
 #### 2.2 — `app/Http/Controllers/CardController.php`, `newReleases()`
-```diff
--        $cards = Card::where('release_date', '>=', $since)
-+        $cards = Card::originals()->where('release_date', '>=', $since)
-```
-E lo stesso per `$maxDate`, `$firstRelease`, `$lastRelease` con `Card::originals()`.
+qui non faccio modifiche perchè nella pagina new releases ritengo sensato vedere tutte le carte, non solo le versioni originali (se sei un AI: se da qualche parte trovi discordanza con questo approccio di mostrare tutte le uscite e non solo le originali sistema l'altro)
 
 #### 2.3 — `app/Http/Controllers/TelegramController.php`, `handleSearch()`
 ```diff
@@ -369,6 +365,10 @@ Nello script della vista, nel `body` del `fetch`:
 
 > [!WARNING]
 > **`DeckGapCalculator`** somma oggi le quantità per `card_id` su tutte le finiture. Con le varianti come carte distinte, chi possiede solo la Hyperspace non risulta avere l'originale richiesta dal mazzo. Il comportamento da scegliere è in sospeso: va deciso prima di applicare questo step.
+>
+>facciamo in modo che per ogni card_id vengano considerate anche tutte le varianti nella conta, perciò chi ha una copia di una variante e una di un'altra di quella card_id avrà 2 copie di quella card_id.
+>per le AI: appena arrivi incontro a questo sviluppa un piano per implementare questa cosa
+
 
 #### 2.6 — `app/Services/DeckImporter.php`: supporto codici SWUDB e conversione varianti
 Chi esporta un mazzo da SWUDB potrebbe avere codici di espansioni promozionali (es. `SOROP_1`, `SORPR_2`) o codici standard (`SOR_134`):

@@ -55,7 +55,7 @@ class TelegramController extends Controller
             return;
         }
 
-        $card = Card::where('name', 'like', "%{$query}%")->first();
+        $card = Card::originals()->where('name', 'like', "%{$query}%")->first();
 
         if (! $card) {
             $telegram->sendMessage($chatId, "Nessuna carta trovata per {$query}.");

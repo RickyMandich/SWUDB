@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class CollectionCard extends Model
 {
-    protected $fillable = ['user_id', 'card_id', 'variant', 'quantity'];
+    protected $fillable = [
+        'user_id',
+        'card_id',
+        'quantity',
+    ];
 
     public function card()
     {

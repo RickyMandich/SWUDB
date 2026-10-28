@@ -281,7 +281,7 @@ class DeckController extends Controller
 
         $validated = $request->validate([
             'cards' => ['nullable', 'array'],
-            'cards.*.card_id' => ['required_with:cards', 'exists:cards,id'],
+            'cards.*.card_id' => ['required_with:cards', Rule::exists('cards', 'id')->whereNull('original_card_id')],
             'cards.*.quantity' => ['required_with:cards', 'integer', 'min:0'],
         ]);
 
@@ -310,7 +310,7 @@ class DeckController extends Controller
         Gate::authorize('update', $deck);
 
         $validated = $request->validate([
-            'card_id' => ['required', 'exists:cards,id'],
+            'card_id' => ['required', Rule::exists('cards', 'id')->whereNull('original_card_id')],
             'quantity' => ['required', 'integer', 'min:1'],
         ]);
 

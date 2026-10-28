@@ -35,7 +35,7 @@ class CardSearch
                         ->orWhereNull('group_main_expansion');
                 })
                 ->pluck('expansion'),
-            'types' => Card::query()->distinct()->orderBy('type')->pluck('type'),
+            'types' => Card::originals()->distinct()->orderBy('type')->pluck('type'),
             'aspects' => Aspect::orderBy('order')->get(['id', 'name']),
             'traits' => CardTrait::orderBy('name')->pluck('name'),
         ];
@@ -44,7 +44,7 @@ class CardSearch
     public function getBounds(): array
     {
         return Cache::remember('cards_bounds', 3600, function () {
-            $boundsRaw = Card::query()->toBase()->selectRaw('
+            $boundsRaw = Card::originals()->toBase()->selectRaw('
                 MIN(cost) as cost_min, MAX(cost) as cost_max,
                 MIN(health) as health_min, MAX(health) as health_max,
                 MIN(power) as power_min, MAX(power) as power_max
@@ -62,11 +62,12 @@ class CardSearch
      * Applies GET filters onto a Card query, shared between the /carte page and the public API (Fase 11)
      * Applica i filtri GET su una query di Card, condivisa tra la pagina /carte e l'API pubblica (Fase 11)
      */
-    public function apply(Builder $query, array $filters): Builder
+    public function apply(Builder $query, array $filters, bool $includeVariants = false): Builder
     {
         $bounds = $this->getBounds();
 
         return $query
+            ->when(! $includeVariants, fn ($q) => $q->originals())
             ->when($filters['nome'] ?? null, fn ($q, $nome) => $q->where('name', 'like', "%{$nome}%"))
             ->when($filters['espansioni'] ?? null, fn ($q, $exp) => $q->whereIn('expansion', (array) $exp))
             ->when($filters['tipi'] ?? null, fn ($q, $tipi) => $q->whereIn('type', (array) $tipi))
