@@ -22,10 +22,15 @@ use Spatie\Permission\Models\Role;
 // che parta da questo scheletro e sovrascriva solo i campi che cambiano evita di ripeterlo in ogni test.
 
 /** Simula l'API SWU e risponde con un PNG finto a qualunque altro URL (immagini CDN). */
-function fakeSwuHttp(array $routes): void
+function fakeSwuHttp(array $routes, array $variants = []): void
 {
     Storage::fake('public');
-    Http::fake($routes + ['*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png'])]);
+    Http::fake([
+        'admin.starwarsunlimited.com/api/card-list*notNull*' => Http::response([
+            'data' => $variants,
+            'meta' => ['pagination' => ['pageCount' => $variants === [] ? 0 : 1]],
+        ]),
+    ] + $routes + ['*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png'])]);
 }
 function fakeCardEntry(array $overrides = []): array
 {
@@ -227,4 +232,30 @@ it('mostra nel report admin quanti errori ci sono oltre a quelli elencati', func
     $html = (new AdminScanReportEmail(collect([$error]), 7))->render();
 
     expect($html)->toContain('7 errori')->toContain('Gestione errori');
+});
+
+it('assegna le promo dei primi set alle sottoespansioni stile swudb', function () {
+    fakeSwuHttp(
+        ['admin.starwarsunlimited.com/api/card-list*' => Http::response([
+            'data' => [fakeCardEntry()], // originale SOR
+            'meta' => ['pagination' => ['pageCount' => 1]],
+        ])],
+        [
+            fakeVariantEntry('v-pr', 2, originalUid: '2579145458', type: 'Promo Prerelease', variantId: '04'),
+            fakeVariantEntry('v-op', 2, originalUid: '2579145458', type: 'Weekly Play', variantId: '60'),
+            fakeVariantEntry('v-sh', 2, originalUid: '2579145458', type: 'Store Showdown', variantId: '41'),
+        ]
+    );
+    Mail::fake();
+
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
+
+    $pr = Card::where('cid', 'v-pr')->firstOrFail();
+    $op = Card::where('cid', 'v-op')->firstOrFail();
+    $sh = Card::where('cid', 'v-sh')->firstOrFail();
+
+    expect($pr->expansion)->toBe('SORPR')
+        ->and($op->expansion)->toBe('SOROP')
+        ->and($sh->expansion)->toBe('SORSH')
+        ->and(Expansion::where('expansion', 'SOROP')->value('group_main_expansion'))->toBe('SOR');
 });
