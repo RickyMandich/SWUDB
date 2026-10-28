@@ -31,6 +31,9 @@ class Card extends Model
         'expansion',
         'number',
         'cid',
+        'original_card_id',
+        'variant_type',
+        'variant_code',
         'unique_card',
         'name',
         'title',
@@ -127,5 +130,37 @@ class Card extends Model
     public function collectionCards()
     {
         return $this->hasMany(CollectionCard::class, 'card_id');
+    }
+
+    /**
+     * Original card this card is a variant of (null when this card is the original)
+     * Carta originale di cui questa è una variante (null se è lei l'originale)
+     */
+    public function originalCard()
+    {
+        return $this->belongsTo(Card::class, 'original_card_id');
+    }
+
+    /**
+     * Alternative versions (Hyperspace, Showcase, Promos...) of this card
+     * Versioni alternative (Hyperspace, Showcase, Promo...) di questa carta
+     */
+    public function variants()
+    {
+        return $this->hasMany(Card::class, 'original_card_id');
+    }
+
+    /**
+     * Only original cards: the ones that appear in lists, decks and standard views
+     * Solo le carte originali: quelle che compaiono in liste, mazzi e catalogo
+     */
+    public function scopeOriginals(Builder $query): Builder
+    {
+        return $query->whereNull('cards.original_card_id');
+    }
+
+    public function isVariant(): bool
+    {
+        return $this->original_card_id !== null;
     }
 }
