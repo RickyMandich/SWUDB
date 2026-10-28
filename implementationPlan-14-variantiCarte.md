@@ -1,93 +1,90 @@
-# Implementation plan 14 — Varianti delle carte (una sola carta in lista, tutte le versioni a DB)
+# Implementation plan 14 — Varianti delle carte e Set Promozionali (una sola carta in lista, tutte le versioni a DB, divisione stile SWUDB)
 
-> Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). Non ha una "Fase" propria: lavora sul codice già consegnato dai piani 05 (catalogo), 07 (mazzi), 08 (collezione), 10 (API) e 12 (import per pagina).
-> **Va eseguito prima dello Step 13.4 del piano 13** ([`implementationPlan-13-ricostruzioneDeploy.md`](implementationPlan-13-ricostruzioneDeploy.md)): il reset pulito e il reimport completo devono già importare anche le varianti. Il numero 14 è solo l'ordine di creazione; se preferisci l'ordine di esecuzione si può scambiare con il 13 (come già fatto il 2026-10-26).
+> Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). Lavora sul codice già consegnato dai piani 05 (catalogo), 07 (mazzi), 08 (collezione), 10 (API) e 12 (import per pagina).
+> **Va eseguito prima dello Step 13.4 del piano 13** ([`implementationPlan-13-ricostruzioneDeploy.md`](implementationPlan-13-ricostruzioneDeploy.md)): il reset pulito e il reimport completo devono già importare anche le varianti e i set promozionali.
 > Regola del progetto (`.agent/rules/main.md`): questo piano è l'unico output, il codice lo applichi tu a mano.
-> Data: 2026-10-28. Rigenerato lo stesso giorno dopo che `examples/test.json` è stato rifatto **senza** il filtro sulle varianti (prima conteneva solo originali): le ipotesi sull'API sono ora in gran parte confermate da dati veri.
+> Data: 2026-10-28. Aggiornato dopo l'analisi del log reale `storage/logs/laravel-2026-10-28.log` (103 pagine complete scansionate) e la consultazione della struttura dei set di SWUDB ([`swudb.com/sets`](https://swudb.com/sets)).
+
+---
 
 ## Obiettivo
 
-Oggi l'import chiede all'API solo le carte con `filters[variantOf][id][$null]=true`, cioè solo gli originali: tutte le versioni alternative (Hyperspace, Showcase, ...) si perdono. Vogliamo:
+Oggi l'import chiede all'API solo le carte con `filters[variantOf][id][$null]=true`, cioè solo gli originali standard: tutte le versioni alternative (Hyperspace, Showcase, Foil) e le carte promozionali (Weekly Play, Prerelease, Store Showdown, Planetary Qualifier, Convention, Judge) si perdono. Vogliamo:
 
-1. importarle **tutte** (togliere il limite agli originali);
-2. salvare a DB per ogni variante il **riferimento alla carta originale**;
-3. mostrare **una sola carta** per ogni gruppo nelle liste (una sola Ahsoka, non tre), con le altre versioni raggiungibili dalla scheda dell'originale;
-4. gestire gli effetti collaterali (mazzi, import mazzi, collezione, API, mail di scan, Telegram, spazio disco).
+1. importarle **tutte** (10.286 carte complessive, togliendo il filtro agli originali);
+2. risolvere il disordine dei dati di partenza dell'API organizzando le promo in **espansioni dedicate stile SWUDB** (es. `SORPR`, `SOROP`, `SORSH`, `SHDPQ`... e le ufficiali `JTLP`, `SECP`...), collegate al set base tramite `expansions.group_main_expansion`;
+3. salvare a DB per ogni variante il **riferimento alla carta originale** (`original_card_id`, `variant_type`, `variant_code`);
+4. mostrare **una sola carta** per ogni gruppo nelle liste pubbliche (una sola Ahsoka, non quattro), con la galleria di tutte le altre versioni (Hyperspace, Showcase, promo) consultabile nella scheda dell'originale;
+5. gestire gli effetti collaterali (mazzi, import mazzi da SWUDB, collezione, API, spazio disco con interruttore immagini).
 
-## Cosa sappiamo dell'API
+---
 
-Non esiste documentazione ufficiale: tutto viene da `examples/test.json` (richiesta reale di pagina 3, 100 per pagina, `locale=it`, stessi `fields[]` del job, **senza** filtro sulle varianti; il file pesa 3,2 MB e non ho potuto leggerlo tutto, ho letto l'inizio e l'ultima parte con la paginazione) e dal codice del job. Non ho potuto interrogare l'API direttamente.
+## Cosa sappiamo dell'API e confronto con SWUDB
 
-**Struttura (Strapi v4)**: `data[].attributes`, `meta.pagination`, filtri `filters[campo][...][$operatore]`, `fields[n]`, `pagination[...]`. Le relazioni (`expansion`, `type`, `aspects`, `traits`, `rarity`, `variantOf`, `variantTypes`, ...) arrivano già popolate a un livello come `{ "data": {"id", "attributes": {...}} }`; `fields[]` limita solo i campi scalari della radice, **non** le relazioni.
+### Dati dell'API Strapi (confermati dal log del 28/10/2026 e test reali)
+- **Dimensioni**: 10.286 carte totali (103 pagine da 100). Gli originali standard sono 3.135 (32 pagine); le restanti **7.151 carte** sono varianti e promozioni (circa 2,3 per ogni carta base).
+- **Perché nel log del 28/10 ci sono stati 1.485 errori di duplicate entry:**
+  Nei primi tre set (`SOR`, `SHD`, `TWI`), la fonte dati ufficiale ha lasciato molte carte promozionali con il codice dell'espansione base (`expansion = SOR`, `SHD`, `TWI`), ma con un `cardNumber` proprio che **riparte da 1, 2, 3...** per ogni circuito torneistico (*Weekly Play*, *Prerelease*, *Store Showdown*, *Planetary Qualifier*). Ad esempio, nel solo set `SHD`, il numero `2` era condiviso da 12 carte diverse (la leader Qi'ra originale, il Take Captive Weekly Play, il Dottor Evazan Top 16, l'Offerta Irrifiutabile Top 8, il Mandaloriano Judge, ecc.).
+- **Dai set 4 in poi (`JTL`, `LOF`, `SEC`, `LAW`, `HMW`, `ASH`):**
+  La stessa Asmodee/FFG ha corretto la gestione introducendo codici di espansione dedicati con suffisso `P` (`JTLP`, `LOFP`, `SECP`...).
+- **Casi limite riscontrati nell'API:**
+  - *Espansione nulla:* la promo di Ammiraglio Motti (`3466226801`) arriva con `"expansion": { "data": null }` e `serialCode: 0102007`. Va recuperata l'espansione dall'originale o dal seriale.
+  - *`variantTypes` vuoto:* alcune varianti promo Foil (come Mina Bonteri `9380836896`) hanno `variantTypes: { "data": [] }` e solo `hasFoil: true`.
+  - *Refusi di numerazione in Strapi:* in `SEC`, due carte diverse hanno entrambe ricevuto il numero `571` per errore nei dati di Strapi (`Willrow Hood` seriale 0571 e `Ornitottero Bardottano` seriale 0572).
 
-**Confermato dai dati veri** (l'ultima carta del file è una variante):
-- **Dimensioni**: `meta.pagination.total` senza filtro = **10286** (103 pagine da 100). Gli originali sono 3135 (ultimo import completo, 32 pagine): le varianti sono quindi circa **7151**, più del doppio degli originali (≈ 2,3 varianti per originale), in circa 72 pagine.
-- Una variante è una **voce separata**, con i propri `cardUid`, `cardNumber`, `id`. Esempio: la Hyperspace dei "Simpatizzanti del Settore" ha `cardNumber` **501**, `serialCode` `0102501`, `cardUid` `7440807459`, `variantTypes` = `Hyperspace` con `variantId` `"02"` e `foil` `false`; il suo originale ha `cardNumber` **243**, `serialCode` `0101243`, `cardUid` `1081012039`.
-- `variantOf.data` è popolato anche con `fields[]` attivi e contiene `attributes.cardUid` dell'originale (insieme a tutti i suoi scalari: titolo, numero, costo, ecc.) e l'`id` Strapi. Per gli originali è `{"data": null}`.
-- Quindi, per questo esempio: il `cardUid` della variante è **diverso** da quello dell'originale (`cid` unico e `updateOrCreate` per `cid` reggono) e la coppia espansione + numero è **diversa** (la PK `cards.id` = `{expansion}{number}` e `UNIQUE(expansion, number)` reggono). Il `serialCode` è `set + variantId + numero`, dove il numero della variante è un numero a sé (501), non quello dell'originale.
-- **Eccezione nota: Luke e Vader** (log del test del 2026-10-27, pagina 3/103 senza filtro, e verifica a mano dell'utente): 3 carte su 100 hanno fallito con `Duplicate entry 'SOR1'` / `'SOR2' for key 'PRIMARY'` (Darth Vader `7759451019` n. 1, Darth Vader `8730520110` n. 2, Luke Skywalker `3445221668` n. 2). Sono varianti di Luke e Vader con una **numerazione propria, limitata solo a loro due**, ma con espansione SOR: i loro numeri (1, 2) coincidono con quelli di **altre carte** SOR già a DB (non con quello del proprio originale), e due di loro coincidono anche tra loro. Tutte le altre varianti viste hanno numeri propri (253+, 501+). Quindi `id` = `{expansion}{number}` e `UNIQUE(expansion, number)` non reggono per queste poche carte: si gestiscono con un id suffissato (Step 1.3), senza ridisegnare lo schema. Anche il path delle immagini `cards/{expansion}/{number}-{side}` collide e **sovrascriverebbe l'immagine dell'originale**: va cambiato (Step 1.3). Che non ci siano altri tipi di variante con la stessa abitudine lo dice lo Step 0. Nel test non sono state create: l'import degli originali, fatto con il filtro, ha sempre dato 0 problemi, quindi hanno tutte `variantOf` valorizzato.
-- Le varianti hanno la localizzazione italiana (il filtro `locale=it` restituisce la variante con il suo originale `it` in `variantOf`).
-- `cardUid` è uguale tra le localizzazioni (it/en/de/fr...) della stessa carta; le localizzazioni sono elencate nelle voci annidate e **non** vanno importate.
-- `reprintOf` esiste ed è `null` negli esempi visti.
+### Come SWUDB organizza i set ([`swudb.com/sets`](https://swudb.com/sets))
+Interrogando l'endpoint `/api/card/getAllSets` di SWUDB, emerge la struttura canonica adottata dalla community:
+1. **Core Sets:** `SOR`, `SHD`, `TWI`, `JTL`, `LOF`, `SEC`, `LAW`, `HMW`, `ASH` (contengono le stampe Normal, Hyperspace e Showcase di bustina).
+2. **Child Sets Tokens:** `T{SET}` (`TSOR`, `TSHD`, `TTWI`, `TJTL`...).
+3. **Child Sets Promo per i primi 3 set:**
+   - **Prerelease Promos:** `SORPR`, `SHDPR`, `TWIPR` (le carte promo con timbro prerelease, es. Luke e Vader).
+   - **Organized Play / Weekly:** `SOROP`, `SHDOP`, `TWIOP` (carte promo settimanali dei negozi e gli Hyperspace del 2-Player Starter Set di SOR).
+   - **Store Showdown:** `SORSH`, `SHDSH`, `TWISH` (carte premio dei tornei Store Showdown).
+   - **Planetary Qualifier:** `SHDPQ`, `TWIPQ` (carte premio dei tornei Planetary Qualifier).
+   - **Eventi speciali:** `GC23` (*GenCon 2023*), `EE24` (*Essen Spiel 2024*).
+4. **Promo Sets Ufficiali (Set 4+):** `JTLP`, `LOFP`, `SECP`, `LAWP`, `HMWP`, `ASHP`.
+5. **Set Promozionali Annuali/Indipendenti:** `C24`, `C25`, `C26` (Convention), `J24`, `J25` (Judge), `P25`, `P26` (Promo annuali), `CST` (Costco), `G25` (Gift Box), `IBH` (Intro Battle Hoth).
 
-**Ancora non verificato** (solo un campione di una variante): se **tutti** i tipi di variante (Showcase, Prestige, Serialized, foil, promo) rispettano le stesse regole (numero e `cardUid` propri, `variantOf` popolato), e se tutti gli originali delle varianti esistono tra gli originali italiani. Lo controlla lo Step 0, ora ridotto a una verifica sola.
+Separando le carte secondo questo standard SWUDB, **tutte le collisioni di numerazione spariscono**, ogni carta ha una collocazione precisa e i mazzi esportati da SWUDB vengono riconosciuti al 100%.
+
+---
 
 ## Scelte di progetto
 
 | Scelta | Decisione | Perché |
 |---|---|---|
-| Come si chiama il riferimento | colonna `cards.original_card_id`, relazioni `Card::originalCard()` / `Card::variants()`, scope `Card::originals()` | **Non** "base": `Base` è già un tipo di carta del gioco (`cards.type`) e `Deck::baseCard()` è la base del mazzo. "Originale" evita ogni ambiguità. |
-| Dove punta | `cards.id` (stringa `{expansion}{number}`), FK su sé stessa, `cascadeOnDelete` | stesso riferimento che usano già tutte le pivot; una variante senza originale non avrebbe senso. |
-| Cosa si salva oltre al riferimento | `variant_type` (nome della variante come arriva dall'API, in italiano, es. `Hyperspace`) e `variant_code` (`variantId`, es. `"02"`; `"01"` = standard) | il nome serve alla UI, il codice è indipendente dalla lingua e serve per ordinare e, in futuro, per collegare le varianti alla colonna `collection_cards.variant`. |
-| Importazione | **due fasi** nello stesso scan: prima gli originali, poi le varianti | così, quando arriva una variante, il suo originale esiste già e il riferimento si risolve con una sola query: nessuna seconda passata e nessun problema di ordine tra pagine (nella lista senza filtro originali e varianti sono mescolati). |
-| Liste | si filtra con `whereNull('original_card_id')` (scope `originals()`) | nessun global scope: le query dell'import e della pagina di dettaglio devono poter vedere anche le varianti, e uno scope esplicito si vede nel codice. |
-| Mazzi | un mazzo contiene **sempre l'originale** | il piano 08 dice già che le varianti di stampa vivono solo in `collection_cards`; così i validator (limite copie per carta) non vanno toccati. L'import di un mazzo con l'id di una variante la converte nell'originale. |
-| Collezione | invariata: resta `collection_cards.variant` (`normal`, `foil`, `hyper`, ...) sulla carta originale | collegare quelle varianti alle carte-variante importate è un lavoro a parte (vedi "Fuori da questo piano"). |
+| Come si chiama il riferimento | colonna `cards.original_card_id`, relazioni `Card::originalCard()` / `Card::variants()`, scope `Card::originals()` | Evita "base" che colliderebbe con il tipo di carta `Base` e `Deck::baseCard()`. |
+| Dove punta | `cards.id` della carta originale | Stesso riferimento usato dalle pivot; se l'originale venisse cancellato, la variante si elimina in cascata. |
+| Risoluzione espansione promo | Metodo `resolveExpansionCode()` nel job di import | Intercetta le promo dei set 1-3 e le assegna alle sotto-espansioni figlie (`SORPR`, `SOROP`, `SORSH`, `SHDPQ`...) con `group_main_expansion` valorizzato. |
+| Chiave primaria `cards.id` | `{expansion}{number}` per gli originali; `{expansion}{number}-{cid}` per le varianti | Garantisce univocità assoluta anche in caso di refusi dell'API (es. SEC 571). La colonna `id` e le FK collegate vengono portate a `VARCHAR(36)`. |
+| Indice `(expansion, number)` | Indice normale (non unique) | Mantiene le performance delle query senza fallire in caso di errori di battitura nei numeri da parte di Strapi. |
+| Importazione | **Due fasi** nello stesso scan: prima gli originali, poi le varianti | Quando arriva una variante, l'originale esiste già a DB e il collegamento si risolve con una semplice query `cid`. |
+| Liste e Ricerca | Filtro esplicito `originals()` (`whereNull('original_card_id')`) | Nessun global scope: il catalogo mostra solo gli originali, mentre le schede dettaglio possono caricare le varianti. |
+| Mazzi | Un mazzo contiene **sempre l'originale** | Il limite delle 3 copie opera sulla carta originale. L'import di un mazzo con codici SWUDB (es. `SOROP_1`, `SORPR_2`) li riconduce automaticamente all'originale. |
+| Collezione | Invariata: quantità per finitura (`normal`, `foil`, `hyper`...) sulla carta originale | L'eventuale associazione visiva 1:1 tra la collezione e le singole carte-variante importate è rimandata a un piano successivo. |
+| Immagini | Interruttore `SWU_VARIANT_IMAGES` in configurazione | Circa 7.151 varianti pesano ~1,5 GB: permette di decidere se scaricare subito le immagini o solo i dati. |
 
-## Step 0 — Verifica residua sui tipi di variante (consigliata, 5 minuti)
+---
 
-Le ipotesi principali sono già confermate (vedi sopra); questo controllo copre i tipi di variante che non compaiono nel campione. Da PowerShell sul tuo PC (parentesi quadre e `$` letterali tra apici singoli). Scarica tutte le pagine delle varianti (circa 72 richieste) e degli originali (32):
+## Step 0 — Verifica preliminare dell'API (facoltativa)
+
+Se vuoi verificare rapidamente la risposta dell'API per i primi set prima di iniziare, lancia da PowerShell:
 ```powershell
-$base = 'https://admin.starwarsunlimited.com/api/card-list?locale=it&fields[0]=cardUid&fields[1]=cardNumber&fields[2]=title&pagination[pageSize]=100'
-function Get-All($filter) {
-  $all = @(); $p = 1
-  do { $r = Invoke-RestMethod -Uri ("$base&$filter&pagination[page]=$p"); $all += $r.data; $p++ } while ($p -le $r.meta.pagination.pageCount)
-  $all
-}
-$orig = Get-All 'filters[variantOf][id][$null]=true'
-$vari = Get-All 'filters[variantOf][id][$notNull]=true'
-"originali: $($orig.Count)  (atteso 3135)   varianti: $($vari.Count)  (atteso circa 7151)"
-
-"senza variantOf.cardUid: " + @($vari | ? { -not $_.attributes.variantOf.data.attributes.cardUid }).Count                       # atteso 0
-"cardUid uguale all'originale: " + @($vari | ? { $_.attributes.cardUid -eq $_.attributes.variantOf.data.attributes.cardUid }).Count   # atteso 0
-function Key($e) { "$($e.attributes.expansion.data.attributes.code)-$($e.attributes.cardNumber)" }
-$origKeys = @{}; foreach ($o in $orig) { $origKeys[(Key $o)] = 1 }
-"numero uguale a quello di un originale: " + @($vari | ? { $origKeys.ContainsKey((Key $_)) }).Count                           # atteso 0
-$varKeys = @($vari | % { Key $_ })
-"coppie espansione-numero duplicate tra le varianti: " + ($varKeys.Count - @($varKeys | Select -Unique).Count)                 # atteso 0
-$varUids = @($vari | % { $_.attributes.cardUid })
-"cardUid duplicati tra le varianti: " + ($varUids.Count - @($varUids | Select -Unique).Count)                                  # atteso 0
-$origUid = @{}; foreach ($o in $orig) { $origUid[[string]$o.attributes.cardUid] = 1 }
-"varianti il cui originale non è tra gli originali it: " + @($vari | ? { -not $origUid.ContainsKey([string]$_.attributes.variantOf.data.attributes.cardUid) }).Count   # atteso 0
-
-$vari | % { $_.attributes.variantTypes.data.attributes.name } | Group-Object | Sort Count -Desc | ft Name, Count   # tipi di variante
-"varianti con più di un variantTypes: " + @($vari | ? { $_.attributes.variantTypes.data.Count -gt 1 }).Count
-"codici espansione solo nelle varianti: " + ((@($vari | % { $_.attributes.expansion.data.attributes.code } | Sort -Unique) | ? { $c = $_; -not ($orig | ? { $_.attributes.expansion.data.attributes.code -eq $c }) }) -join ', ')
+$r = Invoke-RestMethod -Uri 'https://admin.starwarsunlimited.com/api/card-list?locale=it&filters[cardNumber][$eq]=2&pagination[pageSize]=20'
+$r.data | Select-Object -Property @{N='CID';E={$_.attributes.cardUid}}, @{N='Title';E={$_.attributes.title}}, @{N='Exp';E={$_.attributes.expansion.data.attributes.code}}, @{N='Serial';E={$_.attributes.serialCode}}, @{N='vType';E={$_.attributes.variantTypes.data[0].attributes.name}} | Format-Table -AutoSize
 ```
-Cosa decidere:
-| Risultato | Cosa fare |
-|---|---|
-| tutti gli "atteso 0" a zero | prosegui con il piano così com'è. |
-| `senza variantOf.cardUid` o `cardUid uguale all'originale` > 0 | **fermati** e ripassami il risultato: per quei tipi di variante serve un'altra chiave di collegamento (l'`id` Strapi in `variantOf.data.id`) o `cid` non può essere unico. |
-| `numero uguale a quello di un originale` o coppie duplicate > 0 | **atteso per Luke e Vader di SOR** (nello script, per questi due controlli "atteso 0" va letto "pochi"): lo Step 1.3 li gestisce con l'id suffissato. Controlla che siano pochi e solo quelli; se i numeri sovrapposti sono decine o riguardano altri tipi di variante, ripassami l'elenco prima di procedere. |
-| `varianti il cui originale non è tra gli originali it` > 0 | non blocca: quelle varianti finiranno in `SystemError` ("Carta originale ... non trovata") e nel report agli admin; decidi se ignorarle. |
-| `varianti con più di un variantTypes` > 0 | oggi si salva il primo (`data[0]`); decidi se serve altro. |
-| tipi con nome "Foil" come carte a sé | si importano come tutte le altre (righe nascoste); la collezione gestisce già il foil come attributo. Decidi se escluderle (nel piano non c'è un filtro per tipo). |
-| codici espansione solo nelle varianti | il job crea quelle espansioni (con `rotation` = ultima); controllale da `/admin/espansioni`. |
+Vedrai le diverse carte con numero 2 e i rispettivi seriali/tipi promozionali.
+
+---
 
 ## Step 1 — Schema e modello
 
-#### 1.1 — Migration `database/migrations/2026_10_28_090000_add_original_card_id_to_cards_table.php`
+#### 1.1 — Migration `database/migrations/2026_10_28_090000_add_original_card_id_and_expand_card_id.php`
+Crea una migration che:
+1. Allarga `cards.id` a `VARCHAR(36)` (e aggiorna le tabelle pivot collegate).
+2. Aggiunge le colonne `original_card_id`, `variant_type`, `variant_code`.
+3. Sostituisce l'indice unique `['expansion', 'number']` con un indice normale.
+
 ```php
 <?php
 
@@ -98,21 +95,56 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Adds the link from a variant card to its original card
-     * Aggiunge il collegamento dalla carta variante alla sua carta originale
+     * Adds variant fields and widens card IDs to accommodate variant identifiers safely.
+     * Aggiunge i campi per le varianti e allarga gli ID per gestire gli identificatori delle varianti.
      */
     public function up(): void
     {
+        // 1. Allargamento FK nelle tabelle collegate
+        Schema::table('card_aspect', function (Blueprint $table) {
+            $table->dropForeign(['card_id']);
+            $table->string('card_id', 36)->change();
+        });
+
+        Schema::table('card_trait', function (Blueprint $table) {
+            $table->dropForeign(['card_id']);
+            $table->string('card_id', 36)->change();
+        });
+
+        Schema::table('deck_cards', function (Blueprint $table) {
+            $table->dropForeign(['card_id']);
+            $table->string('card_id', 36)->change();
+        });
+
+        Schema::table('collection_cards', function (Blueprint $table) {
+            $table->dropForeign(['card_id']);
+            $table->string('card_id', 36)->change();
+        });
+
+        // 2. Modifiche sulla tabella cards
         Schema::table('cards', function (Blueprint $table) {
-            $table->string('original_card_id', 20)->nullable()->after('cid')
-                ->comment('cards.id della carta originale di cui questa è una variante (Hyperspace, Showcase...). NULL = è lei l\'originale: solo gli originali compaiono nelle liste e nei mazzi.');
+            $table->string('id', 36)->change();
+
+            // Sostituzione indice unique con indice normale
+            $table->index(['expansion', 'number'], 'cards_expansion_number_index');
+            $table->dropUnique(['expansion', 'number']);
+
+            // Nuovi campi variante
+            $table->string('original_card_id', 36)->nullable()->after('cid')
+                ->comment('cards.id della carta originale di cui questa è una variante. NULL = è lei l\'originale.');
             $table->string('variant_type', 50)->nullable()->after('original_card_id')
-                ->comment('Nome della variante come arriva dall\'API (variantTypes), es. Hyperspace. NULL per gli originali.');
+                ->comment('Nome della variante (Hyperspace, Showcase, Weekly Play...). NULL per gli originali.');
             $table->string('variant_code', 10)->nullable()->after('variant_type')
-                ->comment('variantId dell\'API (es. 02 = Hyperspace, 01 = standard): indipendente dalla lingua. NULL per gli originali.');
+                ->comment('Codice variante dell\'API (02 = Hyperspace, 03 = Showcase, 04 = Prerelease...). NULL per gli originali.');
 
             $table->foreign('original_card_id')->references('id')->on('cards')->cascadeOnDelete();
         });
+
+        // 3. Ripristino vincoli FK
+        Schema::table('card_aspect', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
+        Schema::table('card_trait', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
+        Schema::table('deck_cards', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
+        Schema::table('collection_cards', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
     }
 
     public function down(): void
@@ -120,19 +152,33 @@ return new class extends Migration
         Schema::table('cards', function (Blueprint $table) {
             $table->dropForeign(['original_card_id']);
             $table->dropColumn(['original_card_id', 'variant_type', 'variant_code']);
+            $table->unique(['expansion', 'number']);
+            $table->dropIndex('cards_expansion_number_index');
         });
     }
 };
 ```
-Note:
-- La colonna ha lo stesso tipo di `cards.id` (`string(20)`), come `collection_cards.card_id`: MariaDB crea da solo l'indice della FK.
-- Sui test (SQLite) Laravel non aggiunge la FK con una `ALTER TABLE`: la colonna c'è, il vincolo no. Non serve fare nulla, ma tienilo a mente se un test dovesse contare sul vincolo.
-- È una migration nuova e non una modifica di `create_cards_table`: il sito di test ha già dati (le carte importate), che restano intatti.
 
-#### 1.2 — `app/Models/Card.php`
-Aggiungi in cima `use Illuminate\Database\Eloquent\Builder;` e:
+#### 1.2 — Modello `app/Models/Card.php`
+Aggiorna `$fillable`, il boot dell'ID e aggiungi le relazioni e lo scope:
+
 ```diff
-     protected $fillable = [
+     protected static function booted(): void
+     {
+         static::creating(function (Card $card) {
+-            $card->id = "{$card->expansion}{$card->number}";
++            // Se è una variante, il suffisso con cid garantisce unicità assoluta anche per refusi API
++            $id = "{$card->expansion}{$card->number}";
++            if ($card->original_card_id !== null) {
++                $id .= "-{$card->cid}";
++            }
++            $card->id = $id;
+         });
+     }
+```
+
+Aggiungi nei campi `$fillable`:
+```diff
          'expansion',
          'number',
          'cid',
@@ -141,7 +187,8 @@ Aggiungi in cima `use Illuminate\Database\Eloquent\Builder;` e:
 +        'variant_code',
          'unique_card',
 ```
-e, dopo `expansionModel()`:
+
+Aggiungi i metodi di relazione e lo scope:
 ```php
     /**
      * Original card this card is a variant of (null when this card is the original)
@@ -153,8 +200,8 @@ e, dopo `expansionModel()`:
     }
 
     /**
-     * Alternative versions (Hyperspace, Showcase...) of this card
-     * Versioni alternative (Hyperspace, Showcase...) di questa carta
+     * Alternative versions (Hyperspace, Showcase, Promos...) of this card
+     * Versioni alternative (Hyperspace, Showcase, Promo...) di questa carta
      */
     public function variants()
     {
@@ -162,8 +209,8 @@ e, dopo `expansionModel()`:
     }
 
     /**
-     * Only original cards: the ones that appear in lists, decks and the collection
-     * Solo le carte originali: quelle che compaiono in liste, mazzi e collezione
+     * Only original cards: the ones that appear in lists, decks and standard views
+     * Solo le carte originali: quelle che compaiono in liste, mazzi e catalogo
      */
     public function scopeOriginals(Builder $query): Builder
     {
@@ -175,86 +222,45 @@ e, dopo `expansionModel()`:
         return $this->original_card_id !== null;
     }
 ```
-`Card` usa `CardBuilder` (sottoclasse di `Eloquent\Builder`): lo scope funziona uguale con `Card::originals()` e con `Card::query()->originals()`.
 
-#### 1.3 — Numerazioni sovrapposte (Luke e Vader di SOR): id suffissato e immagini separate
-
-Tre modifiche, tutte piccole, per le varianti il cui `{expansion}{number}` è già di un'altra carta.
-
-**a) Migration `database/migrations/2026_10_28_090100_make_cards_expansion_number_non_unique.php`**: la coppia espansione + numero non può più essere unica. Il nuovo indice si crea **prima** di togliere l'unico, perché la FK su `expansion` ha bisogno di un indice che parta da quella colonna (altrimenti MariaDB rifiuta il `DROP`).
+#### 1.3 — Modello `app/Models/Expansion.php`
+Aggiungi la relazione verso l'espansione principale e le sotto-espansioni:
 ```php
-<?php
-
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-return new class extends Migration
-{
-    /**
-     * Some variants (Luke and Vader of SOR) use a numbering that overlaps other cards of the same expansion
-     * Alcune varianti (Luke e Vader di SOR) usano una numerazione che si sovrappone ad altre carte della stessa espansione
-     */
-    public function up(): void
+    public function mainExpansion()
     {
-        Schema::table('cards', fn (Blueprint $table) => $table->index(['expansion', 'number']));
-        Schema::table('cards', fn (Blueprint $table) => $table->dropUnique(['expansion', 'number']));
+        return $this->belongsTo(Expansion::class, 'group_main_expansion', 'expansion');
     }
 
-    public function down(): void
+    public function subExpansions()
     {
-        // fallisce se a DB ci sono già due carte con la stessa espansione e lo stesso numero (le varianti sovrapposte)
-        Schema::table('cards', fn (Blueprint $table) => $table->unique(['expansion', 'number']));
-        Schema::table('cards', fn (Blueprint $table) => $table->dropIndex(['expansion', 'number']));
+        return $this->hasMany(Expansion::class, 'group_main_expansion', 'expansion');
     }
-};
 ```
-L'unicità vera resta quella della chiave primaria `id` e di `cid`. Per gli **originali** il numero resta unico di fatto (l'id non viene mai suffissato, vedi b).
 
-**b) `app/Models/Card.php`, hook `creating`**: l'id resta `{expansion}{number}`; solo se la carta è una variante e quell'id è già di un'altra carta, si aggiunge `-{cid}`. Gli originali sono sempre importati per primi (fase 1), quindi tengono sempre l'id semplice.
+#### 1.4 — Servizio immagini `app/Services/CardImageDownloader.php`
+Aggiorna il percorso di salvataggio immagini per usare `id` pulito e deterministico:
 ```diff
-         static::creating(function (Card $card) {
--            $card->id = "{$card->expansion}{$card->number}";
-+            $id = "{$card->expansion}{$card->number}";
-+
-+            // numerazioni sovrapposte (es. Luke e Vader di SOR): la variante prende un id suffissato, l'originale non cambia.
-+            // Per un originale il conflitto resta un errore, come oggi (sarebbe un dato sbagliato dell'API).
-+            if ($card->original_card_id !== null && static::whereKey($id)->exists()) {
-+                $id .= "-{$card->cid}";
-+            }
-+
-+            $card->id = $id;
-         });
-```
-Lunghezza: `cards.id` è `string(20)`; il caso peggiore (espansione di 5 lettere, numero a 4 cifre, `cid` di 10 cifre) fa esattamente 20. Se un giorno servisse di più, si allarga la colonna insieme alle FK che la usano.
-
-**c) `app/Services/CardImageDownloader.php`**: il path usa il numero, quindi due carte con lo stesso numero scriverebbero sullo stesso file e la variante **sovrascriverebbe l'immagine dell'originale**. Si usa invece la parte dell'`id` dopo l'espansione: per gli originali è il numero (stessi path di oggi, le immagini già scaricate restano valide), per le varianti suffissate è `2-3445221668`.
-```diff
--        // 3. $path = "cards/{$card->expansion}/{$card->number}-{$side}.{$ext}"
 -        $path = "cards/{$card->expansion}/{$card->number}-{$side}.{$ext}";
-+        // 3. path = cards/{espansione}/{parte dell'id dopo l'espansione}-{lato}.{ext}: due carte con lo stesso numero non si sovrascrivono
-+        $path = 'cards/'.$card->expansion.'/'.Str::after($card->id, $card->expansion).'-'.$side.'.'.$ext;
++        // Le immagini usano l'espansione assegnata (es. cards/SOROP/1-front.png o cards/SOR/260-front.png)
++        // Se l'id ha un suffisso cid (variante sovrapposta), usa la parte dell'id per non sovrascrivere file
++        $subPath = Str::after($card->id, $card->expansion);
++        $path = "cards/{$card->expansion}/{$subPath}-{$side}.{$ext}";
 ```
-(Aggiorna anche il docblock del metodo e il commento del campo `front_art_path`/`back_art_path` nel README. Se un test del downloader costruisce un `Card` senza `id`, usa `makeCard()` che lo salva e quindi lo valorizza.)
 
-**Dove si cercano le carte per espansione + numero**: ora la stessa coppia può esistere due volte, quindi vince sempre l'originale (Step 3.1 e 3.3 per le schede e l'API; `DeckImporter` e gli altri punti si controllano con lo Step 2.8). La ricerca per `id` (`Card::find('SOR2')`) trova sempre l'originale.
+---
 
-**Cosa ti aspetti dopo lo scan**: le tre carte del log (`7759451019`, `8730520110`, `3445221668`) esistono come varianti con id tipo `SOR1-7759451019` e `SOR2-8730520110`, legate al loro originale; `SOR1` e `SOR2` sono invariate, con le loro immagini.
+## Step 2 — Liste, Mazzi e Collezione (solo originali)
 
-## Step 2 — Le liste mostrano solo gli originali
-
-Con le varianti a DB (circa 7000 righe in più, più del doppio degli originali), ogni punto che oggi legge `cards` per mostrare o scegliere carte deve decidere se le vuole. Quelli che ho letto sono sotto; quelli che non ho letto (viste Blade, `Deck::cards()` nelle viste, validator) vanno cercati con lo Step 2.8.
+Ogni query rivolta all'utente finale deve lavorare solo sulle carte originali.
 
 #### 2.1 — `app/Services/CardSearch.php`
-`apply()` copre in un colpo solo `/carte`, la collezione, la ricerca dell'editor mazzi e la ricerca dell'API:
+In `apply()`, `filterOptions()` e `getBounds()`:
 ```diff
 -        return $query
--            ->when($filters['nome'] ?? null, fn ($q, $nome) => $q->where('name', 'like', "%{$nome}%"))
 +        return $query
 +            ->originals()
-+            ->when($filters['nome'] ?? null, fn ($q, $nome) => $q->where('name', 'like', "%{$nome}%"))
+             ->when($filters['nome'] ?? null, fn ($q, $nome) => $q->where('name', 'like', "%{$nome}%"))
 ```
-`filterOptions()` e `getBounds()` leggono le carte per i tipi e per i limiti degli slider: stesso insieme di `apply()`.
 ```diff
 -            'types' => Card::query()->distinct()->orderBy('type')->pluck('type'),
 +            'types' => Card::originals()->distinct()->orderBy('type')->pluck('type'),
@@ -263,123 +269,117 @@ Con le varianti a DB (circa 7000 righe in più, più del doppio degli originali)
 -            $boundsRaw = Card::query()->toBase()->selectRaw('
 +            $boundsRaw = Card::originals()->toBase()->selectRaw('
 ```
-(`getBounds()` è in cache per un'ora con chiave `cards_bounds`: dopo il deploy `php artisan cache:forget cards_bounds`.)
+*(Ricorda `php artisan cache:forget cards_bounds` dopo il deploy).*
 
 #### 2.2 — `app/Http/Controllers/CardController.php`, `newReleases()`
-Quattro query sulle carte, tutte sugli originali (altrimenti ogni uscita mostrerebbe la carta e le sue varianti, e il conteggio nell'avviso sarebbe gonfiato):
 ```diff
 -        $cards = Card::where('release_date', '>=', $since)
 +        $cards = Card::originals()->where('release_date', '>=', $since)
 ```
-```diff
--            $maxDate = Card::max('release_date');
-+            $maxDate = Card::originals()->max('release_date');
-```
-```diff
--        $dates = Card::where('release_date', '>=', $since)
-+        $dates = Card::originals()->where('release_date', '>=', $since)
-```
-```diff
--        $firstRelease = Carbon::parse(Card::min('release_date'))->format('d/m/Y');
--        $lastRelease = Carbon::parse(Card::max('release_date'))->format('d/m/Y');
-+        $firstRelease = Carbon::parse(Card::originals()->min('release_date'))->format('d/m/Y');
-+        $lastRelease = Carbon::parse(Card::originals()->max('release_date'))->format('d/m/Y');
-```
+E lo stesso per `$maxDate`, `$firstRelease`, `$lastRelease` con `Card::originals()`.
 
 #### 2.3 — `app/Http/Controllers/TelegramController.php`, `handleSearch()`
 ```diff
 -        $card = Card::where('name', 'like', "%{$query}%")->first();
 +        $card = Card::originals()->where('name', 'like', "%{$query}%")->first();
 ```
-(Senza, `/search ahsoka` potrebbe rispondere con la foto di una variante.)
 
-#### 2.4 — `app/Http/Controllers/DeckController.php`: un mazzo contiene solo originali
-Due regole di validazione oggi accettano qualunque `cards.id`. Con le varianti a DB un id di variante passerebbe la validazione e finirebbe in `deck_cards`, dove i validator contano le copie per `card_id` (una Ahsoka normale + una Hyperspace sarebbero "due carte diverse" e aggirerebbero il limite di 3 copie).
-`syncCards()`:
+#### 2.4 — Validazione Mazzi (`DeckController.php`)
+Un mazzo accetta solo id di carte originali:
+In `syncCards()` e `addCard()`:
 ```diff
 -            'cards.*.card_id' => ['required_with:cards', 'exists:cards,id'],
 +            'cards.*.card_id' => ['required_with:cards', Rule::exists('cards', 'id')->whereNull('original_card_id')],
 ```
-`addCard()`:
 ```diff
 -            'card_id' => ['required', 'exists:cards,id'],
 +            'card_id' => ['required', Rule::exists('cards', 'id')->whereNull('original_card_id')],
 ```
-(`Rule` è già importato nel controller.) `searchCards()`, `gap()`, `copy()`, `createVersion()` e `removeCard()` non cambiano: la ricerca passa da `CardSearch::apply()` e le altre lavorano su carte già nel mazzo.
 
-#### 2.5 — `app/Http/Controllers/CollectionController.php`, `update()`
-La collezione tiene le quantità per variante di stampa (`normal`, `foil`, `hyper`, ...) **sulla carta originale**:
+#### 2.5 — Validazione Collezione (`CollectionController.php`)
+In `update()`:
 ```diff
 -            'card_id' => ['required', 'exists:cards,id'],
 +            'card_id' => ['required', Rule::exists('cards', 'id')->whereNull('original_card_id')],
 ```
-con `use Illuminate\Validation\Rule;` in testa. `index()` passa già da `CardSearch::apply()`.
 
-#### 2.6 — `app/Services/DeckImporter.php`
-Chi importa un mazzo da swudb.com o da un JSON ufficiale può avere id di varianti (per esempio `SOR_501`, l'Hyperspace di prima): oggi finirebbero in `notFound`, con le varianti a DB verrebbero trovate e bisogna riportarle all'originale. In `persist()`:
-```diff
-             } elseif ($row['count'] > 0) {
--                $quantities[$row['card']->id] = ($quantities[$row['card']->id] ?? 0) + $row['count'];
-+                // un mazzo contiene sempre la carta originale: l'id di una variante vale quello della sua originale
-+                $cardId = $row['card']->original_card_id ?? $row['card']->id;
-+                $quantities[$cardId] = ($quantities[$cardId] ?? 0) + $row['count'];
-             }
+#### 2.6 — `app/Services/DeckImporter.php`: supporto codici SWUDB e conversione varianti
+Chi esporta un mazzo da SWUDB potrebbe avere codici di espansioni promozionali (es. `SOROP_1`, `SORPR_2`) o codici standard (`SOR_134`):
+1. In `findById()`: cerca prima l'originale, e se non c'è cerca tra tutte le carte.
+2. In `findByText()`: prioritizza gli originali.
+3. In `persist()`: se la carta trovata è una variante promozionale, la riconduce al suo `original_card_id`.
+
+```php
+    private function findById(string $id): ?Card
+    {
+        if (! preg_match('/^([A-Za-z0-9]+)_(\d+)$/', $id, $m)) {
+            return null;
+        }
+
+        $exp = strtoupper($m[1]);
+        $num = (int) $m[2];
+
+        // Prima cerca tra gli originali; se è un codice promo (es. SOROP_1 o JTLP_1), trova la variante
+        return Card::originals()->where('expansion', $exp)->where('number', $num)->first()
+            ?? Card::where('expansion', $exp)->where('number', $num)->first();
+    }
 ```
-(Somma le copie se nel file compaiono sia l'originale sia una sua variante.) Nella ricerca per nome di `findByText()`:
+
+In `findByText()`:
 ```diff
+         if (preg_match('/^([A-Za-z0-9]+)-(\d+)$/', $name, $m)) {
+-            return Card::where('expansion', strtoupper($m[1]))->where('number', (int) $m[2])->first();
++            $exp = strtoupper($m[1]);
++            $num = (int) $m[2];
++            return Card::originals()->where('expansion', $exp)->where('number', $num)->first()
++                ?? Card::where('expansion', $exp)->where('number', $num)->first();
+         }
+
 -        return Card::query()
 +        return Card::originals()
-             ->where('name', $name)
+              ->where('name', $name)
 ```
-`DeckExporter` non cambia: i mazzi hanno solo originali, quindi esporta solo id di originali.
 
-#### 2.7 — Cosa non cambia (verificato sul codice letto)
-I validator in `app/Services/DeckValidation/` (lavorano su carte già nel mazzo, che sono originali), `DeckGapCalculator`, le statistiche del mazzo, `CardBuilder` (ordinamento di default).
-
-#### 2.8 — Controllo dei punti non letti
-Da `cmd.exe` nella radice del progetto:
+In `persist()`:
+```diff
+              } elseif ($row['count'] > 0) {
+-                 $quantities[$row['card']->id] = ($quantities[$row['card']->id] ?? 0) + $row['count'];
++                 // Se il file conteneva l'id di una variante/promo, si riconduce sempre all'originale
++                 $cardId = $row['card']->original_card_id ?? $row['card']->id;
++                 $quantities[$cardId] = ($quantities[$cardId] ?? 0) + $row['count'];
+              }
 ```
-findstr /s /n /c:"Card::" app\*.php routes\*.php
-findstr /s /n /c:"cards,id" app\*.php
-findstr /s /n /c:"'number'" app\*.php
-findstr /s /n /c:"Card::" resources\views\*.php
-```
-Per ogni risultato non coperto sopra decidi: "elenca/sceglie carte per un utente" → aggiungi `->originals()`; "cerca una carta per id o per cid" (import, mail, test) → resta com'è. Annota in `todo.md` ciò che trovi.
 
-## Step 3 — Scheda carta, API
+---
+
+## Step 3 — Scheda carta e API
 
 #### 3.1 — `CardController::show()`
-Una variante non ha una pagina propria: chi arriva con il suo `{expansion}/{number}` (Telegram, API, un link salvato) va alla scheda dell'originale. L'originale mostra le sue altre versioni.
+Se si accede con l'URL di una variante (es. `/carte/SORPR/1`), si viene reindirizzati con 301 alla scheda della carta originale. L'originale carica e mostra le sue varianti ordinate per codice variante e numero.
 ```php
-    /**
-     * Shows the public detail page for a single card, identified by expansion+number (not cid)
-     * A variant redirects to its original card, which lists the alternative versions
-     * Mostra la pagina di dettaglio pubblica di una singola carta, identificata da espansione+numero (non cid)
-     * Una variante rimanda alla sua carta originale, che elenca le versioni alternative
-     */
     public function show(string $expansion, int $number): View|RedirectResponse
     {
-        // la stessa coppia espansione+numero può esistere due volte (Luke e Vader di SOR, Step 1.3): vince l'originale
         $query = Card::with(['aspects', 'traits', 'expansionModel', 'originalCard'])
             ->where('expansion', $expansion)
             ->where('number', $number);
+
         $card = (clone $query)->originals()->first() ?? $query->firstOrFail();
 
+        // Se l'URL puntava a una variante/promo, rimanda all'originale
         if ($card->original_card_id !== null) {
             $original = $card->originalCard;
 
             return redirect()->route('cards.show', ['expansion' => $original->expansion, 'number' => $original->number], 301);
         }
 
-        $card->load(['variants' => fn ($q) => $q->orderBy('variant_code')->orderBy('number')]);
+        $card->load(['variants' => fn ($q) => $q->orderBy('variant_code')->orderBy('expansion')->orderBy('number')]);
 
         return view('cards.show', compact('card'));
     }
 ```
-con `use Illuminate\Http\RedirectResponse;` in testa.
 
-#### 3.2 — `resources/views/cards/show.blade.php`
-Dopo il blocco "Abilità Da Schierato" (dentro il `div.card-ability`) aggiungi la sezione, nello stile degli altri blocchi (classi `dark:` esplicite, come da convenzioni Bladewind):
+#### 3.2 — Vista `resources/views/cards/show.blade.php`
+Dopo il blocco "Abilità Da Schierato" (all'interno di `div.card-ability`), aggiungi la sezione "Altre versioni":
 ```blade
                 @if ($card->variants->isNotEmpty())
                     <x-bladewind.card title="Altre versioni" has_shadow="false" radius="medium"
@@ -398,8 +398,8 @@ Dopo il blocco "Abilità Da Schierato" (dentro il `div.card-ability`) aggiungi l
                                         </div>
                                     @endif
                                     <figcaption class="mt-1">
-                                        {{ $variant->variant_type ?? 'Variante' }}
-                                        <span class="text-gray-500 dark:text-gray-400">{{ $variant->expansion }}-{{ $variant->number }}</span>
+                                        <span class="font-medium">{{ $variant->variant_type ?? 'Variante' }}</span><br>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $variant->expansion }}-{{ $variant->number }}</span>
                                     </figcaption>
                                 </figure>
                             @endforeach
@@ -407,14 +407,12 @@ Dopo il blocco "Abilità Da Schierato" (dentro il `div.card-ability`) aggiungi l
                     </x-bladewind.card>
                 @endif
 ```
-`Storage::url()` è già usato in questa vista. Il blocco "Aspetti/Tratti" e il resto non cambiano.
 
-#### 3.3 — API: `app/Http/Resources/CardResource.php` e `Api\CardController::show()`
-La ricerca (`/api/cards/search`) restituisce già solo originali (Step 2.1). Il dettaglio resta raggiungibile anche per una variante (l'API è un riferimento stabile per chi ha già id salvati), e dice di chi è variante; per un originale elenca le varianti.
-`CardResource::toArray()`, dopo `'back_image'`:
+#### 3.3 — API: `CardResource.php` e `Api\CardController`
+In `CardResource::toArray()`, aggiungi i metadati della variante:
 ```php
             'variant_type' => $this->variant_type,
-            // presenti solo nel dettaglio (relazioni caricate): evitano query in più nella ricerca
+            'variant_code' => $this->variant_code,
             'original' => $this->whenLoaded('originalCard', fn () => $this->originalCard ? [
                 'cid' => $this->originalCard->cid,
                 'expansion' => $this->originalCard->expansion,
@@ -429,119 +427,201 @@ La ricerca (`/api/cards/search`) restituisce già solo originali (Step 2.1). Il 
                 'back_image' => $variant->back_art_path ? asset('storage/'.$variant->back_art_path) : null,
             ])),
 ```
-`Api\CardController::show()`:
-```diff
--        $card = Card::with(['aspects', 'traits'])
-+        $card = Card::with(['aspects', 'traits', 'originalCard', 'variants'])
+
+In `Api\CardController::show()` carica le relazioni e dai precedenza agli originali:
+```php
+    public function show(string $expansion, int $number): CardResource
+    {
+        $query = Card::with(['aspects', 'traits', 'originalCard', 'variants'])
+            ->where('expansion', $expansion)->where('number', $number);
+
+        $card = (clone $query)->originals()->first() ?? $query->firstOrFail();
+
+        return new CardResource($card);
+    }
 ```
-Controlla `tests/Feature/Api/PublicApiTest.php`: se un test confronta la struttura JSON esatta della carta, aggiungi le chiavi nuove. In `show()` vale la stessa regola "prima l'originale" dello Step 3.1 (stessa coppia espansione+numero può esistere due volte).
 
-## Step 4 — Import: due fasi, originali poi varianti
+---
 
-Le fasi sono due valori di una proprietà del job; il job di una pagina accoda il successivo come oggi. Quando finisce l'ultima pagina degli originali (32 pagine), accoda la pagina 1 delle varianti (circa 72 pagine) con lo **stesso `runId`** (stesso lock, stesso stato in cache, stesso messaggio Telegram di avanzamento). Solo l'ultima pagina delle varianti chiude lo scan (mail, riepilogo). Lo scan completo diventa quindi lungo circa 3,2 volte quello di oggi (103 pagine contro 32): misura la durata nello Step 6.
+## Step 4 — Importazione con normalizzazione set promozionali (stile SWUDB)
 
-#### 4.1 — `app/Jobs/ImportCardsFromSwuApiJob.php`: costanti e costruttore
+#### 4.1 — Costanti e proprietà in `ImportCardsFromSwuApiJob.php`
 ```diff
      public const API_URL = 'https://admin.starwarsunlimited.com/api/card-list';
- 
-+    /** Prima fase: le carte originali (filters[variantOf][id][$null]). */
+
 +    public const PHASE_ORIGINALS = 'originals';
-+
-+    /** Seconda fase: le varianti (filters[variantOf][id][$notNull]); richiede che gli originali siano già a DB. */
 +    public const PHASE_VARIANTS = 'variants';
-+
+
      public const PAGE_SIZE = 100;
 ```
 ```diff
 -    public function __construct(public int $page = 1, ?string $runId = null)
 +    public function __construct(public int $page = 1, ?string $runId = null, public string $phase = self::PHASE_ORIGINALS)
 ```
-Aggiorna anche il docblock di classe: "importa UNA pagina, prima degli originali poi delle varianti".
 
-#### 4.2 — `handle()`
-Stato iniziale con il contatore delle varianti:
-```diff
-             $state = [
-                 'started_at' => now()->startOfSecond()->toIso8601String(),
-                 'message_id' => $progress?->messageId,
-                 'processed' => 0,
-+                'processed_variants' => 0,
-             ];
-```
-Filtro della richiesta (il `$` è letterale: apici singoli):
-```diff
--        $response = Http::timeout(30)->retry(3, 2000, throw: false)->get(self::API_URL, [
-+        $variantFilter = $this->phase === self::PHASE_VARIANTS ? '$notNull' : '$null';
-+
-+        $response = Http::timeout(30)->retry(3, 2000, throw: false)->get(self::API_URL, [
-             'locale' => 'it',
--            'filters[variantOf][id][$null]' => 'true',
-+            "filters[variantOf][id][{$variantFilter}]" => 'true',
-```
-Con zero varianti Strapi risponde `pageCount: 0`:
-```diff
--        $lastPage = (int) ($payload['meta']['pagination']['pageCount'] ?? $this->page);
-+        $lastPage = max(1, (int) ($payload['meta']['pagination']['pageCount'] ?? $this->page));
-```
-Messaggio di avanzamento e log con la fase:
-```diff
--        $telegram->editMessage($chatId, $state['message_id'], "Scan in corso: pagina {$this->page}/{$lastPage}...");
-+        $what = $this->phase === self::PHASE_VARIANTS ? 'varianti' : 'carte';
-+        $telegram->editMessage($chatId, $state['message_id'], "Scan in corso ({$what}): pagina {$this->page}/{$lastPage}...");
-```
-```diff
--        Log::info("Scan {$this->runId}: pagina {$this->page}/{$lastPage} elaborata", [
-+        Log::info("Scan {$this->runId}: pagina {$this->page}/{$lastPage} elaborata ({$this->phase})", [
-```
-Contatori e coda di fine pagina:
-```diff
--        $state['processed'] += $processed;
-+        $counter = $this->phase === self::PHASE_VARIANTS ? 'processed_variants' : 'processed';
-+        $state[$counter] = ($state[$counter] ?? 0) + $processed;
-         Cache::put($this->stateKey(), $state, now()->addDay());
- 
-         if ($this->page < $lastPage) {
--            self::dispatch($this->page + 1, $this->runId);
-+            self::dispatch($this->page + 1, $this->runId, $this->phase);
- 
-             return;
-         }
- 
-+        if ($this->phase === self::PHASE_ORIGINALS) {
-+            // finiti gli originali: ora le varianti (hanno bisogno che l'originale sia già a DB)
-+            self::dispatch(1, $this->runId, self::PHASE_VARIANTS);
-+
-+            return;
-+        }
-+
-         $this->finish($telegram, $state, $chatId);
-```
+#### 4.2 — Risoluzione dell'espansione promo (stile SWUDB)
+Aggiungi in `ImportCardsFromSwuApiJob.php` il metodo privato di risoluzione che normalizza le carte promozionali:
 
-#### 4.3 — `processCard()` e il collegamento all'originale
-Dopo `$this->createExpansionIfMissing(...)`, il valore da salvare solo per le varianti:
-```diff
--            $card = Card::updateOrCreate(
-+            $variantAttributes = $this->phase === self::PHASE_VARIANTS ? [
-+                'original_card_id' => $this->resolveOriginalCardId($cardData),
-+                // primo elemento di variantTypes (vedi Step 0 se ce n'è più d'uno): nome (es. Hyperspace) e variantId (es. 02)
-+                'variant_type' => $cardData['variantTypes']['data'][0]['attributes']['name'] ?? null,
-+                'variant_code' => $cardData['variantTypes']['data'][0]['attributes']['variantId'] ?? null,
-+            ] : [];
-+
-+            $card = Card::updateOrCreate(
-                 ['cid' => $cid],
--                [
-+                $variantAttributes + [
-                     'expansion' => $cardData['expansion']['data']['attributes']['code'] ?? null,
-```
-(Per gli originali `$variantAttributes` è vuoto: l'`updateOrCreate` non tocca mai `original_card_id`.) Nuovo metodo privato:
 ```php
     /**
-     * cards.id of the original card of a variant, found through the originals' cid (cardUid of variantOf)
-     * cards.id della carta originale di una variante, cercata con il cid (cardUid di variantOf)
-     *
-     * @throws \RuntimeException if the payload has no variantOf or the original is not in the database
+     * Resolves the canonical expansion code for a card, separating promo sets like SWUDB
+     * Risolve il codice espansione canonico per una carta, separando i set promo come fa SWUDB
      */
+    private function resolveExpansionCode(array $cardData): string
+    {
+        $rawExp = $cardData['expansion']['data']['attributes']['code'] ?? null;
+        $vTypeName = $cardData['variantTypes']['data'][0]['attributes']['name'] ?? '';
+        $vId = $cardData['variantTypes']['data'][0]['attributes']['variantId'] ?? '';
+        $serial = $cardData['serialCode'] ?? '';
+        $cardNum = (int) ($cardData['cardNumber'] ?? 0);
+
+        // 1. Segnalini (Tokens): T{EXP}
+        if (str_contains($cardData['type']['data']['attributes']['name'] ?? '', 'Segnalino')) {
+            return 'T' . ($rawExp ?: 'SOR');
+        }
+
+        // 2. Set promo già ufficiali o standalone (JTLP, SECP, LOFP, C24, J24, P25, etc.)
+        if ($rawExp && ! in_array($rawExp, ['SOR', 'SHD', 'TWI'], true)) {
+            return $rawExp;
+        }
+
+        // 3. Determinazione del set genitore (fallback se rawExp è null come per Ammiraglio Motti)
+        $parentSet = $rawExp;
+        if (! $parentSet) {
+            $parentSet = match (true) {
+                str_starts_with($serial, '01') => 'SOR',
+                str_starts_with($serial, '02') => 'SHD',
+                str_starts_with($serial, '03') => 'TWI',
+                default => 'SOR',
+            };
+        }
+
+        // 4. Mappatura promozionale stile SWUDB per i primi 3 set (SOR, SHD, TWI):
+
+        // Prerelease (vId 04 o nome Prerelease) -> SORPR, SHDPR, TWIPR
+        if ($vId === '04' || str_contains($vTypeName, 'Prerelease')) {
+            if (str_contains($vTypeName, 'Judge')) {
+                return $parentSet === 'SOR' ? 'J24' : 'J25';
+            }
+            return "{$parentSet}PR";
+        }
+
+        // Planetary Qualifier (vId 51, 52, 56 o sigla PQ) -> SHDPQ, TWIPQ
+        if (in_array($vId, ['51', '52', '56'], true) || str_contains($vTypeName, 'PQ') || str_contains($vTypeName, 'Planetary')) {
+            return "{$parentSet}PQ";
+        }
+
+        // Store Showdown (vId 40..45, 63..66 o sigla SS) -> SORSH, SHDSH, TWISH
+        if (in_array($vId, ['40', '41', '42', '43', '44', '45', '63', '64', '65', '66'], true) || str_contains($vTypeName, 'SS') || str_contains($vTypeName, 'Store Showdown')) {
+            return "{$parentSet}SH";
+        }
+
+        // Weekly Play / Organized Play (vId 60, 35) -> SOROP, SHDOP, TWIOP
+        if ($vId === '60' || $vId === '35' || str_contains($vTypeName, 'Weekly Play') || str_contains($vTypeName, 'Organized Play')) {
+            return "{$parentSet}OP";
+        }
+
+        // Hyperspace del 2-Player Starter Set di SOR (numeri 1-11 in Hyperspace) -> assegnati a SOROP come su SWUDB
+        if ($parentSet === 'SOR' && $cardNum <= 11 && $vId === '02') {
+            return 'SOROP';
+        }
+
+        // Event Promos (GenCon 2023, Essen 2024)
+        if (str_contains($serial, 'GC') || str_contains($vTypeName, 'Gen Con')) {
+            return 'GC23';
+        }
+        if (str_contains($serial, 'EE') || str_contains($vTypeName, 'Essen')) {
+            return 'EE24';
+        }
+
+        return $parentSet;
+    }
+```
+
+#### 4.3 — Creazione espansioni figlie (`createExpansionIfMissing`)
+Quando viene registrata un'espansione figlia (es. `SOROP`, `SORPR`), la colonna `group_main_expansion` viene automaticamente collegata al set base (`SOR`, `SHD`, `TWI`):
+
+```php
+    private function createExpansionIfMissing(string $expansionCode, ?array $rawExpansionData, string $latestRotation): void
+    {
+        if (! Expansion::where('expansion', $expansionCode)->exists()) {
+            // Se è un child set (es. SOROP, TSOR, JTLP), individua il core set genitore
+            $mainExpansion = null;
+            if (preg_match('/^(T)?(SOR|SHD|TWI|JTL|LOF|SEC|LAW|HMW|ASH)/', $expansionCode, $m)) {
+                $mainExpansion = $m[2];
+            }
+
+            Expansion::create([
+                'expansion' => $expansionCode,
+                'rotation' => $latestRotation,
+                'legal_date' => $rawExpansionData['publishedAt'] ?? now()->toDateString(),
+                'confirmed' => false,
+                'group_main_expansion' => $mainExpansion,
+            ]);
+        }
+    }
+```
+
+#### 4.4 — Salvataggio carta e collegamento originale in `processCard()`
+```php
+        $cid = $cardData['cardUid'] ?? null;
+        $card = null;
+
+        try {
+            if (! $cid) {
+                throw new \RuntimeException('cardUid mancante nel payload');
+            }
+
+            $expansionCode = $this->resolveExpansionCode($cardData);
+            $this->createExpansionIfMissing($expansionCode, $cardData['expansion']['data']['attributes'] ?? null, $latestRotation);
+
+            $variantAttributes = [];
+            if ($this->phase === self::PHASE_VARIANTS) {
+                $vType = $cardData['variantTypes']['data'][0]['attributes']['name'] ?? null;
+                $vCode = $cardData['variantTypes']['data'][0]['attributes']['variantId'] ?? null;
+
+                // Fallback per foil senza variantTypes nominale (es. Mina Bonteri)
+                if (! $vType && ! empty($cardData['hasFoil'])) {
+                    $vType = 'Foil';
+                }
+
+                $variantAttributes = [
+                    'original_card_id' => $this->resolveOriginalCardId($cardData),
+                    'variant_type' => $vType,
+                    'variant_code' => $vCode,
+                ];
+            }
+
+            $card = Card::updateOrCreate(
+                ['cid' => $cid],
+                $variantAttributes + [
+                    'expansion' => $expansionCode,
+                    'number' => $cardData['cardNumber'],
+                    'unique_card' => $cardData['unique'] ?? false,
+                    'name' => $cardData['title'],
+                    'title' => $cardData['subtitle'] ?? null,
+                    'type' => $cardData['type']['data']['attributes']['name'] ?? null,
+                    'rarity' => $cardData['rarity']['data']['attributes']['name'] ?? null,
+                    'cost' => $cardData['cost'] ?? null,
+                    'health' => $cardData['hp'] ?? null,
+                    'power' => $cardData['power'] ?? null,
+                    'text' => $cardData['textStyled'] ?? null,
+                    'deploy_text' => $cardData['deployBoxStyled'] ?? null,
+                    'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
+                    'artist' => $cardData['artist'] ?? null,
+                    'release_date' => isset($cardData['publishedAt']) ? Carbon::parse($cardData['publishedAt'])->toDateString() : null,
+                    'max_copies' => $cardData['cardNumber'] == 256 && $expansionCode == 'JTL' ? 15 : null,
+                ]
+            );
+
+            $this->syncAspectsAndTraits($card, $cardData);
+            $this->downloadImages($card, $cardData, $imageDownloader);
+
+            return true;
+```
+
+Aggiungi il metodo privato `resolveOriginalCardId()`:
+```php
     private function resolveOriginalCardId(array $cardData): string
     {
         $originalCid = $cardData['variantOf']['data']['attributes']['cardUid'] ?? null;
@@ -559,79 +639,61 @@ Dopo `$this->createExpansionIfMissing(...)`, il valore da salvare solo per le va
         return $originalId;
     }
 ```
-Se un'originale manca, la variante va in un `SystemError` (come ogni altro errore di carta) e finisce nel report agli admin, senza fermare lo scan. Nota: per le varianti il `SystemError` salva il payload intero (`context.raw`), che include tutta la carta originale dentro `variantOf`: con migliaia di varianti l'eventuale errore di massa pesa; se vuoi, in quel caso togli `variantOf` dal `raw` prima di salvare.
 
-#### 4.4 — Immagini delle varianti (interruttore)
-Ogni variante porta una o due immagini: con circa 7151 varianti lo spazio su disco più che raddoppia (stima nello Step 7; la VM è già al 79%). Un interruttore permette di importare prima i dati e scaricare le immagini dopo.
-`config/services.php`, nell'array principale:
+#### 4.5 — Configurazione per immagini varianti
+In `config/services.php`:
 ```php
     'swu' => [
         'variant_images' => env('SWU_VARIANT_IMAGES', true),
     ],
 ```
-`.env.example`: `SWU_VARIANT_IMAGES=true`. In `downloadImages()` come prima istruzione:
+In `.env.example`: `SWU_VARIANT_IMAGES=true`.
+In `downloadImages()` all'inizio del metodo:
 ```php
-        if ($this->phase === self::PHASE_VARIANTS && ! config('services.swu.variant_images')) {
-            return; // immagini delle varianti rimandate (SWU_VARIANT_IMAGES=false): si scaricano a una scansione successiva
-        }
-```
-Rimettendo `true` e rilanciando `cards:scan --phase=variants` si scaricano le immagini mancanti (`downloadImages()` salta già i lati con il path valorizzato).
-
-#### 4.5 — `failed()` e `finish()`
-`failed()`: il comando per riprendere deve riportare la fase.
-```diff
--            "Scan interrotto alla pagina {$this->page}: {$e->getMessage()}. Per riprendere: php artisan cards:scan --page={$this->page}"
-+            "Scan interrotto alla pagina {$this->page} ({$this->phase}): {$e->getMessage()}. Per riprendere: php artisan cards:scan --page={$this->page} --phase={$this->phase}"
-```
-e nel `context` del `SystemError` aggiungi `'phase' => $this->phase`.
-
-`finish()`: le carte "nuove" sono quelle originali nuove; le varianti nuove si contano a parte. La mail `NewCardsEmail` elenca solo originali (una nuova Hyperspace di una carta già nota non è una "carta nuova").
-```diff
--        $newCount = Card::where('created_at', '>=', $since)->count();
-+        $newCount = Card::originals()->where('created_at', '>=', $since)->count();
-+        $newVariants = Card::whereNotNull('original_card_id')->where('created_at', '>=', $since)->count();
-         $errorCount = $this->runErrors($since)->count();
-```
-```diff
--        $summary = "Scan completato: {$state['processed']} carte elaborate, {$newCount} nuove, {$errorCount} problemi.";
-+        $summary = "Scan completato: {$state['processed']} carte e ".($state['processed_variants'] ?? 0)." varianti elaborate, {$newCount} carte nuove, {$newVariants} varianti nuove, {$errorCount} problemi.";
-```
-`sendNotifications()`:
-```diff
--            $cards = Card::where('created_at', '>=', $since)
-+            $cards = Card::originals()->where('created_at', '>=', $since)
-```
-
-#### 4.6 — `app/Console/Commands/ScanCards.php`
-`--phase=originals` (default) = scansione completa (originali, poi varianti); `--phase=variants` = **solo** le varianti (utile subito dopo questo piano: gli originali sono già a DB).
-```php
-    protected $signature = 'cards:scan {--page=1 : Pagina da cui far partire la scansione} {--phase=originals : Fase da cui partire: originals (poi varianti) oppure variants (solo varianti)}';
-
-    public function handle(): int
-    {
-        $page = max(1, (int) $this->option('page'));
-        $phase = (string) $this->option('phase');
-
-        if (! in_array($phase, [ImportCardsFromSwuApiJob::PHASE_ORIGINALS, ImportCardsFromSwuApiJob::PHASE_VARIANTS], true)) {
-            $this->error('--phase deve essere "originals" oppure "variants".');
-
-            return self::FAILURE;
-        }
-
-        ImportCardsFromSwuApiJob::dispatch($page, null, $phase);
-        $this->info("Cards scan queued from page {$page} ({$phase}).");
-
-        return self::SUCCESS;
+    if ($this->phase === self::PHASE_VARIANTS && ! config('services.swu.variant_images')) {
+        return;
     }
 ```
-`TelegramController::handleScan()` resta `ImportCardsFromSwuApiJob::dispatch()`: scansione completa.
+
+#### 4.6 — Transizione a due fasi in `handle()`
+```php
+        $variantFilter = $this->phase === self::PHASE_VARIANTS ? '$notNull' : '$null';
+
+        $response = Http::timeout(30)->retry(3, 2000, throw: false)->get(self::API_URL, [
+            'locale' => 'it',
+            "filters[variantOf][id][{$variantFilter}]" => 'true',
+            // ...
+```
+E al completamento dell'ultima pagina degli originali:
+```php
+        if ($this->page < $lastPage) {
+            self::dispatch($this->page + 1, $this->runId, $this->phase);
+
+            return;
+        }
+
+        if ($this->phase === self::PHASE_ORIGINALS) {
+            // Finiti gli originali: parte la fase varianti dalla pagina 1
+            self::dispatch(1, $this->runId, self::PHASE_VARIANTS);
+
+            return;
+        }
+
+        $this->finish($telegram, $state, $chatId);
+```
+
+#### 4.7 — `cards:scan` command (`app/Console/Commands/ScanCards.php`)
+```php
+    protected $signature = 'cards:scan {--page=1 : Pagina da cui far partire la scansione} {--phase=originals : originals (completo) oppure variants}';
+```
+
+---
 
 ## Step 5 — Test Pest
 
-#### 5.1 — Aggiornare i test esistenti di `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`
-Oggi `fakeSwuHttp()` risponde con la stessa pagina a qualunque richiesta `card-list`: con le due fasi la fase delle varianti riceverebbe gli stessi originali e li tratterebbe come varianti (errore `variantOf senza cardUid`), facendo fallire anche i test che si aspettano zero errori. Il nuovo helper risponde **vuoto** alla fase delle varianti, salvo che il test passi le sue varianti. Il pattern `*notNull*` va per primo perché in `Http::fake` vince il primo che combacia.
+#### 5.1 — Aggiornare i mock in `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`
+Aggiorna `fakeSwuHttp()` affinché simuli le richieste con `$notNull` restituendo le varianti di test:
 ```php
-/** Simula l'API SWU (originali e varianti) e risponde con un PNG finto a qualunque altro URL (immagini CDN). */
 function fakeSwuHttp(array $routes, array $variants = []): void
 {
     Storage::fake('public');
@@ -643,317 +705,104 @@ function fakeSwuHttp(array $routes, array $variants = []): void
     ] + $routes + ['*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png'])]);
 }
 ```
-Due test esistenti contano le richieste e vanno ristretti a quelle degli originali:
-- `pagina correttamente su piu' pagine`: `Http::recorded(fn ($request) => str_contains($request->url(), 'card-list') && ! str_contains($request->url(), 'notNull'))` → `toHaveCount(2)`.
-- `riprende da una pagina con cards:scan --page`: `Http::assertNotSent(fn ($request) => str_contains(urldecode($request->url()), 'pagination[page]=1') && ! str_contains($request->url(), 'notNull'))` (la fase delle varianti parte da pagina 1 per costruzione).
-Cerca nel file anche `assertSent`, `assertSentCount`, `Http::recorded` e un eventuale controllo sul testo `Scan completato: ...` e aggiornali di conseguenza.
 
-#### 5.2 — Test nuovi del job, in fondo allo stesso file
-La forma della variante qui sotto è quella vera vista in `examples/test.json`: `variantOf.data.attributes.cardUid` per il collegamento, `variantTypes.data[0].attributes` con `name` e `variantId` (`"02"` per Hyperspace), numero proprio (501 contro 243 dell'originale nell'esempio reale).
+#### 5.2 — Test nuovi del job e della mappatura promo
+Aggiungi in `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`:
 ```php
-/** Una variante come la restituisce l'API: stessa struttura dell'originale, più variantOf e variantTypes. */
-function fakeVariantEntry(string $uid, int $number, string $originalUid = '2579145458', string $type = 'Hyperspace'): array
-{
-    return fakeCardEntry(['attributes' => [
-        'cardUid' => $uid,
-        'cardNumber' => $number,
-        'variantOf' => ['data' => ['id' => 7, 'attributes' => ['cardUid' => $originalUid]]],
-        'variantTypes' => ['data' => [0 => ['attributes' => ['name' => $type, 'variantId' => '02']]]],
-    ]]);
-}
-
-it('importa le varianti collegandole alla carta originale', function () {
+it('assegna le promo dei primi set alle sottoespansioni stile swudb', function () {
     fakeSwuHttp(
         ['admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [fakeCardEntry()],
+            'data' => [fakeCardEntry()], // originale SOR
             'meta' => ['pagination' => ['pageCount' => 1]],
         ])],
-        [fakeVariantEntry('v-1', 270)],
+        [
+            fakeVariantEntry('v-pr', 2, originalUid: '2579145458', type: 'Promo Prerelease', variantId: '04'),
+            fakeVariantEntry('v-op', 2, originalUid: '2579145458', type: 'Weekly Play', variantId: '60'),
+            fakeVariantEntry('v-sh', 2, originalUid: '2579145458', type: 'Store Showdown', variantId: '41'),
+        ]
     );
     Mail::fake();
 
     (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
 
-    $original = Card::where('cid', '2579145458')->firstOrFail();
-    $variant = Card::where('cid', 'v-1')->firstOrFail();
-    expect($original->original_card_id)->toBeNull()
-        ->and($variant->original_card_id)->toBe($original->id)
-        ->and($variant->variant_type)->toBe('Hyperspace')
-        ->and($variant->variant_code)->toBe('02')
-        ->and($original->variants->pluck('cid')->all())->toBe(['v-1']);
-});
+    $pr = Card::where('cid', 'v-pr')->firstOrFail();
+    $op = Card::where('cid', 'v-op')->firstOrFail();
+    $sh = Card::where('cid', 'v-sh')->firstOrFail();
 
-it('la fase originali usa $null e quella delle varianti $notNull', function () {
-    fakeSwuHttp(['admin.starwarsunlimited.com/api/card-list*' => Http::response([
-        'data' => [fakeCardEntry()],
-        'meta' => ['pagination' => ['pageCount' => 1]],
-    ])]);
-    Mail::fake();
-
-    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
-
-    Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), 'filters[variantOf][id][$null]=true'));
-    Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), 'filters[variantOf][id][$notNull]=true'));
-});
-
-it('segnala un errore se l\'originale di una variante non esiste', function () {
-    fakeSwuHttp(
-        ['admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [fakeCardEntry()],
-            'meta' => ['pagination' => ['pageCount' => 1]],
-        ])],
-        [fakeVariantEntry('v-orfana', 271, originalUid: 'inesistente')],
-    );
-    Mail::fake();
-
-    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
-
-    expect(Card::where('cid', 'v-orfana')->exists())->toBeFalse();
-    expect(SystemError::where('message', 'like', '%v-orfana%')->exists())->toBeTrue();
-});
-
-it('le varianti non contano come carte nuove nella mail', function () {
-    User::factory()->create();
-    fakeSwuHttp(
-        ['admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [fakeCardEntry()],
-            'meta' => ['pagination' => ['pageCount' => 1]],
-        ])],
-        [fakeVariantEntry('v-1', 270), fakeVariantEntry('v-2', 271, type: 'Showcase')],
-    );
-    Mail::fake();
-
-    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
-
-    Mail::assertQueued(NewCardsEmail::class, fn ($mail) => $mail->total === 1 && $mail->newCards->count() === 1);
-});
-
-it('cards:scan --phase=variants importa solo le varianti e rifiuta fasi sconosciute', function () {
-    fakeSwuHttp([]);
-    Mail::fake();
-
-    $this->artisan('cards:scan', ['--phase' => 'pippo'])->assertFailed();
-
-    $this->artisan('cards:scan', ['--phase' => 'variants'])->assertSuccessful();
-    Http::assertNotSent(fn ($request) => str_contains($request->url(), 'card-list') && ! str_contains($request->url(), 'notNull'));
-});
-
-it('senza SWU_VARIANT_IMAGES non scarica le immagini delle varianti', function () {
-    config(['services.swu.variant_images' => false]);
-    fakeSwuHttp(
-        ['admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [],
-            'meta' => ['pagination' => ['pageCount' => 0]],
-        ])],
-        [fakeVariantEntry('v-1', 270)],
-    );
-    Mail::fake();
-    // l'originale deve già esistere perché la variante si colleghi
-    Expansion::create(['expansion' => 'SOR', 'rotation' => '0']);
-    Card::create(['cid' => '2579145458', 'expansion' => 'SOR', 'number' => 5, 'name' => 'Luke Skywalker', 'type' => 'Leader', 'rarity' => 'Speciale']);
-
-    $this->artisan('cards:scan', ['--phase' => 'variants'])->assertSuccessful();
-
-    expect(Card::where('cid', 'v-1')->firstOrFail()->front_art_path)->toBeNull();
+    expect($pr->expansion)->toBe('SORPR')
+        ->and($op->expansion)->toBe('SOROP')
+        ->and($sh->expansion)->toBe('SORSH')
+        ->and(Expansion::where('expansion', 'SOROP')->value('group_main_expansion'))->toBe('SOR');
 });
 ```
-Dettagli da controllare scrivendoli:
-- `fakeCardEntry()` parte dal fixture `storage/app/private/api-example-result.json`, dove `variantOf` è `['data' => null]` (come per gli originali veri): `array_replace_recursive` lo sostituisce con l'array della variante senza problemi.
-- L'ultimo test dipende dal `cid` e dal numero dell'originale come in `fakeCardEntry()` (Luke Skywalker, `2579145458`, n. 5, già usato nel test "carta già presente"): se cambiano, adegua.
-- Per gli originali il job non scrive mai `original_card_id`, quindi i test esistenti sulle carte originali non cambiano.
 
-#### 5.2bis — Test delle numerazioni sovrapposte (Step 1.3), nello stesso file del job
+#### 5.3 — Test di mazzi, catalogo e collezione (`tests/Feature/Cards/CardVariantsTest.php`)
 ```php
-it('una variante con il numero di un\'altra carta prende un id suffissato e non tocca l\'originale', function () {
-    fakeSwuHttp(
-        ['admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [fakeCardEntry()],
-            'meta' => ['pagination' => ['pageCount' => 1]],
-        ])],
-        // stessa espansione e stesso numero di fakeCardEntry() (SOR5), ma carta e cardUid diversi
-        [fakeVariantEntry('v-collide', 5)],
-    );
-    Mail::fake();
-
-    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
-
-    $original = Card::where('cid', '2579145458')->firstOrFail();
-    $variant = Card::where('cid', 'v-collide')->firstOrFail();
-    expect($original->id)->toBe('SOR5')
-        ->and($variant->id)->toBe('SOR5-v-collide')
-        ->and($variant->original_card_id)->toBe('SOR5')
-        ->and($original->front_art_path)->toStartWith('cards/SOR/5-front')
-        ->and($variant->front_art_path)->toStartWith('cards/SOR/5-v-collide-front')
-        ->and(Card::find('SOR5')->cid)->toBe('2579145458');
-    Storage::disk('public')->assertExists($original->front_art_path);
-    Storage::disk('public')->assertExists($variant->front_art_path);
-});
-
-it('una scansione ripetuta non duplica la variante con id suffissato', function () {
-    fakeSwuHttp(
-        ['admin.starwarsunlimited.com/api/card-list*' => Http::response([
-            'data' => [fakeCardEntry()],
-            'meta' => ['pagination' => ['pageCount' => 1]],
-        ])],
-        [fakeVariantEntry('v-collide', 5)],
-    );
-    Mail::fake();
-
-    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
-    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
-
-    expect(Card::where('cid', 'v-collide')->count())->toBe(1);
-});
-```
-(Il numero 5 e il `cid` `2579145458` sono quelli di `fakeCardEntry()` come usati nel test "carta già presente": se differiscono, adegua. Se il lock dello scan impedisce la seconda `handle()` nello stesso test, chiudi il lock come fanno gli altri test di ripetizione.)
-
-Aggiungi anche a `CardVariantsTest` (punto successivo) un test che con due carte con la stessa espansione e lo stesso numero, `route('cards.show')` mostri l'originale, e, se esistono test del downloader, uno che verifichi che il path di una carta con id `SOR5-v-collide` sia `cards/SOR/5-v-collide-front.png`.
-
-#### 5.3 — Test nuovi delle liste e dei mazzi: `tests/Feature/Cards/CardVariantsTest.php`
-Usa gli helper `makeCard()`/`makeDeck()` di `tests/Pest.php` (accettano `original_card_id` perché ora è `fillable`) e lo stesso modo di creare e autenticare un utente degli altri test dei mazzi (`DeckPagesTest`).
-```php
-<?php
-
-use App\Models\Card;
-use App\Models\User;
-use App\Services\DeckImporter;
-use App\Enums\DeckFormat;
-
-it('il catalogo mostra solo le carte originali', function () {
+it('il catalogo mostra solo gli originali', function () {
     $original = makeCard(['name' => 'Ahsoka Tano']);
-    makeCard(['name' => 'Ahsoka Tano', 'original_card_id' => $original->id, 'variant_type' => 'Hyperspace', 'variant_code' => '02']);
-    makeCard(['name' => 'Ahsoka Tano', 'original_card_id' => $original->id, 'variant_type' => 'Showcase', 'variant_code' => '03']);
+    makeCard(['name' => 'Ahsoka Tano', 'original_card_id' => $original->id, 'expansion' => 'SOROP']);
 
     $response = $this->get(route('cards.index'))->assertOk();
-
     expect($response->viewData('cards')->total())->toBe(1);
 });
 
-it('la scheda di una variante rimanda all\'originale, che elenca le altre versioni', function () {
-    $original = makeCard(['name' => 'Ahsoka Tano']);
-    $variant = makeCard(['name' => 'Ahsoka Tano', 'original_card_id' => $original->id, 'variant_type' => 'Hyperspace']);
-
-    $this->get(route('cards.show', [$variant->expansion, $variant->number]))
-        ->assertRedirect(route('cards.show', [$original->expansion, $original->number]));
-
-    $this->get(route('cards.show', [$original->expansion, $original->number]))
-        ->assertOk()
-        ->assertSee('Altre versioni')
-        ->assertSee('Hyperspace');
-});
-
-it('la ricerca dell\'API restituisce solo originali e il dettaglio elenca le varianti', function () {
-    $original = makeCard(['name' => 'Ahsoka Tano']);
-    $variant = makeCard(['name' => 'Ahsoka Tano', 'original_card_id' => $original->id, 'variant_type' => 'Hyperspace']);
-
-    $this->getJson('/api/cards/search')->assertOk()->assertJsonCount(1, 'data');
-
-    $this->getJson("/api/cards/{$original->expansion}/{$original->number}")
-        ->assertOk()
-        ->assertJsonPath('data.variants.0.cid', $variant->cid);
-    $this->getJson("/api/cards/{$variant->expansion}/{$variant->number}")
-        ->assertOk()
-        ->assertJsonPath('data.original.cid', $original->cid);
-});
-
-it('un mazzo non accetta l\'id di una variante', function () {
+it('l\'import di un mazzo converte codici promo swudb nell\'originale', function () {
     $user = User::factory()->create();
-    $original = makeCard();
-    $variant = makeCard(['original_card_id' => $original->id]);
-    $deck = makeDeck($user);
-
-    $this->actingAs($user)
-        ->post(route('decks.add-card', [$user->name, $deck->name]), ['card_id' => $variant->id, 'quantity' => 1])
-        ->assertSessionHasErrors('card_id');
-
-    $this->actingAs($user)
-        ->post(route('decks.add-card', [$user->name, $deck->name]), ['card_id' => $original->id, 'quantity' => 1])
-        ->assertSessionHasNoErrors();
-});
-
-it('l\'import di un mazzo converte l\'id di una variante nella sua originale', function () {
-    $user = User::factory()->create();
-    $original = makeCard(['expansion' => 'SOR', 'number' => 134]);
-    makeCard(['expansion' => 'SOR', 'number' => 501, 'original_card_id' => $original->id]);
+    $original = makeCard(['expansion' => 'SOR', 'number' => 10]);
+    makeCard(['expansion' => 'SORPR', 'number' => 1, 'original_card_id' => $original->id]);
 
     $result = app(DeckImporter::class)->fromContent(
-        json_encode(['deck' => [['id' => 'SOR_134', 'count' => 1], ['id' => 'SOR_501', 'count' => 2]]]),
+        json_encode(['deck' => [['id' => 'SORPR_1', 'count' => 1]]]),
         $user,
-        'Con varianti',
-        DeckFormat::Premier,
+        'Mazzo Promo',
+        DeckFormat::Premier
     );
 
-    expect($result['deck']->cards->pluck('pivot.quantity', 'id')->all())->toBe([$original->id => 3]);
-});
-
-it('la collezione accetta solo carte originali', function () {
-    $user = User::factory()->create();
-    $original = makeCard();
-    $variant = makeCard(['original_card_id' => $original->id]);
-
-    $this->actingAs($user)->patchJson(route('collection.update'), ['card_id' => $variant->id, 'variant' => 'hyper', 'quantity' => 1])
-        ->assertJsonValidationErrors('card_id');
-    $this->actingAs($user)->patchJson(route('collection.update'), ['card_id' => $original->id, 'variant' => 'hyper', 'quantity' => 1])
-        ->assertOk();
+    expect($result['deck']->cards->first()->id)->toBe($original->id);
 });
 ```
-Controlla in particolare: (a) `makeCard()` fissa `number` da un contatore statico ma accetta `number` negli attributi (`$attributes + [...]`); (b) il nome del case dell'enum (`DeckFormat::Premier`: guarda `app/Enums/DeckFormat.php`); (c) se `User::factory()` crea già utenti con email verificata (le rotte hanno il middleware `verified`: se no, usa lo stato che usano i test di `DeckPagesTest`).
 
-#### 5.4 — Esecuzione
-```
-php artisan test tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php
-php artisan test tests/Feature/Cards/CardVariantsTest.php
-composer test
-```
-Atteso: suite intera verde (oggi: 122 passati, 388 asserzioni). Annota esito e data in `README.md` (sezione Test) e `todo.md`, come per i piani precedenti.
+---
 
-## Step 6 — Applicazione in locale (compose di sviluppo)
+## Step 6 — Esecuzione e Verifica in Locale
 
-1. Applica gli Step 1–5, poi `docker compose -f docker-compose.dev.yml restart worker` (`queue:work` tiene il vecchio codice in memoria finché non riparte).
-2. Migration e cache dei limiti del filtro:
-```
-docker compose -f docker-compose.dev.yml exec app php artisan migrate
-docker compose -f docker-compose.dev.yml exec app php artisan cache:forget cards_bounds
-```
-3. **Prima delle varianti**, con il DB invariato, controlla che il comportamento sia identico a oggi: `/carte` mostra lo stesso numero di carte (3135 secondo l'ultimo import), `/nuove-uscite`, un mazzo, `/collezione` e `/api/cards/search` come prima. È il test che gli scope non abbiano cambiato nulla.
-4. Importa **solo le varianti** (gli originali ci sono già; circa 72 pagine, annota quanto dura: serve per stimare lo scan completo di produzione):
-```
-docker compose -f docker-compose.dev.yml exec app php artisan cards:scan --phase=variants
-```
-5. Verifica a fine scan (messaggio Telegram "Scan completato: ..."):
-```
-docker compose -f docker-compose.dev.yml exec app php artisan tinker --execute="echo App\Models\Card::originals()->count().' originali, '.App\Models\Card::whereNotNull('original_card_id')->count().' varianti'.PHP_EOL; print_r(App\Models\Card::whereNotNull('original_card_id')->selectRaw('variant_type, count(*) n')->groupBy('variant_type')->pluck('n','variant_type')->all());"
-```
-Atteso: gli originali restano 3135; le varianti circa 7151 (totale 10286); la tabella per tipo coincide con quella dello Step 0.
-6. A mano: `/carte` ha ancora lo stesso numero di carte e una sola Ahsoka; la scheda dell'Ahsoka mostra "Altre versioni" con le immagini; l'URL `{espansione}/{numero}` di una variante (per esempio `SOR/501`) rimanda all'originale; nell'editor di un mazzo la ricerca non propone varianti; `/collezione` idem; `/api/cards/search` ha lo stesso totale di prima.
-7. `/admin/errori`: nessun errore "Carta originale ... non trovata" (se ci sono, vedi la riga dello Step 0 sulle varianti con originale mancante).
-8. Prova la ripresa: `cards:scan --phase=variants --page=3` e controlla che il messaggio Telegram di interruzione riporti il comando con `--phase`.
+1. Applica le modifiche degli Step 1–5 e riavvia il worker di sviluppo:
+   ```bash
+   docker compose -f docker-compose.dev.yml restart worker
+   ```
+2. Esegui la migration e pulisci la cache:
+   ```bash
+   docker compose -f docker-compose.dev.yml exec app php artisan migrate
+   docker compose -f docker-compose.dev.yml exec app php artisan cache:forget cards_bounds
+   ```
+3. Lancia i test Pest:
+   ```bash
+   php artisan test tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php
+   php artisan test tests/Feature/Cards/CardVariantsTest.php
+   ```
+4. Esegui lo scan solo delle varianti in locale:
+   ```bash
+   docker compose -f docker-compose.dev.yml exec app php artisan cards:scan --phase=variants
+   ```
+5. Verifica su tinker:
+   ```bash
+   docker compose -f docker-compose.dev.yml exec app php artisan tinker --execute="echo App\Models\Card::originals()->count().' originali, '.App\Models\Card::whereNotNull('original_card_id')->count().' varianti'.PHP_EOL; print_r(App\Models\Card::whereNotNull('original_card_id')->selectRaw('expansion, count(*) n')->groupBy('expansion')->pluck('n','expansion')->all());"
+   ```
+   Atteso: zero errori SQL, espansioni promo create (`SORPR`, `SOROP`, `SORSH`, `SHDPQ`...) con le rispettive carte assegnate.
+
+---
 
 ## Step 7 — Rilascio sulla VM
 
-1. **Prima del push**, sulla VM misura lo spazio e quanto pesa una carta:
-```
-df -h /
-du -sh ~/sites/unlimiteddb/storage/app/public/cards
-```
-Stima di partenza dai dati dell'API: il formato `card` delle immagini pesa circa 200–230 KB (nell'esempio `size` 202,01 e 231,01 in KB), quindi circa 7151 varianti × 1 immagine frontale ≈ 1,4–1,7 GB, più i retro dei Leader. Confronta con `du` diviso 3135 (peso reale medio per carta) per precisarla. Se il risultato sta stretto nel disco libero, metti `SWU_VARIANT_IMAGES=false` nel `.env` della VM prima di lanciare lo scan delle varianti, e scarica le immagini in un secondo momento (Step 4.4).
-2. Push su `new`: la pipeline del piano 11 ricostruisce l'immagine e `deploy/post-deploy.sh` lancia `migrate --force` e `queue:restart`. Verifica la riga della migration in `docker compose logs`.
-3. Sulla VM, nella cartella del sito, `docker compose exec app php artisan cache:forget cards_bounds`.
-4. **Non lanciare lo scan durante un altro scan** (c'è il lock `cards-import:running`, ma non fare deploy a metà import): poi `docker compose exec app php artisan cards:scan --phase=variants` (oppure `/scan` da Telegram per la scansione completa, che adesso fa anche le varianti).
-5. Controlli finali come allo Step 6.5–6.7; poi `du -sh storage/app/public/cards` e `df -h /` per confrontare con la stima.
-6. **Relazione con il piano 13, Step 13.4**: il reset pulito con `migrate:fresh --seed --force` e il reimport con `cards:scan` farà in automatico originali + varianti (due fasi, 103 pagine). Il numero totale di carte atteso a fine scan non sarà più 3135 ma circa 10286 (3135 carte e circa 7151 varianti); il riepilogo Telegram ora le riporta separate. Aggiorna di conseguenza il testo dello Step 13.4 quando lo esegui.
+1. Verifica lo spazio libero su disco (`df -h /`). Se lo spazio è limitato (< 3 GB liberi), imposta temporaneamente `SWU_VARIANT_IMAGES=false` nel `.env` prima di lanciare la scansione.
+2. Push su `new` e verifica l'esecuzione della migration dal log di deploy.
+3. Esegui la scansione delle varianti o la scansione completa da Telegram `/scan`.
+4. Verifica che `/admin/errori` sia a zero.
+
+---
 
 ## Step 8 — Documentazione
 
-1. **README.md**: nella sezione "Stato attuale → Funziona" il catalogo, la scheda carta (sezione "Altre versioni"), la collezione, i mazzi e l'API (nuove chiavi `variant_type`, `original`, `variants` di `CardResource`); nella sezione "Database" le tre colonne nuove di `cards`; nella sezione "Scansione carte" le due fasi, `--phase` e il riepilogo con le varianti; nella tabella delle variabili `SWU_VARIANT_IMAGES`; nella sezione Test il nuovo esito. Togli la voce "Varianti delle carte: ... non ancora implementato" aggiunta alla stesura di questo piano.
-2. **todo.md**: spunta la sezione 14 e annota nel piano 13 (Step 13.4) che il conteggio atteso cambia.
-3. **Indice dei piani** (`implementationPlan-ricostruzioneUnlimitedDB.md`): stato di questo piano a completato; nello "Schema del database" le righe `original_card_id`, `variant_type`, `variant_code` di `cards` perdono la nota "piano 14, non ancora applicato".
-4. Rinomina questo file in `implementationPlan-V-14-variantiCarte.md`.
-
-## Fuori da questo piano (note per dopo)
-
-- **Ristampe (`reprintOf`)**: una carta ristampata in un'espansione successiva ha un `cardUid` e un numero propri ed è oggi importata come originale a sé stante (`variantOf` nullo): in lista compare quindi ancora due volte. È un problema diverso (stessa carta in set diversi, non stessa carta in versioni diverse) con la stessa soluzione possibile (un riferimento `reprint_of`); la API espone già la relazione `reprintOf`. Il suo effetto sulle regole di rotazione dei formati va deciso a parte.
-- **Collezione e varianti importate**: `collection_cards.variant` (`normal`, `foil`, `hyper`, `prestige`, `hyper_foil`) resta un attributo del possesso sulla carta originale. Collegarlo alle carte-variante importate (mostrare l'immagine Hyperspace per le copie `hyper`, ad esempio) usando `variant_code`/`variant_type` è possibile ma non è in questo piano.
-- **Indicatore "N versioni" su `<x-card>`**: con `withCount('variants')` nei controller delle liste si può mostrare un piccolo badge; rimandato per non toccare tre viste.
-- **Foil**: se il foil arriva come voce `variantTypes` della stessa carta (non come carta separata), non serve nulla; se arriva come carte separate, la collezione lo gestisce già come attributo e le righe in più sono solo varianti nascoste (lo dice lo Step 0).
-- **`sort` esplicito dell'API**: la paginazione dell'API non specifica un ordinamento; con 103 pagine e voci mescolate, `sort[0]=id:asc` renderebbe le pagine stabili anche se l'API cambia durante lo scan. Non l'ho aggiunto perché non so se l'endpoint personalizzato lo accetta: prova con `…&sort[0]=id:asc` nello Step 0 e, se risponde 200, aggiungilo a entrambe le fasi.
+1. **README.md**: documenta la suddivisione delle promo stile SWUDB, la relazione con `group_main_expansion`, la visualizzazione delle varianti nella scheda carta e la nuova variabile d'ambiente `SWU_VARIANT_IMAGES`.
+2. **todo.md**: spunta la sezione 14 e aggiorna le note per il piano 13.
+3. Rinomina il file in `implementationPlan-V-14-variantiCarte.md`.
