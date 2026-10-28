@@ -56,12 +56,12 @@ Separando le carte secondo questo standard SWUDB, **tutte le collisioni di numer
 | Come si chiama il riferimento | colonna `cards.original_card_id`, relazioni `Card::originalCard()` / `Card::variants()`, scope `Card::originals()` | Evita "base" che colliderebbe con il tipo di carta `Base` e `Deck::baseCard()`. |
 | Dove punta | `cards.id` della carta originale | Stesso riferimento usato dalle pivot; se l'originale venisse cancellato, la variante si elimina in cascata. |
 | Risoluzione espansione promo | Metodo `resolveExpansionCode()` nel job di import | Intercetta le promo dei set 1-3 e le assegna alle sotto-espansioni figlie (`SORPR`, `SOROP`, `SORSH`, `SHDPQ`...) con `group_main_expansion` valorizzato. |
-| Chiave primaria `cards.id` | `{expansion}{number}` per gli originali; `{expansion}{number}-{cid}` per le varianti | Garantisce univocità assoluta anche in caso di refusi dell'API (es. SEC 571). La colonna `id` e le FK collegate vengono portate a `VARCHAR(36)`. |
+| Chiave primaria `cards.id` | Sempre `{expansion}{number}` | Con la separazione in sottoespansioni stile SWUDB (es. `SORPR1`, `SOROP2`) la coppia espansione+numero è univoca per costruzione: nessun suffisso con `cid` necessario. La larghezza `VARCHAR(20)` rimane invariata rispetto a oggi. |
 | Indice `(expansion, number)` | Indice normale (non unique) | Mantiene le performance delle query senza fallire in caso di errori di battitura nei numeri da parte di Strapi. |
 | Importazione | **Due fasi** nello stesso scan: prima gli originali, poi le varianti | Quando arriva una variante, l'originale esiste già a DB e il collegamento si risolve con una semplice query `cid`. |
 | Liste e Ricerca | Filtro esplicito `originals()` (`whereNull('original_card_id')`) | Nessun global scope: il catalogo mostra solo gli originali, mentre le schede dettaglio possono caricare le varianti. |
 | Mazzi | Un mazzo contiene **sempre l'originale** | Il limite delle 3 copie opera sulla carta originale. L'import di un mazzo con codici SWUDB (es. `SOROP_1`, `SORPR_2`) li riconduce automaticamente all'originale. |
-| Collezione | Invariata: quantità per finitura (`normal`, `foil`, `hyper`...) sulla carta originale | L'eventuale associazione visiva 1:1 tra la collezione e le singole carte-variante importate è rimandata a un piano successivo. |
+| Collezione | `collection_cards.variant` viene rimosso; ogni versione (Foil, Hyperspace, Standard) è una riga distinta in `cards` e va aggiunta alla collezione come `card_id` diretto | La colonna `variant` era un workaround per tracciare la finitura sulla carta originale; con le varianti come carte a DB il dato di finitura è implicito nell'`expansion` e nel `number` della carta stessa. Il vincolo unico su `collection_cards` diventa `(user_id, card_id)`. |
 | Immagini | Interruttore `SWU_VARIANT_IMAGES` in configurazione | Circa 7.151 varianti pesano ~1,5 GB: permette di decidere se scaricare subito le immagini o solo i dati. |
 
 ---
@@ -79,11 +79,17 @@ Vedrai le diverse carte con numero 2 e i rispettivi seriali/tipi promozionali.
 
 ## Step 1 — Schema e modello
 
-#### 1.1 — Migration `database/migrations/2026_10_28_090000_add_original_card_id_and_expand_card_id.php`
+#### 1.1 — Migration `database/migrations/2026_10_28_090000_add_variants_and_drop_collection_variant.php`
 Crea una migration che:
-1. Allarga `cards.id` a `VARCHAR(36)` (e aggiorna le tabelle pivot collegate).
-2. Aggiunge le colonne `original_card_id`, `variant_type`, `variant_code`.
-3. Sostituisce l'indice unique `['expansion', 'number']` con un indice normale.
+1. Aggiunge le colonne `original_card_id`, `variant_type`, `variant_code` sulla tabella `cards`.
+2. Sostituisce l'indice unique `['expansion', 'number']` con un indice normale (robusto ai refusi dell'API come SEC 571).
+3. Rimuove la colonna `variant` da `collection_cards` e aggiorna il vincolo unico a `(user_id, card_id)`.
+
+> [!NOTE]
+> **Nessun allargamento di `cards.id` o delle FK**: con la separazione in sottoespansioni stile SWUDB la coppia `(expansion, number)` è già univoca per costruzione, quindi `id` rimane `VARCHAR(20)` (verificato nella migration `create_cards_table`) e non si devono toccare le tabelle pivot (`card_aspect`, `card_trait`, `deck_cards`, `collection_cards`).
+
+> [!WARNING]
+> Il nuovo unique `(user_id, card_id)` di `collection_cards` fallisce se esistono righe con la stessa carta in finiture diverse, e le quantità per finitura non si possono mappare sulle carte-variante. Sui database con dati di collezione serve `migrate:fresh` (lo prevede già lo Step 13.4) oppure una decisione sul trasferimento dei dati.
 
 ```php
 <?php
@@ -95,42 +101,23 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Adds variant fields and widens card IDs to accommodate variant identifiers safely.
-     * Aggiunge i campi per le varianti e allarga gli ID per gestire gli identificatori delle varianti.
+     * Adds variant fields to cards, drops the unique (expansion, number) constraint,
+     * and removes the obsolete collection_cards.variant column.
+     *
+     * Aggiunge i campi variante a cards, rimuove il vincolo unique su (expansion, number)
+     * e droppa la colonna collection_cards.variant ora superflua.
      */
     public function up(): void
     {
-        // 1. Allargamento FK nelle tabelle collegate
-        Schema::table('card_aspect', function (Blueprint $table) {
-            $table->dropForeign(['card_id']);
-            $table->string('card_id', 36)->change();
-        });
-
-        Schema::table('card_trait', function (Blueprint $table) {
-            $table->dropForeign(['card_id']);
-            $table->string('card_id', 36)->change();
-        });
-
-        Schema::table('deck_cards', function (Blueprint $table) {
-            $table->dropForeign(['card_id']);
-            $table->string('card_id', 36)->change();
-        });
-
-        Schema::table('collection_cards', function (Blueprint $table) {
-            $table->dropForeign(['card_id']);
-            $table->string('card_id', 36)->change();
-        });
-
-        // 2. Modifiche sulla tabella cards
+        // 1. Modifiche sulla tabella cards
         Schema::table('cards', function (Blueprint $table) {
-            $table->string('id', 36)->change();
-
-            // Sostituzione indice unique con indice normale
+            // Sostituisce l'indice unique con un indice normale
+            // (sicuro in caso di refusi di numerazione nei dati Strapi come SEC 571)
             $table->index(['expansion', 'number'], 'cards_expansion_number_index');
             $table->dropUnique(['expansion', 'number']);
 
             // Nuovi campi variante
-            $table->string('original_card_id', 36)->nullable()->after('cid')
+            $table->string('original_card_id', 20)->nullable()->after('cid')
                 ->comment('cards.id della carta originale di cui questa è una variante. NULL = è lei l\'originale.');
             $table->string('variant_type', 50)->nullable()->after('original_card_id')
                 ->comment('Nome della variante (Hyperspace, Showcase, Weekly Play...). NULL per gli originali.');
@@ -140,15 +127,32 @@ return new class extends Migration
             $table->foreign('original_card_id')->references('id')->on('cards')->cascadeOnDelete();
         });
 
-        // 3. Ripristino vincoli FK
-        Schema::table('card_aspect', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
-        Schema::table('card_trait', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
-        Schema::table('deck_cards', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
-        Schema::table('collection_cards', fn (Blueprint $table) => $table->foreign('card_id')->references('id')->on('cards')->cascadeOnDelete());
+        // 2. collection_cards: drop variant, aggiorna vincolo unico.
+        // L'ordine conta: il vecchio unique (user_id, card_id, variant) può essere l'unico indice che
+        // sostiene la FK su user_id, quindi il nuovo unique va creato PRIMA di togliere il vecchio.
+        Schema::table('collection_cards', function (Blueprint $table) {
+            // Ogni carta (anche variante/promo) può stare una sola volta nella collezione dell'utente
+            $table->unique(['user_id', 'card_id']);
+        });
+
+        Schema::table('collection_cards', function (Blueprint $table) {
+            $table->dropUnique(['user_id', 'card_id', 'variant']);
+            $table->dropColumn('variant');
+        });
     }
 
     public function down(): void
     {
+        Schema::table('collection_cards', function (Blueprint $table) {
+            $table->enum('variant', ['normal', 'foil', 'hyper', 'prestige', 'hyper_foil'])
+                ->default('normal')->after('card_id');
+            $table->unique(['user_id', 'card_id', 'variant']);
+        });
+
+        Schema::table('collection_cards', function (Blueprint $table) {
+            $table->dropUnique(['user_id', 'card_id']);
+        });
+
         Schema::table('cards', function (Blueprint $table) {
             $table->dropForeign(['original_card_id']);
             $table->dropColumn(['original_card_id', 'variant_type', 'variant_code']);
@@ -167,12 +171,8 @@ Aggiorna `$fillable`, il boot dell'ID e aggiungi le relazioni e lo scope:
      {
          static::creating(function (Card $card) {
 -            $card->id = "{$card->expansion}{$card->number}";
-+            // Se è una variante, il suffisso con cid garantisce unicità assoluta anche per refusi API
-+            $id = "{$card->expansion}{$card->number}";
-+            if ($card->original_card_id !== null) {
-+                $id .= "-{$card->cid}";
-+            }
-+            $card->id = $id;
++            // Invariato: espansione+numero è sempre univoco grazie alla separazione in sottoespansioni SWUDB
++            $card->id = "{$card->expansion}{$card->number}";
          });
      }
 ```
@@ -182,7 +182,7 @@ Aggiungi nei campi `$fillable`:
          'expansion',
          'number',
          'cid',
-+        'original_card_id',
++        'original_card_id',  // VARCHAR(20): es. "SOR134"
 +        'variant_type',
 +        'variant_code',
          'unique_card',
@@ -238,27 +238,27 @@ Aggiungi la relazione verso l'espansione principale e le sotto-espansioni:
 ```
 
 #### 1.4 — Servizio immagini `app/Services/CardImageDownloader.php`
-Aggiorna il percorso di salvataggio immagini per usare `id` pulito e deterministico:
-```diff
--        $path = "cards/{$card->expansion}/{$card->number}-{$side}.{$ext}";
-+        // Le immagini usano l'espansione assegnata (es. cards/SOROP/1-front.png o cards/SOR/260-front.png)
-+        // Se l'id ha un suffisso cid (variante sovrapposta), usa la parte dell'id per non sovrascrivere file
-+        $subPath = Str::after($card->id, $card->expansion);
-+        $path = "cards/{$card->expansion}/{$subPath}-{$side}.{$ext}";
-```
+Il path dell'immagine usa già `{expansion}/{number}` e rimane invariato: con le sottoespansioni SWUDB ogni carta ha espansione e numero propri (es. `cards/SOROP/1-front.png` o `cards/SOR/260-front.png`).
+
+> [!NOTE]
+> Non serve nessuna modifica a `CardImageDownloader.php`: la coppia `(expansion, number)` è già univoca per le varianti, quindi nessun suffisso cid da aggiungere al percorso file.
 
 ---
 
-## Step 2 — Liste, Mazzi e Collezione (solo originali)
+## Step 2 — Liste e Mazzi (solo originali), Collezione (tutte le carte)
 
-Ogni query rivolta all'utente finale deve lavorare solo sulle carte originali.
+Catalogo, API, ricerca dell'editor mazzi e mazzi lavorano solo sulle carte originali. **La collezione è l'eccezione**: l'utente deve poter aggiungere anche le singole varianti, quindi `/collezione` le elenca tutte (vedi 2.5).
 
 #### 2.1 — `app/Services/CardSearch.php`
-In `apply()`, `filterOptions()` e `getBounds()`:
+In `apply()`, `filterOptions()` e `getBounds()`. `apply()` riceve il parametro `$includeVariants` (default `false`): lo passa a `true` solo `CollectionController::index()` (vedi 2.5). Codice attuale verificato: `CollectionController::index()` usa `CardSearch::apply()`, quindi mettere `originals()` dentro `apply()` senza parametro nasconderebbe le varianti in `/collezione`.
+```diff
+-    public function apply(Builder $query, array $filters): Builder
++    public function apply(Builder $query, array $filters, bool $includeVariants = false): Builder
+```
 ```diff
 -        return $query
 +        return $query
-+            ->originals()
++            ->when(! $includeVariants, fn ($q) => $q->originals())
              ->when($filters['nome'] ?? null, fn ($q, $nome) => $q->where('name', 'like', "%{$nome}%"))
 ```
 ```diff
@@ -297,11 +297,78 @@ In `syncCards()` e `addCard()`:
 ```
 
 #### 2.5 — Validazione Collezione (`CollectionController.php`)
-In `update()`:
+La collezione ora accetta **qualsiasi carta** (originale o variante/promo), poiché ogni versione è una riga distinta in `cards`. La colonna `variant` non esiste più. File toccati (stato attuale riletto sul codice): `CollectionController`, `CollectionCard`, `resources/views/collection/index.blade.php`.
+
+`CollectionController::index()`: elenca anche le varianti.
 ```diff
--            'card_id' => ['required', 'exists:cards,id'],
-+            'card_id' => ['required', Rule::exists('cards', 'id')->whereNull('original_card_id')],
+-            ->apply(Card::query()->with(['aspects', 'traits']), $request->only(CardSearch::FILTER_KEYS))
++            ->apply(Card::query()->with(['aspects', 'traits']), $request->only(CardSearch::FILTER_KEYS), includeVariants: true)
 ```
+
+`CollectionController::update()`: `card_id` resta `exists:cards,id` (accetta originali e varianti), via `variant` dalla validazione e dalla chiave di ricerca.
+```diff
+             'card_id' => ['required', 'exists:cards,id'],
+-            'variant' => ['required', 'in:normal,foil,hyper,prestige,hyper_foil'],
+             'quantity' => ['required', 'integer', 'min:0', 'max:65535'],
+```
+```diff
+-        $key = ['user_id' => $request->user()->id, 'card_id' => $validated['card_id'], 'variant' => $validated['variant']];
++        $key = ['user_id' => $request->user()->id, 'card_id' => $validated['card_id']];
+```
+
+`app/Models/CollectionCard.php`:
+```diff
+-    protected $fillable = ['user_id', 'card_id', 'variant', 'quantity'];
++    protected $fillable = ['user_id', 'card_id', 'quantity'];
+```
+
+`resources/views/collection/index.blade.php`: una sola quantità per carta al posto dei 5 campi per finitura.
+```diff
+-@php
+-    $variants = [
+-        'normal' => 'Normale',
+-        'foil' => 'Foil',
+-        'hyper' => 'Hyperspace',
+-        'hyper_foil' => 'Hyperfoil',
+-        'prestige' => 'Prestige',
+-    ];
+-@endphp
+```
+```diff
+-            @php($owned = $card->collectionCards->pluck('quantity', 'variant'))
++            @php($owned = $card->collectionCards->first()?->quantity ?? 0)
+```
+```diff
+-                    <div
+-                        class="grid grid-cols-5 gap-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+-                        @foreach ($variants as $key => $label)
+-                            <label class="text-center text-xs text-gray-500 dark:text-gray-400">
+-                                {{ $label }}
+-                                <input type="number" min="0" max="65535" value="{{ $owned[$key] ?? 0 }}"
+-                                    data-collection data-card="{{ $card->id }}" data-variant="{{ $key }}"
+-                                    class="mt-1 w-full rounded border-gray-300 text-center text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100">
+-                            </label>
+-                        @endforeach
+-                    </div>
++                    <div
++                        class="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
++                        <label class="block text-center text-xs text-gray-500 dark:text-gray-400">
++                            {{ $card->variant_type ?? 'Originale' }}: copie possedute
++                            <input type="number" min="0" max="65535" value="{{ $owned }}"
++                                data-collection data-card="{{ $card->id }}"
++                                class="mt-1 w-full rounded border-gray-300 text-center text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100">
++                        </label>
++                    </div>
+```
+Nello script della vista, nel `body` del `fetch`:
+```diff
+                         card_id: input.dataset.card,
+-                        variant: input.dataset.variant,
+                         quantity,
+```
+
+> [!WARNING]
+> **`DeckGapCalculator`** somma oggi le quantità per `card_id` su tutte le finiture. Con le varianti come carte distinte, chi possiede solo la Hyperspace non risulta avere l'originale richiesta dal mazzo. Il comportamento da scegliere è in sospeso: va deciso prima di applicare questo step.
 
 #### 2.6 — `app/Services/DeckImporter.php`: supporto codici SWUDB e conversione varianti
 Chi esporta un mazzo da SWUDB potrebbe avere codici di espansioni promozionali (es. `SOROP_1`, `SORPR_2`) o codici standard (`SOR_134`):
@@ -760,6 +827,33 @@ it('l\'import di un mazzo converte codici promo swudb nell\'originale', function
 
     expect($result['deck']->cards->first()->id)->toBe($original->id);
 });
+
+it('l\'utente può aggiungere sia l\'originale che la variante alla collezione separatamente', function () {
+    $user = User::factory()->create();
+    $original = makeCard(['expansion' => 'SOR']);
+    $hyperspace = makeCard(['expansion' => 'SOROP', 'original_card_id' => $original->id, 'variant_type' => 'Hyperspace']);
+
+    // La rotta di aggiornamento è PATCH /collezione e non riceve più `variant`
+    $this->actingAs($user)
+        ->patchJson(route('collection.update'), ['card_id' => $original->id, 'quantity' => 2])
+        ->assertOk();
+
+    $this->actingAs($user)
+        ->patchJson(route('collection.update'), ['card_id' => $hyperspace->id, 'quantity' => 1])
+        ->assertOk();
+
+    expect(CollectionCard::where('user_id', $user->id)->count())->toBe(2);
+});
+
+it('la collezione elenca anche le varianti', function () {
+    $user = User::factory()->create();
+    $original = makeCard(['expansion' => 'SOR']);
+    makeCard(['expansion' => 'SOROP', 'original_card_id' => $original->id, 'variant_type' => 'Hyperspace']);
+
+    $response = $this->actingAs($user)->get(route('collection.index'))->assertOk();
+
+    expect($response->viewData('cards')->total())->toBe(2);
+});
 ```
 
 ---
@@ -803,6 +897,6 @@ it('l\'import di un mazzo converte codici promo swudb nell\'originale', function
 
 ## Step 8 — Documentazione
 
-1. **README.md**: documenta la suddivisione delle promo stile SWUDB, la relazione con `group_main_expansion`, la visualizzazione delle varianti nella scheda carta e la nuova variabile d'ambiente `SWU_VARIANT_IMAGES`.
+1. **README.md**: documenta la suddivisione delle promo stile SWUDB, la relazione con `group_main_expansion`, la visualizzazione delle varianti nella scheda carta, la collezione per singola carta (senza `collection_cards.variant`, unique `(user_id, card_id)`) e la nuova variabile d'ambiente `SWU_VARIANT_IMAGES`; aggiorna anche la sezione "Database" e la rotta `PATCH /collezione`.
 2. **todo.md**: spunta la sezione 14 e aggiorna le note per il piano 13.
 3. Rinomina il file in `implementationPlan-V-14-variantiCarte.md`.
