@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Sleep;
 use Spatie\Permission\Models\Role;
@@ -47,6 +48,20 @@ function fakeCardEntry(array $overrides = []): array
     return array_replace_recursive($base, $overrides);
 }
 
+/**
+ * A variant entry: same skeleton as the original, with its own cardUid/number, the original it points to and its variant type
+ * Una variante: stesso scheletro dell'originale, con cardUid e numero propri, l'originale a cui rimanda e il tipo di variante
+ */
+function fakeVariantEntry(string $cid, int $number, string $originalUid, string $type, string $variantId): array
+{
+    return fakeCardEntry(['attributes' => [
+        'cardUid' => $cid,
+        'cardNumber' => $number,
+        'variantOf' => ['data' => ['attributes' => ['cardUid' => $originalUid]]],
+        'variantTypes' => ['data' => [['attributes' => ['name' => $type, 'variantId' => $variantId]]]],
+    ]]);
+}
+
 it('crea le carte nuove ricevute dall\'API', function () {
     fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::response([
@@ -70,13 +85,15 @@ it('pagina correttamente su piu\' pagine', function () {
     fakeSwuHttp([
         'admin.starwarsunlimited.com/api/card-list*' => Http::sequence()
             ->push(['data' => [fakeCardEntry()], 'meta' => ['pagination' => ['pageCount' => 2]]])
-            ->push(['data' => [fakeCardEntry(['attributes' => ['cardUid' => '1111111111', 'cardNumber' => 12]])], 'meta' => ['pagination' => ['pageCount' => 2]]]),
+            ->push(['data' => [fakeCardEntry(['attributes' => ['cardUid' => '1111111111', 'cardNumber' => 12]])], 'meta' => ['pagination' => ['pageCount' => 2]]])
+            // consumato dalla richiesta della fase varianti (la risposta vera arriva da fakeSwuHttp, `*notNull*`)
+            ->push(['data' => [], 'meta' => ['pagination' => ['pageCount' => 0]]]),
     ]);
     Mail::fake();
 
     (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
 
-    expect(Http::recorded(fn ($request) => str_contains($request->url(), 'card-list')))->toHaveCount(2);
+    expect(Http::recorded(fn ($request) => str_contains($request->url(), 'card-list')))->toHaveCount(3); // 2 originali + 1 varianti
     expect(Card::count())->toBe(2);
 });
 
@@ -157,7 +174,8 @@ it('riprende da una pagina con cards:scan --page', function () {
     Artisan::call('cards:scan', ['--page' => 2]);
 
     Http::assertSent(fn ($request) => str_contains(urldecode($request->url()), 'pagination[page]=2'));
-    Http::assertNotSent(fn ($request) => str_contains(urldecode($request->url()), 'pagination[page]=1'));
+    Http::assertNotSent(fn ($request) => str_contains(urldecode($request->url()), '[$null]=true')
+        && str_contains(urldecode($request->url()), 'pagination[page]=1'));
 });
 
 it('non avvia due scan insieme', function () {
@@ -258,4 +276,26 @@ it('assegna le promo dei primi set alle sottoespansioni stile swudb', function (
         ->and($op->expansion)->toBe('SOROP')
         ->and($sh->expansion)->toBe('SORSH')
         ->and(Expansion::where('expansion', 'SOROP')->value('group_main_expansion'))->toBe('SOR');
+});
+
+it('cards:scan --phase=variants accoda la fase varianti', function () {
+    Queue::fake();
+
+    Artisan::call('cards:scan', ['--phase' => 'variants']);
+
+    Queue::assertPushed(ImportCardsFromSwuApiJob::class, fn ($job) => $job->phase === ImportCardsFromSwuApiJob::PHASE_VARIANTS && $job->page === 1);
+});
+
+it('cards:scan rifiuta una fase sconosciuta', function () {
+    Queue::fake();
+
+    expect(Artisan::call('cards:scan', ['--phase' => 'boh']))->toBe(1);
+
+    Queue::assertNothingPushed();
+});
+
+it('un job in coda serializzato prima del piano 14 riparte dalla fase originali', function () {
+    $job = (new ReflectionClass(ImportCardsFromSwuApiJob::class))->newInstanceWithoutConstructor();
+
+    expect($job->phase)->toBe(ImportCardsFromSwuApiJob::PHASE_ORIGINALS);
 });
