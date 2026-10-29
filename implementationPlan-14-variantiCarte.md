@@ -7,6 +7,14 @@
 
 ---
 
+## Stato dell'esecuzione (2026-10-28, sera)
+
+Step 1–5 applicati quasi tutti, ma con errori: la suite ha 51 test falliti e le pagine dei mazzi rispondono 500. Cause e correzioni sono nel piano [`14a`](implementationPlan-14a-correzioniVarianti.md): import di `Builder` mancante in `Card`, Step 3.1 finito in `DeckController` invece che in `CardController`, `cards:scan --phase` mai passato al job, migration senza `dropUnique`, test e vista collezione da sistemare. La decisione sul delta delle carte mancanti (Step 2.5) è sviluppata nel piano [`14b`](implementationPlan-14b-deltaCollezioneVarianti.md).
+
+**Applica prima `implementationPlan-14-variantiCarte-Correzione.md` (che riunisce 14a e 14b), poi riprendi da Step 6.** Questo piano si rinomina in `implementationPlan-V-14-variantiCarte.md` solo a 14a e 14b chiusi.
+
+---
+
 ## Obiettivo
 
 Oggi l'import chiede all'API solo le carte con `filters[variantOf][id][$null]=true`, cioè solo gli originali standard: tutte le versioni alternative (Hyperspace, Showcase, Foil) e le carte promozionali (Weekly Play, Prerelease, Store Showdown, Planetary Qualifier, Convention, Judge) si perdono. Vogliamo:
@@ -14,7 +22,7 @@ Oggi l'import chiede all'API solo le carte con `filters[variantOf][id][$null]=tr
 1. importarle **tutte** (10.286 carte complessive, togliendo il filtro agli originali);
 2. risolvere il disordine dei dati di partenza dell'API organizzando le promo in **espansioni dedicate stile SWUDB** (es. `SORPR`, `SOROP`, `SORSH`, `SHDPQ`... e le ufficiali `JTLP`, `SECP`...), collegate al set base tramite `expansions.group_main_expansion`;
 3. salvare a DB per ogni variante il **riferimento alla carta originale** (`original_card_id`, `variant_type`, `variant_code`);
-4. mostrare **una sola carta** per ogni gruppo nelle liste pubbliche (una sola Ahsoka, non quattro), con la galleria di tutte le altre versioni (Hyperspace, Showcase, promo) consultabile nella scheda dell'originale;
+4. mostrare **una sola carta** per ogni gruppo nelle liste pubbliche (una sola Ahsoka, non quattro; eccezioni volute: `/nuove-uscite` e `/collezione` mostrano tutte le carte, varianti comprese), con la galleria di tutte le altre versioni (Hyperspace, Showcase, promo) consultabile nella scheda dell'originale;
 5. gestire gli effetti collaterali (mazzi, import mazzi da SWUDB, collezione, API, spazio disco con interruttore immagini).
 
 ---
@@ -59,7 +67,7 @@ Separando le carte secondo questo standard SWUDB, **tutte le collisioni di numer
 | Chiave primaria `cards.id` | Sempre `{expansion}{number}` | Con la separazione in sottoespansioni stile SWUDB (es. `SORPR1`, `SOROP2`) la coppia espansione+numero è univoca per costruzione: nessun suffisso con `cid` necessario. La larghezza `VARCHAR(20)` rimane invariata rispetto a oggi. |
 | Indice `(expansion, number)` | Indice normale (non unique) | Mantiene le performance delle query senza fallire in caso di errori di battitura nei numeri da parte di Strapi. |
 | Importazione | **Due fasi** nello stesso scan: prima gli originali, poi le varianti | Quando arriva una variante, l'originale esiste già a DB e il collegamento si risolve con una semplice query `cid`. |
-| Liste e Ricerca | Filtro esplicito `originals()` (`whereNull('original_card_id')`) | Nessun global scope: il catalogo mostra solo gli originali, mentre le schede dettaglio possono caricare le varianti. |
+| Liste e Ricerca | Filtro esplicito `originals()` (`whereNull('original_card_id')`) | Nessun global scope: il catalogo mostra solo gli originali, mentre le schede dettaglio possono caricare le varianti. `/nuove-uscite` e `/collezione` non applicano il filtro e mostrano tutte le carte. |
 | Mazzi | Un mazzo contiene **sempre l'originale** | Il limite delle 3 copie opera sulla carta originale. L'import di un mazzo con codici SWUDB (es. `SOROP_1`, `SORPR_2`) li riconduce automaticamente all'originale. |
 | Collezione | `collection_cards.variant` viene rimosso; ogni versione (Foil, Hyperspace, Standard) è una riga distinta in `cards` e va aggiunta alla collezione come `card_id` diretto | La colonna `variant` era un workaround per tracciare la finitura sulla carta originale; con le varianti come carte a DB il dato di finitura è implicito nell'`expansion` e nel `number` della carta stessa. Il vincolo unico su `collection_cards` diventa `(user_id, card_id)`. |
 | Immagini | Interruttore `SWU_VARIANT_IMAGES` in configurazione | Circa 7.151 varianti pesano ~1,5 GB: permette di decidere se scaricare subito le immagini o solo i dati. |
@@ -114,7 +122,7 @@ return new class extends Migration
             // Sostituisce l'indice unique con un indice normale
             // (sicuro in caso di refusi di numerazione nei dati Strapi come SEC 571)
             $table->index(['expansion', 'number'], 'cards_expansion_number_index');
-            $table->dropUnique(['expansion', 'number']);
+            // Unico (expansion, number) mantenuto per scelta dell'utente (2026-10-29): nessun dropUnique
 
             // Nuovi campi variante
             $table->string('original_card_id', 20)->nullable()->after('cid')
@@ -163,7 +171,12 @@ return new class extends Migration
 };
 ```
 
+> [!IMPORTANT]
+> Decisione dell'utente (2026-10-29): l'unico `(expansion, number)` resta, quindi niente `dropUnique`; nel `down()` non va ricreato. Vedi `implementationPlan-14-variantiCarte-Correzione.md`, Step 4.
+
 #### 1.2 — Modello `app/Models/Card.php`
+
+> **Aggiungi in cima al file `use Illuminate\Database\Eloquent\Builder;`** (14a Step 1): senza, nel namespace `App\Models` il type-hint `Builder` punta a una classe inesistente e `originals()` lancia `TypeError`.
 Aggiorna `$fillable`, il boot dell'ID e aggiungi le relazioni e lo scope:
 
 ```diff
@@ -247,7 +260,7 @@ Il path dell'immagine usa già `{expansion}/{number}` e rimane invariato: con le
 
 ## Step 2 — Liste e Mazzi (solo originali), Collezione (tutte le carte)
 
-Catalogo, API, ricerca dell'editor mazzi e mazzi lavorano solo sulle carte originali. **La collezione è l'eccezione**: l'utente deve poter aggiungere anche le singole varianti, quindi `/collezione` le elenca tutte (vedi 2.5).
+Catalogo, API, ricerca dell'editor mazzi e mazzi lavorano solo sulle carte originali. **La collezione e le Ultime uscite (2.2) sono le eccezioni**: l'utente deve poter aggiungere anche le singole varianti, quindi `/collezione` le elenca tutte (vedi 2.5).
 
 #### 2.1 — `app/Services/CardSearch.php`
 In `apply()`, `filterOptions()` e `getBounds()`. `apply()` riceve il parametro `$includeVariants` (default `false`): lo passa a `true` solo `CollectionController::index()` (vedi 2.5). Codice attuale verificato: `CollectionController::index()` usa `CardSearch::apply()`, quindi mettere `originals()` dentro `apply()` senza parametro nasconderebbe le varianti in `/collezione`.
@@ -272,6 +285,8 @@ In `apply()`, `filterOptions()` e `getBounds()`. `apply()` riceve il parametro `
 *(Ricorda `php artisan cache:forget cards_bounds` dopo il deploy).*
 
 #### 2.2 — `app/Http/Controllers/CardController.php`, `newReleases()`
+
+> **Decisione dell'utente, applicata coerentemente nel piano (2026-10-28)**: `/nuove-uscite` mostra tutte le carte, varianti comprese, e nessun altro punto del piano la contraddice (Obiettivo punto 4, tabella delle scelte e intro dello Step 2 sono stati allineati). Un click su una variante porta all'originale con un redirect 301 (Step 3.1) dove compare nella galleria 'Altre versioni'. La mail delle carte nuove (`NewCardsEmail`) elenca già tutte le carte create dallo scan, varianti comprese.
 qui non faccio modifiche perchè nella pagina new releases ritengo sensato vedere tutte le carte, non solo le versioni originali (se sei un AI: se da qualche parte trovi discordanza con questo approccio di mostrare tutte le uscite e non solo le originali sistema l'altro)
 
 #### 2.3 — `app/Http/Controllers/TelegramController.php`, `handleSearch()`
@@ -364,10 +379,10 @@ Nello script della vista, nel `body` del `fetch`:
 ```
 
 > [!WARNING]
-> **`DeckGapCalculator`** somma oggi le quantità per `card_id` su tutte le finiture. Con le varianti come carte distinte, chi possiede solo la Hyperspace non risulta avere l'originale richiesta dal mazzo. Il comportamento da scegliere è in sospeso: va deciso prima di applicare questo step.
+> **`DeckGapCalculator`** sommava le quantità per `card_id` su tutte le finiture. Con le varianti come carte distinte, chi possiede solo la Hyperspace non risulterebbe avere l'originale richiesta dal mazzo. **Decisione dell'utente** (sotto): le varianti contano come copie dell'originale. Implementazione, test e codice completo nel piano [`14b`](implementationPlan-14b-deltaCollezioneVarianti.md), da applicare insieme a questo step.
 >
 >facciamo in modo che per ogni card_id vengano considerate anche tutte le varianti nella conta, perciò chi ha una copia di una variante e una di un'altra di quella card_id avrà 2 copie di quella card_id.
->per le AI: appena arrivi incontro a questo sviluppa un piano per implementare questa cosa
+> *(Piano sviluppato il 2026-10-28: `implementationPlan-14b-deltaCollezioneVarianti.md`.)*
 
 
 #### 2.6 — `app/Services/DeckImporter.php`: supporto codici SWUDB e conversione varianti
@@ -422,6 +437,8 @@ In `persist()`:
 ## Step 3 — Scheda carta e API
 
 #### 3.1 — `CardController::show()`
+
+> **Attenzione (14a Step 2)**: questo metodo va in `app/Http/Controllers/CardController.php`, **non** in `DeckController` (dove è finito alla prima applicazione, rompendo le pagine dei mazzi). Serve anche `use Illuminate\Http\RedirectResponse;`.
 Se si accede con l'URL di una variante (es. `/carte/SORPR/1`), si viene reindirizzati con 301 alla scheda della carta originale. L'originale carica e mostra le sue varianti ordinate per codice variante e numero.
 ```php
     public function show(string $expansion, int $number): View|RedirectResponse
@@ -513,6 +530,8 @@ In `Api\CardController::show()` carica le relazioni e dai precedenza agli origin
 ## Step 4 — Importazione con normalizzazione set promozionali (stile SWUDB)
 
 #### 4.1 — Costanti e proprietà in `ImportCardsFromSwuApiJob.php`
+
+> Il parametro promosso `public string $phase` non ha un default di proprietà e fa fallire i job già in coda serializzati senza `phase`: usa la versione di 14a Step 4.
 ```diff
      public const API_URL = 'https://admin.starwarsunlimited.com/api/card-list';
 
@@ -752,6 +771,8 @@ E al completamento dell'ultima pagina degli originali:
 #### 4.7 — `cards:scan` command (`app/Console/Commands/ScanCards.php`)
 ```php
     protected $signature = 'cards:scan {--page=1 : Pagina da cui far partire la scansione} {--phase=originals : originals (completo) oppure variants}';
+
+    // La firma da sola non basta: handle() deve passare --phase al job (14a Step 3), altrimenti cards:scan --phase=variants lancia gli originali.
 ```
 
 ---
@@ -759,6 +780,8 @@ E al completamento dell'ultima pagina degli originali:
 ## Step 5 — Test Pest
 
 #### 5.1 — Aggiornare i mock in `tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php`
+
+> I test di questo step (5.1–5.3) vanno corretti come in 14a Step 7: `fakeVariantEntry()` non era definita, 'pagina correttamente su piu pagine' e 'riprende da una pagina' non tenevano conto della seconda fase, `CardVariantsTest` non aveva gli `use`.
 Aggiorna `fakeSwuHttp()` affinché simuli le richieste con `$notNull` restituendo le varianti di test:
 ```php
 function fakeSwuHttp(array $routes, array $variants = []): void
@@ -770,6 +793,20 @@ function fakeSwuHttp(array $routes, array $variants = []): void
             'meta' => ['pagination' => ['pageCount' => $variants === [] ? 0 : 1]],
         ]),
     ] + $routes + ['*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png'])]);
+}
+```
+
+#### 5.1bis — Helper `fakeVariantEntry()`
+Il test 5.2 la usa: va definita in `ImportCardsFromSwuApiJobTest.php` subito dopo `fakeCardEntry()`:
+```php
+function fakeVariantEntry(string $cid, int $number, string $originalUid, string $type, string $variantId): array
+{
+    return fakeCardEntry(['attributes' => [
+        'cardUid' => $cid,
+        'cardNumber' => $number,
+        'variantOf' => ['data' => ['attributes' => ['cardUid' => $originalUid]]],
+        'variantTypes' => ['data' => [['attributes' => ['name' => $type, 'variantId' => $variantId]]]],
+    ]]);
 }
 ```
 
@@ -874,7 +911,7 @@ it('la collezione elenca anche le varianti', function () {
    php artisan test tests/Feature/Jobs/ImportCardsFromSwuApiJobTest.php
    php artisan test tests/Feature/Cards/CardVariantsTest.php
    ```
-4. Esegui lo scan solo delle varianti in locale:
+4. Esegui lo scan solo delle varianti in locale (richiede il fix di `cards:scan --phase`, 14a Step 3, e gli originali già a DB):
    ```bash
    docker compose -f docker-compose.dev.yml exec app php artisan cards:scan --phase=variants
    ```
@@ -899,4 +936,4 @@ it('la collezione elenca anche le varianti', function () {
 
 1. **README.md**: documenta la suddivisione delle promo stile SWUDB, la relazione con `group_main_expansion`, la visualizzazione delle varianti nella scheda carta, la collezione per singola carta (senza `collection_cards.variant`, unique `(user_id, card_id)`) e la nuova variabile d'ambiente `SWU_VARIANT_IMAGES`; aggiorna anche la sezione "Database" e la rotta `PATCH /collezione`.
 2. **todo.md**: spunta la sezione 14 e aggiorna le note per il piano 13.
-3. Rinomina il file in `implementationPlan-V-14-variantiCarte.md`.
+3. Rinomina il file in `implementationPlan-V-14-variantiCarte.md`, solo dopo aver chiuso anche 14a e 14b.
