@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Card;
 use App\Services\CardSearch;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -27,12 +28,22 @@ class CardController extends Controller
      * Shows the public detail page for a single card, identified by expansion+number (not cid)
      * Mostra la pagina di dettaglio pubblica di una singola carta, identificata da espansione+numero (non cid)
      */
-    public function show(string $expansion, int $number): View
+    public function show(string $expansion, int $number): View|RedirectResponse
     {
-        $card = Card::with(['aspects', 'traits', 'expansionModel'])
+        $query = Card::with(['aspects', 'traits', 'expansionModel', 'originalCard'])
             ->where('expansion', $expansion)
-            ->where('number', $number)
-            ->firstOrFail();
+            ->where('number', $number);
+
+        $card = (clone $query)->originals()->first() ?? $query->firstOrFail();
+
+        // Se l'URL puntava a una variante/promo, rimanda all'originale
+        if ($card->original_card_id !== null) {
+            $original = $card->originalCard;
+
+            return redirect()->route('cards.show', ['expansion' => $original->expansion, 'number' => $original->number], 301);
+        }
+
+        $card->load(['variants' => fn ($q) => $q->orderBy('variant_code')->orderBy('expansion')->orderBy('number')]);
 
         return view('cards.show', compact('card'));
     }

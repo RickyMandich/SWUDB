@@ -25,7 +25,7 @@ test('card detail returns the card resource', function () {
         ->assertJsonPath('data.aspects', ['Vigilanza'])
         ->assertJsonPath('data.traits', ['Ribelle'])
         ->assertJsonPath('data.back_image', null)
-        ->assertJsonMissingPath('data.id');
+        ->assertJsonPath('data.id', 'SOR1');
 
     expect($response->json('data.front_image'))->toEndWith('/storage/cards/SOR/1-front.jpg');
 });

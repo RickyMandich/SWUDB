@@ -22,27 +22,50 @@ class CardImageDownloader
      */
     public function download(string $sourceUrl, Card $card, string $side): ?string
     {
+        // 1. Se l'immagine esiste già in locale, restituisci il percorso.
+        $basePath = "cards/{$card->expansion}/{$card->number}-{$side}";
+
+        $disk = Storage::disk('public');
+
+        foreach (['webp', 'jpg', 'png'] as $ext) {
+            $path = "{$basePath}.{$ext}";
+
+            if ($disk->exists($path)) {
+                return $path;
+            }
+        }
+
+        // 2. Scarica l'immagine solo se non esiste già.
         $response = null;
-        // 1. Http::get($sourceUrl) -> se fallisce, ritorna null (il chiamante logga il SystemError)
+
         try {
-            $response = Http::timeout(20)->retry(2, 500, throw: false)->get($sourceUrl);
+            $response = Http::timeout(20)
+                ->retry(2, 500, throw: false)
+                ->get($sourceUrl);
+
             if (! $response->successful()) {
-                // throw an error so i do not repeat the logic of returning null
-                throw new ConnectionException("Failed to download image from {$sourceUrl}");
+                throw new ConnectionException(
+                    "Failed to download image from {$sourceUrl}"
+                );
             }
         } catch (ConnectionException $e) {
-            Log::warning("Download immagine {$side} fallito per {{$card->cid}} ({$card->expansion}-{$card->number} - {$card->name}, {$card->title}), returned code {{$response?->status()}}", [
-                'source_url' => $sourceUrl,
-                'cid' => $card->cid,
-                'snippet' => $card->snippet,
-                'id' => $card->id,
-                'side' => $side,
-            ]);
+            Log::warning(
+                "Download immagine {$side} fallito per {$card->cid} ".
+                "({$card->expansion}-{$card->number} - {$card->name}, {$card->title}), ".
+                "returned code {$response?->status()}",
+                [
+                    'source_url' => $sourceUrl,
+                    'cid' => $card->cid,
+                    'snippet' => $card->snippet,
+                    'id' => $card->id,
+                    'side' => $side,
+                ]
+            );
 
             return null;
         }
 
-        // 2. determina l'estensione dal Content-Type della risposta (es. image/webp -> .webp), non dall'URL
+        // 3. Determina l'estensione dal Content-Type.
         $ext = match (Str::before($response->header('Content-Type'), ';')) {
             'image/webp' => 'webp',
             'image/jpeg' => 'jpg',
@@ -54,13 +77,12 @@ class CardImageDownloader
             return null;
         }
 
-        // 3. $path = "cards/{$card->expansion}/{$card->number}-{$side}.{$ext}"
-        $path = "cards/{$card->expansion}/{$card->number}-{$side}.{$ext}";
+        // 4. Salva l'immagine.
+        $path = "{$basePath}.{$ext}";
 
-        // 4. Storage::disk('public')->put($path, $response->body())
-        $saved = Storage::disk('public')->put($path, $response->body());
+        $saved = $disk->put($path, $response->body());
 
-        // 5. return $path
+        // 5. Restituisce il percorso solo se il salvataggio è riuscito.
         return $saved ? $path : null;
     }
 }

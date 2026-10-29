@@ -221,24 +221,17 @@ class DeckController extends Controller
     /**
      * Visualizzazione in sola lettura (accessibile se mazzo pubblico o se proprietario)
      */
-    public function show(string $expansion, int $number): View|RedirectResponse
+    public function show(string $username, string $deckname, ?int $version = null): View
     {
-        $query = Card::with(['aspects', 'traits', 'expansionModel', 'originalCard'])
-            ->where('expansion', $expansion)
-            ->where('number', $number);
+        $deck = $this->resolveDeck($username, $deckname, $version);
+        Gate::authorize('view', $deck);
 
-        $card = (clone $query)->originals()->first() ?? $query->firstOrFail();
+        $deck->load(['cards.aspects', 'cards.traits', 'leaders', 'baseCard', 'user']);
+        $validationErrors = DeckFormatValidatorFactory::make($deck->format)->validate($deck);
+        $isLatest = ! $deck->nextVersion()->exists();
+        $stats = $this->getDeckStatisticsData($deck);
 
-        // Se l'URL puntava a una variante/promo, rimanda all'originale
-        if ($card->original_card_id !== null) {
-            $original = $card->originalCard;
-
-            return redirect()->route('cards.show', ['expansion' => $original->expansion, 'number' => $original->number], 301);
-        }
-
-        $card->load(['variants' => fn ($q) => $q->orderBy('variant_code')->orderBy('expansion')->orderBy('number')]);
-
-        return view('cards.show', compact('card'));
+        return view('decks.show', compact('deck', 'validationErrors', 'isLatest') + $stats);
     }
 
     /**

@@ -66,8 +66,12 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
     /** True solo per il job che avvia lo scan (manda il messaggio "Scan avviato..."). */
     public bool $startsRun;
 
-    public function __construct(public int $page = 1, ?string $runId = null, public string $phase = self::PHASE_ORIGINALS)
+    /** Il default permette ai job messi in coda prima del piano 14 di ripartire come "originals" */
+    public string $phase = self::PHASE_ORIGINALS;
+
+    public function __construct(public int $page = 1, ?string $runId = null, string $phase = self::PHASE_ORIGINALS)
     {
+        $this->phase = $phase;
         $this->startsRun = $runId === null;
         $this->runId = $runId ?? (string) Str::uuid();
     }
@@ -131,7 +135,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         $lastPage = (int) ($payload['meta']['pagination']['pageCount'] ?? $this->page);
         $latestRotation = Expansion::max('rotation') ?? '0';
 
-        $telegram->editMessage($chatId, $state['message_id'], "Scan in corso: pagina {$this->page}/{$lastPage}...");
+        $telegram->editMessage($chatId, $state['message_id'], "Scan in corso: pagina {$this->page}/{$lastPage} - Fase {$this->phase}");
 
         $processed = 0;
         foreach ($payload['data'] ?? [] as $cardEntry) {
@@ -140,7 +144,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
             }
         }
 
-        Log::info("Scan {$this->runId}: pagina {$this->page}/{$lastPage} elaborata", [
+        Log::info("Scan {$this->runId}: pagina {$this->page}/{$lastPage} - Fase {$this->phase} elaborata", [
             'carte' => $processed,
             'memoria_picco_mb' => round(memory_get_peak_usage(true) / 1048576, 1),
         ]);
@@ -247,6 +251,8 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
             $this->syncAspectsAndTraits($card, $cardData);
             $this->downloadImages($card, $cardData, $imageDownloader);
+
+            Log::debug("Carta {$cid} ({$card->id}) elaborata");
 
             return true;
         } catch (\Throwable $e) {

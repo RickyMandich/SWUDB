@@ -1,5 +1,10 @@
 <?php
 
+use App\Enums\DeckFormat;
+use App\Models\CollectionCard;
+use App\Models\User;
+use App\Services\DeckImporter;
+
 it('il catalogo mostra solo gli originali', function () {
     $original = makeCard(['name' => 'Ahsoka Tano']);
     makeCard(['name' => 'Ahsoka Tano', 'original_card_id' => $original->id, 'expansion' => 'SOROP']);

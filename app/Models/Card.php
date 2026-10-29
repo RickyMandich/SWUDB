@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Builders\CardBuilder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Card extends Model
@@ -24,6 +25,9 @@ class Card extends Model
     {
         static::creating(function (Card $card) {
             $card->id = "{$card->expansion}{$card->number}";
+            if ($card->isVariant()) {
+                $card->id = "{$card->id}-{$card->cid}";
+            }
         });
     }
 
