@@ -17,9 +17,6 @@ return new class extends Migration
     {
         // 1. Modifiche sulla tabella cards
         Schema::table('cards', function (Blueprint $table) {
-            // Sostituisce l'indice unique con un indice normale
-            // (sicuro in caso di refusi di numerazione nei dati Strapi come SEC 571)
-            $table->index(['expansion', 'number'], 'cards_expansion_number_index');
 
             // Nuovi campi variante
             $table->string('original_card_id', 20)->nullable()->after('id')
@@ -61,8 +58,6 @@ return new class extends Migration
         Schema::table('cards', function (Blueprint $table) {
             $table->dropForeign(['original_card_id']);
             $table->dropColumn(['original_card_id', 'variant_type', 'variant_code']);
-            $table->unique(['expansion', 'number']);
-            $table->dropIndex('cards_expansion_number_index');
         });
     }
 };
