@@ -5,6 +5,11 @@
         </h2>
     </x-slot>
 
+    <x-bladewind.alert showIcon="false" showCloseIcon="false">
+        le date di uscita sono le date in cui le carte sono state caricate nel sito, non quando sono state rilasciate
+        ufficialmente
+    </x-bladewind.alert>
+
     <form action="{{ route('cards.new-releases') }}" method="GET" class="m-6 form-control">
         <x-bladewind.datepicker name="since" required="false" placeholder="Ultime carte uscite" fill_from_old="true"
             format="dd/mm/yyyy" week_starts="monday" size="big" class="shadow-sm"

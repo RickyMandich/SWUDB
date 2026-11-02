@@ -302,6 +302,12 @@
 - [x] 12.3 Componenti e Viste base
 - [x] 12.4 Aggiornamento colori (solo per il dark mode)
 
+## Modifica fuori piano 2026-11-02 — `release_date` = data di inserimento nel sito
+- [x] Nuova definizione (decisa dall'utente): `cards.release_date` non è la data di uscita ufficiale (nella source of truth era sbagliata per molti set) ma la data in cui la carta è stata aggiunta al sito, scritta dal job di import a ogni importazione; la data ufficiale resta in `expansions.legal_date`
+- [x] README riallineato: sezione "Database" (definizione di `release_date`), "Scansione carte" (punto 6), pagina "Ultime uscite" e rotta `/nuove-uscite` ("inserite" invece di "rilasciate")
+- [ ] Da applicare nel codice (`sendNotifications()` di `ImportCardsFromSwuApiJob`): ordine delle carte dell'email `NewCardsEmail` per `release_date` asc, poi `legal_date` dell'espansione desc, poi `cards.expansion`, poi `withDefaultOrder()`, così al primo import (tutte le carte con la stessa data) non c'è miscuglio tra espansioni. `emails/md-new-cards.blade.php` resta com'è: `first()->release_date` è ancora la data più bassa. Dopo l'applicazione aggiornare README (Scansione carte, punto 4)
+- [ ] Da verificare: altri punti che usano `release_date` come "data di uscita" (vista `cards/new-releases`, `CardController::newReleases`, eventuali viste che la mostrano); i nomi in UI ora dovrebbero parlare di inserimento, non di uscita ufficiale
+
 ## Bug fix 2026-10-14
 - [x] `decks.edit` andava in errore (`array_slice()` su Collection) perché `$traits` del filtro carte sovrascriveva i tratti del mazzo: le statistiche ora espongono `deckTraits` come Collection (controller, partial `statistics`, test di regressione in `DeckStatisticsTest`)
 

@@ -244,7 +244,7 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'deploy_text' => $cardData['deployBoxStyled'] ?? null,
                     'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                     'artist' => $cardData['artist'] ?? null,
-                    'release_date' => isset($cardData['publishedAt']) ? Carbon::parse($cardData['publishedAt'])->toDateString() : null,
+                    'release_date' => Carbon::now()->toDateString(),
                     'max_copies' => $cardData['cardNumber'] == 256 && $expansionCode == 'JTL' ? 15 : null,
                 ]
             );

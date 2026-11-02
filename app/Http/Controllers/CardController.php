@@ -48,7 +48,7 @@ class CardController extends Controller
         return view('cards.show', compact('card'));
     }
 
-    public function newReleases(Request $request)// : View
+    public function newReleases(Request $request): View
     {
         $request->validate(['since' => ['nullable', 'date_format:d/m/Y']]);
 
@@ -61,11 +61,12 @@ class CardController extends Controller
 
         $since = Carbon::createFromFormat('d/m/Y', $sinceInput)->startOfDay()->toDateString();
 
-        $cards = Card::where('release_date', '>=', $since)
-            ->orderByDesc('release_date')
+        $cards = Card::where('created_at', '>=', $since)
+            ->orderBy('cards.release_date')
+            ->orderByRaw('(SELECT e.legal_date FROM expansions e WHERE e.expansion = cards.expansion) DESC')
+            ->orderBy('cards.expansion')
             ->withDefaultOrder()
-            ->paginate(24)
-            ->withQueryString();
+            ->get();
 
         $groups = $cards->getCollection()
             ->groupBy(fn (Card $card) => $card->release_date?->format('d/m/Y') ?? 'nd');
