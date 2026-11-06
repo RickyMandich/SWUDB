@@ -282,6 +282,7 @@ Lancio manuale: `docker compose -f docker-compose.dev.yml exec app php artisan c
 Salvate nel disk `public` (`storage/app/public/cards/{expansion}/{number}-front|back.{ext}`, ignorate da Git).
 Niente `storage:link` in Docker: nginx le serve con l'alias `/storage/` (`docker/nginx/default.conf`) e
 `./storage/app/public` è montato nel servizio `nginx` del compose di sviluppo (in produzione, secondo `todo.md`, idem).
+`storage/app/public/*` è in `.dockerignore`: le immagini non vengono copiate nell'immagine Docker (né in dev né in prod), perché `./storage` è già montato come volume su `/var/www/html/storage` in `app` e `worker` e il contenuto dell'immagine sarebbe comunque nascosto dal volume; copiarle farebbe solo occupare spazio.
 
 ## Test
 

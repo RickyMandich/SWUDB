@@ -8,3 +8,7 @@ vendor
 # resterebbero nel CSS per sempre.
 public/build
 public/hot
+# File caricati/scaricati (immagini delle carte, ecc.): in dev e in prod
+# ./storage è montato come volume su /var/www/html/storage, quindi copiarli
+# nell'immagine occuperebbe solo spazio inutilmente (il volume li nasconde).
+storage/app/public/*
