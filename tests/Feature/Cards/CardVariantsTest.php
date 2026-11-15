@@ -5,6 +5,15 @@ use App\Models\CollectionCard;
 use App\Models\User;
 use App\Services\DeckImporter;
 
+it('una variante può avere lo stesso espansione e numero dell\'originale', function () {
+    $original = makeCard(['expansion' => 'SOR', 'number' => 5]);
+    $variant = makeCard(['expansion' => 'SOR', 'number' => 5, 'cid' => 'cid-variante', 'original_card_id' => $original->id, 'variant_type' => 'Foil']);
+
+    expect($variant->id)->toBe('SOR5-cid-variante')
+        ->and(\App\Models\Card::where('expansion', 'SOR')->where('number', 5)->count())->toBe(2)
+        ->and(\App\Models\Card::originals()->where('expansion', 'SOR')->where('number', 5)->count())->toBe(1);
+});
+
 it('il catalogo mostra solo gli originali', function () {
     $original = makeCard(['name' => 'Ahsoka Tano']);
     makeCard(['name' => 'Ahsoka Tano', 'original_card_id' => $original->id, 'expansion' => 'SOROP']);

@@ -22,7 +22,7 @@
     <x-flash-message />
 
     <x-bladewind.alert showIcon="false" showCloseIcon="false">
-        {{ $cards->total() }} carte divise in {{ $dates }} date trovate rilasciate dal {{ $since }} a
+        {{ $cards->total() }} carte divise in {{ $dates }} date trovate inserite dal {{ $since }} a
         oggi
     </x-bladewind.alert>
     @foreach ($groups as $date => $group)

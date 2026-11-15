@@ -61,12 +61,14 @@ class CardController extends Controller
 
         $since = Carbon::createFromFormat('d/m/Y', $sinceInput)->startOfDay()->toDateString();
 
-        $cards = Card::where('created_at', '>=', $since)
+        // release_date = data di inserimento nel sito: stesso criterio del datepicker, di $dates e del link nella mail
+        $cards = Card::where('release_date', '>=', $since)
             ->orderBy('cards.release_date')
             ->orderByRaw('(SELECT e.legal_date FROM expansions e WHERE e.expansion = cards.expansion) DESC')
             ->orderBy('cards.expansion')
             ->withDefaultOrder()
-            ->get();
+            ->paginate(24)
+            ->withQueryString();
 
         $groups = $cards->getCollection()
             ->groupBy(fn (Card $card) => $card->release_date?->format('d/m/Y') ?? 'nd');

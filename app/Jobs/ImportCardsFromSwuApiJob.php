@@ -227,8 +227,10 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                 ];
             }
 
-            $card = Card::updateOrCreate(
-                ['cid' => $cid],
+            // firstOrNew + fill (e non updateOrCreate): release_date è la data di inserimento nel sito,
+            // si scrive solo quando la carta nasce e non cambia nelle riscansioni successive.
+            $card = Card::firstOrNew(['cid' => $cid]);
+            $card->fill(
                 $variantAttributes + [
                     'expansion' => $expansionCode,
                     'number' => $cardData['cardNumber'],
@@ -244,10 +246,13 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
                     'deploy_text' => $cardData['deployBoxStyled'] ?? null,
                     'arena' => $cardData['arenas']['data'][0]['attributes']['name'] ?? null,
                     'artist' => $cardData['artist'] ?? null,
-                    'release_date' => Carbon::now()->toDateString(),
                     'max_copies' => $cardData['cardNumber'] == 256 && $expansionCode == 'JTL' ? 15 : null,
                 ]
             );
+            if (! $card->exists) {
+                $card->release_date = Carbon::now()->toDateString();
+            }
+            $card->save();
 
             $this->syncAspectsAndTraits($card, $cardData);
             $this->downloadImages($card, $cardData, $imageDownloader);
@@ -393,9 +398,14 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         if ($newCount > 0) {
             // L'elenco è limitato: al primo import (migliaia di carte) una mail con tutte le carte
             // sarebbe enorme e il job che la prepara rischierebbe lo stesso errore di memoria.
-            // orderBy esplicito: niente ordinamento di default di CardBuilder.
+            // Ordine: data di inserimento nel sito (release_date) crescente, poi data legale dell'espansione
+            // decrescente, poi codice espansione, poi l'ordine di default di CardBuilder. Così al primo import
+            // (tutte le carte con la stessa release_date) le espansioni non si mescolano.
             $cards = Card::where('created_at', '>=', $since)
-                ->orderBy('release_date')->orderBy('id')
+                ->orderBy('cards.release_date')
+                ->orderByRaw('(SELECT e.legal_date FROM expansions e WHERE e.expansion = cards.expansion) DESC')
+                ->orderBy('cards.expansion')
+                ->withDefaultOrder()
                 ->limit(self::EMAIL_CARDS_LIMIT)
                 ->get();
 
