@@ -32,7 +32,7 @@ services:
       - app
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.SWUDB.rule=Host(`unlimiteddb.mandich.dev`)"
+      - "traefik.http.routers.SWUDB.rule=Host(`unlimiteddb-old.mandich.dev`)"
       - "traefik.http.routers.SWUDB.entrypoints=websecure"
       - "traefik.http.routers.SWUDB.tls.certresolver=letsencrypt"
       - "traefik.http.services.SWUDB.loadbalancer.server.port=80"
