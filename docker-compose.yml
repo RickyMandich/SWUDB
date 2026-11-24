@@ -36,7 +36,7 @@ services:
       - app
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.unlimiteddb.rule=Host(`unlimiteddb-test.mandich.dev`)"
+      - "traefik.http.routers.unlimiteddb.rule=Host(`${SITE_HOST:?SITE_HOST mancante nel .env}`)"
       - "traefik.http.routers.unlimiteddb.entrypoints=websecure"
       - "traefik.http.routers.unlimiteddb.tls.certresolver=letsencrypt"
       - "traefik.http.services.unlimiteddb.loadbalancer.server.port=80"

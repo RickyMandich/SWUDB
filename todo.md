@@ -252,17 +252,17 @@
 - [x] Step 8 README, `todo.md`, indice e rinomina in `implementationPlan-V-12-importCartePerPagina.md` (2026-10-27); chiude 5.5.6–5.5.8 del piano 03
 
 ## 13 — Messa in produzione, scambio degli ambienti (Fase 13) `implementationPlan-13-ricostruzioneDeploy.md` (ex piano 12, rinumerato il 2026-10-26)
-- [ ] 13.1 Host parametrico: `SITE_HOST` nel `.env` della VM e nel compose, `server_name _;` in nginx, `.env.example`
+- [ ] 13.1 Host parametrico: `SITE_HOST` nel `.env` della VM e nel compose, `server_name _;` in nginx, `.env.example` (2026-11-24: 13.1.2–13.1.4 applicati nella repo, compose, nginx e `.env.example`, **non ancora pushati**; restano 13.1.1 sul `.env` della VM, da fare prima del push, e la verifica 13.1.5)
 - [ ] 13.2 Rilevamento sulla VM (conferma dei nomi letti dalla repo `PROJECT/SWUDB`: router `SWUDB`, subnet 172.23.0.0/24, DB `my_swudb`, nessun worker; cron sul vecchio sito; `TELEGRAM_MESSAGE_PREFIX` diverso nei due `.env`; DNS di `unlimiteddb-old`)
 - [ ] 13.3 Backup (dump dei due database, `.env`, storage del vecchio sito)
-- [ ] 13.4 Reset pulito del nuovo sito (deciso il 2026-10-21): `migrate:fresh --seed --force`, immagini cancellate, reimport completo con `cards:scan`, verifiche e **espansioni da confermare a mano** da `/admin/espansioni` (senza `confirmed` nessun mazzo Premier è valido); prerequisiti: `SEED_ADMIN_*` nel `.env` della VM e `implementationPlan-V-12-importCartePerPagina.md` applicato e provato (fatto il 2026-10-27) (memoria esaurita dopo ~180 pagine, 2026-10-18). Utenti e mazzi del vecchio sito **non** migrati (eventuali utenti a mano in futuro)
+- [ ] 13.4 Reset pulito del nuovo sito (deciso il 2026-10-21): `migrate:fresh --seed --force`, immagini cancellate, reimport completo con `cards:scan`, verifiche e **espansioni da confermare a mano** da `/admin/espansioni` (senza `confirmed` nessun mazzo Premier è valido); prerequisiti: `SEED_ADMIN_*` nel `.env` della VM e `implementationPlan-V-12-importCartePerPagina.md` applicato e provato (fatto il 2026-10-27); il reimport comprende anche le varianti (piano 14): attese 10.801 carte (3278 originali e 7523 varianti), circa 109 pagine in due fasi (memoria esaurita dopo ~180 pagine, 2026-10-18). Utenti e mazzi del vecchio sito **non** migrati (eventuali utenti a mano in futuro)
 - [ ] 13.5 Cutover: Action vecchia off → vecchio su `unlimiteddb-old` → nuovo su `unlimiteddb` → webhook Telegram
 - [ ] 13.6 Verifica post-cutover (webhook, coda, scan schedulato, immagini, icone, mail, vecchio sito)
 - [ ] 13.7 Rollback (solo routing, database invariati)
 - [ ] 13.8 Dismissione del vecchio sito (dopo qualche settimana)
 - [ ] 13.9 README, `todo.md`, indice e rinomina del piano in `implementationPlan-V-13-ricostruzioneDeploy.md`
 
-## 14 — Varianti delle carte e Set Promozionali (prerequisito di 13.4) `implementationPlan-14-variantiCarte.md` (aggiornato il 2026-10-28 con divisione promo stile SWUDB; **Step 1–5 applicati il 2026-10-28 ma con errori**: suite a 51 falliti e 76 passati, pagine dei mazzi in 500; correzioni in 14a e 14b qui sotto; Step 6–8 non eseguiti; da chiudere prima di 13.4)
+## 14 — Varianti delle carte e Set Promozionali ✅ (chiuso il 2026-11-24, Step 7 assorbito dal 13.4) `implementationPlan-V-14-variantiCarte.md` (aggiornato il 2026-10-28 con divisione promo stile SWUDB; **Step 1–5 applicati il 2026-10-28 ma con errori**: suite a 51 falliti e 76 passati, pagine dei mazzi in 500; correzioni in 14a e 14b qui sotto; storico, chiuso il 2026-11-24)
 - [ ] Step 0 Verifica preliminare dell'API (facoltativa)
 - [x] Step 1 Schema e modelli, applicati: migration `2026_10_28_170709_add_variants_and_drop_collection_variant` (`original_card_id`, `variant_type`, `variant_code`, indice normale su `expansion`+`number`, `collection_cards` senza `variant` con unique `(user_id, card_id)`; `cards.id` resta `VARCHAR(20)`, nessun suffisso cid), `Card` (`originalCard()`, `variants()`, `originals()`), `Expansion` (`mainExpansion()`, `subExpansions()`). Da correggere con 14a: manca `use Illuminate\Database\Eloquent\Builder;` in `Card.php` (TypeError su `originals()`, causa della maggior parte dei test rossi) e nella migration manca `dropUnique(['expansion', 'number'])`
 - [x] Step 2 (applicati 2.1, 2.3, 2.4, 2.5 con due `+` residui nella vista collezione, 2.6; 2.2 invariato per scelta: `/nuove-uscite` mostra tutte le carte, varianti comprese; 2.5 `DeckGapCalculator` con somma delle varianti: piano 14b, da applicare) Liste solo originali e compatibilità mazzi: `CardSearch` (`apply`, `filterOptions`, `getBounds`), `CardController::newReleases`, `TelegramController`, validazione mazzi e collezione (`whereNull('original_card_id')`), `DeckImporter` con supporto a codici SWUDB (`SOROP_1`, `SORPR_2` ecc.) e riconduzione all'originale; controllo punti non letti (2.8)
@@ -270,8 +270,8 @@
 - [x] Step 4 (applicati 4.1–4.6, con `Fase` nel messaggio Telegram e nel log per pagina aggiunta dall'utente fuori piano; 4.7: `cards:scan --phase` non viene passato al job, 14a Step 3; default di `$phase` per i job in coda, 14a Step 4) Import a due fasi con normalizzazione stile SWUDB (`resolveExpansionCode()` che mappa le promo dei primi set su `SORPR`, `SOROP`, `SORSH`, `SHDPQ` ecc., `createExpansionIfMissing()` con `group_main_expansion`, fallback `hasFoil` se `variantTypes` è vuoto, fallback su espansione seriale se null, interruttore `SWU_VARIANT_IMAGES`)
 - [x] Step 5 (scritti, da correggere con 14a Step 7: `fakeVariantEntry()` non definita, test 'pagina' e 'riprende' da adeguare alla seconda fase, `use` mancanti in `CardVariantsTest`) Test Pest: mock `fakeSwuHttp()` a due fasi, test di assegnazione sotto-espansioni promo stile SWUDB, test catalogo, test import mazzi promo SWUDB in `CardVariantsTest.php`; suite intera verde
 - [x] Step 6 Applicazione in locale (migrate, cache:forget cards_bounds, scan varianti con tinker di verifica conteggio per espansione promo): fatto il 2026-11-15, 10801 carte (3278 + 7523), 0 errori
-- [ ] Step 7 Rilascio sulla VM (verifica spazio disco, interruttore immagini, `cache:forget cards_bounds`, scan varianti); aggiornare Step 13.4 con totale 10.801 carte
-- [ ] Step 8 README, `todo.md`, indice e rinomina in `implementationPlan-V-14-variantiCarte.md`
+- [x] Step 7 (assorbito dal 13.4, aggiornato con il totale 10.801 il 2026-11-24) Rilascio sulla VM (verifica spazio disco, interruttore immagini, `cache:forget cards_bounds`, scan varianti); aggiornare Step 13.4 con totale 10.801 carte
+- [x] Step 8 (2026-11-24) README, `todo.md`, indice e rinomina in `implementationPlan-V-14-variantiCarte.md`
 - Fuori piano, da decidere: ristampe (`reprintOf`) ancora doppie in lista; badge "N versioni" su `<x-card>`; `sort[0]=id:asc` nell'API (il collegamento `collection_cards.variant` → carte-variante è stato risolto nello Step 2.5: ogni versione è una riga di collezione)
 - Import locale in corso (scan `b5170eb9`, pagina 22/32 alle 19:33 del 2026-10-28) col **job della versione precedente** (nei log manca "Fase"): DB da considerare provvisorio, vedi 14a Step 8; il reset pulito di 13.4 lo rifarà
 
@@ -293,7 +293,7 @@
 
 ## Debito tecnico trovato il 2026-10-03 (confronto codice/piani, senza piano dedicato)
 - [X] `TelegramService`: il prefisso dei messaggi è configurabile (`TELEGRAM_MESSAGE_PREFIX`, default vuoto); impostare `"dev: "` solo negli `.env` di sviluppo/test
-- [ ] Seeder admin da variabili d'ambiente: `config/seed.php` e `DatabaseSeeder` ci sono; restano `SEED_ADMIN_*` e `TELEGRAM_MESSAGE_PREFIX` in `.env.example` (`DB_QUEUE_RETRY_AFTER` aggiunto il 2026-10-27) (la riga `$user->save();` inutile è già sparita) e il cambio della vecchia password se l'utente esiste su un DB raggiungibile da fuori (resta nella cronologia Git)
+- [ ] Seeder admin da variabili d'ambiente: `config/seed.php` e `DatabaseSeeder` ci sono; `SEED_ADMIN_*` e `TELEGRAM_MESSAGE_PREFIX` ora sono in `.env.example` (aggiunti il 2026-11-24; `DB_QUEUE_RETRY_AFTER` il 2026-10-27, la riga `$user->save();` inutile è già sparita); resta solo il cambio della vecchia password se l'utente esiste su un DB raggiungibile da fuori (resta nella cronologia Git)
 - [X] `layouts/navigation.blade.php`, blocco responsive: tag di chiusura del link "Log viewer" corretto
 - [X] Scheduler in produzione: `schedule:work` come programma di `docker/supervisor/worker.conf` nel container `worker` (da verificare dopo il deploy; in dev volutamente assente, lo scan si lancia a mano)
 - [X] `docker-compose.dev.yml`: `DB_PASSWORD=${DB_PASSWORD}` ora in entrambi i servizi `app` e `worker`
@@ -322,13 +322,21 @@
 - [x] Regola di progetto `.agent/rules/main.md` tolta dall'utente: l'agente ora può modificare anche il codice; README aggiornato (varianti, collezione senza `variant`, `--phase`, `release_date` solo alla creazione, ordine della mail)
 - [x] Modifiche al codice del 2026-11-15: ordine delle carte in `sendNotifications()`; `CardController::newReleases` con `paginate(24)` e filtro su `release_date`; `ImportCardsFromSwuApiJob` scrive `release_date` solo alla creazione della carta (`firstOrNew` + `fill`)
 - [x] Suite rilanciata alle 15:52 dopo le modifiche del 2026-11-15: **134 passati (413 asserzioni), nessun fallito** (le modifiche non sono coperte da test nuovi, vedi voce sotto)
-- [ ] Test Pest da aggiungere (non ancora scritti): `/nuove-uscite` (paginazione, filtro `since`, nessun errore con `since` vuoto) e `release_date` invariata alla seconda scansione di una carta già presente
+- [ ] Test Pest scritti il 2026-11-24 ma non ancora eseguiti (rilanciare `composer test`): `tests/Feature/Cards/NewReleasesTest.php` (`/nuove-uscite`: nessuna carta, `since` di default, filtro, paginazione, varianti incluse, formato errato) e, in `ImportCardsFromSwuApiJobTest`, la `release_date` invariata alla seconda scansione
 - [x] Primo import completo in locale (2026-11-15, scan `1cb60ae2`): 9371 carte (3278 originali, 6093 varianti), 1430 problemi, tutti `Duplicate entry '<ESP>-N' for key 'cards_expansion_number_unique'` (TWI 446, SHD 444, SOR 437, SEC 44, SOROP 10, TWIOP 9, SHDOP 8, SHDPQ 5, ...): le varianti hanno lo stesso `(expansion, number)` dell'originale. La decisione del 2026-10-29 di tenere l'unique era sbagliata
 - [x] Migration `2026_11_15_171800_replace_unique_expansion_number_with_index_on_cards` (indice normale creato prima, poi `dropUnique`, per la FK su `expansion`) e test 'una variante può avere lo stesso espansione e numero dell'originale' in `CardVariantsTest`; README aggiornato
 - [x] Piano 14 Step 6 chiuso il 2026-11-15: migration applicata, 1430 `SystemError` vecchi chiusi, `cards:scan --phase=variants` rilanciato; verifica con tinker: **10801 carte (3278 originali, 7523 varianti), 0 errori aperti**. I valori sono quelli attesi (76 pagine di varianti = 7523; il vecchio "10286" era un dato dell'API non più attuale)
-- [ ] Piano 14 Step 7: rilascio sulla VM (spazio disco, `SWU_VARIANT_IMAGES`, `cache:forget cards_bounds`, scan varianti) e aggiornare 13.4 con il totale (10.801 carte)
-- [ ] Piano 14 Step 8: README, `todo.md`, indice e rinomina in `implementationPlan-V-14-variantiCarte.md` (dopo gli Step 6 e 7)
+- [x] Piano 14 Step 7: assorbito dal 13.4 (2026-11-24: il piano 13, Step 13.4, ora riporta il totale 10.801 carte, i prerequisiti di disco e `SWU_VARIANT_IMAGES` e la query di verifica originali/varianti)
+- [x] Piano 14 Step 8 (2026-11-24): README, `todo.md`, indice aggiornati e piano rinominato in `implementationPlan-V-14-variantiCarte.md`
 - [ ] Piano 13 (messa in produzione) da 13.1 in poi, dopo il piano 14
+
+## Aggiornamento 2026-11-24
+- [x] `.env.example`: aggiunti `SEED_ADMIN_NAME/EMAIL/PASSWORD`, `TELEGRAM_MESSAGE_PREFIX` e, commentata, `SITE_HOST`
+- [x] Piano 13, Step 13.1.2–13.1.4 applicati nella repo: label Traefik con `Host(`${SITE_HOST:?...}`)` in `docker-compose.yml` e `server_name _;` in `docker/nginx/default.conf`. **Da pushare solo dopo aver messo `SITE_HOST` nel `.env` della VM (13.1.1)**, altrimenti il compose di produzione non parte
+- [x] Piano 14 chiuso (Step 7 assorbito dal 13.4), file rinominato `implementationPlan-V-14-variantiCarte.md`; README e indice dei piani allineati
+- [x] Piano 13 aggiornato: totale atteso 10.801 carte, prerequisiti di disco e `SWU_VARIANT_IMAGES`, query di verifica originali/varianti, nota sulle espansioni promo
+- [ ] Rilanciare `composer test` dopo i test nuovi del 2026-11-24 (`NewReleasesTest`, `release_date` invariata)
+- [ ] Piano 13 da 13.1.1 in poi (comandi sulla VM)
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi

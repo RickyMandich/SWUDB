@@ -1,9 +1,9 @@
 # Implementation plan 13 — Ricostruzione UnlimitedDB · Fase 13: messa in produzione (scambio degli ambienti)
 
 > Parte dell'indice [`implementationPlan-ricostruzioneUnlimitedDB.md`](implementationPlan-ricostruzioneUnlimitedDB.md). **Ultimo piano da eseguire.**
-> **Prerequisiti**: [`implementationPlan-V-10-ricostruzioneApiPubblica.md`](implementationPlan-V-10-ricostruzioneApiPubblica.md) chiuso (completato il 2026-10-26, Step 11.5.8 compreso), [`implementationPlan-V-12-importCartePerPagina.md`](implementationPlan-V-12-importCartePerPagina.md) applicato (completato il 2026-10-27: import completo di 3135 carte, 0 problemi, picco 80 MB; serve allo Step 13.4) e
+> **Prerequisiti**: [`implementationPlan-V-10-ricostruzioneApiPubblica.md`](implementationPlan-V-10-ricostruzioneApiPubblica.md) chiuso (completato il 2026-10-26, Step 11.5.8 compreso), [`implementationPlan-V-14-variantiCarte.md`](implementationPlan-V-14-variantiCarte.md) chiuso (2026-11-24: import completo di originali e varianti provato in locale, 10.801 carte), [`implementationPlan-V-12-importCartePerPagina.md`](implementationPlan-V-12-importCartePerPagina.md) applicato (completato il 2026-10-27: import completo di 3135 carte, 0 problemi, picco 80 MB; serve allo Step 13.4) e
 > [`implementationPlan-V-11-githubActionBuildGhcr.md`](implementationPlan-V-11-githubActionBuildGhcr.md) applicato (pipeline `new` → ghcr.io → VM funzionante sul sito di test: **completato il 2026-10-26**, rollback compreso).
-> Regola del progetto (`.agent/rules/main.md`): questo piano è l'unico output, il codice (compose, nginx, `.env.example`) lo applichi tu a mano.
+> Dal 2026-11-15 la regola `.agent/rules/main.md` non c'è più: il codice (compose, nginx, `.env.example`) può applicarlo anche l'agente. Lo Step 13.1 è stato applicato nella repo il 2026-11-24 (13.1.2–13.1.4); restano 13.1.1 sulla VM, da fare **prima** del push, e 13.1.5.
 > **Sostituisce il vecchio Step 12.2** ("redeploy pulito" con `new-site.sh`: stop di `~/sites/SWUDB`, cambio del branch di default, ricreazione della cartella): non serve più.
 
 ## Perché si scambiano gli ambienti invece di fare un merge
@@ -145,9 +145,9 @@ I `.env` contengono segreti: la cartella resta `700` e fuori da qualunque repo. 
 Si fa sul sito **ancora sull'host di test**, prima del cutover: la vecchia produzione resta online per tutta la durata (lunga) dell'import. Il dump del database di prova è già in `$B/new-test.sql` (Step 13.3).
 
 #### 13.4.1 — Prerequisiti
-- Nel `.env` della VM del nuovo sito ci sono `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` (non sono in `.env.example`: vanno aggiunte a mano): dopo il reset il `DatabaseSeeder` è l'unico modo in cui nasce l'utente admin, con email già verificata.
+- Nel `.env` della VM del nuovo sito ci sono `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` (ora sono in `.env.example`, ma il `.env` della VM va aggiornato a mano): dopo il reset il `DatabaseSeeder` è l'unico modo in cui nasce l'utente admin, con email già verificata.
 - Nel `.env` ci sono `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` e `RESEND_API_KEY` con `MAIL_MAILER=resend`; `TELEGRAM_MESSAGE_PREFIX` è quello che vuoi vedere sui messaggi dell'import (finisce nello stesso bot del vecchio sito).
-- Il disco regge le immagini: `df -h /` (era al 79%) e `du -sh storage/app/public/cards`. Dopo il reset le immagini si riscaricano tutte.
+- Il disco regge le immagini: `df -h /` (era al 79%) e `du -sh storage/app/public/cards`. Dopo il reset le immagini si riscaricano tutte, **comprese quelle di circa 7500 varianti** (stima del piano 14: circa 1,5 GB in più). Con meno di ~3 GB liberi metti `SWU_VARIANT_IMAGES=false` nel `.env` della VM prima di `cards:scan`: le varianti si importano comunque, senza immagini (le scarichi dopo, togliendo il flag e rilanciando `cards:scan --phase=variants`). Il `migrate:fresh` dello Step 13.4.2 applica anche le migration del piano 14 (`original_card_id`, `variant_type`, `variant_code`, collezione senza `variant`).
 - Il problema dell'import del 2026-10-18 (memoria esaurita dopo ~180 pagine, 502 dell'API alla pagina 126) è risolto dal piano 12 [`implementationPlan-12-importCartePerPagina.md`](implementationPlan-12-importCartePerPagina.md): applicato **e** provato con un import completo in locale (Step 7 di quel piano). Se non lo è, fermati qui e non azzerare niente. Applicato quel piano, anche `DB_QUEUE_RETRY_AFTER=300` e `LOG_LEVEL=info` vanno messi nel `.env` della VM.
 
 #### 13.4.2 — Reset
@@ -167,20 +167,20 @@ docker compose exec -T app php artisan cards:scan
 docker compose logs -f worker           # in un'altra shell, per seguire l'avanzamento
 free -m; df -h /                        # ogni tanto: RAM e disco della VM
 ```
-L'avanzamento arriva anche sul bot Telegram. Il job può durare a lungo e, se la memoria del worker è al limite, fallire come il 18/10: controlla i log della prima ora.
+L'avanzamento arriva anche sul bot Telegram. Lo scan ha due fasi nello stesso run: prima gli originali (circa 33 pagine da 100), poi le varianti (circa 76 pagine), per un totale atteso di 10.801 carte (piano 14). Il job può durare a lungo e, se la memoria del worker è al limite, fallire come il 18/10: controlla i log della prima ora.
 
 #### 13.4.4 — Verifiche a import finito
 ```bash
 docker compose exec -T app php artisan queue:failed                      # vuota
 docker compose exec -T db mariadb -u root unlimiteddb -e "
-  SELECT COUNT(*) AS carte FROM cards;
+  SELECT COUNT(*) AS carte, SUM(original_card_id IS NULL) AS originali, SUM(original_card_id IS NOT NULL) AS varianti FROM cards;
   SELECT expansion, COUNT(*) n FROM cards GROUP BY expansion ORDER BY expansion;
   SELECT COUNT(*) AS aperti FROM system_errors WHERE status = 'open';
   SELECT COUNT(*) AS senza_fronte FROM cards WHERE front_art_path IS NULL;
   SELECT id, name, email, email_verified_at FROM users;"
 du -sh storage/app/public/cards
 ```
-- il numero di carte coincide con quello dell'API ufficiale (o con la somma riportata nel messaggio Telegram finale);
+- il numero di carte coincide con quello dell'import in locale del 2026-11-15: **10801** (3278 originali, `original_card_id` nullo, e 7523 varianti), oppure con le carte elaborate riportate nel messaggio Telegram finale (somma delle due fasi);
 - `system_errors` aperti: nessuno, oppure solo problemi singoli già capiti (aprili da `/admin/errori`);
 - un solo utente (l'admin del seeder), con email verificata;
 - `https://unlimiteddb-test.mandich.dev/carte` mostra le carte con le immagini.
@@ -189,6 +189,7 @@ du -sh storage/app/public/cards
 Il job crea le espansioni nuove con `rotation` = massima rotazione esistente e `legal_date` = data di pubblicazione dell'API: valori approssimativi, e `confirmed = false`. La validazione del formato Premier (`Expansion::validExpansions()`) considera solo le espansioni **confermate** delle ultime due rotazioni, quindi con un database appena azzerato **nessun mazzo Premier è valido** finché non le correggi.
 Da `/admin/espansioni` (admin): per ogni espansione imposta `legal_date`, `rotation`, `group_main_expansion` e `confirmed`. I valori giusti stanno nel database di prima (`$B/new-test.sql`, tabella `expansions`), se li avevi già curati: leggili da lì invece di ricostruirli.
 Verifica con un mazzo Premier di prova creato e poi cancellato, oppure da `tinker`: `App\Models\Expansion::validExpansions()`.
+Le espansioni promo create dalla fase varianti (`SORPR`, `SOROP`, `SORSH`, `SHDPQ`, `T*`, ...) nascono con `group_main_expansion` già valorizzato e `confirmed = false`: per i mazzi non contano, perché un mazzo contiene sempre la carta originale, quindi si possono lasciare così. Se un'espansione promo contenesse invece carte originali (set standalone senza `variantOf`), per quelle vale la regola di prima.
 
 ## Step 13.5 — Cutover
 

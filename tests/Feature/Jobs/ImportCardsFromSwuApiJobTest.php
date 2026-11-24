@@ -299,3 +299,26 @@ it('un job in coda serializzato prima del piano 14 riparte dalla fase originali'
 
     expect($job->phase)->toBe(ImportCardsFromSwuApiJob::PHASE_ORIGINALS);
 });
+
+it('la release_date non cambia nelle scansioni successive di una carta già presente', function () {
+    fakeSwuHttp([
+        'admin.starwarsunlimited.com/api/card-list*' => Http::response([
+            'data' => [fakeCardEntry()],
+            'meta' => ['pagination' => ['pageCount' => 1]],
+        ]),
+    ]);
+    Mail::fake();
+
+    // release_date = data di inserimento nel sito: scritta solo quando la carta nasce
+    $this->travelTo(now()->subDays(10));
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
+    $firstDate = Card::firstOrFail()->release_date->toDateString();
+    expect($firstDate)->toBe(now()->toDateString());
+
+    $this->travelBack();
+    (new ImportCardsFromSwuApiJob)->handle(app(TelegramService::class), app(CardImageDownloader::class));
+
+    expect(Card::count())->toBe(1)
+        ->and(Card::firstOrFail()->release_date->toDateString())->toBe($firstDate)
+        ->and($firstDate)->not->toBe(now()->toDateString());
+});

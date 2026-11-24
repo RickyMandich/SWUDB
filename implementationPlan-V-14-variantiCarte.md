@@ -11,7 +11,7 @@
 
 Step 1–5 applicati quasi tutti, ma con errori: la suite ha 51 test falliti e le pagine dei mazzi rispondono 500. Cause e correzioni sono nel piano [`14a`](implementationPlan-14a-correzioniVarianti.md): import di `Builder` mancante in `Card`, Step 3.1 finito in `DeckController` invece che in `CardController`, `cards:scan --phase` mai passato al job, migration senza `dropUnique`, test e vista collezione da sistemare. La decisione sul delta delle carte mancanti (Step 2.5) è sviluppata nel piano [`14b`](implementationPlan-14b-deltaCollezioneVarianti.md).
 
-**Applica prima `implementationPlan-14-variantiCarte-Correzione.md` (che riunisce 14a e 14b), poi riprendi da Step 6.** Questo piano si rinomina in `implementationPlan-V-14-variantiCarte.md` solo a 14a e 14b chiusi.
+**Chiuso il 2026-11-24**: 14a e 14b applicati (suite verde), Step 6 eseguito in locale il 2026-11-15 (10801 carte, 0 errori), Step 7 assorbito dallo Step 13.4 del piano 13 (reset `migrate:fresh` e reimport completo sulla VM), Step 8 (documentazione) fatto. Nota: l'`id` delle varianti è `{espansione}{numero}-{cid}` (vedi `Card::booted()`), non `{espansione}{numero}` come nella tabella delle scelte più sotto, e l'indice `(expansion, number)` non è più unico (migration `2026_11_15_171800`).
 
 ---
 
@@ -923,7 +923,7 @@ it('la collezione elenca anche le varianti', function () {
 
 ---
 
-## Step 7 — Rilascio sulla VM
+## Step 7 — Rilascio sulla VM (assorbito dallo Step 13.4 del piano 13)
 
 1. Verifica lo spazio libero su disco (`df -h /`). Se lo spazio è limitato (< 3 GB liberi), imposta temporaneamente `SWU_VARIANT_IMAGES=false` nel `.env` prima di lanciare la scansione.
 2. Push su `new` e verifica l'esecuzione della migration dal log di deploy.
