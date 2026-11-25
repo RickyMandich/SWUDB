@@ -23,11 +23,19 @@
                 @method('PATCH')
                 <x-input-error :messages="$errors->get('ids')" class="mb-2" />
 
+                {{-- Seleziona/deseleziona tutti gli errori della pagina corrente (senza `name`: non viene inviato) --}}
+                <label class="flex items-center gap-2 mb-3 text-sm text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" id="select-all-errors"
+                        onchange="this.form.querySelectorAll('.error-checkbox').forEach(c => c.checked = this.checked)"
+                        class="rounded-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-xs focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
+                    Seleziona tutti ({{ $systemErrors->count() }} in questa pagina)
+                </label>
+
                 @foreach ($systemErrors as $error)
                     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 mb-3 rounded-sm">
                         <div class="flex items-start gap-3">
                             <input type="checkbox" name="ids[]" value="{{ $error->id }}"
-                                class="mt-1 rounded-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-xs focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
+                                class="error-checkbox mt-1 rounded-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 text-indigo-600 shadow-xs focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">
                                     <x-badge :color="$error->statusColor()">{{ $error->status }}</x-badge>

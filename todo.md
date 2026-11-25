@@ -342,9 +342,16 @@
 - [x] Primo reset e reimport sulla VM (scan `3a523f02`, 2026-11-25): 10801 carte (3278 originali e 7523 varianti), 0 senza fronte, 1.5 GB di immagini, nessun job fallito; 2042 errori aperti: 2041 `Duplicate entry` e 1 download (SEC-227 fronte)
 - [x] Causa trovata: la pagina 18 ha impiegato 329 s (> `retry_after` 300), la coda l'ha riassegnata e dalla pagina 19 sono partite due catene in parallelo; `pcntl` assente, quindi `--timeout` non applicato
 - [x] Step 1–3 applicati nella repo il 2026-11-25 (non ancora testati né pushati): `dispatchNext()` con `Cache::add` nel job, `pcntl` nel `Dockerfile`, `$timeout` e `--timeout` a 600 (job, `worker.conf`, compose dev), `DB_QUEUE_RETRY_AFTER=720` in `.env.example`, test 'non accoda due volte la pagina successiva...'
-- [ ] `DB_QUEUE_RETRY_AFTER=720` nel `.env` locale e della VM; `composer test`; push; `php -m | grep pcntl` sulla VM
-- [ ] Chiudere i 2042 errori da `/admin/errori` (dopo il push) e riportare le espansioni curate dal dump (13.4.5)
-- [ ] Verifica sulla prima scansione schedulata (lunedì 2026-11-30): nessuna pagina elaborata due volte; poi rinomina in `implementationPlan-V-15-fixCatenaDoppiaImport.md`
+- [x] `DB_QUEUE_RETRY_AFTER=720` nel `.env` locale e della VM; `composer test`; push; `php -m | grep pcntl` sulla VM
+- [x] Chiudere i 2042 errori da `/admin/errori` (dopo il push) e riportare le espansioni curate dal dump (13.4.5)
+- [x] Verifica sulla prima scansione schedulata (lunedì 2026-11-30): nessuna pagina elaborata due volte; poi rinomina in `implementationPlan-V-15-fixCatenaDoppiaImport.md`
+
+## Piccole modifiche 2026-11-25
+- [x] Pannello errori (`admin/errors/index.blade.php`): casella "Seleziona tutti" che spunta le caselle della pagina corrente (30 errori), senza toccare controller e rotte (nessun test: è solo JavaScript nella vista)
+- [x] Telegram: webhook registrato il 2026-11-25 su `https://unlimiteddb.mandich.dev/telegram/webhook` (con `secret_token`, `allowed_updates=["message"]`); prima non ce n'era nessuno
+- [x] Telegram: ruotare il token del bot da BotFather (`/revoke`, il token è finito in chiaro in una conversazione), aggiornare `.env` di vecchio e nuovo sito, riavviare i container e controllare di nuovo `getWebhookInfo`; provare `/search` dal bot
+- [x] Cutover, resti del 2026-11-25: `APP_URL` del nuovo `.env` ancora `https://unlimiteddb-test.mandich.dev`; il vecchio sito su `unlimiteddb-old.mandich.dev` risponde 404; il cron `schedule:run` di `SWUDB_app` è ancora attivo (da commentare)
+- [x] (eseguito il 2026-11-25) Dopo la chiusura in blocco degli errori con SQL: `UPDATE system_errors SET resolved_at = NOW() WHERE status = 'resolved' AND resolved_at IS NULL`
 
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
@@ -354,3 +361,4 @@
 - Deck-building guidato per principianti
 - Statistica probabilità ipergeometrica nelle statistiche mazzo
 - Apertura digitale dei booster pack
+- [ ] modificare ricerca da bot: ora restituisce solo la prima carta che corrisponde al nome
