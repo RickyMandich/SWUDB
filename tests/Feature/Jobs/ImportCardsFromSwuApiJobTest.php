@@ -322,3 +322,23 @@ it('la release_date non cambia nelle scansioni successive di una carta già pres
         ->and(Card::firstOrFail()->release_date->toDateString())->toBe($firstDate)
         ->and($firstDate)->not->toBe(now()->toDateString());
 });
+
+it('non accoda due volte la pagina successiva se la stessa pagina viene rielaborata', function () {
+    fakeSwuHttp([
+        'admin.starwarsunlimited.com/api/card-list*' => Http::response([
+            'data' => [fakeCardEntry()],
+            'meta' => ['pagination' => ['pageCount' => 3]],
+        ]),
+    ]);
+    Queue::fake();
+    Mail::fake();
+
+    // la coda riassegna il job se supera retry_after mentre il primo gira ancora: la pagina viene elaborata due volte
+    $first = new ImportCardsFromSwuApiJob(1);
+    $first->handle(app(TelegramService::class), app(CardImageDownloader::class));
+    $again = new ImportCardsFromSwuApiJob(1, $first->runId);
+    $again->handle(app(TelegramService::class), app(CardImageDownloader::class));
+
+    Queue::assertPushed(ImportCardsFromSwuApiJob::class, 1);
+    Queue::assertPushed(ImportCardsFromSwuApiJob::class, fn ($job) => $job->page === 2 && $job->runId === $first->runId);
+});

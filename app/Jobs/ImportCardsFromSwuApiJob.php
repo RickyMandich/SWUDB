@@ -52,13 +52,14 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
 
     public const EMAIL_ERRORS_LIMIT = 50;
 
-    // Una pagina (100 carte, fino a 200 immagini) deve stare nei 240 s di timeout,
-    // e retry_after (DB_QUEUE_RETRY_AFTER, Step 5) maggiore del timeout.
+    // Una pagina (100 carte, fino a 200 immagini) deve stare nei 600 s di timeout (sulla VM da 1 GB una pagina ha impiegato fino a 329 s),
+    // e retry_after (DB_QUEUE_RETRY_AFTER, 720 s) maggiore del timeout: altrimenti la coda riassegna il job mentre gira ancora.
+    // Il timeout è applicato solo se l'estensione pcntl è installata (Dockerfile).
     public $tries = 3;
 
     public $backoff = [60, 180];
 
-    public $timeout = 240;
+    public $timeout = 600;
 
     /** Identifica lo scan: resta uguale su tutte le pagine e su ogni tentativo. */
     public string $runId;
@@ -153,14 +154,14 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
         Cache::put($this->stateKey(), $state, now()->addDay());
 
         if ($this->page < $lastPage) {
-            self::dispatch($this->page + 1, $this->runId, $this->phase);
+            $this->dispatchNext($this->page + 1, $this->phase);
 
             return;
         }
 
         if ($this->phase === self::PHASE_ORIGINALS) {
             // Finiti gli originali: parte la fase varianti dalla pagina 1
-            self::dispatch(1, $this->runId, self::PHASE_VARIANTS);
+            $this->dispatchNext(1, self::PHASE_VARIANTS);
 
             return;
         }
@@ -430,6 +431,23 @@ class ImportCardsFromSwuApiJob implements ShouldQueue
     {
         return SystemError::where('created_at', '>=', $since)
             ->whereIn('source', [self::class, CardImageDownloader::class]);
+    }
+
+    /**
+     * Queues the next page only once per scan, phase and page: Cache::add is atomic, so if the same page is
+     * processed twice (job released by the queue while still running) only one chain goes on
+     * Accoda la pagina successiva una sola volta per scan, fase e pagina: Cache::add è atomica, quindi se la stessa
+     * pagina viene elaborata due volte (job riassegnato dalla coda mentre girava ancora) la catena resta una sola
+     */
+    private function dispatchNext(int $page, string $phase): void
+    {
+        if (! Cache::add("cards-import:{$this->runId}:next:{$phase}:{$page}", true, now()->addDay())) {
+            Log::warning("Scan {$this->runId}: pagina {$page} (fase {$phase}) già accodata da un altro job, non la accodo di nuovo");
+
+            return;
+        }
+
+        self::dispatch($page, $this->runId, $phase);
     }
 
     private function stateKey(): string

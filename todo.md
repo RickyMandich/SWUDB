@@ -338,6 +338,14 @@
 - [ ] Rilanciare `composer test` dopo i test nuovi del 2026-11-24 (`NewReleasesTest`, `release_date` invariata)
 - [ ] Piano 13 da 13.1.1 in poi (comandi sulla VM)
 
+## Piano 15 — import carte: una sola catena di job `implementationPlan-15-fixCatenaDoppiaImport.md` (2026-11-25)
+- [x] Primo reset e reimport sulla VM (scan `3a523f02`, 2026-11-25): 10801 carte (3278 originali e 7523 varianti), 0 senza fronte, 1.5 GB di immagini, nessun job fallito; 2042 errori aperti: 2041 `Duplicate entry` e 1 download (SEC-227 fronte)
+- [x] Causa trovata: la pagina 18 ha impiegato 329 s (> `retry_after` 300), la coda l'ha riassegnata e dalla pagina 19 sono partite due catene in parallelo; `pcntl` assente, quindi `--timeout` non applicato
+- [x] Step 1–3 applicati nella repo il 2026-11-25 (non ancora testati né pushati): `dispatchNext()` con `Cache::add` nel job, `pcntl` nel `Dockerfile`, `$timeout` e `--timeout` a 600 (job, `worker.conf`, compose dev), `DB_QUEUE_RETRY_AFTER=720` in `.env.example`, test 'non accoda due volte la pagina successiva...'
+- [ ] `DB_QUEUE_RETRY_AFTER=720` nel `.env` locale e della VM; `composer test`; push; `php -m | grep pcntl` sulla VM
+- [ ] Chiudere i 2042 errori da `/admin/errori` (dopo il push) e riportare le espansioni curate dal dump (13.4.5)
+- [ ] Verifica sulla prima scansione schedulata (lunedì 2026-11-30): nessuna pagina elaborata due volte; poi rinomina in `implementationPlan-V-15-fixCatenaDoppiaImport.md`
+
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
 - Tag personalizzati per i mazzi (Aggro/Control/Budget/Meta)
