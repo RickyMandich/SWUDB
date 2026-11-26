@@ -355,6 +355,9 @@
 - [x] 2026-11-26: `TelegramServiceTest` ha il test sul `deleteMessage` senza id e la prova dal vivo (saltata di default, `TELEGRAM_LIVE_TEST=1`) che invia un messaggio vero e lo cancella sempre in un `finally`; nessun altro test manda messaggi veri (richieste simulate); da eseguire insieme al resto della suite
 - [x] (eseguito il 2026-11-25) Dopo la chiusura in blocco degli errori con SQL: `UPDATE system_errors SET resolved_at = NOW() WHERE status = 'resolved' AND resolved_at IS NULL`
 
+## generiche
+- aggiungere nella navbar link mancanti alle route dirette
+- aggiungere pulsanti contestuali alla pagina mazzi e fixare visuale mobile
 ## Backlog (non pianificato in dettaglio)
 - Condivisione social dei mazzi
 - Tag personalizzati per i mazzi (Aggro/Control/Budget/Meta)
